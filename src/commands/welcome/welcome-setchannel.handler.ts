@@ -1,6 +1,4 @@
-import {
-  ChatInputCommandInteraction,
-} from 'discord.js';
+import { ChatInputCommandInteraction } from 'discord.js';
 import { getSettingsService } from '../../services/settings.service.js';
 import { buildSuccessEmbed } from '../../utils/embed.utils.js';
 
@@ -9,7 +7,7 @@ import { buildSuccessEmbed } from '../../utils/embed.utils.js';
  */
 export async function handleSetChannel(
   interaction: ChatInputCommandInteraction,
-  guildIdentifier: string
+  guildIdentifier: string,
 ): Promise<void> {
   const selectedChannel = interaction.options.getChannel('channel', true);
 

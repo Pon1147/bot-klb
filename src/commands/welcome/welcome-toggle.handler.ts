@@ -1,6 +1,4 @@
-import {
-  ChatInputCommandInteraction,
-} from 'discord.js';
+import { ChatInputCommandInteraction } from 'discord.js';
 import { getSettingsService } from '../../services/settings.service.js';
 import { buildSuccessEmbed } from '../../utils/embed.utils.js';
 
@@ -9,7 +7,7 @@ import { buildSuccessEmbed } from '../../utils/embed.utils.js';
  */
 export async function handleToggle(
   interaction: ChatInputCommandInteraction,
-  guildIdentifier: string
+  guildIdentifier: string,
 ): Promise<void> {
   const shouldBeEnabled = interaction.options.getBoolean('enabled', true);
 

@@ -13,11 +13,11 @@ import { buildErrorEmbed } from '../../utils/embed.utils.js';
 export const data = new SlashCommandBuilder()
   .setName('test-welcome')
   .setDescription('Test hiển thị tin nhắn welcome cho một thành viên.')
-  .addUserOption(option =>
+  .addUserOption((option) =>
     option
       .setName('member')
       .setDescription('Thành viên để test welcome (mặc định là người gọi lệnh).')
-      .setRequired(false)
+      .setRequired(false),
   );
 
 /**
@@ -25,7 +25,7 @@ export const data = new SlashCommandBuilder()
  */
 export async function execute(
   interaction: ChatInputCommandInteraction,
-  _database: unknown
+  _database: unknown,
 ): Promise<void> {
   // Guard clause: chỉ dùng trong guild
   if (!interaction.guild) {
@@ -52,7 +52,8 @@ export async function execute(
 
     // Lấy member được chỉ định, hoặc dùng người gọi lệnh
     const resolvedMember = interaction.options.getMember('member');
-    const targetMember = (resolvedMember instanceof GuildMember ? resolvedMember : null) || commandingMember;
+    const targetMember =
+      (resolvedMember instanceof GuildMember ? resolvedMember : null) || commandingMember;
     if (!targetMember) {
       await interaction.reply({
         embeds: [buildErrorEmbed('Không thể lấy thông tin thành viên.')],
