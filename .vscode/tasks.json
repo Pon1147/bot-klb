@@ -1,0 +1,61 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build TypeScript",
+      "type": "npm",
+      "script": "build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$tsc"],
+      "detail": "Compile TypeScript using tsc"
+    },
+    {
+      "label": "Build TypeScript (Watch)",
+      "type": "npm",
+      "script": "build",
+      "isBackground": true,
+      "problemMatcher": ["$tsc-watch"],
+      "detail": "Compile TypeScript in watch mode"
+    },
+    {
+      "label": "Run Bot",
+      "type": "npm",
+      "script": "start",
+      "problemMatcher": [],
+      "dependsOn": "Build TypeScript",
+      "detail": "Run the Discord bot from compiled output"
+    },
+    {
+      "label": "Dev (ts-node)",
+      "type": "npm",
+      "script": "dev",
+      "problemMatcher": [],
+      "detail": "Run the Discord bot using ts-node (development)"
+    },
+    {
+      "label": "Run Tests",
+      "type": "npm",
+      "script": "test",
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "Run Jest test suite"
+    },
+    {
+      "label": "Lint",
+      "type": "npm",
+      "script": "lint",
+      "problemMatcher": ["$eslint-stylish"],
+      "detail": "Run ESLint on src/"
+    },
+    {
+      "label": "Lint Fix",
+      "type": "npm",
+      "script": "lint:fix",
+      "problemMatcher": ["$eslint-stylish"],
+      "detail": "Run ESLint with auto-fix on src/"
+    }
+  ]
+}

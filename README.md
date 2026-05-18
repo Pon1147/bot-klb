@@ -29,12 +29,14 @@ Bot Discord **độc quyền** được phát triển dành riêng cho server c�
 
 | Thành phần                         | Chi tiết                                                         |
 | ---------------------------------- | ---------------------------------------------------------------- |
-| **Ngôn ngữ chính**                 | JavaScript (Node.js)                                             |
+| **Ngôn ngữ chính**                 | TypeScript (Node.js)                                             |
 | **Framework**                      | [discord.js](https://discord.js.org) **v14.26.4** (stable)       |
 | **Minimum Node.js**                | 22.12.0+                                                         |
 | **Environment variables**          | dotenv                                                           |
 | **Database ban đầu**               | SQLite3 (nhẹ, nhanh, không cần server)                           |
 | **Package manager**                | npm (hoặc pnpm/yarn tùy chọn)                                    |
+| **Testing**                        | Jest (target 100% coverage)                                      |
+| **Linter / Formatter**             | ESLint + Prettier                                                |
 | **Command & Interaction Handling** | Modular handlers (slash commands, buttons, modals, select menus) |
 | **Deployment**                     | PM2 / Docker (tùy chọn sau)                                      |
 
@@ -52,8 +54,13 @@ Bot Discord **độc quyền** được phát triển dành riêng cho server c�
 │   ├── utils/            # Helper functions, embeds, colors...
 │   ├── database/         # Models & connection (SQLite/MongoDB)
 │   ├── config/           # Config files (nếu cần)
-│   └── index.js          # Entry point chính
+│   └── index.ts          # Entry point chính
+├── __tests__/            # Unit tests (Jest)
 ├── .env.example          # Template biến môi trường
+├── .eslintrc.cjs         # ESLint configuration
+├── .prettierrc           # Prettier configuration
+├── jest.config.cjs       # Jest configuration
+├── tsconfig.json         # TypeScript configuration
 ├── package.json
 ├── README.md
 ├── docs/                 # Tài liệu chi tiết functions, examples
@@ -97,13 +104,14 @@ Bot Discord **độc quyền** được phát triển dành riêng cho server c�
 6. **Chạy bot**
 
    ```bash
-   node src/index.js
+   npm run build
+   npm start
    ```
 
    Hoặc sử dụng PM2 để chạy persistent:
 
    ```bash
-   pm2 start src/index.js --name discord-bot
+   pm2 start dist/index.js --name discord-bot
    ```
 
 ---
@@ -130,6 +138,30 @@ Bot Discord **độc quyền** được phát triển dành riêng cho server c�
 8. **Luôn double-check** toàn bộ file sau khi viết (syntax, import, logic).
 9. **Không được commit** file `.env` hoặc chứa token thật.
 10. **Giữ code sạch**, dễ maintain, dễ mở rộng.
+
+---
+
+## 🧹 Clean Code Principles (Bắt buộc tuân thủ)
+
+| #   | Nguyên tắc            | Quy tắc                                                |
+| --- | --------------------- | ------------------------------------------------------ |
+| 1   | Naming                | Tên có nghĩa, không dùng `a`, `b`, `c`, `temp`, `data` |
+| 2   | Single Responsibility | 1 hàm = 1 nhiệm vụ, < 20 dòng                          |
+| 3   | Self-Documenting      | Code tự giải thích, comment giải thích WHY             |
+| 4   | Flat over Nested      | Dùng guard clauses, tránh nesting sâu                  |
+| 5   | No Dead Code          | Xóa code thừa, unused imports, unused params           |
+| 6   | Consistent Style      | Tuân thủ 1 code style (eslint/prettier)                |
+
+---
+
+## 🧪 Testing
+
+- **Framework**: Jest
+- **Mục tiêu**: 100% code coverage
+- **Chạy test**: `npm test`
+- **Xem coverage**: `npm run test:coverage`
+- Mỗi feature **bắt buộc** có unit test trước khi merge
+- TDD: Write test → Write code → Refactor
 
 ---
 
