@@ -67,11 +67,11 @@ export function initializeDatabase(): Database.Database {
  */
 export function getWelcomeConfiguration(
   database: Database.Database,
-  guildIdentifier: string
+  guildIdentifier: string,
 ): WelcomeConfiguration {
-  const result = (database
+  const result = database
     .prepare('SELECT * FROM welcome_configuration WHERE guild_id = ?')
-    .get(guildIdentifier)) as RawWelcomeRow | undefined;
+    .get(guildIdentifier) as RawWelcomeRow | undefined;
 
   if (result) {
     return {
@@ -99,17 +99,19 @@ export function getWelcomeConfiguration(
  */
 export function saveWelcomeConfiguration(
   database: Database.Database,
-  configuration: WelcomeConfiguration
+  configuration: WelcomeConfiguration,
 ): void {
   database
-    .prepare('INSERT OR REPLACE INTO welcome_configuration (guild_id, channel_id, role_id, message_template, embed_image_url, is_enabled) VALUES (?, ?, ?, ?, ?, ?)')
+    .prepare(
+      'INSERT OR REPLACE INTO welcome_configuration (guild_id, channel_id, role_id, message_template, embed_image_url, is_enabled) VALUES (?, ?, ?, ?, ?, ?)',
+    )
     .run(
       configuration.guildId,
       configuration.channelId,
       configuration.roleId,
       configuration.messageTemplate,
       configuration.embedImageUrl,
-      configuration.isEnabled ? 1 : 0
+      configuration.isEnabled ? 1 : 0,
     );
 }
 
@@ -119,7 +121,7 @@ export function saveWelcomeConfiguration(
 export function toggleWelcomeEnabled(
   database: Database.Database,
   guildIdentifier: string,
-  enabledStatus: boolean
+  enabledStatus: boolean,
 ): void {
   database
     .prepare('UPDATE welcome_configuration SET is_enabled = ? WHERE guild_id = ?')

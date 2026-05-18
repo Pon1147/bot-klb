@@ -1,4 +1,6 @@
-import { EmbedBuilder, GuildMember } from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
+import { EmbedSettings, TemplateContext } from '../types/settings.types.js';
+import { resolveTemplate } from './template.utils.js';
 
 /**
  * Color palette for embed messages.
@@ -13,45 +15,52 @@ export const embedColors = {
 };
 
 /**
- * Format member joining date to readable string.
+ * Build embed từ settings object + template context.
+ * Thay thế buildWelcomeEmbed cũ (hardcode).
  */
-function formatJoiningDate(timestamp: number): string {
-  const date = new Date(timestamp);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+export function buildEmbedFromSettings(
+  embedSettings: EmbedSettings,
+  context: TemplateContext,
+): EmbedBuilder {
+  const { member } = context;
+
+  const embed = new EmbedBuilder()
+    .setTitle(resolveTemplate(embedSettings.title, context))
+    .setDescription(resolveTemplate(embedSettings.description, context))
+    .setColor(parseColor(embedSettings.color))
+    .setTimestamp();
+
+  // Footer
+  if (embedSettings.footer) {
+    embed.setFooter({ text: resolveTemplate(embedSettings.footer, context) });
+  }
+
+  // Thumbnail (avatar member)
+  if (embedSettings.thumbnail) {
+    embed.setThumbnail(member.user.displayAvatarURL());
+  }
+
+  // Fields
+  for (const field of embedSettings.fields) {
+    embed.addFields({
+      name: resolveTemplate(field.name, context),
+      value: resolveTemplate(field.value, context),
+      inline: field.inline,
+    });
+  }
+
+  return embed;
 }
 
 /**
- * Build welcome embed message for a new guild member.
- * Uses member data to populate dynamic fields like account age and member count.
+ * Parse color từ number hoặc hex string.
  */
-export function buildWelcomeEmbed(member: GuildMember): EmbedBuilder {
-  const accountCreationDate = formatJoiningDate(member.user.createdTimestamp);
-  // joinedAt is Date | null in discord.js v14
-  const joinedAtTimestamp = member.joinedAt ? member.joinedAt.getTime() : Date.now();
-  const serverJoiningDate = formatJoiningDate(joinedAtTimestamp);
-  const currentMemberCount = member.guild.memberCount;
-
-  const embed = new EmbedBuilder()
-    .setTitle('Welcome to the Server!')
-    .setDescription(
-      `Hello ${member.user}! We're glad to have you here.\n\n` +
-      `Please read the rules and enjoy your stay!`
-    )
-    .addFields(
-      { name: 'Account Created', value: accountCreationDate, inline: true },
-      { name: 'Joined Server', value: serverJoiningDate, inline: true },
-      { name: 'Member Count', value: String(currentMemberCount), inline: true }
-    )
-    .setThumbnail(member.user.displayAvatarURL())
-    .setColor(embedColors.welcome)
-    .setFooter({ text: 'Welcome Bot' })
-    .setTimestamp();
-
-  return embed;
+function parseColor(color: number | string): number {
+  if (typeof color === 'number') {
+    return color;
+  }
+  const hex = color.replace('#', '');
+  return parseInt(hex, 16);
 }
 
 /**

@@ -1,48 +1,49 @@
-import { Events, GuildMember } from 'discord.js';
-import Database from 'better-sqlite3';
-import { getWelcomeConfiguration } from '../database/welcome.database.js';
-import { buildWelcomeEmbed } from '../utils/embed.utils.js';
+import { Client, GuildMember } from 'discord.js';
+import { getSettingsService } from '../services/settings.service.js';
 
 /**
- * Handle guildMemberAdd event: send welcome message when a new member joins.
- * Checks database config to determine if welcome is enabled for this guild.
+ * Handle guildMemberAdd event: gửi welcome message khi member mới join.
+ * Settings được load từ SettingsService (DB + cache + fallback default).
+ *
+ * Arg đầu tiên luôn là `client` (được bind từ event handler).
  */
-export async function execute(
-  member: GuildMember,
-  database: Database.Database
-): Promise<void> {
-  // Guard clause: skip if member is a bot
+export async function execute(_client: Client, member: GuildMember): Promise<void> {
+  // Guard clause: bỏ qua bot
   if (member.user.bot) {
     return;
   }
 
   try {
-    const welcomeConfig = getWelcomeConfiguration(database, member.guild.id);
+    const settingsService = getSettingsService();
+    const welcome = settingsService.getWelcome(member.guild.id);
 
-    // Guard clause: skip if welcome is disabled for this guild
-    if (!welcomeConfig.isEnabled) {
+    // Guard clause: welcome bị tắt
+    if (!welcome.enabled) {
       return;
     }
 
-    // Guard clause: skip if no welcome channel is configured
-    if (!welcomeConfig.channelId) {
+    // Guard clause: chưa cấu hình channel
+    if (!welcome.channelId) {
       return;
     }
 
-    const welcomeChannel = member.guild.channels.cache.get(welcomeConfig.channelId);
+    const welcomeChannel = member.guild.channels.cache.get(welcome.channelId);
 
-    // Guard clause: skip if channel not found or not a text channel
+    // Guard clause: channel không tồn tại hoặc không phải text channel
     if (!welcomeChannel || !welcomeChannel.isTextBased()) {
       return;
     }
 
-    // Send welcome embed message
-    const welcomeEmbed = buildWelcomeEmbed(member);
+    // Build welcome embed từ settings (template variables được resolve tự động)
+    const welcomeEmbed = settingsService.buildWelcomeEmbed(member.guild.id, {
+      member,
+      guild: member.guild,
+    });
     await welcomeChannel.send({ content: `${member}`, embeds: [welcomeEmbed] });
 
-    // Assign welcome role if configured
-    if (welcomeConfig.roleId) {
-      await assignWelcomeRole(member, welcomeConfig.roleId);
+    // Gán role welcome nếu có cấu hình
+    if (welcome.roleId) {
+      await assignWelcomeRole(member, welcome.roleId);
     }
   } catch (error) {
     console.error(`Error sending welcome message for ${member.user.tag}:`, error);
@@ -50,13 +51,10 @@ export async function execute(
 }
 
 /**
- * Assign the configured welcome role to the new member.
- * Handles errors gracefully so role assignment failure doesn't block welcome message.
+ * Gán role welcome cho member mới.
+ * Xử lý lỗi gracefully để fail role không chặn welcome message.
  */
-async function assignWelcomeRole(
-  member: GuildMember,
-  roleId: string
-): Promise<void> {
+async function assignWelcomeRole(member: GuildMember, roleId: string): Promise<void> {
   const role = member.guild.roles.cache.get(roleId);
 
   if (!role) {
@@ -72,7 +70,7 @@ async function assignWelcomeRole(
 }
 
 export default {
-  name: Events.GuildMemberAdd,
+  name: 'guildMemberAdd',
   once: false,
   execute,
 };

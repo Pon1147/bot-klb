@@ -16,6 +16,7 @@ npm-debug.log*
 # Environment variables
 .env
 .env.local
+.clinerules
 
 # Project docs/reference files
 docs/guides/roadmap.md
