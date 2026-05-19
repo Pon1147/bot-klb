@@ -1,16 +1,46 @@
 import { Client, Events } from 'discord.js';
+import {
+  handleEditorButtonInteraction,
+  handleEditorModalSubmit,
+} from '../commands/embed/embed.interactive.edit.js';
 
 /**
- * Handle interactionCreate event: xử lý slash commands.
- * Chỉ xử lý ChatInputCommand, các loại interaction khác bị bỏ qua.
+ * Handle interactionCreate event: xử lý slash commands, button interactions, modal submissions.
  *
- * Arg đầu tiên luôn là `client` (được bind từ event handler).
+ * WHY: Tập trung tất cả interaction routing ở 1 nơi để dễ bảo trì.
+ * Mỗi loại interaction được phân phối đến handler tương ứng.
  */
 export async function execute(
   client: Client,
   interaction: any,
 ): Promise<void> {
-  // Guard clause: chỉ xử lý slash commands
+  // ── 1. Xử lý Button Interactions (embed editor) ──
+  if (interaction.isButton()) {
+    // Chỉ xử lý buttons thuộc embed editor (customId bắt đầu bằng 'embed_')
+    if (interaction.customId.startsWith('embed_')) {
+      try {
+        await handleEditorButtonInteraction(interaction);
+      } catch (error) {
+        console.error('Error in embed editor button handler:', error);
+      }
+    }
+    return;
+  }
+
+  // ── 2. Xử lý Modal Submissions (embed editor) ──
+  if (interaction.isModalSubmit()) {
+    // Chỉ xử lý modals thuộc embed editor (customId bắt đầu bằng 'modal_')
+    if (interaction.customId.startsWith('modal_')) {
+      try {
+        await handleEditorModalSubmit(interaction);
+      } catch (error) {
+        console.error('Error in embed editor modal handler:', error);
+      }
+    }
+    return;
+  }
+
+  // ── 3. Xử lý Slash Commands ──
   if (!interaction.isChatInputCommand()) {
     return;
   }
