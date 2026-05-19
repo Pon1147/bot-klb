@@ -44,7 +44,6 @@ function collectEventFiles(dirPath: string): string[] {
 export function loadEvents(botClient: Client): void {
   const eventsPath = path.join(__dirname, '..', 'events');
 
-  logger.info('=== EVENT LOADING STARTED ===');
   logger.debug(`Scanning directory: ${eventsPath}`);
 
   // Guard clause: directory must exist
@@ -112,10 +111,8 @@ export function loadEvents(botClient: Client): void {
     }
   }
 
-  logger.info('=== EVENT LOADING COMPLETED ===');
-  logger.info(`Summary: ${loadedCount} loaded, ${skippedCount} skipped`, {
+  logger.info(`Registered ${loadedCount} event(s), skipped ${skippedCount}`, {
     loaded: loadedCount,
     skipped: skippedCount,
-    total: loadedCount,
   });
 }

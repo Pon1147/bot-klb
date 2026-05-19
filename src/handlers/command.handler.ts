@@ -52,7 +52,6 @@ function collectCommandFiles(dirPath: string): string[] {
 export function loadCommands(collection: Collection<string, CommandModule>): void {
   const commandsPath = path.join(__dirname, '..', 'commands');
 
-  logger.info('=== COMMAND LOADING STARTED ===');
   logger.debug(`Scanning directory: ${commandsPath}`);
 
   // Guard clause: directory must exist
@@ -108,8 +107,7 @@ export function loadCommands(collection: Collection<string, CommandModule>): voi
     }
   }
 
-  logger.info('=== COMMAND LOADING COMPLETED ===');
-  logger.info(`Summary: ${loadedCount} loaded, ${skippedCount} skipped, ${collection.size} total in collection`, {
+  logger.info(`Loaded ${loadedCount} command(s), skipped ${skippedCount}`, {
     loaded: loadedCount,
     skipped: skippedCount,
     total: collection.size,
@@ -134,7 +132,6 @@ function commandFingerprint(commandData: any): string {
 export async function deployCommands(
   commandCollection: Collection<string, CommandModule>,
 ): Promise<void> {
-  logger.info('=== COMMAND DEPLOYMENT STARTED ===');
 
   if (!commandCollection.size) {
     logger.warn('No commands to deploy. Check command loading logs above.');
@@ -179,7 +176,6 @@ export async function deployCommands(
 
   if (!hasChanges) {
     logger.info(`No changes detected. Skipping deployment of ${localCommands.length} command(s).`);
-    logger.info('=== COMMAND DEPLOYMENT COMPLETED ===');
     return;
   }
 
@@ -202,5 +198,4 @@ export async function deployCommands(
     logger.error('✗ Failed to deploy commands:', { error });
   }
 
-  logger.info('=== COMMAND DEPLOYMENT COMPLETED ===');
 }
