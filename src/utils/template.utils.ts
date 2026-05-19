@@ -1,4 +1,5 @@
 import { TemplateContext } from '../types/settings.types.js';
+import { TEMPLATE_VARIABLES } from '../config/variables.js';
 
 /**
  * Định dạng ngày tháng tiếng Việt.
@@ -41,20 +42,20 @@ export function resolveTemplate(template: string, context: TemplateContext): str
 
   const variables: Record<string, string> = {
     // Member
-    member: member.user.toString(),
-    memberName: member.user.username,
-    memberTag: member.user.tag,
+    [TEMPLATE_VARIABLES.MEMBER]: member.user.toString(),
+    [TEMPLATE_VARIABLES.MEMBER_NAME]: member.user.username,
+    [TEMPLATE_VARIABLES.MEMBER_TAG]: member.user.tag,
 
     // Guild
-    guild: guild.name,
+    [TEMPLATE_VARIABLES.GUILD]: guild.name,
 
     // Dates
-    accountCreationDate: formatDate(member.user.createdTimestamp),
-    accountAge: formatAccountAge(member.user.createdTimestamp),
-    serverJoiningDate: formatDate(joinedAtTimestamp),
+    [TEMPLATE_VARIABLES.ACCOUNT_CREATION_DATE]: formatDate(member.user.createdTimestamp),
+    [TEMPLATE_VARIABLES.ACCOUNT_AGE]: formatAccountAge(member.user.createdTimestamp),
+    [TEMPLATE_VARIABLES.SERVER_JOINING_DATE]: formatDate(joinedAtTimestamp),
 
     // Counts
-    memberCount: String(guild.memberCount),
+    [TEMPLATE_VARIABLES.MEMBER_COUNT]: String(guild.memberCount),
   };
 
   let result = template;

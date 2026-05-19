@@ -1,22 +1,15 @@
 import { EmbedBuilder } from 'discord.js';
 import { EmbedSettings, TemplateContext } from '../types/settings.types.js';
 import { resolveTemplate } from './template.utils.js';
+import { embedColors } from '../config/embed.variables.js';
 
-/**
- * Color palette for embed messages.
- * Centralized here to ensure consistent styling across all features.
- */
-export const embedColors = {
-  welcome: 0x00FF00,
-  leave: 0xFF0000,
-  error: 0xFF0000,
-  success: 0x00FF00,
-  info: 0x0099FF,
-};
+// Re-export for backward compatibility
+export { embedColors };
 
 /**
  * Build embed từ settings object + template context.
  * Thay thế buildWelcomeEmbed cũ (hardcode).
+ * Hỗ trợ đầy đủ Rich Embed: image, footerIcon, url, timestamp.
  */
 export function buildEmbedFromSettings(
   embedSettings: EmbedSettings,
@@ -27,17 +20,38 @@ export function buildEmbedFromSettings(
   const embed = new EmbedBuilder()
     .setTitle(resolveTemplate(embedSettings.title, context))
     .setDescription(resolveTemplate(embedSettings.description, context))
-    .setColor(parseColor(embedSettings.color))
-    .setTimestamp();
+    .setColor(parseColor(embedSettings.color));
 
-  // Footer
-  if (embedSettings.footer) {
-    embed.setFooter({ text: resolveTemplate(embedSettings.footer, context) });
+  // Timestamp (tùy chọn)
+  if (embedSettings.timestamp) {
+    embed.setTimestamp();
   }
 
-  // Thumbnail (avatar member)
+  // Footer (với icon tùy chọn)
+  if (embedSettings.footer) {
+    const footerText = resolveTemplate(embedSettings.footer, context);
+    const footerIconUrl = embedSettings.footerIcon
+      ? resolveTemplate(embedSettings.footerIcon, context)
+      : undefined;
+    embed.setFooter({ text: footerText, iconURL: footerIconUrl });
+  }
+
+  // Thumbnail: true = avatar member, string = URL custom
   if (embedSettings.thumbnail) {
-    embed.setThumbnail(member.user.displayAvatarURL());
+    const thumbnailUrl = typeof embedSettings.thumbnail === 'string'
+      ? resolveTemplate(embedSettings.thumbnail, context)
+      : member.user.displayAvatarURL({ size: 256 });
+    embed.setThumbnail(thumbnailUrl);
+  }
+
+  // Image: URL ảnh lớn
+  if (embedSettings.image) {
+    embed.setImage(resolveTemplate(embedSettings.image, context));
+  }
+
+  // URL: link cho embed title
+  if (embedSettings.url) {
+    embed.setURL(resolveTemplate(embedSettings.url, context));
   }
 
   // Fields
@@ -87,4 +101,39 @@ export function buildSuccessEmbed(successMessage: string): EmbedBuilder {
     .setTimestamp();
 
   return embed;
+}
+
+/**
+ * Legacy buildWelcomeEmbed for backward compatibility with tests.
+ * Builds a welcome embed from a GuildMember directly.
+ */
+export function buildWelcomeEmbed(member: {
+  user: {
+    tag: string;
+    createdTimestamp: number;
+    displayAvatarURL: () => string;
+    toString: () => string;
+  };
+  guild: { id: string; memberCount: number };
+  joinedAt: Date | null;
+}): EmbedBuilder {
+  const formatDate = (ts: number) => {
+    const date = new Date(ts);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  const joinedAtTimestamp = member.joinedAt ? member.joinedAt.getTime() : Date.now();
+
+  return new EmbedBuilder()
+    .setTitle('Welcome to the Server!')
+    .setDescription(`We are glad to have you here, ${member.user.toString()}!`)
+    .setColor(embedColors.welcome)
+    .setThumbnail(member.user.displayAvatarURL())
+    .setFooter({ text: 'Welcome Bot' })
+    .setTimestamp()
+    .addFields(
+      { name: 'Account Created', value: formatDate(member.user.createdTimestamp), inline: true },
+      { name: 'Joined Server', value: formatDate(joinedAtTimestamp), inline: true },
+      { name: 'Member Count', value: String(member.guild.memberCount), inline: true },
+    );
 }

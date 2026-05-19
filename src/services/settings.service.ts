@@ -93,6 +93,7 @@ export class SettingsService {
   /**
    * Build EmbedBuilder từ embed settings + template context.
    * Đây là hàm chính thay thế buildWelcomeEmbed cũ.
+   * Hỗ trợ đầy đủ Rich Embed: image, footerIcon, url, timestamp.
    */
   buildEmbed(embedSettings: EmbedSettings, context: TemplateContext): EmbedBuilder {
     const { member } = context;
@@ -100,17 +101,38 @@ export class SettingsService {
     const embed = new EmbedBuilder()
       .setTitle(resolveTemplate(embedSettings.title, context))
       .setDescription(resolveTemplate(embedSettings.description, context))
-      .setColor(this.parseColor(embedSettings.color))
-      .setTimestamp();
+      .setColor(this.parseColor(embedSettings.color));
 
-    // Footer
-    if (embedSettings.footer) {
-      embed.setFooter({ text: resolveTemplate(embedSettings.footer, context) });
+    // Timestamp (tùy chọn, mặc định false)
+    if (embedSettings.timestamp) {
+      embed.setTimestamp();
     }
 
-    // Thumbnail (avatar member)
+    // Footer (với icon tùy chọn)
+    if (embedSettings.footer) {
+      const footerText = resolveTemplate(embedSettings.footer, context);
+      const footerIconUrl = embedSettings.footerIcon
+        ? resolveTemplate(embedSettings.footerIcon, context)
+        : undefined;
+      embed.setFooter({ text: footerText, iconURL: footerIconUrl });
+    }
+
+    // Thumbnail: true = avatar member, string = URL custom
     if (embedSettings.thumbnail) {
-      embed.setThumbnail(member.user.displayAvatarURL());
+      const thumbnailUrl = typeof embedSettings.thumbnail === 'string'
+        ? resolveTemplate(embedSettings.thumbnail, context)
+        : member.user.displayAvatarURL({ size: 256 });
+      embed.setThumbnail(thumbnailUrl);
+    }
+
+    // Image: URL ảnh lớn hiển thị trong embed
+    if (embedSettings.image) {
+      embed.setImage(resolveTemplate(embedSettings.image, context));
+    }
+
+    // URL: link cho embed title
+    if (embedSettings.url) {
+      embed.setURL(resolveTemplate(embedSettings.url, context));
     }
 
     // Fields

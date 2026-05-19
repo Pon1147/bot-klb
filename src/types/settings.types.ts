@@ -14,8 +14,12 @@ export interface EmbedSettings {
   title: string;
   description: string;
   color: number | string;
-  thumbnail: boolean;
+  thumbnail: boolean | string;  // true = avatar member, hoặc URL custom
+  image: string | null;          // URL ảnh lớn hiển thị trong embed
   footer: string;
+  footerIcon: string | null;     // URL icon cho footer
+  url: string | null;            // Link cho embed title
+  timestamp: boolean;            // Hiện/ẩn timestamp
   fields: EmbedFieldSettings[];
 }
 

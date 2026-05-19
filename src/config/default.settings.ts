@@ -1,11 +1,11 @@
 import { GuildSettings } from '../types/settings.types.js';
-import { embedColors } from '../utils/embed.utils.js';
+import { embedColors, WELCOME_EMBED_DEFAULTS, LEAVE_EMBED_DEFAULTS } from './embed.variables.js';
 
 /**
  * Default settings cho mọi guild mới.
  * Khi guild chưa có row trong DB, SettingsService sẽ fallback về đây.
  *
- * Thêm/sửa default → chỉ cần chỉnh file này, không động vào DB schema.
+ * Thêm/sửa default → chỉ cần chỉnh file embed.variables.js, không động vào file này.
  */
 export const defaultGuildSettings: GuildSettings = {
   welcome: {
@@ -13,29 +13,40 @@ export const defaultGuildSettings: GuildSettings = {
     channelId: null,
     roleId: null,
     embed: {
-      title: 'Welcome {member}!',
-      description:
-        'Chào mừng đến với {guild}!\n\nVui lòng đọc quy tắc và tận hưởng!',
+      title: WELCOME_EMBED_DEFAULTS.TITLE,
+      description: WELCOME_EMBED_DEFAULTS.DESCRIPTION,
       color: embedColors.welcome,
-      thumbnail: true,
-      footer: 'Welcome Bot',
-      fields: [
-        { name: 'Tài khoản tạo', value: '{accountCreationDate}', inline: true },
-        { name: 'Ngày tham gia', value: '{serverJoiningDate}', inline: true },
-        { name: 'So member', value: '{memberCount}', inline: true },
-      ],
+      thumbnail: WELCOME_EMBED_DEFAULTS.THUMBNAIL,
+      image: WELCOME_EMBED_DEFAULTS.IMAGE,
+      footer: WELCOME_EMBED_DEFAULTS.FOOTER,
+      footerIcon: WELCOME_EMBED_DEFAULTS.FOOTER_ICON,
+      url: WELCOME_EMBED_DEFAULTS.URL,
+      timestamp: WELCOME_EMBED_DEFAULTS.TIMESTAMP,
+      fields: WELCOME_EMBED_DEFAULTS.FIELDS as unknown as Array<{
+        name: string;
+        value: string;
+        inline: boolean;
+      }>,
     },
   },
   leave: {
     enabled: false,
     channelId: null,
     embed: {
-      title: '{member} da ri server.',
-      description: 'Chuc {member} tot lanh!',
+      title: LEAVE_EMBED_DEFAULTS.TITLE,
+      description: LEAVE_EMBED_DEFAULTS.DESCRIPTION,
       color: embedColors.leave,
-      thumbnail: true,
-      footer: 'Leave Bot',
-      fields: [],
+      thumbnail: LEAVE_EMBED_DEFAULTS.THUMBNAIL,
+      image: LEAVE_EMBED_DEFAULTS.IMAGE,
+      footer: LEAVE_EMBED_DEFAULTS.FOOTER,
+      footerIcon: LEAVE_EMBED_DEFAULTS.FOOTER_ICON,
+      url: LEAVE_EMBED_DEFAULTS.URL,
+      timestamp: LEAVE_EMBED_DEFAULTS.TIMESTAMP,
+      fields: LEAVE_EMBED_DEFAULTS.FIELDS as unknown as Array<{
+        name: string;
+        value: string;
+        inline: boolean;
+      }>,
     },
   },
 };
