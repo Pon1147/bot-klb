@@ -1,51 +1,31 @@
-# Local tooling metadata
-.clineignore
-.postman/
-
 # Dependencies
-**/node_modules/
-npm-debug.log*
+node_modules/
 
-# Build outputs
-/build/
-/dist/
-/.next/
-/out/
-/coverage/
+# Build output
+dist/
 
-# Environment variables
-.env
-.env.local
-.clinerules
+# Test coverage
+coverage/
 
-# Project docs/reference files
-docs/guides/roadmap.md
-study.md
-qa/FRONTEND_TESTCASE_GUIDE.md
-CONTRIBUTING.md
-tree.md
-roadmap.md
-
-# QA artifacts
-docs/qa/runs/*.json
-!docs/qa/runs/.gitkeep
-
-# Judge reports
-audit/
-
-# Large data files
-*.csv
-*.xlsx
-*.sqlite
-*.db
-
-# Logs
-logs/
-*.log
-
-# SQLite database data directory
+# Database
 data/
 
-# Generated/minified code
-*.min.js
-*.map
+# Environment
+.env
+
+# AI config
+.clinerules
+
+# Generated
+tree.js
+
+# Tests
+__tests__/
+
+# IDE
+.vscode/
+.idea/
+
+#md
+tree.md
+PLAN.md
