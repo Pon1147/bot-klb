@@ -16,43 +16,41 @@ import { handleStatus } from './welcome-status.handler.js';
 export const data = new SlashCommandBuilder()
   .setName('welcome')
   .setDescription('Configure the welcome system for new members.')
-  .addSubcommand(subcommand =>
+  .addSubcommand((subcommand) =>
     subcommand
       .setName('setchannel')
       .setDescription('Set the welcome message channel.')
-      .addChannelOption(option =>
+      .addChannelOption((option) =>
         option
           .setName('channel')
           .setDescription('The channel to send welcome messages in.')
-          .setRequired(true)
-      )
+          .setRequired(true),
+      ),
   )
-  .addSubcommand(subcommand =>
+  .addSubcommand((subcommand) =>
     subcommand
       .setName('setrole')
       .setDescription('Set the role to assign on join.')
-      .addRoleOption(option =>
+      .addRoleOption((option) =>
         option
           .setName('role')
           .setDescription('The role to assign to new members.')
-          .setRequired(true)
-      )
+          .setRequired(true),
+      ),
   )
-  .addSubcommand(subcommand =>
+  .addSubcommand((subcommand) =>
     subcommand
       .setName('toggle')
       .setDescription('Enable or disable the welcome system.')
-      .addBooleanOption(option =>
+      .addBooleanOption((option) =>
         option
           .setName('enabled')
           .setDescription('Whether to enable or disable welcome messages.')
-          .setRequired(true)
-      )
+          .setRequired(true),
+      ),
   )
-  .addSubcommand(subcommand =>
-    subcommand
-      .setName('status')
-      .setDescription('Show current welcome configuration.')
+  .addSubcommand((subcommand) =>
+    subcommand.setName('status').setDescription('Show current welcome configuration.'),
   );
 
 /**
@@ -60,7 +58,7 @@ export const data = new SlashCommandBuilder()
  */
 export async function execute(
   interaction: ChatInputCommandInteraction,
-  _database: unknown
+  _database: unknown,
 ): Promise<void> {
   // Guard clause: chỉ dùng trong guild
   if (!interaction.guild) {
