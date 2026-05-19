@@ -1,5 +1,6 @@
-import { Client, GatewayIntentBits, Collection } from 'discord.js';
+import { Client, Collection } from 'discord.js';
 import { botConfig } from './config/bot.config.js';
+import { BOT_INTENTS } from './config/intents.js';
 import { initializeDatabase } from './database/welcome.database.js';
 import { initializeSettingsTable } from './database/guild.settings.db.js';
 import { SettingsService, setSettingsService } from './services/settings.service.js';
@@ -14,62 +15,54 @@ const logger = createLogger('Bot');
  * This file only bootstraps the application — no business logic here.
  */
 async function main(): Promise<void> {
-  logger.info('╔══════════════════════════════════════════════════╗');
-  logger.info('║          KL BOT — STARTING UP                    ║');
-  logger.info('╚══════════════════════════════════════════════════╝');
+  logger.header('KL BOT — Starting up');
 
-  // Step 1: Initialize database (legacy table)
-  logger.info('Step 1/6: Initializing database...');
+  // Step 1: Initialize database
+  logger.info('Initializing database...');
   const database = initializeDatabase();
-  logger.info('✓ Database initialized successfully.');
+  logger.info('Database initialized');
 
-  // Step 1.5: Initialize guild_settings table (new JSON-based settings)
-  logger.info('Step 2/6: Initializing guild settings table...');
+  // Step 2: Initialize guild_settings table
+  logger.info('Initializing guild settings table...');
   initializeSettingsTable(database);
-  logger.info('✓ Guild settings table ready.');
+  logger.info('Guild settings table ready');
 
-  // Step 2: Initialize SettingsService (single source of truth)
-  logger.info('Step 3/6: Initializing SettingsService...');
+  // Step 3: Initialize SettingsService
+  logger.info('Initializing SettingsService...');
   const settingsService = new SettingsService(database);
   setSettingsService(settingsService);
-  logger.info('✓ SettingsService ready.');
+  logger.info('SettingsService ready');
 
-  // Step 3: Create Discord client
-  logger.info('Step 4/6: Creating Discord client...');
+  // Step 4: Create Discord client
+  logger.info('Creating Discord client...');
   const client = new Client({
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.GuildMessages,
-      GatewayIntentBits.MessageContent,
-    ],
+    intents: BOT_INTENTS,
   });
-  logger.info('✓ Discord client created.');
+  logger.info('Discord client created');
 
-  // Step 4: Load commands
-  logger.info('Step 5/6: Loading commands...');
+  // Step 5: Load commands
+  logger.info('Loading commands...');
   const commands = new Collection<string, CommandModule>();
   loadCommands(commands);
   (client as any).commands = commands;
-  logger.info(`✓ Commands loaded: ${commands.size} command(s) ready.`);
+  logger.info(`Commands loaded: ${commands.size} command(s)`);
 
-  // Step 5: Load events
-  logger.info('Step 5.5/6: Loading events...');
+  // Step 6: Load events
+  logger.info('Loading events...');
   loadEvents(client);
-  logger.info('✓ Events loaded.');
+  logger.info('Events loaded');
 
-  // Attach database to client for use in event handlers
+  // Attach database to client
   (client as any).database = database;
 
-  // Step 6: Deploy commands to Discord API
-  logger.info('Step 6/6: Deploying commands to Discord...');
+  // Step 7: Deploy commands
+  logger.info('Deploying commands to Discord...');
   await deployCommands(commands);
-  logger.info('✓ Commands deployment initiated.');
+  logger.info('Commands deployed');
 
-  // Login to Discord
-  logger.info('╔══════════════════════════════════════════════════╗');
-  logger.info('║  Logging in to Discord...                        ║');
-  logger.info('╚══════════════════════════════════════════════════╝');
+  // Login
+  logger.divider();
+  logger.info('Logging in to Discord...');
   await client.login(botConfig.token);
 }
 
