@@ -1,63 +1,101 @@
 /**
- * Structured logger utility for development environment.
- * Provides colorized, timestamped output with module context.
- * Aligns with .clinerules §5.1 Observability & Logging.
+ * Structured logger — clean, readable, easy to scan.
+ *
+ * Output format:
+ *   [HH:MM:SS] [LEVEL] [Module] Message
+ *
+ * Example:
+ *   [16:20:00] [INFO] [Bot] Bot started successfully
+ *   [16:20:01] [WARN] [CommandHandler] No commands found
+ *   [16:20:02] [ERROR] [EventHandler] Failed to load event
  */
+
+import { LOG_COLORS, LEVEL_BADGES, LEVEL_COLOR_MAP, LEVEL_ICONS } from '../config/logger.variables.js';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
-const COLORS = {
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
-} as const;
+type ColorKey = keyof typeof LOG_COLORS;
 
-const LEVEL_COLORS: Record<LogLevel, keyof typeof COLORS> = {
-  debug: 'dim',
-  info: 'green',
-  warn: 'yellow',
-  error: 'red',
-  fatal: 'red',
+const LEVEL_TO_COLOR: Record<LogLevel, ColorKey> = {
+  debug: LEVEL_COLOR_MAP.debug as ColorKey,
+  info: LEVEL_COLOR_MAP.info as ColorKey,
+  warn: LEVEL_COLOR_MAP.warn as ColorKey,
+  error: LEVEL_COLOR_MAP.error as ColorKey,
+  fatal: LEVEL_COLOR_MAP.fatal as ColorKey,
 };
 
-const LEVEL_ICONS: Record<LogLevel, string> = {
-  debug: '🔍',
-  info: '✅',
-  warn: '⚠️ ',
-  error: '❌',
-  fatal: '💀',
-};
+/**
+ * Format time as HH:MM:SS (24h).
+ */
+function formatTime(date: Date): string {
+  const h = String(date.getHours()).padStart(2, '0');
+  const m = String(date.getMinutes()).padStart(2, '0');
+  const s = String(date.getSeconds()).padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
 
-function formatMessage(
+/**
+ * Format a single log line.
+ *   [HH:MM:SS] [LEVEL] [Module] Message
+ */
+function formatLine(
   level: LogLevel,
   module: string,
   message: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ): string {
-  const timestamp = new Date().toISOString();
-  const color = COLORS[LEVEL_COLORS[level]];
-  const reset = COLORS.reset;
-  const bold = COLORS.bold;
+  const now = new Date();
+  const time = LOG_COLORS.DIM + '[' + formatTime(now) + ']' + LOG_COLORS.RESET;
+
+  const colorKey = LEVEL_TO_COLOR[level];
+  const badgeColor = LOG_COLORS[colorKey];
+  const badge = LEVEL_BADGES[level];
   const icon = LEVEL_ICONS[level];
+  const levelPart = badgeColor + badge + LOG_COLORS.RESET + ' ' + icon;
+
+  const modulePart = LOG_COLORS.CYAN + '[' + module + ']' + LOG_COLORS.RESET;
 
   const metaPart = metadata
-    ? ` ${COLORS.cyan}${JSON.stringify(metadata)}${reset}`
+    ? ' ' + LOG_COLORS.DIM + LOG_COLORS.CYAN + JSON.stringify(metadata) + LOG_COLORS.RESET
     : '';
 
-  return `${color}${icon} ${reset}${COLORS.dim}[${timestamp}]${reset} ${bold}[${module}]${reset} ${message}${metaPart}`;
+  return time + ' ' + levelPart + ' ' + modulePart + ' ' + message + metaPart;
 }
 
 /**
  * Core logger function.
  */
 function log(level: LogLevel, module: string, message: string, metadata?: Record<string, unknown>): void {
-  console.log(formatMessage(level, module, message, metadata));
+  console.log(formatLine(level, module, message, metadata));
+}
+
+/**
+ * Format a divider line.
+ *   ──────────────────────────────────────────
+ */
+function formatDivider(char: string, width: number = 50): string {
+  return LOG_COLORS.DIM + char.repeat(width) + LOG_COLORS.RESET;
+}
+
+/**
+ * Format a header block.
+ *   ╔══════════════════════════════════════════╗
+ *   ║  Title                                    ║
+ *   ╚══════════════════════════════════════════╝
+ */
+function formatHeader(title: string): string {
+  const width = 50;
+  const pad = width - 2;
+  const content = ' ' + title + ' '.repeat(pad - title.length);
+  return (
+    LOG_COLORS.BOLD + LOG_COLORS.CYAN +
+    '╔' + '═'.repeat(width - 2) + '╗' + LOG_COLORS.RESET + '\n' +
+    LOG_COLORS.BOLD + LOG_COLORS.CYAN + '║' + LOG_COLORS.RESET +
+    LOG_COLORS.WHITE + content + LOG_COLORS.RESET +
+    LOG_COLORS.BOLD + LOG_COLORS.CYAN + '║' + LOG_COLORS.RESET + '\n' +
+    LOG_COLORS.BOLD + LOG_COLORS.CYAN +
+    '╚' + '═'.repeat(width - 2) + '╝' + LOG_COLORS.RESET
+  );
 }
 
 /**
@@ -70,5 +108,11 @@ export function createLogger(moduleName: string) {
     warn: (message: string, metadata?: Record<string, unknown>) => log('warn', moduleName, message, metadata),
     error: (message: string, metadata?: Record<string, unknown>) => log('error', moduleName, message, metadata),
     fatal: (message: string, metadata?: Record<string, unknown>) => log('fatal', moduleName, message, metadata),
+
+    /** Print a divider line */
+    divider: (char?: string) => console.log(formatDivider(char || '-')),
+
+    /** Print a header block */
+    header: (title: string) => console.log(formatHeader(title)),
   };
 }
