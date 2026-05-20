@@ -71,6 +71,7 @@ Mọi commit message phải tuân thủ quy tắc **Conventional Commits** viế
 ## 🚀 WORKFLOW & SAFEGUARDS
 
 1. **Kiểm tra Plan**: Trước khi thực hiện task lớn, kiểm tra lại `PLAN.md` để đảm bảo đúng bước.
+2. **Sử dụng skill**: Sử dụng skill judge để đánh giá, xem xét repo hiện tại. Sử dụng skill code để thực hiện vấn đề hoặc features
 2. **Kiểm tra File**: Trước khi đóng file, check lại syntax, import, logic (double-check).
 3. **Không commit .env**: Tuyệt đối không push file `.env` chứa token thật.
 4. **Báo cáo**: Sau khi hoàn thành step nào, hãy báo "Đã hoàn thành step X".

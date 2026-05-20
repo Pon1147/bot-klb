@@ -2,7 +2,7 @@ import { Client, Events, MessageFlags } from 'discord.js';
 import {
   handleEditorButtonInteraction as handleContainerEditorButtonInteraction,
   handleEditorModalSubmit as handleContainerEditorModalSubmit,
-} from '../commands/container/container.interactive.edit.js';
+} from '../commands/container/container-routers.js';
 
 /**
  * Handle interactionCreate event: xử lý slash commands, button interactions, modal submissions.

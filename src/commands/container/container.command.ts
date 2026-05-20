@@ -6,10 +6,9 @@ import {
   SlashCommandSubcommandBuilder,
   GuildMember,
 } from 'discord.js';
-import { buildErrorContainer, buildSuccessContainer } from '../../utils/container.utils.js';
-import { getSettingsService } from '../../services/settings.service.js';
-import { cloneDefaultSettings } from '../../config/default.settings.js';
-import { startInteractiveEdit } from './container.interactive.edit.js';
+import { buildErrorContainer } from '../../utils/container.utils.js';
+import { startInteractiveEdit } from './container-edit.handler.js';
+import { handleContainerReset } from './container-reset.handler.js';
 
 // ─── Subcommand Builder Functions ─────────────────────────────
 
@@ -101,14 +100,16 @@ export async function execute(
 
   try {
     switch (subcommandName) {
-      case 'edit':
+      case 'edit': {
         const type = interaction.options.getString('type') as 'welcome' | 'leave';
         await startInteractiveEdit(interaction, type);
         break;
+      }
 
-      case 'reset':
-        await handleReset(interaction, guildId);
+      case 'reset': {
+        await handleContainerReset(interaction, guildId);
         break;
+      }
 
       default: {
         const errorContainer = buildErrorContainer('Subcommand không hợp lệ.');
@@ -129,32 +130,4 @@ export async function execute(
       });
     }
   }
-}
-
-// ─── Handlers ───────────────────────────────────────────────
-
-/**
- * Handle /container reset — reset container settings về default.
- */
-async function handleReset(
-  interaction: ChatInputCommandInteraction,
-  guildId: string,
-): Promise<void> {
-  const type = interaction.options.getString('type') as 'welcome' | 'leave';
-  const defaults = cloneDefaultSettings();
-
-  const settingsService = getSettingsService();
-
-  // Merge: chỉ reset phần container của type, giữ nguyên các settings khác
-  settingsService.update(guildId, {
-    [type]: {
-      container: defaults[type].container,
-    },
-  });
-
-  const successContainer = buildSuccessContainer(`Đã reset container "${type}" về mặc định.`);
-  await interaction.reply({
-    components: successContainer.components as any,
-    flags: successContainer.flags | MessageFlags.Ephemeral,
-  });
 }
