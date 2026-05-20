@@ -154,7 +154,9 @@ export function buildContainer(
     containerInnerComponents.push(separatorComponent);
   }
 
-  // MediaGallery component (type 8) - chỉ thêm nếu có media URL hợp lệ
+  // MediaGallery component (type 12) - chỉ thêm nếu có media URL hợp lệ
+  // WHY: APIMediaGalleryItem yêu cầu `media: { url: string }` + `description?: string`
+  // Tham khảo: discord-api-types/payloads/v10/message.d.ts:1626
   if (mediaUrl && isValidUrl(mediaUrl)) {
     const mediaItems: Array<Record<string, unknown>> = [];
 
@@ -162,14 +164,13 @@ export function buildContainer(
     const processedUrl = mediaUrl.startsWith('attachment://') ? mediaUrl : mediaUrl;
 
     mediaItems.push({
-      type: 0, // MediaImage type (0 = MediaImage in MediaGallery)
-      imageUrl: processedUrl,
-      ...(mediaDescription ? { description: { text: mediaDescription, type: 0 } } : {}),
+      media: { url: processedUrl },
+      ...(mediaDescription ? { description: mediaDescription } : {}),
     });
 
     const mediaGalleryComponent: Record<string, unknown> = {
       type: ComponentType.MediaGallery, // 12 - MediaGallery
-      components: mediaItems,
+      items: mediaItems,
     };
     containerInnerComponents.push(mediaGalleryComponent);
   }
