@@ -4,6 +4,7 @@
   "description": "Discord Bot - Exclusive Server Bot",
   "main": "dist/index.js",
   "scripts": {
+    "clean": "cmd /c \"if exist dist rmdir /s /q dist\"",
     "build": "tsc",
     "build:tree": "tsc -p tsconfig.tree.json",
     "watch:tree": "tsc -p tsconfig.tree.json --watch",
