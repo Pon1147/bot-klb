@@ -132,15 +132,19 @@ export function buildContainer(
   const textContent = finalLines.join('\n');
 
   // Step 4: Build components array theo cấu trúc Container V2
-  // Cấu trúc: Container > [TextDisplay, (Separator?), MediaGallery?]
+  // Cấu trúc: Container > [TextDisplay?, (Separator?), MediaGallery?]
   const containerInnerComponents: unknown[] = [];
 
-  // TextDisplay component (type 10) - luôn có
-  const textDisplayComponent: Record<string, unknown> = {
-    type: ComponentType.TextDisplay, // 10 - TextDisplay
-    content: textContent,
-  };
-  containerInnerComponents.push(textDisplayComponent);
+  // TextDisplay component (type 10) - chỉ thêm nếu có nội dung
+  // WHY: Discord yêu cầu content length từ 1-4000. Empty string (0 chars) sẽ bị reject.
+  // Khi "clear all" → contentLines = [] → textContent = "" → skip TextDisplay
+  if (textContent.length > 0) {
+    const textDisplayComponent: Record<string, unknown> = {
+      type: ComponentType.TextDisplay, // 10 - TextDisplay
+      content: textContent,
+    };
+    containerInnerComponents.push(textDisplayComponent);
+  }
 
   // Separator component (type 14) - tùy chọn
   if (showSeparator) {
