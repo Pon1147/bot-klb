@@ -103,3 +103,49 @@ const messageId = message.id;
 ```
 
 **Rule**: Mọi biến được khai báo từ await phải được sử dụng, hoặc xóa nếu không cần. Không để unused variables.
+
+### Wrong ComponentType Values for Container V2
+
+**Problem**: Sử dụng magic number sai cho ComponentType khi build Container V2 components thủ công (Record<string, unknown>), dẫn đến `DiscordAPIError[50035]: Invalid Form Body`.
+
+**Root Cause**: Guessing component type values thay vì tra cứu từ `discord-api-types`. Values sai: Container=5, TextDisplay=6, Separator=7, MediaGallery=8.
+
+**Correct Values (từ discord-api-types v10)**:
+
+| Component | Wrong (❌) | Correct (✅) |
+|-----------|:----------:|:------------:|
+| Container | `type: 5` | `type: 17` |
+| TextDisplay | `type: 6` | `type: 10` |
+| MediaGallery | `type: 8` | `type: 12` |
+| Separator | `type: 7` | `type: 14` |
+
+**Pattern to Avoid**:
+
+```typescript
+// ❌ WRONG: magic number hardcoded (guessing)
+const container = { type: 5, components: [...] };
+const textDisplay = { type: 6, content: "..." };
+const separator = { type: 7 };
+const mediaGallery = { type: 8, components: [...] };
+```
+
+**Correct Pattern**:
+
+```typescript
+// ✅ RIGHT: dùng ComponentType enum từ discord.js
+import { ComponentType } from 'discord.js';
+
+const container = { type: ComponentType.Container, components: [...] };      // 17
+const textDisplay = { type: ComponentType.TextDisplay, content: "..." };    // 10
+const separator = { type: ComponentType.Separator };                         // 14
+const mediaGallery = { type: ComponentType.MediaGallery, components: [...] }; // 12
+```
+
+**Rule**: Khi build components V2 thủ công (không dùng Builder), LUÔN dùng `ComponentType.*` enum từ `discord.js` thay vì magic number. Nếu viết test mock, cũng phải mock đúng ComponentType values.
+
+### Verifying ComponentType Values
+
+**When in doubt**, always verify by checking:
+1. `node_modules/discord-api-types/payloads/v10/message.d.ts` — source of truth
+2. Search: `grep -r "ComponentType" node_modules/discord-api-types/`
+3. Never guess — the enum values changed significantly between API versions

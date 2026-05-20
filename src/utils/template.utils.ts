@@ -43,6 +43,7 @@ export function resolveTemplate(template: string, context: TemplateContext): str
   const variables: Record<string, string> = {
     // Member
     [TEMPLATE_VARIABLES.MEMBER]: member.user.toString(),
+    [TEMPLATE_VARIABLES.USER]: member.user.toString(), // alias cho Container V2
     [TEMPLATE_VARIABLES.MEMBER_NAME]: member.user.username,
     [TEMPLATE_VARIABLES.MEMBER_TAG]: member.user.tag,
 

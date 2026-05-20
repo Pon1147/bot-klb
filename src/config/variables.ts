@@ -6,8 +6,10 @@
  */
 
 export const TEMPLATE_VARIABLES = {
-  /** Member mention (@user) */
+  /** Member mention (@user) - dùng cho cả Embed và Container */
   MEMBER: 'member',
+  /** User mention (@user) - alias của member, dùng cho Container V2 */
+  USER: 'user',
   /** Member username (không mention) */
   MEMBER_NAME: 'memberName',
   /** Member tag (username#discriminator) */
@@ -29,6 +31,7 @@ export const TEMPLATE_VARIABLES = {
  */
 export const TEMPLATE_VARIABLE_DESCRIPTIONS: Record<string, string> = {
   member: 'Mention thành viên (@user)',
+  user: 'Mention thành viên (@user) - alias của member',
   memberName: 'Tên thành viên (username)',
   memberTag: 'Tag thành viên (username#tag)',
   guild: 'Tên server',

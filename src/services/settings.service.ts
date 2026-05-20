@@ -1,17 +1,16 @@
 import Database from 'better-sqlite3';
-import { EmbedBuilder } from 'discord.js';
 import {
   GuildSettings,
   WelcomeSettings,
   TemplateContext,
-  EmbedSettings,
+  ContainerSettings,
 } from '../types/settings.types.js';
 import {
   loadGuildSettings,
   saveGuildSettings,
   updateGuildSettings,
 } from '../database/guild.settings.db.js';
-import { resolveTemplate } from '../utils/template.utils.js';
+import { buildContainer, BuildContainerResult } from '../utils/container.utils.js';
 
 /**
  * DeepPartial - làm optional tất cả cấp độ nested.
@@ -21,8 +20,8 @@ type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends Array<infer U>
     ? Array<DeepPartial<U>>
     : T[P] extends object
-    ? DeepPartial<T[P]>
-    : T[P];
+      ? DeepPartial<T[P]>
+      : T[P];
 };
 
 /**
@@ -91,82 +90,25 @@ export class SettingsService {
   }
 
   /**
-   * Build EmbedBuilder từ embed settings + template context.
-   * Đây là hàm chính thay thế buildWelcomeEmbed cũ.
-   * Hỗ trợ đầy đủ Rich Embed: image, footerIcon, url, timestamp.
+   * Build welcome container V2 cho guild + member cụ thể.
+   * Shortcut kết hợp getWelcome + buildContainer.
    */
-  buildEmbed(embedSettings: EmbedSettings, context: TemplateContext): EmbedBuilder {
-    const { member } = context;
-
-    const embed = new EmbedBuilder()
-      .setTitle(resolveTemplate(embedSettings.title, context))
-      .setDescription(resolveTemplate(embedSettings.description, context))
-      .setColor(this.parseColor(embedSettings.color));
-
-    // Timestamp (tùy chọn, mặc định false)
-    if (embedSettings.timestamp) {
-      embed.setTimestamp();
-    }
-
-    // Footer (với icon tùy chọn)
-    if (embedSettings.footer) {
-      const footerText = resolveTemplate(embedSettings.footer, context);
-      const footerIconUrl = embedSettings.footerIcon
-        ? resolveTemplate(embedSettings.footerIcon, context)
-        : undefined;
-      embed.setFooter({ text: footerText, iconURL: footerIconUrl });
-    }
-
-    // Thumbnail: true = avatar member, string = URL custom
-    if (embedSettings.thumbnail) {
-      const thumbnailUrl = typeof embedSettings.thumbnail === 'string'
-        ? resolveTemplate(embedSettings.thumbnail, context)
-        : member.user.displayAvatarURL({ size: 256 });
-      embed.setThumbnail(thumbnailUrl);
-    }
-
-    // Image: URL ảnh lớn hiển thị trong embed
-    if (embedSettings.image) {
-      embed.setImage(resolveTemplate(embedSettings.image, context));
-    }
-
-    // URL: link cho embed title
-    if (embedSettings.url) {
-      embed.setURL(resolveTemplate(embedSettings.url, context));
-    }
-
-    // Fields
-    for (const field of embedSettings.fields) {
-      embed.addFields({
-        name: resolveTemplate(field.name, context),
-        value: resolveTemplate(field.value, context),
-        inline: field.inline,
-      });
-    }
-
-    return embed;
-  }
-
-  /**
-   * Build welcome embed cho guild + member cụ thể.
-   * Shortcut kết hợp getWelcome + buildEmbed.
-   */
-  buildWelcomeEmbed(guildId: string, context: TemplateContext): EmbedBuilder {
+  buildWelcomeContainer(guildId: string, context: TemplateContext): BuildContainerResult {
     const welcome = this.getWelcome(guildId);
-    return this.buildEmbed(welcome.embed, context);
+    return this.buildContainer(welcome.container, context);
   }
 
   /**
-   * Parse color từ number hoặc hex string.
+   * Build Container V2 từ ContainerSettings + TemplateContext.
+   * Wrapper cho buildContainer utility.
    */
-  private parseColor(color: number | string): number {
-    if (typeof color === 'number') {
-      return color;
-    }
-    // Hex string: "#00FF00" → 0x00FF00
-    const hex = color.replace('#', '');
-    return parseInt(hex, 16);
+  buildContainer(
+    containerSettings: ContainerSettings,
+    context: TemplateContext,
+  ): BuildContainerResult {
+    return buildContainer(containerSettings, context);
   }
+
 }
 
 /**

@@ -1,18 +1,22 @@
 import {
   ChatInputCommandInteraction,
-  SlashCommandBuilder,
+  MessageFlags,
   PermissionFlagsBits,
+  SlashCommandBuilder,
   GuildMember,
 } from 'discord.js';
 import { getSettingsService } from '../../services/settings.service.js';
-import { buildErrorEmbed } from '../../utils/embed.utils.js';
+import { buildErrorContainer } from '../../utils/container.utils.js';
 
 /**
  * Command structure: phải export `data` (SlashCommandBuilder) và `execute`.
+ *
+ * /test-welcome — test hiển thị welcome Container V2 cho một thành viên.
+ * Sử dụng buildWelcomeContainer thay vì EmbedBuilder.
  */
 export const data = new SlashCommandBuilder()
   .setName('test-welcome')
-  .setDescription('Test hiển thị tin nhắn welcome cho một thành viên.')
+  .setDescription('Test hiển thị tin nhắn welcome Container V2 cho một thành viên.')
   .addUserOption((option) =>
     option
       .setName('member')
@@ -21,7 +25,7 @@ export const data = new SlashCommandBuilder()
   );
 
 /**
- * Execute the /test-welcome command: hiển thị welcome embed test.
+ * Execute the /test-welcome command: hiển thị welcome Container V2 test.
  */
 export async function execute(
   interaction: ChatInputCommandInteraction,
@@ -31,7 +35,7 @@ export async function execute(
   if (!interaction.guild) {
     await interaction.reply({
       content: 'Lệnh này chỉ có thể dùng trong server.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
     return;
   }
@@ -41,7 +45,7 @@ export async function execute(
   if (!commandingMember || !commandingMember.permissions.has(PermissionFlagsBits.Administrator)) {
     await interaction.reply({
       content: 'Bạn cần quyền Administrator để sử dụng lệnh này.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
     return;
   }
@@ -55,43 +59,51 @@ export async function execute(
     const targetMember =
       (resolvedMember instanceof GuildMember ? resolvedMember : null) || commandingMember;
     if (!targetMember) {
+      const errorContainer = buildErrorContainer('Không thể lấy thông tin thành viên.');
       await interaction.reply({
-        embeds: [buildErrorEmbed('Không thể lấy thông tin thành viên.')],
-        ephemeral: true,
+        components: errorContainer.components as any,
+        // WHY: Combine IsComponentsV2 + Ephemeral flags thay vì dùng ephemeral: true (deprecated)
+        flags: errorContainer.flags | MessageFlags.Ephemeral,
       });
       return;
     }
 
-    // Build welcome embed từ settings
-    const welcomeEmbed = settingsService.buildWelcomeEmbed(interaction.guild.id, {
+    // Build welcome Container V2 từ settings
+    const welcomeContainer = settingsService.buildWelcomeContainer(interaction.guild.id, {
       member: targetMember,
       guild: interaction.guild,
     });
 
-    // Nếu có config channel và channel tồn tại, gửi tin nhắn vào đó
+    // Nếu có config channel và channel tồn tại, gửi Container vào đó
     if (welcome.channelId) {
       const channel = interaction.guild.channels.cache.get(welcome.channelId);
       if (channel && channel.isTextBased()) {
-        await channel.send({ embeds: [welcomeEmbed] });
+        await channel.send({
+          components: welcomeContainer.components as any,
+          flags: welcomeContainer.flags,
+          files: welcomeContainer.files,
+        });
         await interaction.reply({
-          content: `✅ Tin nhắn welcome test đã được gửi vào ${channel}.`,
-          ephemeral: true,
+          content: `✅ Tin nhắn welcome Container V2 test đã được gửi vào ${channel}.`,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
     }
 
-    // Fallback: reply trực tiếp cho người gọi
+    // Fallback: reply trực tiếp cho người gọi dưới dạng Container V2
     await interaction.reply({
-      content: '⚠️ Không tìm thấy channel welcome. Hiển thị trực tiếp:',
-      embeds: [welcomeEmbed],
-      ephemeral: true,
+      components: welcomeContainer.components as any,
+      // WHY: Combine IsComponentsV2 + Ephemeral flags
+      flags: welcomeContainer.flags | MessageFlags.Ephemeral,
+      files: welcomeContainer.files,
     });
   } catch (error) {
     console.error('Error in /test-welcome:', error);
+    const errorContainer = buildErrorContainer('Xảy ra lỗi khi test welcome. Kiểm tra console logs.');
     await interaction.reply({
-      embeds: [buildErrorEmbed('Xảy ra lỗi khi test welcome. Kiểm tra console logs.')],
-      ephemeral: true,
+      components: errorContainer.components as any,
+      flags: errorContainer.flags | MessageFlags.Ephemeral,
     });
   }
 }

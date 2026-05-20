@@ -1,5 +1,6 @@
 import { GuildSettings } from '../types/settings.types.js';
 import { embedColors, WELCOME_EMBED_DEFAULTS, LEAVE_EMBED_DEFAULTS } from './embed.variables.js';
+import { WELCOME_CONTAINER_DEFAULTS, LEAVE_CONTAINER_DEFAULTS } from './container.variables.js';
 
 /**
  * Default settings cho mọi guild mới.
@@ -28,6 +29,14 @@ export const defaultGuildSettings: GuildSettings = {
         inline: boolean;
       }>,
     },
+    container: {
+      accentColor: WELCOME_CONTAINER_DEFAULTS.ACCENT_COLOR,
+      contentLines: [...WELCOME_CONTAINER_DEFAULTS.CONTENT_LINES],
+      mediaUrl: WELCOME_CONTAINER_DEFAULTS.MEDIA_URL,
+      mediaDescription: WELCOME_CONTAINER_DEFAULTS.MEDIA_DESCRIPTION,
+      showSeparator: WELCOME_CONTAINER_DEFAULTS.SHOW_SEPARATOR,
+      files: [...WELCOME_CONTAINER_DEFAULTS.FILES],
+    },
   },
   leave: {
     enabled: false,
@@ -47,6 +56,14 @@ export const defaultGuildSettings: GuildSettings = {
         value: string;
         inline: boolean;
       }>,
+    },
+    container: {
+      accentColor: LEAVE_CONTAINER_DEFAULTS.ACCENT_COLOR,
+      contentLines: [...LEAVE_CONTAINER_DEFAULTS.CONTENT_LINES],
+      mediaUrl: LEAVE_CONTAINER_DEFAULTS.MEDIA_URL,
+      mediaDescription: LEAVE_CONTAINER_DEFAULTS.MEDIA_DESCRIPTION,
+      showSeparator: LEAVE_CONTAINER_DEFAULTS.SHOW_SEPARATOR,
+      files: [...LEAVE_CONTAINER_DEFAULTS.FILES],
     },
   },
 };

@@ -1,0 +1,160 @@
+import {
+  ChatInputCommandInteraction,
+  MessageFlags,
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+  SlashCommandSubcommandBuilder,
+  GuildMember,
+} from 'discord.js';
+import { buildErrorContainer, buildSuccessContainer } from '../../utils/container.utils.js';
+import { getSettingsService } from '../../services/settings.service.js';
+import { cloneDefaultSettings } from '../../config/default.settings.js';
+import { startInteractiveEdit } from './container.interactive.edit.js';
+
+// ─── Subcommand Builder Functions ─────────────────────────────
+
+/**
+ * Builder cho subcommand "edit" — chỉnh sửa container settings qua Interactive UI.
+ */
+export function buildEditSubcommand(
+  sub: SlashCommandSubcommandBuilder,
+): SlashCommandSubcommandBuilder {
+  return sub
+    .setName('edit')
+    .setDescription('Chỉnh sửa container settings (Interactive UI).')
+    .addStringOption(buildEditTypeOptionCallback);
+}
+
+/**
+ * Builder cho subcommand "reset" — reset container settings về mặc định.
+ */
+export function buildResetSubcommand(
+  sub: SlashCommandSubcommandBuilder,
+): SlashCommandSubcommandBuilder {
+  return sub
+    .setName('reset')
+    .setDescription('Reset container settings về mặc định.')
+    .addStringOption(buildResetTypeOptionCallback);
+}
+
+// ─── Option Builder Callbacks ─────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function buildEditTypeOptionCallback(opt: any): any {
+  return opt
+    .setName('type')
+    .setDescription('Loại container cần chỉnh sửa.')
+    .setRequired(true)
+    .addChoices({ name: 'Welcome', value: 'welcome' }, { name: 'Leave', value: 'leave' });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function buildResetTypeOptionCallback(opt: any): any {
+  return opt
+    .setName('type')
+    .setDescription('Loại container cần reset.')
+    .setRequired(true)
+    .addChoices({ name: 'Welcome', value: 'welcome' }, { name: 'Leave', value: 'leave' });
+}
+
+/**
+ * Command structure: export `data` (SlashCommandBuilder) và `execute`.
+ *
+ * /container — quản lý container V2 settings (edit, reset).
+ * Yêu cầu Administrator permission.
+ */
+export const data = new SlashCommandBuilder()
+  .setName('container')
+  .setDescription('Quản lý container V2 settings cho welcome/leave messages.')
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+  .addSubcommand(buildEditSubcommand)
+  .addSubcommand(buildResetSubcommand);
+
+/**
+ * Execute /container command: router phân phối subcommand.
+ */
+export async function execute(
+  interaction: ChatInputCommandInteraction,
+  _database: unknown,
+): Promise<void> {
+  // Guard clause: chỉ dùng trong guild
+  if (!interaction.guild) {
+    await interaction.reply({
+      content: 'Lệnh này chỉ dùng được trong server.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  // Guard clause: check Administrator permission
+  const commandingMember = interaction.member as GuildMember;
+  if (!commandingMember || !commandingMember.permissions.has(PermissionFlagsBits.Administrator)) {
+    await interaction.reply({
+      content: 'Bạn cần quyền Administrator để sử dụng lệnh này.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const subcommandName = interaction.options.getSubcommand();
+  const guildId = interaction.guild.id;
+
+  try {
+    switch (subcommandName) {
+      case 'edit':
+        const type = interaction.options.getString('type') as 'welcome' | 'leave';
+        await startInteractiveEdit(interaction, type);
+        break;
+
+      case 'reset':
+        await handleReset(interaction, guildId);
+        break;
+
+      default: {
+        const errorContainer = buildErrorContainer('Subcommand không hợp lệ.');
+        await interaction.reply({
+          components: errorContainer.components as any,
+          flags: errorContainer.flags | MessageFlags.Ephemeral,
+        });
+      }
+    }
+  } catch (error) {
+    console.error(`Error in /container ${subcommandName}:`, error);
+    // Guard: interaction có thể đã replied ở trong handler
+    if (!interaction.replied) {
+      const errorContainer = buildErrorContainer('Xảy ra lỗi. Kiểm tra console logs.');
+      await interaction.reply({
+        components: errorContainer.components as any,
+        flags: errorContainer.flags | MessageFlags.Ephemeral,
+      });
+    }
+  }
+}
+
+// ─── Handlers ───────────────────────────────────────────────
+
+/**
+ * Handle /container reset — reset container settings về default.
+ */
+async function handleReset(
+  interaction: ChatInputCommandInteraction,
+  guildId: string,
+): Promise<void> {
+  const type = interaction.options.getString('type') as 'welcome' | 'leave';
+  const defaults = cloneDefaultSettings();
+
+  const settingsService = getSettingsService();
+
+  // Merge: chỉ reset phần container của type, giữ nguyên các settings khác
+  settingsService.update(guildId, {
+    [type]: {
+      container: defaults[type].container,
+    },
+  });
+
+  const successContainer = buildSuccessContainer(`Đã reset container "${type}" về mặc định.`);
+  await interaction.reply({
+    components: successContainer.components as any,
+    flags: successContainer.flags | MessageFlags.Ephemeral,
+  });
+}

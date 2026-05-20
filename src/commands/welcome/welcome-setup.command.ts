@@ -1,10 +1,11 @@
 import {
   ChatInputCommandInteraction,
-  SlashCommandBuilder,
+  MessageFlags,
   PermissionFlagsBits,
+  SlashCommandBuilder,
   GuildMember,
 } from 'discord.js';
-import { buildErrorEmbed } from '../../utils/embed.utils.js';
+import { buildErrorContainer } from '../../utils/container.utils.js';
 import { handleSetChannel } from './welcome-setchannel.handler.js';
 import { handleSetRole } from './welcome-setrole.handler.js';
 import { handleToggle } from './welcome-toggle.handler.js';
@@ -64,7 +65,7 @@ export async function execute(
   if (!interaction.guild) {
     await interaction.reply({
       content: 'This command can only be used in a server.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
     return;
   }
@@ -74,7 +75,7 @@ export async function execute(
   if (!commandingMember || !commandingMember.permissions.has(PermissionFlagsBits.Administrator)) {
     await interaction.reply({
       content: 'You need Administrator permission to use this command.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
     return;
   }
@@ -97,17 +98,20 @@ export async function execute(
       case 'status':
         await handleStatus(interaction, guildIdentifier);
         break;
-      default:
+      default: {
+        const errorContainer = buildErrorContainer('Unknown subcommand.');
         await interaction.reply({
-          embeds: [buildErrorEmbed('Unknown subcommand.')],
-          ephemeral: true,
+          components: errorContainer.components as any,
+          flags: errorContainer.flags | MessageFlags.Ephemeral,
         });
+      }
     }
   } catch (error) {
     console.error(`Error in /welcome ${subcommandName}:`, error);
+    const errorContainer = buildErrorContainer('An error occurred. Check console logs.');
     await interaction.reply({
-      embeds: [buildErrorEmbed('An error occurred. Check console logs.')],
-      ephemeral: true,
+      components: errorContainer.components as any,
+      flags: errorContainer.flags | MessageFlags.Ephemeral,
     });
   }
 }

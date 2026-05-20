@@ -1,8 +1,8 @@
-import { Client, Events } from 'discord.js';
+import { Client, Events, MessageFlags } from 'discord.js';
 import {
-  handleEditorButtonInteraction,
-  handleEditorModalSubmit,
-} from '../commands/embed/embed.interactive.edit.js';
+  handleEditorButtonInteraction as handleContainerEditorButtonInteraction,
+  handleEditorModalSubmit as handleContainerEditorModalSubmit,
+} from '../commands/container/container.interactive.edit.js';
 
 /**
  * Handle interactionCreate event: xử lý slash commands, button interactions, modal submissions.
@@ -14,28 +14,30 @@ export async function execute(
   client: Client,
   interaction: any,
 ): Promise<void> {
-  // ── 1. Xử lý Button Interactions (embed editor) ──
+  // ── 1. Xử lý Button Interactions ──
   if (interaction.isButton()) {
-    // Chỉ xử lý buttons thuộc embed editor (customId bắt đầu bằng 'embed_')
-    if (interaction.customId.startsWith('embed_')) {
+    // Container editor buttons (customId bắt đầu bằng 'container_')
+    if (interaction.customId.startsWith('container_')) {
       try {
-        await handleEditorButtonInteraction(interaction);
+        await handleContainerEditorButtonInteraction(interaction);
       } catch (error) {
-        console.error('Error in embed editor button handler:', error);
+        console.error('Error in container editor button handler:', error);
       }
+      return;
     }
     return;
   }
 
-  // ── 2. Xử lý Modal Submissions (embed editor) ──
+  // ── 2. Xử lý Modal Submissions ──
   if (interaction.isModalSubmit()) {
-    // Chỉ xử lý modals thuộc embed editor (customId bắt đầu bằng 'modal_')
-    if (interaction.customId.startsWith('modal_')) {
+    // Container editor modals (customId bắt đầu bằng 'container_modal_')
+    if (interaction.customId.startsWith('container_modal_')) {
       try {
-        await handleEditorModalSubmit(interaction);
+        await handleContainerEditorModalSubmit(interaction);
       } catch (error) {
-        console.error('Error in embed editor modal handler:', error);
+        console.error('Error in container editor modal handler:', error);
       }
+      return;
     }
     return;
   }
@@ -72,7 +74,7 @@ export async function execute(
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
         content: 'Database is not available. Please contact an administrator.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
     return;
@@ -87,7 +89,7 @@ export async function execute(
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
         content: 'An error occurred while executing this command.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   }

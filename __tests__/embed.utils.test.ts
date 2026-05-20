@@ -1,5 +1,10 @@
 import { EmbedBuilder } from 'discord.js';
-import { buildWelcomeEmbed, buildErrorEmbed, buildSuccessEmbed, embedColors } from '../src/utils/embed.utils';
+import {
+  buildWelcomeEmbed,
+  buildErrorEmbed,
+  buildSuccessEmbed,
+  embedColors,
+} from '../src/utils/embed.utils';
 
 // Mock GuildMember for testing embed builders
 function createMockGuildMember(): any {
@@ -21,23 +26,23 @@ function createMockGuildMember(): any {
 describe('Embed Utils', () => {
   describe('embedColors', () => {
     it('should have welcome color defined', () => {
-      expect(embedColors.welcome).toBe(0x00FF00);
+      expect(embedColors.welcome).toBe(0x00ff00);
     });
 
     it('should have leave color defined', () => {
-      expect(embedColors.leave).toBe(0xFF0000);
+      expect(embedColors.leave).toBe(0xff0000);
     });
 
     it('should have error color defined', () => {
-      expect(embedColors.error).toBe(0xFF0000);
+      expect(embedColors.error).toBe(0xff0000);
     });
 
     it('should have success color defined', () => {
-      expect(embedColors.success).toBe(0x00FF00);
+      expect(embedColors.success).toBe(0x00ff00);
     });
 
     it('should have info color defined', () => {
-      expect(embedColors.info).toBe(0x0099FF);
+      expect(embedColors.info).toBe(0x0099ff);
     });
   });
 
@@ -69,7 +74,7 @@ describe('Embed Utils', () => {
       const result = buildWelcomeEmbed(mockMember);
 
       const fields = result.data.fields || [];
-      const accountField = fields.find(f => f.name === 'Account Created');
+      const accountField = fields.find((f) => f.name === 'Account Created');
       expect(accountField).toBeDefined();
       expect(accountField?.inline).toBe(true);
     });
@@ -79,7 +84,7 @@ describe('Embed Utils', () => {
       const result = buildWelcomeEmbed(mockMember);
 
       const fields = result.data.fields || [];
-      const joinField = fields.find(f => f.name === 'Joined Server');
+      const joinField = fields.find((f) => f.name === 'Joined Server');
       expect(joinField).toBeDefined();
       expect(joinField?.inline).toBe(true);
     });
@@ -89,7 +94,7 @@ describe('Embed Utils', () => {
       const result = buildWelcomeEmbed(mockMember);
 
       const fields = result.data.fields || [];
-      const countField = fields.find(f => f.name === 'Member Count');
+      const countField = fields.find((f) => f.name === 'Member Count');
       expect(countField).toBeDefined();
       expect(countField?.value).toBe('42');
       expect(countField?.inline).toBe(true);
@@ -106,7 +111,7 @@ describe('Embed Utils', () => {
       const mockMember = createMockGuildMember();
       const result = buildWelcomeEmbed(mockMember);
 
-      expect(result.data.color).toBe(0x00FF00);
+      expect(result.data.color).toBe(0x00ff00);
     });
 
     it('should set footer text', () => {
@@ -124,7 +129,7 @@ describe('Embed Utils', () => {
       const result = buildWelcomeEmbed(mockMember);
 
       const fields = result.data.fields || [];
-      const joinField = fields.find(f => f.name === 'Joined Server');
+      const joinField = fields.find((f) => f.name === 'Joined Server');
       expect(joinField).toBeDefined();
     });
   });
@@ -148,7 +153,7 @@ describe('Embed Utils', () => {
 
     it('should set error color', () => {
       const result = buildErrorEmbed('Error msg');
-      expect(result.data.color).toBe(0xFF0000);
+      expect(result.data.color).toBe(0xff0000);
     });
   });
 
@@ -171,7 +176,7 @@ describe('Embed Utils', () => {
 
     it('should set success color', () => {
       const result = buildSuccessEmbed('Done');
-      expect(result.data.color).toBe(0x00FF00);
+      expect(result.data.color).toBe(0x00ff00);
     });
   });
 });

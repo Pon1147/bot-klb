@@ -34,12 +34,19 @@ export async function execute(_client: Client, member: GuildMember): Promise<voi
       return;
     }
 
-    // Build welcome embed từ settings (template variables được resolve tự động)
-    const welcomeEmbed = settingsService.buildWelcomeEmbed(member.guild.id, {
+    // Build welcome container V2 (Components V2)
+    const welcomeContainer = settingsService.buildWelcomeContainer(member.guild.id, {
       member,
       guild: member.guild,
     });
-    await welcomeChannel.send({ content: `${member}`, embeds: [welcomeEmbed] });
+
+    // Gửi Container V2 message
+    // Note: cast components vì discord.js v14 chưa có type chính thức cho Components V2
+    await welcomeChannel.send({
+      components: welcomeContainer.components as any,
+      flags: welcomeContainer.flags,
+      files: welcomeContainer.files,
+    });
 
     // Gán role welcome nếu có cấu hình
     if (welcome.roleId) {

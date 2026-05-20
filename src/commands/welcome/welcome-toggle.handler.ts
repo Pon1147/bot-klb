@@ -1,6 +1,6 @@
-import { ChatInputCommandInteraction } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { getSettingsService } from '../../services/settings.service.js';
-import { buildSuccessEmbed } from '../../utils/embed.utils.js';
+import { buildSuccessContainer } from '../../utils/container.utils.js';
 
 /**
  * Handle /welcome toggle: bật/tắt hệ thống welcome.
@@ -19,8 +19,10 @@ export async function handleToggle(
   });
 
   const statusText = shouldBeEnabled ? 'enabled' : 'disabled';
+  const container = buildSuccessContainer(`Welcome system ${statusText}.`);
+  // WHY: Combine IsComponentsV2 + Ephemeral flags thay vì ephemeral: true (deprecated)
   await interaction.reply({
-    embeds: [buildSuccessEmbed(`Welcome system ${statusText}.`)],
-    ephemeral: true,
+    components: container.components as any,
+    flags: container.flags | MessageFlags.Ephemeral,
   });
 }
