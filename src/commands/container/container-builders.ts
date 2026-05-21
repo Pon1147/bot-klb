@@ -256,6 +256,8 @@ export function buildLivePreviewContainer(
         tag: 'MockUser#0000',
         username: 'MockUser',
         createdTimestamp: Date.now(),
+        // WHY: buildContainer cần displayAvatarURL để render avatar member vào MediaGallery.
+        displayAvatarURL: () => 'https://cdn.discordapp.com/embed/avatars/0.png',
       },
       joinedAt: new Date(),
     } as any,

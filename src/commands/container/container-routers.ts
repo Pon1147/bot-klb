@@ -58,22 +58,55 @@ export async function handleEditorButtonInteraction(
     return;
   }
 
-  // Actions
-  if (customId === 'container_edit_save') { await handleSave(interaction, session); return; }
-  if (customId === 'container_edit_reset') { await handleReset(interaction, session); return; }
-  if (customId === 'container_edit_cancel') { await handleCancel(interaction); return; }
+  // Actions: Save, Reset, Cancel
+  if (customId === 'container_edit_save') {
+    await handleSave(interaction, session);
+    return;
+  }
+  if (customId === 'container_edit_reset') {
+    await handleReset(interaction, session);
+    return;
+  }
+  if (customId === 'container_edit_cancel') {
+    await handleCancel(interaction);
+    return;
+  }
 
-  // Property Editors
-  if (customId === 'container_edit_lines') { await handleLinesSubmenu(interaction, session); return; }
-  if (customId === 'container_edit_color') { await handleColorPicker(interaction, session); return; }
-  if (customId === 'container_edit_separator') { await handleSeparatorToggle(interaction, session); return; }
-  if (customId === 'container_edit_media') { await handleMediaEdit(interaction, session); return; }
+  // Property Editors: Lines, Color, Separator, Media
+  if (customId === 'container_edit_lines') {
+    await handleLinesSubmenu(interaction, session);
+    return;
+  }
+  if (customId === 'container_edit_color') {
+    await handleColorPicker(interaction, session);
+    return;
+  }
+  if (customId === 'container_edit_separator') {
+    await handleSeparatorToggle(interaction, session);
+    return;
+  }
+  if (customId === 'container_edit_media') {
+    await handleMediaEdit(interaction, session);
+    return;
+  }
 
-  // Lines Submenu
-  if (customId === 'container_lines_add') { await handleAddLine(interaction); return; }
-  if (customId === 'container_lines_edit') { await handleEditLine(interaction, session); return; }
-  if (customId === 'container_lines_remove') { await handleRemoveLine(interaction, session); return; }
-  if (customId === 'container_lines_clear') { await handleClearLines(interaction, session); return; }
+  // Lines Submenu: Add, Edit, Remove, Clear
+  if (customId === 'container_lines_add') {
+    await handleAddLine(interaction);
+    return;
+  }
+  if (customId === 'container_lines_edit') {
+    await handleEditLine(interaction, session);
+    return;
+  }
+  if (customId === 'container_lines_remove') {
+    await handleRemoveLine(interaction, session);
+    return;
+  }
+  if (customId === 'container_lines_clear') {
+    await handleClearLines(interaction, session);
+    return;
+  }
 
   // Color Picker
   if (customId.startsWith('container_color_preset_')) {
@@ -82,7 +115,10 @@ export async function handleEditorButtonInteraction(
     return;
   }
 
-  if (customId === 'container_color_custom') { await handleCustomColorModal(interaction); return; }
+  if (customId === 'container_color_custom') {
+    await handleCustomColorModal(interaction);
+    return;
+  }
 
   console.warn(`Unknown container editor button: ${customId}`);
 }

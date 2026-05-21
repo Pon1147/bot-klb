@@ -41,6 +41,12 @@ export const editSessions = new Map<string, ContainerEditSession>();
 const SESSION_TIMEOUT_MS = 15 * 60 * 1000;
 
 /**
+ * Khoảng thời gian giữa các lần cleanup (5 phút = 300000ms).
+ * WHY: Chạy thường xuyên hơn SESSION_TIMEOUT để tránh Map tích lũy sessions cũ.
+ */
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
+/**
  * Deep clone ContainerSettings để tránh mutate object gốc.
  */
 export function cloneContainerSettings(settings: ContainerSettings): ContainerSettings {
@@ -85,4 +91,43 @@ export function createSession(
  */
 export function deleteSession(userId: string): void {
   editSessions.delete(userId);
+}
+
+/**
+ * Periodic cleanup: xóa các session đã hết hạn khỏi Map.
+ * WHY: Prevent memory leak - Map tích lũy sessions cũ mãi mãi nếu không cleanup.
+ * Chạy mỗi 5 phút, xóa sessions quá 15 phút không tương tác.
+ */
+let cleanupInterval: NodeJS.Timeout | null = null;
+
+export function startSessionCleanup(): void {
+  if (cleanupInterval) {
+    console.warn('Session cleanup đã đang chạy, bỏ qua start.');
+    return;
+  }
+  cleanupInterval = setInterval(() => {
+    let cleaned = 0;
+    for (const [userId, session] of editSessions.entries()) {
+      if (!isSessionValid(session)) {
+        editSessions.delete(userId);
+        cleaned++;
+      }
+    }
+    if (cleaned > 0) {
+      console.log(`[SessionCleanup] Đã xóa ${cleaned} session(s) hết hạn.`);
+    }
+  }, CLEANUP_INTERVAL_MS);
+  console.log('[SessionCleanup] Đã khởi tạo periodic cleanup (5 phút/lần).');
+}
+
+/**
+ * Dừng periodic cleanup (dùng khi bot shutdown graceful).
+ * WHY: Tránh memory leak từ interval timer khi bot restart.
+ */
+export function stopSessionCleanup(): void {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+    console.log('[SessionCleanup] Đã dừng periodic cleanup.');
+  }
 }

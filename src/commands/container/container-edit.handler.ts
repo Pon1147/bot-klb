@@ -52,8 +52,17 @@ async function sendEditorMessage(
 
   // WHY: interaction.reply() trả về ChatInputCommandInteraction, không phải Message
   // Cần dùng fetchReply() để lấy message ID thật
-  const message = await interaction.fetchReply();
-  const messageId = message.id;
+  // WHY: Wrap try-catch vì fetchReply() có thể fail nếu Discord rate-limit hoặc network error
+  let messageId: string;
+  try {
+    const message = await interaction.fetchReply();
+    messageId = message.id;
+  } catch (error) {
+    console.error('Error fetching reply message:', error);
+    // Fallback: dùng placeholder ID nếu fetchReply fail
+    // Session vẫn hoạt động nhưng live preview update có thể không chính xác
+    messageId = 'fetch_failed';
+  }
 
   createSession(
     interaction.user.id,
