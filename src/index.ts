@@ -7,6 +7,7 @@ import { SettingsService, setSettingsService } from './services/settings.service
 import { loadCommands, CommandModule, deployCommands } from './handlers/command.handler.js';
 import { loadEvents } from './handlers/event.handler.js';
 import { createLogger } from './utils/logger.js';
+import { startSessionCleanup } from './commands/container/container-session.js';
 
 const logger = createLogger('Bot');
 
@@ -52,10 +53,15 @@ async function main(): Promise<void> {
   loadEvents(client);
   logger.info('Events loaded');
 
+  // Step 7: Start session cleanup (prevent memory leak)
+  logger.info('Starting session cleanup...');
+  startSessionCleanup();
+  logger.info('Session cleanup started');
+
   // Attach database to client
   (client as any).database = database;
 
-  // Step 7: Deploy commands
+  // Step 8: Deploy commands
   logger.info('Deploying commands to Discord...');
   await deployCommands(commands);
   logger.info('Commands deployed');

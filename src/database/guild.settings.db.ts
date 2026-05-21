@@ -95,8 +95,9 @@ export function updateGuildSettings(
 }
 
 /**
- * Deep merge đơn giản: merge object level 1-2.
+ * Recursive deep merge: merge tất cả cấp độ nested objects.
  * Arrays được thay thế hoàn toàn (không merge element-by-element).
+ * Primitive values từ source ghi đè target.
  */
 function deepMerge(
   target: Record<string, unknown>,
