@@ -11,13 +11,13 @@ export { botConfig } from './bot.config.js';
 // Template variables
 export { TEMPLATE_VARIABLES, TEMPLATE_VARIABLE_DESCRIPTIONS } from './variables.js';
 
-// Embed variables
+// Container variables (colors, defaults)
 export {
+  CONTAINER_COLORS,
   EMBED_COLORS,
-  embedColors,
-  WELCOME_EMBED_DEFAULTS,
-  LEAVE_EMBED_DEFAULTS,
-} from './embed.variables.js';
+  WELCOME_CONTAINER_DEFAULTS,
+  LEAVE_CONTAINER_DEFAULTS,
+} from './container.variables.js';
 
 // Logger variables
 export { LOG_COLORS, LEVEL_COLOR_MAP, LEVEL_ICONS } from './logger.variables.js';

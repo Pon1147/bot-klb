@@ -14,6 +14,23 @@ export const CONTAINER_COLORS = {
 } as const;
 
 /**
+ * Embed color palette - dùng cho buildSuccessContainer, buildErrorContainer.
+ * Giữ lại để tái sử dụng màu sắc cho container success/error.
+ */
+export const EMBED_COLORS = {
+  /** Xanh lá - welcome messages */
+  WELCOME: 0x00FF00,
+  /** Đỏ - leave messages */
+  LEAVE: 0xFF0000,
+  /** Đỏ - error messages */
+  ERROR: 0xFF0000,
+  /** Xanh lá - success messages */
+  SUCCESS: 0x00FF00,
+  /** Xanh dương - info messages */
+  INFO: 0x0099FF,
+} as const;
+
+/**
  * Default welcome container settings.
  * Dựa trên ảnh welcome message: Tập Hoá Nhà Lew.
  *
