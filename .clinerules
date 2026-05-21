@@ -30,7 +30,8 @@
    - Naming rõ nghĩa (camelCase/kebab-case).
    - Comment giải thích "WHY" (tại sao làm vậy), không phải "WHAT".
    - Flat logic (dùng guard clauses, tránh if-else lồng nhau).
-7. **Testing**: Viết test (Jest) cho mọi feature mới.
+   - **Một statement trên một dòng**: Cấm viết `{ await foo(); return; }` trên 1 dòng. Luôn split thành nhiều dòng riêng biệt để dễ debug.
+7. **Testing**: Viết test (Jest) cho mọi feature mới. **Bắt buộc tạo file test sau khi hoàn thành feature/module.**
 
 ---
 
@@ -72,9 +73,9 @@ Mọi commit message phải tuân thủ quy tắc **Conventional Commits** viế
 
 1. **Kiểm tra Plan**: Trước khi thực hiện task lớn, kiểm tra lại `PLAN.md` để đảm bảo đúng bước.
 2. **Sử dụng skill**: Sử dụng skill judge để đánh giá, xem xét repo hiện tại. Sử dụng skill code để thực hiện vấn đề hoặc features
-2. **Kiểm tra File**: Trước khi đóng file, check lại syntax, import, logic (double-check).
-3. **Không commit .env**: Tuyệt đối không push file `.env` chứa token thật.
-4. **Báo cáo**: Sau khi hoàn thành step nào, hãy báo "Đã hoàn thành step X".
+3. **Kiểm tra File**: Trước khi đóng file, check lại syntax, import, logic (double-check).
+4. **Không commit .env**: Tuyệt đối không push file `.env` chứa token thật.
+5. **Báo cáo**: Sau khi hoàn thành step nào, hãy báo "Đã hoàn thành step X".
 
 ---
 
@@ -113,12 +114,12 @@ const messageId = message.id;
 
 **Correct Values (từ discord-api-types v10)**:
 
-| Component | Wrong (❌) | Correct (✅) |
-|-----------|:----------:|:------------:|
-| Container | `type: 5` | `type: 17` |
-| TextDisplay | `type: 6` | `type: 10` |
-| MediaGallery | `type: 8` | `type: 12` |
-| Separator | `type: 7` | `type: 14` |
+| Component    | Wrong (❌) | Correct (✅) |
+| ------------ | :--------: | :----------: |
+| Container    | `type: 5`  |  `type: 17`  |
+| TextDisplay  | `type: 6`  |  `type: 10`  |
+| MediaGallery | `type: 8`  |  `type: 12`  |
+| Separator    | `type: 7`  |  `type: 14`  |
 
 **Pattern to Avoid**:
 
@@ -147,6 +148,255 @@ const mediaGallery = { type: ComponentType.MediaGallery, components: [...] }; //
 ### Verifying ComponentType Values
 
 **When in doubt**, always verify by checking:
+
 1. `node_modules/discord-api-types/payloads/v10/message.d.ts` — source of truth
 2. Search: `grep -r "ComponentType" node_modules/discord-api-types/`
 3. Never guess — the enum values changed significantly between API versions
+
+### Welcome Container Must Include Member Avatar
+
+**Problem**: Container welcome message thiếu avatar của member mới join. MediaGallery chỉ hiển thị GIF/ảnh custom từ settings, không có avatar member → người dùng không nhận diện được ai mới join.
+
+**Root Cause**: `buildContainer()` chỉ render `mediaUrl` từ settings, không tự động thêm `member.user.displayAvatarURL()` vào MediaGallery.
+
+**Pattern to Avoid**:
+
+```typescript
+// ❌ WRONG: MediaGallery chỉ có custom media (thiếu avatar)
+if (mediaUrl && isValidUrl(mediaUrl)) {
+  mediaItems.push({ media: { url: mediaUrl } });
+}
+// Nếu mediaUrl = null → MediaGallery rỗng → không hiển thị gì
+```
+
+**Correct Pattern**:
+
+```typescript
+// ✅ RIGHT: LUÔN thêm avatar member đầu tiên trong MediaGallery
+const avatarUrl = member.user.displayAvatarURL({ extension: 'png', size: 256 });
+mediaItems.push({
+  media: { url: avatarUrl },
+  description: member.user.username,
+});
+
+// Sau đó mới thêm custom media (nếu có)
+if (mediaUrl && isValidUrl(mediaUrl)) {
+  mediaItems.push({ media: { url: mediaUrl } });
+}
+```
+
+**Rule**: Welcome/Leave container LUÔN phải có avatar member trong MediaGallery. Custom media là optional (thêm sau avatar).
+
+### In-Memory Session Maps Must Have Cleanup
+
+**Problem**: In-memory Map (như `editSessions`) tích lũy sessions cũ mãi mãi nếu không có cơ chế tự cleanup, dẫn đến memory leak khi bot chạy lâu.
+
+**Root Cause**: Có `SESSION_TIMEOUT_MS` để check timeout nhưng KHÔNG CÓ periodic cleanup để xóa sessions hết hạn khỏi Map.
+
+**Pattern to Avoid**:
+
+```typescript
+// ❌ WRONG: Map chỉ add/delete khi user tương tác, không tự cleanup
+export const editSessions = new Map<string, Session>();
+const SESSION_TIMEOUT_MS = 15 * 60 * 1000;
+
+// Chỉ check khi user tương tác, không tự xóa
+function isSessionValid(session) {
+  return Date.now() - session.createdAt < SESSION_TIMEOUT_MS;
+}
+```
+
+**Correct Pattern**:
+
+```typescript
+// ✅ RIGHT: thêm periodic cleanup interval
+let cleanupInterval: NodeJS.Timeout | null = null;
+
+export function startSessionCleanup(): void {
+  cleanupInterval = setInterval(
+    () => {
+      for (const [userId, session] of editSessions.entries()) {
+        if (!isSessionValid(session)) {
+          editSessions.delete(userId);
+        }
+      }
+    },
+    5 * 60 * 1000,
+  ); // Check mỗi 5 phút
+}
+
+export function stopSessionCleanup(): void {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+  }
+}
+```
+
+**Rule**: Mọi in-memory Map lưu session/state PHẢI có:
+
+1. Periodic cleanup interval (chạy thường xuyên hơn timeout).
+2. Start/stop functions để quản lý lifecycle.
+3. Log khi cleanup để monitor.
+
+### Always Wrap `fetchReply()` in Try-Catch
+
+**Problem**: `interaction.fetchReply()` có thể throw nếu Discord rate-limit hoặc network error, dẫn đến crash session creation.
+
+**Pattern to Avoid**:
+
+```typescript
+// ❌ WRONG: không try-catch fetchReply
+const message = await interaction.fetchReply();
+const messageId = message.id;
+```
+
+**Correct Pattern**:
+
+```typescript
+// ✅ RIGHT: wrap try-catch với fallback
+let messageId: string;
+try {
+  const message = await interaction.fetchReply();
+  messageId = message.id;
+} catch (error) {
+  console.error('Error fetching reply message:', error);
+  messageId = 'fetch_failed'; // fallback
+}
+```
+
+**Rule**: Mọi API call đến Discord (fetchReply, fetchChannel, v.v.) PHẢI có try-catch.
+
+### Write Tests for Every Feature & Module
+
+**Problem**: Code không có test coverage → khó detect regression khi refactor.
+
+**Rule**: Sau khi hoàn thành feature/module, BẮT BUỘC tạo file test (`__tests__/*.test.ts`) covering:
+
+- Happy path (input hợp lệ → output đúng).
+- Edge cases (null, undefined, empty array).
+- Error handling (throw → catch → fallback).
+- Session lifecycle (create → modify → delete/cleanup).
+
+### Use Custom Types Instead of `as any`
+
+**Problem**: Cast `as any` quá nhiều (~20+ chỗ) cho Components V2 vì thiếu official types → mất type safety.
+
+**Correct Pattern**: Tạo file custom type (`src/types/components-v2.ts`) với proper interfaces:
+
+```typescript
+// ✅ RIGHT: define interfaces cho V2 components
+export interface ContainerComponentV2 {
+  type: ComponentType.Container;
+  components: Array<ContainerChildComponentV2>;
+}
+
+// Dùng type guard thay vì `as any`
+export function isContainerComponent(component: unknown): component is ContainerComponentV2 {
+  return (
+    typeof component === 'object' &&
+    component !== null &&
+    'type' in component &&
+    (component as any).type === ComponentType.Container
+  );
+}
+```
+
+**Rule**: Khi phải dùng `as any` > 3 lần cho cùng 1 pattern → tạo custom type file.
+
+### Keep Documentation Comments Accurate
+
+**Problem**: Comment nói "merge object level 1-2" nhưng code thực tế là recursive deep merge (tất cả cấp độ) → gây hiểu nhầm khi maintain.
+
+**Rule**: Comment PHẢI match với implementation. Nếu code thay đổi → update comment. Nếu comment nói "simple" nhưng code complex → sửa comment cho đúng.
+
+### Remove Dead Code Immediately
+
+**Problem**: Để code không còn dùng (embed system cũ, variables không import, files orphan) nằm lại trong repo → gây nhầm lẫn khi maintain, tăng cognitive load, inflate bundle size.
+
+**Rule**: Khi migrate sang pattern/system mới, BẮT BUỘC dọn dẹp code cũ:
+
+1. Xóa files không còn import ở đâu.
+2. Xóa exports không còn dùng trong barrel files.
+3. Xóa type interfaces không còn reference.
+4. Merge shared constants (như EMBED_COLORS) vào file còn sống.
+5. Chạy `grep -r "tên_module" src/` để verify không còn reference.
+6. Chạy test suite sau khi xóa → đảm bảo không break.
+
+**Exception**: Legacy DB schema (cột `embed_image_url` trong `welcome_configuration`) GIỮ LẠI vì data migration. Comment rõ "legacy - keep for DB compatibility".
+
+### Single Source of Truth for Config
+
+**Problem**: Config values phân tán nhiều file (`embed.variables.ts`, `container.variables.ts`, `default.settings.ts`) → khó trace, dễ conflict khi update.
+
+**Rule**: Mỗi domain chỉ có 1 file variables chính:
+
+- Container colors + defaults → `container.variables.ts`
+- Logger colors → `logger.variables.ts`
+- Template variables → `variables.ts`
+- Barrel export → `config/index.ts`
+
+Khi merge 2 config files → luôn merge vào file còn sống, xóa file chết, update tất cả imports.
+
+### Code Must Be Reusable, Maintainable, Scalable
+
+**Problem**: Code viết "just make it work" → khó extend, khó test, khó reuse.
+
+**Rule** (áp dụng như 1 con người thực):
+
+#### Reusable (Tái sử dụng)
+
+- Extract utility functions (pure functions) ra `src/utils/`.
+- Dependency injection thay vì hardcode dependencies.
+- Interface-driven design: code against interfaces, not implementations.
+
+#### Maintainable (Dễ bảo trì)
+
+- Mỗi file < 200 dòng. Mỗi function < 20 dòng.
+- Naming rõ nghĩa: `buildWelcomeContainer()` không phải `build()`.
+- Comment "WHY" không phải "WHAT".
+- 1 responsibility per module.
+
+#### Scalable (Dễ mở rộng)
+
+- Strategy pattern cho handlers (router + action handlers).
+- Factory pattern cho builders.
+- Repository pattern cho DB access.
+- Thêm feature mới = thêm file mới, không sửa file cũ (Open/Closed Principle).
+
+### Always Write Tests After Features
+
+**Problem**: Feature hoàn thành nhưng không có test → regression không được detect, refactor không an toàn.
+
+**Rule**: Sau khi hoàn thành feature/module, BẮT BUỘC:
+
+1. Tạo file test `__tests__/<module>.test.ts`.
+2. Cover: happy path, edge cases, error handling, cleanup lifecycle.
+3. Chạy `npm test` → 100% pass trước khi đóng task.
+4. Nếu test cũ fail sau khi refactor → sửa code để pass test, KHÔNG sửa test để pass code.
+
+**Test Structure Template**:
+
+```typescript
+describe('ModuleName', () => {
+  beforeEach(() => {
+    /* setup */
+  });
+  afterEach(() => {
+    /* cleanup */
+  });
+
+  describe('happyPath', () => {
+    /* ... */
+  });
+  describe('edgeCases', () => {
+    /* ... */
+  });
+  describe('errorHandling', () => {
+    /* ... */
+  });
+  describe('lifecycle', () => {
+    /* ... */
+  });
+});
+```
