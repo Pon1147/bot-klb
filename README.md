@@ -6,8 +6,8 @@ Bot Discord **độc quyền** được phát triển dành riêng cho server c�
 
 ### Core Features (đã lập kế hoạch & sẽ triển khai đầu tiên)
 
-- **Welcome Message**: Gửi tin nhắn chào mừng thành viên mới (embed đẹp, auto-role, hình ảnh tùy chỉnh).
-- **Leave Message**: Gửi thông báo khi thành viên rời server (có thể kèm lý do).
+- **Welcome Message**: Gửi tin nhắn chào mừng thành viên mới (Container V2, auto-role, hình ảnh tùy chỉnh, live preview editor).
+- **Leave Message**: Gửi thông báo khi thành viên rời server (Container V2).
 - **Ticket System**: Hệ thống ticket đầy đủ (tạo ticket qua button, modal form, transcript tự động, close/reopen ticket, staff management, log ticket).
 - **Moderation Commands**: Ban, kick, mute, warn, timeout…
 - **Auto-role & Reaction Role**.
@@ -51,7 +51,7 @@ Bot Discord **độc quyền** được phát triển dành riêng cho server c�
 │   ├── events/           # Tất cả Discord events (guildMemberAdd, interactionCreate...)
 │   ├── handlers/         # Loaders: commandHandler, eventHandler, componentHandler
 │   ├── components/       # Buttons, Modals, Select Menus (tách riêng)
-│   ├── utils/            # Helper functions, embeds, colors...
+│   ├── utils/            # Helper functions, container builders, template resolution...
 │   ├── database/         # Models & connection (SQLite/MongoDB)
 │   ├── config/           # Config files (nếu cần)
 │   └── index.ts          # Entry point chính
@@ -132,7 +132,7 @@ Bot Discord **độc quyền** được phát triển dành riêng cho server c�
 2. **Phải dùng** `async/await` toàn bộ, không dùng `.then().catch()` thuần.
 3. **Bắt buộc có** error handling toàn diện (`try-catch` + logging).
 4. **Tất cả commands** phải export object có `data` (`SlashCommandBuilder`) và `execute` function.
-5. **Sử dụng Builder classes** (`EmbedBuilder`, `ActionRowBuilder`, `ButtonBuilder`, `ModalBuilder`…) thay vì object cũ.
+5. **Sử dụng Builder classes** (`SlashCommandBuilder`, `ActionRowBuilder`, `ButtonBuilder`, `ModalBuilder`…) và Container V2 Components thay vì embeds cũ.
 6. **Tên file**: `kebab-case` hoặc `camelCase` nhất quán.
 7. **Comment code** bằng tiếng Việt hoặc English rõ ràng, có ý nghĩa.
 8. **Luôn double-check** toàn bộ file sau khi viết (syntax, import, logic).
