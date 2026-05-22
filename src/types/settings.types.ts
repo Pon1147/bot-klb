@@ -38,12 +38,24 @@ export interface LeaveSettings {
 }
 
 /**
+ * Booster feature settings - cảm ơn khi member Server Boost.
+ * Tương tự WelcomeSettings nhưng trigger khi member boost thay vì join.
+ */
+export interface BoosterSettings {
+  enabled: boolean;
+  channelId: string | null;
+  roleId: string | null;
+  container: ContainerSettings;
+}
+
+/**
  * Toàn bộ settings của 1 guild.
  * Thêm feature mới chỉ cần add key vào interface này + default.
  */
 export interface GuildSettings {
   welcome: WelcomeSettings;
   leave: LeaveSettings;
+  booster: BoosterSettings;
 }
 
 /**

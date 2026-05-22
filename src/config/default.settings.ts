@@ -1,5 +1,9 @@
 import { GuildSettings } from '../types/settings.types.js';
-import { WELCOME_CONTAINER_DEFAULTS, LEAVE_CONTAINER_DEFAULTS } from './container.variables.js';
+import {
+  WELCOME_CONTAINER_DEFAULTS,
+  LEAVE_CONTAINER_DEFAULTS,
+  BOOSTER_CONTAINER_DEFAULTS,
+} from './container.variables.js';
 
 /**
  * Default settings cho mọi guild mới.
@@ -31,6 +35,19 @@ export const defaultGuildSettings: GuildSettings = {
       mediaDescription: LEAVE_CONTAINER_DEFAULTS.MEDIA_DESCRIPTION,
       showSeparator: LEAVE_CONTAINER_DEFAULTS.SHOW_SEPARATOR,
       files: [...LEAVE_CONTAINER_DEFAULTS.FILES],
+    },
+  },
+  booster: {
+    enabled: false,
+    channelId: null,
+    roleId: null,
+    container: {
+      accentColor: BOOSTER_CONTAINER_DEFAULTS.ACCENT_COLOR,
+      contentLines: [...BOOSTER_CONTAINER_DEFAULTS.CONTENT_LINES],
+      mediaUrl: BOOSTER_CONTAINER_DEFAULTS.MEDIA_URL,
+      mediaDescription: BOOSTER_CONTAINER_DEFAULTS.MEDIA_DESCRIPTION,
+      showSeparator: BOOSTER_CONTAINER_DEFAULTS.SHOW_SEPARATOR,
+      files: [...BOOSTER_CONTAINER_DEFAULTS.FILES],
     },
   },
 };

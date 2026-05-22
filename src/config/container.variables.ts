@@ -11,6 +11,8 @@ export const CONTAINER_COLORS = {
   SUCCESS: 0x57f287,
   /** Vàng - warning container */
   WARNING: 0xfee75c,
+  /** Cam - màu Server Boost của Discord */
+  BOOSTER: 0xfb663a,
 } as const;
 
 /**
@@ -81,6 +83,33 @@ export const LEAVE_CONTAINER_DEFAULTS = {
 
   /** Content lines cho leave message */
   CONTENT_LINES: [`{user} đã rời khỏi {guild}.`, `Chúc {user} tốt lành!`],
+
+  /** Media URL (mặc định không có) */
+  MEDIA_URL: null,
+
+  /** Media description */
+  MEDIA_DESCRIPTION: null,
+
+  /** Separator */
+  SHOW_SEPARATOR: false,
+
+  /** Files */
+  FILES: [] as string[],
+} as const;
+
+/**
+ * Default booster container settings - cảm ơn khi member Server Boost.
+ * Màu cam (0xfb663a) là màu Server Boost chính thức của Discord.
+ */
+export const BOOSTER_CONTAINER_DEFAULTS = {
+  /** Accent color cam - màu Server Boost */
+  ACCENT_COLOR: CONTAINER_COLORS.BOOSTER,
+
+  /** Content lines cho booster thank-you message */
+  CONTENT_LINES: [
+    `Cảm ơn {user} đã Server Boost {guild}! 🚀`,
+    `Server của chúng ta đang được hỗ trợ bởi bạn!`,
+  ],
 
   /** Media URL (mặc định không có) */
   MEDIA_URL: null,

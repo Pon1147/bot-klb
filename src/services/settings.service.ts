@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import {
   GuildSettings,
   WelcomeSettings,
+  BoosterSettings,
   TemplateContext,
   ContainerSettings,
 } from '../types/settings.types.js';
@@ -64,6 +65,13 @@ export class SettingsService {
   }
 
   /**
+   * Lấy booster settings cụ thể.
+   */
+  getBooster(guildId: string): BoosterSettings {
+    return this.get(guildId).booster;
+  }
+
+  /**
    * Cập nhật partial settings cho guild.
    * Tự động invalidate cache sau khi lưu.
    * Accept DeepPartial → chỉ cần pass các field muốn thay đổi.
@@ -96,6 +104,15 @@ export class SettingsService {
   buildWelcomeContainer(guildId: string, context: TemplateContext): BuildContainerResult {
     const welcome = this.getWelcome(guildId);
     return this.buildContainer(welcome.container, context);
+  }
+
+  /**
+   * Build booster container V2 cho guild + member cụ thể.
+   * Shortcut kết hợp getBooster + buildContainer.
+   */
+  buildBoosterContainer(guildId: string, context: TemplateContext): BuildContainerResult {
+    const booster = this.getBooster(guildId);
+    return this.buildContainer(booster.container, context);
   }
 
   /**
