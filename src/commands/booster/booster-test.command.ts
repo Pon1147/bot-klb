@@ -80,7 +80,9 @@ export async function execute(
     });
   } catch (error) {
     console.error('Error in /test-booster:', error);
-    const errorContainer = buildErrorContainer('Xảy ra lỗi khi test booster. Kiểm tra console logs.');
+    const errorContainer = buildErrorContainer(
+      'Xảy ra lỗi khi test booster. Kiểm tra console logs.',
+    );
     await interaction.reply({
       components: errorContainer.components as any,
       flags: errorContainer.flags | MessageFlags.Ephemeral,

@@ -45,7 +45,16 @@ export function loadGuildSettings(
 
   if (row) {
     try {
-      return JSON.parse(row.settings_json) as GuildSettings;
+      const parsed = JSON.parse(row.settings_json) as GuildSettings;
+      // Merge với defaults để fill missing fields (ví dụ: booster khi DB cũ chưa có)
+      const defaults = cloneDefaultSettings();
+      const merged = deepMerge(
+        defaults as unknown as Record<string, unknown>,
+        parsed as unknown as Record<string, unknown>,
+      );
+      // Lưu lại version đầy đủ để lần sau không cần merge
+      saveGuildSettings(database, guildId, merged as unknown as GuildSettings);
+      return merged as unknown as GuildSettings;
     } catch {
       // JSON bị hỏng → fallback default, và lưu lại default vào DB
       const defaults = cloneDefaultSettings();
