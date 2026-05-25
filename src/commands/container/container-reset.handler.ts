@@ -10,7 +10,7 @@ export async function handleContainerReset(
   interaction: ChatInputCommandInteraction,
   guildId: string,
 ): Promise<void> {
-  const type = interaction.options.getString('type') as 'welcome' | 'leave';
+  const type = interaction.options.getString('type') as 'welcome' | 'leave' | 'booster';
   const defaults = cloneDefaultSettings();
 
   const settingsService = getSettingsService();

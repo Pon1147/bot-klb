@@ -9,7 +9,7 @@ import { buildLivePreviewContainer, buildAllEditorRows } from './container-build
  */
 export async function startInteractiveEdit(
   interaction: ChatInputCommandInteraction,
-  type: 'welcome' | 'leave',
+  type: 'welcome' | 'leave' | 'booster',
 ): Promise<void> {
   try {
     const settingsService = getSettingsService();
@@ -36,7 +36,7 @@ export async function startInteractiveEdit(
  */
 async function sendEditorMessage(
   interaction: ChatInputCommandInteraction,
-  type: 'welcome' | 'leave',
+  type: 'welcome' | 'leave' | 'booster',
   settings: any,
 ): Promise<void> {
   const draft = cloneContainerSettings(settings);

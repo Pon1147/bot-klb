@@ -18,7 +18,7 @@ export const CONTAINER_COLOR_PRESETS = [
  */
 export interface ContainerEditSession {
   guildId: string;
-  type: 'welcome' | 'leave';
+  type: 'welcome' | 'leave' | 'booster';
   draft: ContainerSettings;
   messageId: string;
   channelId: string;
@@ -69,7 +69,7 @@ export function isSessionValid(
 export function createSession(
   userId: string,
   guildId: string,
-  type: 'welcome' | 'leave',
+  type: 'welcome' | 'leave' | 'booster',
   draft: ContainerSettings,
   messageId: string,
   channelId: string,

@@ -44,7 +44,11 @@ export function buildEditTypeOptionCallback(opt: any): any {
     .setName('type')
     .setDescription('Loại container cần chỉnh sửa.')
     .setRequired(true)
-    .addChoices({ name: 'Welcome', value: 'welcome' }, { name: 'Leave', value: 'leave' });
+    .addChoices(
+      { name: 'Welcome', value: 'welcome' },
+      { name: 'Leave', value: 'leave' },
+      { name: 'Booster', value: 'booster' },
+    );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,7 +57,11 @@ export function buildResetTypeOptionCallback(opt: any): any {
     .setName('type')
     .setDescription('Loại container cần reset.')
     .setRequired(true)
-    .addChoices({ name: 'Welcome', value: 'welcome' }, { name: 'Leave', value: 'leave' });
+    .addChoices(
+      { name: 'Welcome', value: 'welcome' },
+      { name: 'Leave', value: 'leave' },
+      { name: 'Booster', value: 'booster' },
+    );
 }
 
 /**
@@ -101,7 +109,7 @@ export async function execute(
   try {
     switch (subcommandName) {
       case 'edit': {
-        const type = interaction.options.getString('type') as 'welcome' | 'leave';
+        const type = interaction.options.getString('type') as 'welcome' | 'leave' | 'booster';
         await startInteractiveEdit(interaction, type);
         break;
       }
