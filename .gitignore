@@ -19,8 +19,6 @@ data/
 # Generated
 tree.js
 
-# Tests
-__tests__/
 
 # IDE
 .vscode/

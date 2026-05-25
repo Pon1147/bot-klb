@@ -5,9 +5,7 @@ import { ComponentType, MessageFlags } from 'discord.js';
 jest.mock('../src/utils/template.utils.js', () => ({
   resolveTemplate: jest.fn((template: string, context: unknown) => {
     if (typeof template !== 'string') return template;
-    return template
-      .replace('{user}', '@TestUser')
-      .replace('{guild}', 'TestGuild');
+    return template.replace('{user}', '@TestUser').replace('{guild}', 'TestGuild');
   }),
 }));
 
@@ -67,9 +65,7 @@ describe('buildContainer - headerTemplate', () => {
       const headerSection = container.components[0];
       expect(headerSection.type).toBe(ComponentType.Section);
       expect(headerSection.components[0].type).toBe(ComponentType.TextDisplay);
-      expect(headerSection.components[0].content).toBe(
-        '**Chào mừng @TestUser đến với TestGuild**',
-      );
+      expect(headerSection.components[0].content).toBe('**Chào mừng @TestUser đến với TestGuild**');
     });
 
     it('nên hỗ trợ headerTemplate khác nhau cho từng feature', () => {

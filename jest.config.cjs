@@ -18,7 +18,15 @@ module.exports = {
     ],
   },
   extensionsToTreatAsEsm: ['.ts'],
-  collectCoverageFrom: ['src/**/*.ts', '!src/index.ts', '!src/deploy-commands.ts'],
+  // Exclude bot.config.ts: loads env vars at module-level (line 12 throw branch
+  // requires missing env vars which would crash all tests). The requireEnvVariable
+  // error path is a startup safeguard, not testable in ESM context.
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/index.ts',
+    '!src/deploy-commands.ts',
+    '!src/config/bot.config.ts',
+  ],
   coverageDirectory: 'coverage',
   coverageThreshold: {
     global: {
