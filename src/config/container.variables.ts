@@ -46,6 +46,9 @@ export const WELCOME_CONTAINER_DEFAULTS = {
   /** Accent color cho sidebar container */
   ACCENT_COLOR: CONTAINER_COLORS.WELCOME,
 
+  /** Header template - dòng tiêu đề welcome, hiển thị cùng avatar member */
+  HEADER_TEMPLATE: '**Chào mừng {user} đến với {guild}**',
+
   /**
    * Mảng content lines cho TextDisplay.
    * Mỗi phần tử = 1 dòng text (hỗ trợ markdown full).
@@ -81,8 +84,11 @@ export const LEAVE_CONTAINER_DEFAULTS = {
   /** Accent color cho sidebar container */
   ACCENT_COLOR: CONTAINER_COLORS.LEAVE,
 
+  /** Header template - dòng tiêu đề leave */
+  HEADER_TEMPLATE: '**{user} đã rời khỏi {guild}**',
+
   /** Content lines cho leave message */
-  CONTENT_LINES: [`{user} đã rời khỏi {guild}.`, `Chúc {user} tốt lành!`],
+  CONTENT_LINES: [`Chúc {user} tốt lành!`],
 
   /** Media URL (mặc định không có) */
   MEDIA_URL: null,
@@ -105,9 +111,11 @@ export const BOOSTER_CONTAINER_DEFAULTS = {
   /** Accent color cam - màu Server Boost */
   ACCENT_COLOR: CONTAINER_COLORS.BOOSTER,
 
+  /** Header template - dòng tiêu đề booster */
+  HEADER_TEMPLATE: '**🚀 Cảm ơn {user} đã Server Boost {guild}!**',
+
   /** Content lines cho booster thank-you message */
   CONTENT_LINES: [
-    `Cảm ơn {user} đã Server Boost {guild}! 🚀`,
     `Server của chúng ta đang được hỗ trợ bởi bạn!`,
   ],
 

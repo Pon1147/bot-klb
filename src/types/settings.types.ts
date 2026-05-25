@@ -3,6 +3,7 @@ import { GuildMember, Guild } from 'discord.js';
 /**
  * Container V2 settings - sử dụng Components V2 (Section, TextDisplay, MediaGallery, Separator).
  * - accentColor: màu sidebar container (hex number như 0x5865F2)
+ * - headerTemplate: template cho header section (tùy chọn, null = không hiển thị header)
  * - contentLines: mảng string markdown cho TextDisplay (hỗ trợ mention, channel link...)
  * - mediaUrl: URL GIF/ảnh cho MediaGallery (hoặc attachment://filename)
  * - mediaDescription: alt text cho media (accessibility)
@@ -11,6 +12,7 @@ import { GuildMember, Guild } from 'discord.js';
  */
 export interface ContainerSettings {
   accentColor: number;
+  headerTemplate: string | null;
   contentLines: string[];
   mediaUrl: string | null;
   mediaDescription: string | null;

@@ -62,15 +62,18 @@ function resolveContentLines(lines: string[], context: TemplateContext): string[
 
 /**
  * Build Container V2 đẹp như hình bạn gửi
- * - Section + Thumbnail: Tiêu đề + Avatar nhỏ góc trên bên phải
+ * - Section + Thumbnail: Tiêu đề (từ headerTemplate) + Avatar nhỏ góc trên bên phải
  * - TextDisplay: Nội dung bullet chính
  * - MediaGallery: Ảnh lớn Welcome ở dưới
+ *
+ * WHY: headerTemplate cho phép mỗi command (welcome/leave/booster) tự định nghĩa
+ * header riêng thay vì dùng chung 1 string hardcoded.
  */
 export function buildContainer(
   settings: ContainerSettings,
   context: TemplateContext,
 ): BuildContainerResult {
-  const { accentColor, contentLines, mediaUrl, mediaDescription, showSeparator, files } = settings;
+  const { accentColor, headerTemplate, contentLines, mediaUrl, mediaDescription, showSeparator, files } = settings;
   const { member, guild } = context;
 
   // Resolve & trim text
@@ -82,27 +85,33 @@ export function buildContainer(
 
   const containerInnerComponents: unknown[] = [];
 
-  // ==================== 1. SECTION + THUMBNAIL (Tiêu đề + Avatar top-right) ====================
-  const avatarUrl = member.user.displayAvatarURL({ extension: 'png', size: 128 });
+  // ==================== 1. SECTION + THUMBNAIL (Header + Avatar top-right) ====================
+  // Chỉ render header section khi headerTemplate có giá trị (không null/empty/undefined)
+  if (headerTemplate && headerTemplate.trim().length > 0) {
+    const avatarUrl = member.user.displayAvatarURL({ extension: 'png', size: 128 });
 
-  const thumbnailAccessory: Record<string, unknown> = {
-    type: ComponentType.Thumbnail,
-    media: { url: avatarUrl },
-    description: `${member.user.username} (mới tham gia)`,
-  };
+    const thumbnailAccessory: Record<string, unknown> = {
+      type: ComponentType.Thumbnail,
+      media: { url: avatarUrl },
+      description: `${member.user.username} (mới tham gia)`,
+    };
 
-  const headerSection: Record<string, unknown> = {
-    type: ComponentType.Section,
-    components: [
-      {
-        type: ComponentType.TextDisplay,
-        content: `**Chào mừng ${member.toString()} đến với Máy chủ của ${guild.name}**`, // Có thể customize qua template
-      },
-    ],
-    accessory: thumbnailAccessory,
-  };
+    // Resolve template variables trong header
+    const resolvedHeader = resolveTemplate(headerTemplate, { member, guild });
 
-  containerInnerComponents.push(headerSection);
+    const headerSection: Record<string, unknown> = {
+      type: ComponentType.Section,
+      components: [
+        {
+          type: ComponentType.TextDisplay,
+          content: resolvedHeader,
+        },
+      ],
+      accessory: thumbnailAccessory,
+    };
+
+    containerInnerComponents.push(headerSection);
+  }
 
   // ==================== 2. TextDisplay chính (nội dung bullet) ====================
   if (textContent.length > 0) {

@@ -18,6 +18,7 @@ export const defaultGuildSettings: GuildSettings = {
     roleId: null,
     container: {
       accentColor: WELCOME_CONTAINER_DEFAULTS.ACCENT_COLOR,
+      headerTemplate: WELCOME_CONTAINER_DEFAULTS.HEADER_TEMPLATE,
       contentLines: [...WELCOME_CONTAINER_DEFAULTS.CONTENT_LINES],
       mediaUrl: WELCOME_CONTAINER_DEFAULTS.MEDIA_URL,
       mediaDescription: WELCOME_CONTAINER_DEFAULTS.MEDIA_DESCRIPTION,
@@ -30,6 +31,7 @@ export const defaultGuildSettings: GuildSettings = {
     channelId: null,
     container: {
       accentColor: LEAVE_CONTAINER_DEFAULTS.ACCENT_COLOR,
+      headerTemplate: LEAVE_CONTAINER_DEFAULTS.HEADER_TEMPLATE,
       contentLines: [...LEAVE_CONTAINER_DEFAULTS.CONTENT_LINES],
       mediaUrl: LEAVE_CONTAINER_DEFAULTS.MEDIA_URL,
       mediaDescription: LEAVE_CONTAINER_DEFAULTS.MEDIA_DESCRIPTION,
@@ -43,6 +45,7 @@ export const defaultGuildSettings: GuildSettings = {
     roleId: null,
     container: {
       accentColor: BOOSTER_CONTAINER_DEFAULTS.ACCENT_COLOR,
+      headerTemplate: BOOSTER_CONTAINER_DEFAULTS.HEADER_TEMPLATE,
       contentLines: [...BOOSTER_CONTAINER_DEFAULTS.CONTENT_LINES],
       mediaUrl: BOOSTER_CONTAINER_DEFAULTS.MEDIA_URL,
       mediaDescription: BOOSTER_CONTAINER_DEFAULTS.MEDIA_DESCRIPTION,
