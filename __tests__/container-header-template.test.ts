@@ -38,6 +38,7 @@ describe('buildContainer - headerTemplate', () => {
     jest.clearAllMocks();
     baseSettings = {
       accentColor: 0x5865f2,
+      headerTemplate: null,
       contentLines: ['Line 1', 'Line 2'],
       mediaUrl: null,
       mediaDescription: null,
