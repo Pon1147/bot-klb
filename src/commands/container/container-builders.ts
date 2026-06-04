@@ -8,7 +8,7 @@ import {
 } from 'discord.js';
 import { ContainerSettings } from '../../types/settings.types.js';
 import { buildContainer, buildTextOnlyContainer } from '../../utils/container.utils.js';
-import { CONTAINER_COLOR_PRESETS } from './container-session.js';
+import { CONTAINER_COLOR_PRESETS, ContainerEditSession } from './container-session.js';
 
 // ─── Button Row Builders ───────────────────────────────────────
 
@@ -295,4 +295,25 @@ export function buildColorPickerInfoContainer(accentColor: number) {
     `🎨 Chọn Accent Color\n\nMàu hiện tại: \`${currentHex}\`\n\nNhấn vào màu muốn chọn, hoặc "Custom" để nhập mã màu tùy chỉnh.`,
     accentColor,
   );
+}
+
+// ─── Editor Utilities ──────────────────────────────────────────
+
+/**
+ * Update message editor với draft mới (live preview).
+ *
+ * WHY: Dùng interaction.update() thay vì delete+recreate để giữ message ID,
+ * tránh lose collector và UX mượt hơn (không flicker).
+ */
+export async function updateEditorMessage(
+  interaction: import('discord.js').ButtonInteraction,
+  session: ContainerEditSession,
+): Promise<void> {
+  const preview = buildLivePreviewContainer(session.draft);
+
+  await interaction.update({
+    components: [...(preview.components as any), ...buildAllEditorRows()],
+    flags: preview.flags,
+    files: preview.files,
+  });
 }

@@ -248,6 +248,7 @@ describe('Container Session Management', () => {
         messageId: 'msg_1',
         channelId: 'ch_1',
         createdAt: Date.now() - 20 * 60 * 1000, // 20 minutes ago (expired)
+        lastInteractionAt: Date.now() - 20 * 60 * 1000, // 20 minutes ago (expired)
       });
 
       // Create a valid session

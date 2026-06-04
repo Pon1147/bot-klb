@@ -1,7 +1,7 @@
 import { ButtonInteraction, MessageFlags, ModalSubmitInteraction } from 'discord.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
-import { editSessions, isSessionValid } from './container-session.js';
-import { buildLivePreviewContainer, buildAllEditorRows } from './container-builders.js';
+import { editSessions, isSessionValid, touchSession } from './container-session.js';
+import { buildLivePreviewContainer, buildAllEditorRows, updateEditorMessage } from './container-builders.js';
 import {
   handleLinesSubmenu,
   handleAddLine,
@@ -15,21 +15,6 @@ import {
   handleMediaEdit,
 } from './container-property.handlers.js';
 import { handleSave, handleReset, handleCancel } from './container-action.handlers.js';
-
-/**
- * Update editor message (re-exported for use in routers).
- */
-async function updateEditorMessage(
-  interaction: ButtonInteraction,
-  session: { draft: any },
-): Promise<void> {
-  const preview = buildLivePreviewContainer(session.draft);
-  await interaction.update({
-    components: [...(preview.components as any), ...buildAllEditorRows()],
-    flags: preview.flags,
-    files: preview.files,
-  });
-}
 
 /**
  * Main handler cho tất cả button interactions trong container editor.
@@ -49,6 +34,8 @@ export async function handleEditorButtonInteraction(
     });
     return;
   }
+
+  touchSession(interaction.user.id);
 
   const customId = interaction.customId;
 
@@ -140,77 +127,107 @@ export async function handleEditorModalSubmit(
     return;
   }
 
+  touchSession(interaction.user.id);
   const modalId = interaction.customId.replace('container_modal_', '');
 
-  try {
-    if (modalId === 'new_line') {
-      const value = interaction.fields.getTextInputValue('new_line');
-      if (value) {
-        session.draft.contentLines.push(value);
-      }
-    } else if (modalId === 'edit_line') {
-      const indexValue = interaction.fields.getTextInputValue('edit_line_index');
-      const index = parseInt(indexValue, 10);
-      if (isNaN(index) || index < 0 || index >= session.draft.contentLines.length) {
-        const errorContainer = buildErrorContainer(`Index không hợp lệ: "${indexValue}".`);
-        await interaction.reply({
-          components: errorContainer.components as any,
-          flags: errorContainer.flags | MessageFlags.Ephemeral,
-        });
-        return;
-      }
-      const newContent = interaction.fields.getTextInputValue('edit_line_content');
-      session.draft.contentLines[index] = newContent;
-    } else if (modalId === 'line_remove_index') {
-      const value = interaction.fields.getTextInputValue('line_remove_index');
-      const index = parseInt(value, 10);
-      if (isNaN(index) || index < 0 || index >= session.draft.contentLines.length) {
-        const errorContainer = buildErrorContainer(`Index không hợp lệ: "${value}".`);
-        await interaction.reply({
-          components: errorContainer.components as any,
-          flags: errorContainer.flags | MessageFlags.Ephemeral,
-        });
-        return;
-      }
-      session.draft.contentLines.splice(index, 1);
-    } else if (modalId === 'custom_color') {
-      const value = interaction.fields.getTextInputValue('custom_color');
-      const hex = value.replace('#', '');
-      const parsed = parseInt(hex, 16);
-      if (isNaN(parsed)) {
-        const errorContainer = buildErrorContainer(
-          `Mã màu không hợp lệ: "${value}". Dùng định dạng #RRGGBB.`,
-        );
-        await interaction.reply({
-          components: errorContainer.components as any,
-          flags: errorContainer.flags | MessageFlags.Ephemeral,
-        });
-        return;
-      }
-      session.draft.accentColor = parsed;
-    } else if (modalId === 'media') {
-      const urlValue = interaction.fields.getTextInputValue('media_url');
-      const descValue = interaction.fields.getTextInputValue('media_description');
-      session.draft.mediaUrl = urlValue || null;
-      session.draft.mediaDescription = descValue || null;
-    } else {
-      console.warn(`Unknown container modal submission: ${modalId}`);
-      const errorContainer = buildErrorContainer('Modal không hợp lệ.');
+  if (modalId === 'new_line') {
+    const value = interaction.fields.getTextInputValue('new_line');
+    if (value) {
+      session.draft.contentLines.push(value);
+    }
+  } else if (modalId === 'edit_line') {
+    const indexValue = interaction.fields.getTextInputValue('edit_line_index');
+    const index = parseInt(indexValue, 10);
+    if (isNaN(index) || index < 0 || index >= session.draft.contentLines.length) {
+      const errorContainer = buildErrorContainer(`Index không hợp lệ: "${indexValue}".`);
       await interaction.reply({
         components: errorContainer.components as any,
         flags: errorContainer.flags | MessageFlags.Ephemeral,
       });
       return;
     }
-
-    // Sau khi submit modal, dùng deferUpdate để không gửi reply
-    await interaction.deferUpdate();
-  } catch (error) {
-    console.error('Error handling container modal submission:', error);
-    const errorContainer = buildErrorContainer(`Lỗi khi xử lý: ${(error as Error).message}`);
+    const newContent = interaction.fields.getTextInputValue('edit_line_content');
+    session.draft.contentLines[index] = newContent;
+  } else if (modalId === 'line_remove_index') {
+    const value = interaction.fields.getTextInputValue('line_remove_index');
+    const index = parseInt(value, 10);
+    if (isNaN(index) || index < 0 || index >= session.draft.contentLines.length) {
+      const errorContainer = buildErrorContainer(`Index không hợp lệ: "${value}".`);
+      await interaction.reply({
+        components: errorContainer.components as any,
+        flags: errorContainer.flags | MessageFlags.Ephemeral,
+      });
+      return;
+    }
+    session.draft.contentLines.splice(index, 1);
+  } else if (modalId === 'custom_color') {
+    const value = interaction.fields.getTextInputValue('custom_color');
+    const hex = value.replace('#', '');
+    if (hex.length !== 6) {
+      const errorContainer = buildErrorContainer(
+        `Mã màu không hợp lệ: "${value}". Dùng định dạng #RRGGBB (6 ký tự hex).`,
+      );
+      await interaction.reply({
+        components: errorContainer.components as any,
+        flags: errorContainer.flags | MessageFlags.Ephemeral,
+      });
+      return;
+    }
+    const parsed = parseInt(hex, 16);
+    if (isNaN(parsed)) {
+      const errorContainer = buildErrorContainer(
+        `Mã màu không hợp lệ: "${value}". Dùng định dạng #RRGGBB.`,
+      );
+      await interaction.reply({
+        components: errorContainer.components as any,
+        flags: errorContainer.flags | MessageFlags.Ephemeral,
+      });
+      return;
+    }
+    session.draft.accentColor = parsed;
+  } else if (modalId === 'media') {
+    const urlValue = interaction.fields.getTextInputValue('media_url');
+    const descValue = interaction.fields.getTextInputValue('media_description');
+    session.draft.mediaUrl = urlValue.trim() || null;
+    session.draft.mediaDescription = descValue.trim() || null;
+  } else {
+    console.warn(`Unknown container modal submission: ${modalId}`);
+    const errorContainer = buildErrorContainer('Modal không hợp lệ.');
     await interaction.reply({
       components: errorContainer.components as any,
       flags: errorContainer.flags | MessageFlags.Ephemeral,
     });
+    return;
+  }
+
+  await updateModalEditorPreview(interaction, session);
+}
+
+/**
+ * Refresh editor preview after modal submission.
+ *
+ * WHY: ModalSubmitInteraction doesn't have .update(), so we fetch the
+ * original message by channelId + messageId and edit it.
+ */
+async function updateModalEditorPreview(
+  interaction: ModalSubmitInteraction,
+  session: { channelId: string; messageId: string; draft: any },
+): Promise<void> {
+  try {
+    await interaction.deferUpdate();
+
+    const channel = await interaction.client.channels.fetch(session.channelId);
+    if (!channel?.isTextBased()) return;
+
+    const message = await channel.messages.fetch(session.messageId).catch(() => null);
+    if (!message) return;
+
+    const preview = buildLivePreviewContainer(session.draft);
+    await message.edit({
+      components: [...(preview.components as any), ...buildAllEditorRows()],
+      files: preview.files,
+    });
+  } catch (error) {
+    console.error('Error updating editor preview after modal:', error);
   }
 }
