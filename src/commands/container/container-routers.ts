@@ -1,6 +1,7 @@
-import { ButtonInteraction, MessageFlags, ModalSubmitInteraction } from 'discord.js';
+import { ButtonInteraction, GuildMember, MessageFlags, ModalSubmitInteraction, PermissionFlagsBits } from 'discord.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
-import { editSessions, isSessionValid, touchSession } from './container-session.js';
+import { getSettingsService } from '../../services/settings.service.js';
+import { editSessions, isSessionValid, touchSession, cloneContainerSettings, createSession } from './container-session.js';
 import { buildLivePreviewContainer, buildAllEditorRows, updateEditorMessage } from './container-builders.js';
 import {
   handleLinesSubmenu,
@@ -22,6 +23,12 @@ import { handleSave, handleReset, handleCancel } from './container-action.handle
 export async function handleEditorButtonInteraction(
   interaction: ButtonInteraction,
 ): Promise<void> {
+  // Pencil button: start editor from a live container message
+  if (interaction.customId.startsWith('container_edit_pencil_')) {
+    await handlePencilButtonClick(interaction);
+    return;
+  }
+
   const session = editSessions.get(interaction.user.id);
 
   if (!isSessionValid(session)) {
@@ -229,5 +236,73 @@ async function updateModalEditorPreview(
     });
   } catch (error) {
     console.error('Error updating editor preview after modal:', error);
+  }
+}
+
+/**
+ * Handle pencil button click from a live container message.
+ * Starts an interactive edit session without needing /container edit.
+ */
+async function handlePencilButtonClick(
+  interaction: ButtonInteraction,
+): Promise<void> {
+  const member = interaction.member as GuildMember;
+  const guild = interaction.guild;
+
+  if (!guild) {
+    await interaction.reply({
+      content: 'Lệnh này chỉ dùng được trong server.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
+    await interaction.reply({
+      content: 'Bạn cần quyền Administrator để chỉnh sửa container.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const parts = interaction.customId.replace('container_edit_pencil_', '').split('_');
+  const editType = parts[parts.length - 1] as 'welcome' | 'leave' | 'booster';
+
+  if (!editType || !['welcome', 'leave', 'booster'].includes(editType)) {
+    console.warn(`Invalid pencil button customId: ${interaction.customId}`);
+    return;
+  }
+
+  try {
+    const settingsService = getSettingsService();
+    const currentSettings = settingsService.get(guild.id);
+    const containerSettings = currentSettings[editType].container;
+
+    const draft = cloneContainerSettings(containerSettings);
+    const preview = buildLivePreviewContainer(draft);
+
+    await interaction.update({
+      components: [...(preview.components as any), ...buildAllEditorRows()],
+      flags: preview.flags,
+      files: preview.files,
+    });
+
+    createSession(
+      interaction.user.id,
+      guild.id,
+      editType,
+      draft,
+      interaction.message.id,
+      interaction.channel!.id,
+    );
+  } catch (error) {
+    console.error('Error starting container editor from pencil button:', error);
+    if (!interaction.replied) {
+      const errorContainer = buildErrorContainer(`Lỗi khi mở editor: ${(error as Error).message}`);
+      await interaction.reply({
+        components: errorContainer.components as any,
+        flags: errorContainer.flags | MessageFlags.Ephemeral,
+      });
+    }
   }
 }

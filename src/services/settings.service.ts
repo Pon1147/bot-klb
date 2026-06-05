@@ -103,7 +103,7 @@ export class SettingsService {
    */
   buildWelcomeContainer(guildId: string, context: TemplateContext): BuildContainerResult {
     const welcome = this.getWelcome(guildId);
-    return this.buildContainer(welcome.container, context);
+    return this.buildContainer(welcome.container, context, { editType: 'welcome', guildId });
   }
 
   /**
@@ -112,7 +112,7 @@ export class SettingsService {
    */
   buildBoosterContainer(guildId: string, context: TemplateContext): BuildContainerResult {
     const booster = this.getBooster(guildId);
-    return this.buildContainer(booster.container, context);
+    return this.buildContainer(booster.container, context, { editType: 'booster', guildId });
   }
 
   /**
@@ -122,8 +122,9 @@ export class SettingsService {
   buildContainer(
     containerSettings: ContainerSettings,
     context: TemplateContext,
+    options?: Parameters<typeof buildContainer>[2],
   ): BuildContainerResult {
-    return buildContainer(containerSettings, context);
+    return buildContainer(containerSettings, context, options);
   }
 
 }
