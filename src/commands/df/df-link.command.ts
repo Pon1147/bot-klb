@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
+import { AttachmentBuilder, ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import Database from 'better-sqlite3';
@@ -211,22 +211,26 @@ export async function execute(
       }
 
       case 'get-script': {
-        await interaction.reply({
+        const dmChannel = await interaction.user.createDM();
+        await dmChannel.send({
           content:
-            '## Script Copy Token Tự Động\n\n' +
-            '**Cách dùng:**\n' +
-            '1. Mở [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html)\n' +
-            '2. Press **F12** → tab **Console**\n' +
-            '3. Copy toàn bộ script bên dưới → paste vào Console → Enter\n' +
-            '4. Script sẽ tự extract daily password + capture token\n' +
-            '5. Token sẽ tự copy vào clipboard → Mở Discord → `/df-link paste` → dán JSON',
+            '**Script Copy Token Tự Động**\n\n' +
+            '1. Truy cập [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html)\n' +
+            '2. Đăng nhập tài khoản\n' +
+            '3. Copy nội dung file `df-hq-script.js` bên dưới\n' +
+            '4. Bấm **F12** hoặc **Ctrl + Shift + I** (mở DevTools)\n' +
+            '5. Vào tab **Console**, paste và Enter\n' +
+            '6. Tương tác trên trang để script capture token → Mở Discord → `/df-link paste` → dán JSON',
+          files: [
+            new AttachmentBuilder(Buffer.from(CONSOLE_SCRIPT, 'utf8'), {
+              name: 'df-hq-script.js',
+            }),
+          ],
+        });
+        await interaction.reply({
+          content: 'Script đã được gửi qua DM.',
           flags: MessageFlags.Ephemeral,
         });
-
-        const scriptChannel = interaction.channel as any;
-        if (scriptChannel?.isTextBased?.()) {
-          await scriptChannel.send(`\`\`\`javascript\n${CONSOLE_SCRIPT}\n\`\`\``);
-        }
 
         break;
       }
