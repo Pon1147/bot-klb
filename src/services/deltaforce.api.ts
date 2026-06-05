@@ -4,6 +4,7 @@ import type {
   DfMyDataResponse,
   DfMatchListResponse,
   DfCollectionResponse,
+  DfDailyReportResponse,
   DfApiToken,
 } from '../types/deltaforce.types.js';
 
@@ -65,6 +66,33 @@ export async function getMyData(token: DfApiToken): Promise<DfMyDataResponse> {
 }
 
 /**
+ * Call GetMyData with a single season → returns stats for that season only.
+ */
+export async function getSeasonData(
+  token: DfApiToken,
+  seasonNo: string,
+): Promise<DfMyDataResponse> {
+  const instance = buildInstance(token);
+  const body = {
+    openid: token.openid,
+    token: token.token,
+    game_id: '30150',
+    channel: '10',
+    account_type: 1,
+    lang_type: 'vi',
+    needLogin: true,
+    report_type: 1,
+    seasonno: [seasonNo],
+  };
+
+  const res = await instance.post<DfApiResponse<DfMyDataResponse>>('/GetMyData', body);
+  if (res.data.code !== 0) {
+    throw new Error(`GetMyData (season ${seasonNo}) failed: code=${res.data.code} msg=${res.data.msg}`);
+  }
+  return res.data.data;
+}
+
+/**
  * Call DfTools/GetMatchList to fetch recent match history.
  */
 export async function getMatchList(token: DfApiToken): Promise<DfMatchListResponse> {
@@ -97,6 +125,30 @@ export async function getCollection(token: DfApiToken): Promise<DfCollectionResp
   const res = await instance.post<DfApiResponse<DfCollectionResponse>>('/GetDahongCollection', {});
   if (res.data.code !== 0) {
     throw new Error(`GetDahongCollection failed: code=${res.data.code} msg=${res.data.msg}`);
+  }
+  return res.data.data;
+}
+
+/**
+ * Call DfTools/GetDailyReport to fetch daily operations stats (earnings, killed, etc.)
+ * Returns data for the current day's operations.
+ */
+export async function getDailyReport(token: DfApiToken): Promise<DfDailyReportResponse> {
+  const instance = buildInstance(token);
+  const body = {
+    openid: token.openid,
+    token: token.token,
+    game_id: '30150',
+    channel: '10',
+    account_type: 1,
+    lang_type: 'vi',
+    needLogin: true,
+    report_type: 1,
+  };
+
+  const res = await instance.post<DfApiResponse<DfDailyReportResponse>>('/GetDailyReport', body);
+  if (res.data.code !== 0) {
+    throw new Error(`GetDailyReport failed: code=${res.data.code} msg=${res.data.msg}`);
   }
   return res.data.data;
 }

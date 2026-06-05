@@ -88,6 +88,28 @@ export interface DfApiToken {
   token: string;
 }
 
+export interface DfBattlefieldBattle {
+  kd_ratio: string;
+  kill_count: number;
+  match_count: number;
+  retreat_rate: string;
+  revenue: string;
+}
+
+export interface DfDailyReportResponse {
+  avatar: string;
+  battlefield_battle: DfBattlefieldBattle | null;
+  beacon_battle: DfBattlefieldBattle | null;
+  common_operator_id: string;
+  daily_passwords: unknown;
+  date: string;
+  field_support: unknown[];
+  high_value_items: Array<{ item_id: string; item_num: number }>;
+  highlight_match: unknown;
+  nickname: string;
+  tag_id: number;
+}
+
 /** Generic API response wrapper */
 export interface DfApiResponse<T = unknown> {
   code: number;

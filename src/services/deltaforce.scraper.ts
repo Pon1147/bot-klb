@@ -6,6 +6,14 @@ export interface DailyCodes {
   'Ngục Giam Thủy Triều': string | null;
 }
 
+export interface DailyOperations {
+  earnings: string | null;
+  killed: string | null;
+  evacuation: string | null;
+  matchCount: string | null;
+  kd: string | null;
+}
+
 const HQ_URL = 'https://www.playdeltaforce.com/events/hq/vi/index.html?laugue=vi&info=';
 
 async function loadPuppeteer() {
@@ -13,7 +21,18 @@ async function loadPuppeteer() {
   return mod.default;
 }
 
+export interface DailyData {
+  codes: DailyCodes;
+  operations: DailyOperations;
+}
+
+/** Backward compat — scrape daily codes only */
 export async function fetchDailyCodes(): Promise<DailyCodes> {
+  const result = await fetchDailyAll();
+  return result.codes;
+}
+
+export async function fetchDailyAll(): Promise<DailyData> {
   const puppeteer = await loadPuppeteer();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let browser: any = null;
@@ -32,40 +51,58 @@ export async function fetchDailyCodes(): Promise<DailyCodes> {
     await page.goto(HQ_URL, { waitUntil: 'networkidle2', timeout: 30000 });
     await page.waitForSelector('span[data-info^="operations-"]', { timeout: 15000 });
 
-    const dailyCodes = await page.evaluate(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (mapKeys: Record<string, string>) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result: any = {};
-        const q = (globalThis as any).document.querySelector.bind(
-          (globalThis as any).document,
-        );
-        for (const [selector, name] of Object.entries(mapKeys)) {
-          const el = q(`span[data-info="${selector}"]`);
-          if (el) {
-            const text = el.textContent?.trim();
-            if (text) {
-              const match = text!.match(/\d{4}/);
-              if (match) {
-                result[name] = match[0];
-              }
-            }
-          } else {
-            result[name] = null;
-          }
-        }
-        return result;
-      },
-      {
+    const result = await page.evaluate(() => {
+      const q = (globalThis as any).document.querySelector.bind((globalThis as any).document);
+
+      // Daily codes (expect 4-digit numbers)
+      const codeMap: Record<string, string> = {
         'operations-zero-dam': 'Đập Nước Zero',
         'operations-layali-grove': 'Thung lũng Layali',
         'operations-layali-brakkesh': 'Phố Cổ Brakkesh',
         'operations-layali-space-city': 'Trạm Không Gian',
         'operations-layali-tide-prison': 'Ngục Giam Thủy Triều',
-      },
-    );
+      };
 
-    return dailyCodes;
+      const codes: Record<string, string | null> = {};
+      for (const [selector, name] of Object.entries(codeMap)) {
+        const el = q(`span[data-info="${selector}"]`);
+        if (el) {
+          const text = el.textContent?.trim();
+          const match = text?.match(/\d{4}/);
+          codes[name] = match ? match[0] : null;
+        } else {
+          codes[name] = null;
+        }
+      }
+
+      // Operations stats — chỉ lấy khi có data thật (không phải nodata state)
+      const hasNoData = !!q(`[data-info="operations-nodata"]`);
+
+      const opMap: Record<string, string> = {
+        'operations-earnings': 'earnings',
+        'operations-killed': 'killed',
+        'operations-evacuation': 'evacuation',
+        'operations-match-count': 'matchCount',
+        'operations-kd': 'kd',
+      };
+
+      const operations: Record<string, string | null> = {};
+      if (hasNoData) {
+        // No real data on page — leave all null
+        for (const key of Object.values(opMap)) {
+          operations[key] = null;
+        }
+      } else {
+        for (const [selector, key] of Object.entries(opMap)) {
+          const el = q(`span[data-info="${selector}"]`);
+          operations[key] = el ? el.textContent?.trim() || null : null;
+        }
+      }
+
+      return { codes, operations };
+    });
+
+    return result;
   } finally {
     if (browser) {
       await browser.close();
