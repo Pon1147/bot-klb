@@ -3,6 +3,7 @@ import { botConfig } from './config/bot.config.js';
 import { BOT_INTENTS } from './config/intents.js';
 import { initializeDatabase } from './database/welcome.database.js';
 import { initializeSettingsTable } from './database/guild.settings.db.js';
+import { initializeDfTokensTable } from './database/df.token.db.js';
 import { SettingsService, setSettingsService } from './services/settings.service.js';
 import { loadCommands, CommandModule, deployCommands } from './handlers/command.handler.js';
 import { loadEvents } from './handlers/event.handler.js';
@@ -27,6 +28,11 @@ async function main(): Promise<void> {
   logger.info('Initializing guild settings table...');
   initializeSettingsTable(database);
   logger.info('Guild settings table ready');
+
+  // Step 2b: Initialize DeltaForce tokens table
+  logger.info('Initializing DeltaForce tokens table...');
+  initializeDfTokensTable(database);
+  logger.info('DeltaForce tokens table ready');
 
   // Step 3: Initialize SettingsService
   logger.info('Initializing SettingsService...');
