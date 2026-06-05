@@ -211,22 +211,23 @@ export async function execute(
       }
 
       case 'get-script': {
-        const info = buildInfoContainer(
-          '## Script Copy Token Tự Động\n\n' +
+        await interaction.reply({
+          content:
+            '## Script Copy Token Tự Động\n\n' +
             '**Cách dùng:**\n' +
             '1. Mở [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html)\n' +
             '2. Press **F12** → tab **Console**\n' +
             '3. Copy toàn bộ script bên dưới → paste vào Console → Enter\n' +
-            '4. Script sẽ tự extract daily password + capture token khi trang gọi API GetMyData\n' +
-            '5. Token sẽ tự copy vào clipboard → Mở Discord → `/df-link paste` → dán JSON\n\n' +
-            '```javascript\n' +
-            CONSOLE_SCRIPT +
-            '\n```',
-        );
-        await interaction.reply({
-          components: info.components as any,
-          flags: info.flags | MessageFlags.Ephemeral,
+            '4. Script sẽ tự extract daily password + capture token\n' +
+            '5. Token sẽ tự copy vào clipboard → Mở Discord → `/df-link paste` → dán JSON',
+          flags: MessageFlags.Ephemeral,
         });
+
+        const scriptChannel = interaction.channel as any;
+        if (scriptChannel?.isTextBased?.()) {
+          await scriptChannel.send(`\`\`\`javascript\n${CONSOLE_SCRIPT}\n\`\`\``);
+        }
+
         break;
       }
     }
