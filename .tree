@@ -1,5 +1,4 @@
-# bot_klb
-
+bot_klb
 ├ README.md
 ├ **tests**
 │ ├ booster.test.ts
@@ -151,11 +150,6 @@
 │ │ │ ├ booster.command.js
 │ │ │ └ booster.command.js.map
 │ │ ├ container
-│ │ │ ├ builders
-│ │ │ │ ├ index.d.ts
-│ │ │ │ ├ index.d.ts.map
-│ │ │ │ ├ index.js
-│ │ │ │ └ index.js.map
 │ │ │ ├ container-action.handlers.d.ts
 │ │ │ ├ container-action.handlers.d.ts.map
 │ │ │ ├ container-action.handlers.js
@@ -187,42 +181,24 @@
 │ │ │ ├ container.command.d.ts
 │ │ │ ├ container.command.d.ts.map
 │ │ │ ├ container.command.js
-│ │ │ ├ container.command.js.map
-│ │ │ ├ editor
-│ │ │ │ ├ action.handlers.d.ts
-│ │ │ │ ├ action.handlers.d.ts.map
-│ │ │ │ ├ action.handlers.js
-│ │ │ │ ├ action.handlers.js.map
-│ │ │ │ ├ command.d.ts
-│ │ │ │ ├ command.d.ts.map
-│ │ │ │ ├ command.js
-│ │ │ │ ├ command.js.map
-│ │ │ │ ├ edit.handler.d.ts
-│ │ │ │ ├ edit.handler.d.ts.map
-│ │ │ │ ├ edit.handler.js
-│ │ │ │ ├ edit.handler.js.map
-│ │ │ │ ├ property.handlers.d.ts
-│ │ │ │ ├ property.handlers.d.ts.map
-│ │ │ │ ├ property.handlers.js
-│ │ │ │ ├ property.handlers.js.map
-│ │ │ │ ├ reset.handler.d.ts
-│ │ │ │ ├ reset.handler.d.ts.map
-│ │ │ │ ├ reset.handler.js
-│ │ │ │ ├ reset.handler.js.map
-│ │ │ │ ├ routers.d.ts
-│ │ │ │ ├ routers.d.ts.map
-│ │ │ │ ├ routers.js
-│ │ │ │ └ routers.js.map
-│ │ │ └ state
-│ │ │ ├ index.d.ts
-│ │ │ ├ index.d.ts.map
-│ │ │ ├ index.js
-│ │ │ └ index.js.map
-│ │ ├ ticket
-│ │ │ ├ ticket.command.d.ts
-│ │ │ ├ ticket.command.d.ts.map
-│ │ │ ├ ticket.command.js
-│ │ │ └ ticket.command.js.map
+│ │ │ └ container.command.js.map
+│ │ ├ df
+│ │ │ ├ df-daily.command.d.ts
+│ │ │ ├ df-daily.command.d.ts.map
+│ │ │ ├ df-daily.command.js
+│ │ │ ├ df-daily.command.js.map
+│ │ │ ├ df-link.command.d.ts
+│ │ │ ├ df-link.command.d.ts.map
+│ │ │ ├ df-link.command.js
+│ │ │ ├ df-link.command.js.map
+│ │ │ ├ df-matches.command.d.ts
+│ │ │ ├ df-matches.command.d.ts.map
+│ │ │ ├ df-matches.command.js
+│ │ │ ├ df-matches.command.js.map
+│ │ │ ├ df-stats.command.d.ts
+│ │ │ ├ df-stats.command.d.ts.map
+│ │ │ ├ df-stats.command.js
+│ │ │ └ df-stats.command.js.map
 │ │ └ welcome
 │ │ ├ welcome-setchannel.handler.d.ts
 │ │ ├ welcome-setchannel.handler.d.ts.map
@@ -273,23 +249,19 @@
 │ │ ├ logger.variables.d.ts.map
 │ │ ├ logger.variables.js
 │ │ ├ logger.variables.js.map
-│ │ ├ ticket.variables.d.ts
-│ │ ├ ticket.variables.d.ts.map
-│ │ ├ ticket.variables.js
-│ │ ├ ticket.variables.js.map
 │ │ ├ variables.d.ts
 │ │ ├ variables.d.ts.map
 │ │ ├ variables.js
 │ │ └ variables.js.map
 │ ├ database
+│ │ ├ df.token.db.d.ts
+│ │ ├ df.token.db.d.ts.map
+│ │ ├ df.token.db.js
+│ │ ├ df.token.db.js.map
 │ │ ├ guild.settings.db.d.ts
 │ │ ├ guild.settings.db.d.ts.map
 │ │ ├ guild.settings.db.js
 │ │ ├ guild.settings.db.js.map
-│ │ ├ ticket.database.d.ts
-│ │ ├ ticket.database.d.ts.map
-│ │ ├ ticket.database.js
-│ │ ├ ticket.database.js.map
 │ │ ├ welcome.database.d.ts
 │ │ ├ welcome.database.d.ts.map
 │ │ ├ welcome.database.js
@@ -307,70 +279,6 @@
 │ │ ├ interactionCreate.event.d.ts.map
 │ │ ├ interactionCreate.event.js
 │ │ └ interactionCreate.event.js.map
-│ ├ features
-│ │ ├ index.d.ts
-│ │ ├ index.d.ts.map
-│ │ ├ index.js
-│ │ ├ index.js.map
-│ │ ├ registry.d.ts
-│ │ ├ registry.d.ts.map
-│ │ ├ registry.js
-│ │ ├ registry.js.map
-│ │ ├ ticket
-│ │ │ ├ commands
-│ │ │ │ ├ info.handler.d.ts
-│ │ │ │ ├ info.handler.d.ts.map
-│ │ │ │ ├ info.handler.js
-│ │ │ │ ├ info.handler.js.map
-│ │ │ │ ├ manage.handler.d.ts
-│ │ │ │ ├ manage.handler.d.ts.map
-│ │ │ │ ├ manage.handler.js
-│ │ │ │ ├ manage.handler.js.map
-│ │ │ │ ├ panel.handler.d.ts
-│ │ │ │ ├ panel.handler.d.ts.map
-│ │ │ │ ├ panel.handler.js
-│ │ │ │ ├ panel.handler.js.map
-│ │ │ │ ├ settings.handler.d.ts
-│ │ │ │ ├ settings.handler.d.ts.map
-│ │ │ │ ├ settings.handler.js
-│ │ │ │ └ settings.handler.js.map
-│ │ │ ├ handlers
-│ │ │ │ ├ close.handler.d.ts
-│ │ │ │ ├ close.handler.d.ts.map
-│ │ │ │ ├ close.handler.js
-│ │ │ │ ├ close.handler.js.map
-│ │ │ │ ├ create.handler.d.ts
-│ │ │ │ ├ create.handler.d.ts.map
-│ │ │ │ ├ create.handler.js
-│ │ │ │ ├ create.handler.js.map
-│ │ │ │ ├ panel.handler.d.ts
-│ │ │ │ ├ panel.handler.d.ts.map
-│ │ │ │ ├ panel.handler.js
-│ │ │ │ ├ panel.handler.js.map
-│ │ │ │ ├ voice.handler.d.ts
-│ │ │ │ ├ voice.handler.d.ts.map
-│ │ │ │ ├ voice.handler.js
-│ │ │ │ └ voice.handler.js.map
-│ │ │ ├ index.d.ts
-│ │ │ ├ index.d.ts.map
-│ │ │ ├ index.js
-│ │ │ ├ index.js.map
-│ │ │ ├ service.d.ts
-│ │ │ ├ service.d.ts.map
-│ │ │ ├ service.js
-│ │ │ ├ service.js.map
-│ │ │ ├ state.d.ts
-│ │ │ ├ state.d.ts.map
-│ │ │ ├ state.js
-│ │ │ ├ state.js.map
-│ │ │ ├ voice.d.ts
-│ │ │ ├ voice.d.ts.map
-│ │ │ ├ voice.js
-│ │ │ └ voice.js.map
-│ │ ├ types.d.ts
-│ │ ├ types.d.ts.map
-│ │ ├ types.js
-│ │ └ types.js.map
 │ ├ handlers
 │ │ ├ command.handler.d.ts
 │ │ ├ command.handler.d.ts.map
@@ -384,7 +292,20 @@
 │ ├ index.d.ts.map
 │ ├ index.js
 │ ├ index.js.map
+│ ├ scraper
+│ │ ├ dfStable.js
+│ │ └ getDailyCodes.js
+│ ├ scripts
+│ │ └ tree.mjs
 │ ├ services
+│ │ ├ deltaforce.api.d.ts
+│ │ ├ deltaforce.api.d.ts.map
+│ │ ├ deltaforce.api.js
+│ │ ├ deltaforce.api.js.map
+│ │ ├ deltaforce.scraper.d.ts
+│ │ ├ deltaforce.scraper.d.ts.map
+│ │ ├ deltaforce.scraper.js
+│ │ ├ deltaforce.scraper.js.map
 │ │ ├ settings.service.d.ts
 │ │ ├ settings.service.d.ts.map
 │ │ ├ settings.service.js
@@ -394,19 +315,23 @@
 │ │ ├ components-v2.d.ts.map
 │ │ ├ components-v2.js
 │ │ ├ components-v2.js.map
+│ │ ├ deltaforce.types.d.ts
+│ │ ├ deltaforce.types.d.ts.map
+│ │ ├ deltaforce.types.js
+│ │ ├ deltaforce.types.js.map
 │ │ ├ settings.types.d.ts
 │ │ ├ settings.types.d.ts.map
 │ │ ├ settings.types.js
-│ │ ├ settings.types.js.map
-│ │ ├ ticket.types.d.ts
-│ │ ├ ticket.types.d.ts.map
-│ │ ├ ticket.types.js
-│ │ └ ticket.types.js.map
+│ │ └ settings.types.js.map
 │ └ utils
 │ ├ container.utils.d.ts
 │ ├ container.utils.d.ts.map
 │ ├ container.utils.js
 │ ├ container.utils.js.map
+│ ├ df-rank.utils.d.ts
+│ ├ df-rank.utils.d.ts.map
+│ ├ df-rank.utils.js
+│ ├ df-rank.utils.js.map
 │ ├ logger.d.ts
 │ ├ logger.d.ts.map
 │ ├ logger.js
@@ -423,11 +348,18 @@
 ├ src
 │ ├ assets
 │ │ └ img
+│ │ ├ HoA.webp
 │ │ ├ M_y_ch**c_a_Pon_N\_\_\_**channels.md
+│ │ ├ collections_9ca7ace87949ee7c15ded192f3af0eff.png
 │ │ ├ d-wolf.webp
 │ │ ├ gizmo.webp
 │ │ ├ hackclaw.webp
 │ │ ├ luna.webp
+│ │ ├ map_brakkesh.png
+│ │ ├ map_layali.png
+│ │ ├ map_spacecity.png
+│ │ ├ map_tideprison.png
+│ │ ├ map_zero.png
 │ │ ├ morse.webp
 │ │ ├ nox.webp
 │ │ ├ raptor.webp
@@ -467,6 +399,11 @@
 │ │ │ ├ container-routers.ts
 │ │ │ ├ container-session.ts
 │ │ │ └ container.command.ts
+│ │ ├ df
+│ │ │ ├ df-daily.command.ts
+│ │ │ ├ df-link.command.ts
+│ │ │ ├ df-matches.command.ts
+│ │ │ └ df-stats.command.ts
 │ │ ├ tree.md
 │ │ └ welcome
 │ │ ├ welcome-setchannel.handler.ts
@@ -484,6 +421,7 @@
 │ │ ├ logger.variables.ts
 │ │ └ variables.ts
 │ ├ database
+│ │ ├ df.token.db.ts
 │ │ ├ guild.settings.db.ts
 │ │ └ welcome.database.ts
 │ ├ events
@@ -495,20 +433,22 @@
 │ │ └ event.handler.ts
 │ ├ index.ts
 │ ├ scraper
-│ │ ├ dfStable.js
 │ │ ├ dfStable.ts
-│ │ ├ getDailyCodes.mjs
-│ │ └ getDailyCodes.mts
+│ │ └ getDailyCodes.ts
 │ ├ scripts
 │ │ ├ tree.js
 │ │ └ tree.mts
 │ ├ services
+│ │ ├ deltaforce.api.ts
+│ │ ├ deltaforce.scraper.ts
 │ │ └ settings.service.ts
 │ ├ types
 │ │ ├ components-v2.ts
+│ │ ├ deltaforce.types.ts
 │ │ └ settings.types.ts
 │ └ utils
 │ ├ container.utils.ts
+│ ├ df-rank.utils.ts
 │ ├ logger.ts
 │ └ template.utils.ts
 ├ tsconfig.json

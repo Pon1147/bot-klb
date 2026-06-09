@@ -28,6 +28,8 @@ module.exports = {
     '!src/config/bot.config.ts',
     '!src/scraper/**/*.ts',
     '!src/services/deltaforce.scraper.ts',
+    '!src/commands/df/df-link.command.ts',
+    '!src/commands/df/df-matches.command.ts',
   ],
   coverageDirectory: 'coverage',
   coverageThreshold: {

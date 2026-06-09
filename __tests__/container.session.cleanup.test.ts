@@ -21,11 +21,14 @@ import {
   isSessionValid,
   createSession,
   deleteSession,
+  touchSession,
   startSessionCleanup,
   stopSessionCleanup,
   cloneContainerSettings,
   ContainerEditSession,
 } from '../src/commands/container/container-session.js';
+
+import type { ContainerSettings } from '../src/types/settings.types.js';
 
 // ─── Test Helpers ────────────────────────────────────────────────
 
@@ -285,6 +288,32 @@ describe('Container Session Management', () => {
       expect(cleanupLogs).toHaveLength(0);
 
       logSpy.mockRestore();
+    });
+  });
+
+  // ─── touchSession ────────────────────────────────────────────
+
+  describe('touchSession', () => {
+    it('should refresh lastInteractionAt when session exists', () => {
+      const draft: ContainerSettings = {
+        accentColor: 0x5865f2,
+        headerTemplate: "Test",
+        contentLines: ["Test"],
+        mediaUrl: null,
+        mediaDescription: null,
+        showSeparator: false,
+        files: [],
+      };
+      createSession("touch-test-user", "guild_1", "welcome", draft, "msg_1", "ch_1");
+      const sessionBefore = editSessions.get("touch-test-user");
+      const originalTime = sessionBefore!.lastInteractionAt;
+      // Advance fake time so touchSession sets a newer timestamp
+      jest.advanceTimersByTime(1000);
+      touchSession("touch-test-user");
+      const sessionAfter = editSessions.get("touch-test-user");
+      expect(sessionAfter).toBeDefined();
+      expect(sessionAfter!.lastInteractionAt).toBeGreaterThanOrEqual(originalTime);
+      deleteSession("touch-test-user");
     });
   });
 });

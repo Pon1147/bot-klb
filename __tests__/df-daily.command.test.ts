@@ -88,6 +88,19 @@ describe('df-daily.command', () => {
     expect(mockEditReply).toHaveBeenCalled();
   });
 
+  it("nên hiển thị 'Chưa có' cho codes null", async () => {
+    (getDfToken as jest.Mock).mockReturnValue(undefined);
+    (fetchDailyCodes as jest.Mock).mockResolvedValue({
+      'Đập Nước Zero': '1234',
+      'Thung lũng Layali': null,
+      'Phố Cổ Brakkesh': '9012',
+      'Trạm Không Gian': null,
+      'Ngục Giam Thủy Triều': '7890',
+    });
+    await execute(createMockInteraction(), mockDb);
+    expect(mockEditReply).toHaveBeenCalled();
+  });
+
   it('nên xử lý khi scraper trả về null', async () => {
     (getDfToken as jest.Mock).mockReturnValue(undefined);
     (fetchDailyCodes as jest.Mock).mockResolvedValue(null);
@@ -127,6 +140,15 @@ describe('df-daily.command', () => {
     (getDfToken as jest.Mock).mockReturnValue(mockToken);
     (fetchDailyCodes as jest.Mock).mockResolvedValue(null);
     (getDailyReport as jest.Mock).mockRejectedValue(new Error('Token expired'));
+    await execute(createMockInteraction(), mockDb);
+    expect(mockEditReply).toHaveBeenCalled();
+  });
+
+  it("should handle unexpected error in try block", async () => {
+    (getDfToken as jest.Mock).mockImplementation(() => {
+      throw new Error("Unexpected DB crash");
+    });
+    (fetchDailyCodes as jest.Mock).mockResolvedValue(null);
     await execute(createMockInteraction(), mockDb);
     expect(mockEditReply).toHaveBeenCalled();
   });
