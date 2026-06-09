@@ -1,10 +1,11 @@
 import {
   ChatInputCommandInteraction,
+  ComponentType,
   MessageFlags,
   SlashCommandBuilder,
 } from 'discord.js';
 import Database from 'better-sqlite3';
-import { buildErrorContainer, buildTextOnlyContainer } from '../../utils/container.utils.js';
+import { buildErrorContainer } from '../../utils/container.utils.js';
 import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
 import { getDailyReport } from '../../services/deltaforce.api.js';
 import { fetchDailyCodes, DailyCodes } from '../../services/deltaforce.scraper.js';
@@ -14,14 +15,13 @@ export const data = new SlashCommandBuilder()
   .setName('df-daily')
   .setDescription('Lấy mật khẩu và trạng thái chiến đấu hàng ngày.');
 
-function formatCodes(codes: DailyCodes): string {
-  const lines: string[] = [];
-  for (const [map, code] of Object.entries(codes)) {
-    const value = code || 'Chưa có';
-    lines.push(`- **${map}**: \`${value}\``);
-  }
-  return lines.join('\n');
-}
+const MAP_DISPLAY: Record<keyof DailyCodes, string> = {
+  'Đập Nước Zero': 'Zero Dam',
+  'Thung lũng Layali': 'Layali',
+  'Phố Cổ Brakkesh': 'Brakkesh',
+  'Trạm Không Gian': 'Space City',
+  'Ngục Giam Thủy Triều': 'Tide Prison',
+};
 
 function formatOperations(battle: DfBattlefieldBattle | null): string {
   if (!battle) return '  _Chưa có dữ liệu (chưa chơi trận nào hôm nay)_';
@@ -33,6 +33,46 @@ function formatOperations(battle: DfBattlefieldBattle | null): string {
   lines.push(`- **KD**: ${battle.kd_ratio}`);
   lines.push(`- **Rút quân**: ${battle.retreat_rate}%`);
   return lines.join('\n');
+}
+
+/** Build a clean text-only container for daily codes + battle stats */
+function buildDailyContainer(codes: DailyCodes | null, hasCodes: boolean, battleText: string, dateStr: string): {
+  components: unknown[];
+  flags: number;
+} {
+  const parts: string[] = [];
+
+  if (hasCodes && codes) {
+    parts.push('## Mật Khẩu Hàng Ngày');
+    parts.push('');
+    const maps = Object.entries(MAP_DISPLAY) as [keyof DailyCodes, string][];
+    for (let i = 0; i < maps.length; i++) {
+      const [fullName, shortName] = maps[i];
+      const code = codes[fullName] || 'Chưa có';
+      if (i > 0) parts.push('');
+      parts.push(`**${shortName}**`);
+      parts.push('```diff');
+      parts.push(`+ ${code}`);
+      parts.push('```');
+    }
+  }
+
+  parts.push('');
+  parts.push('## Trạng Thái Chiến Đấu Hiện Tại');
+  parts.push('');
+  parts.push(battleText);
+  parts.push('');
+  parts.push(`_${dateStr}_`);
+
+  const inner: unknown[] = [
+    { type: ComponentType.TextDisplay, content: parts.join('\n') },
+    { type: ComponentType.Separator, accentColor: 0x5865F2 },
+  ];
+
+  return {
+    components: [{ type: ComponentType.Container, components: inner }],
+    flags: MessageFlags.IsComponentsV2,
+  };
 }
 
 export async function execute(
@@ -71,29 +111,14 @@ export async function execute(
     const dateStr = now.toLocaleDateString('vi-VN') + ' ' + now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
     // ── Build content ──
-    const sections: string[] = [];
-
+    let hasCodes = false;
     if (codes) {
-      const hasCodes = Object.values(codes).some((v) => v !== null);
-      if (hasCodes) {
-        sections.push('## Mật Khẩu Hàng Ngày');
-        sections.push(formatCodes(codes));
-      }
+      hasCodes = Object.values(codes).some((v) => v !== null);
     }
 
-    sections.push('');
-    sections.push('## Trạng Thái Chiến Đấu Hiện Tại');
+    const battleText = linkedToken ? formatOperations(battle) : '_Dùng `/df-link link` để xem dữ liệu của bạn_';
 
-    if (linkedToken) {
-      sections.push(formatOperations(battle));
-    } else {
-      sections.push('_Dùng `/df-link link` để xem dữ liệu của bạn_');
-    }
-
-    sections.push('');
-    sections.push('_' + dateStr + '_');
-
-    const container = buildTextOnlyContainer(sections.join('\n'), 0x5865F2);
+    const container = buildDailyContainer(codes, hasCodes, battleText, dateStr);
     await interaction.editReply({
       components: container.components as any,
       flags: container.flags | MessageFlags.Ephemeral,
