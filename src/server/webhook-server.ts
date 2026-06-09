@@ -26,37 +26,54 @@ export function startWebhookServer(
 ): ServerInfo {
   app = express();
 
-  // Middleware
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  // ==================== BODY PARSER ====================
+  app.use(express.raw({ type: '*/*', limit: '10mb' }));
 
-  // CORS — browser từ HQ page sẽ POST đến đây
-  app.use((_req: Request, res: Response, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    if (_req.method === 'OPTIONS') {
-      res.sendStatus(204);
-    } else {
-      next();
+  app.use((req: Request, _res: Response, next) => {
+    if (typeof req.body === 'string' || Buffer.isBuffer(req.body)) {
+      try {
+        req.body = JSON.parse(req.body.toString('utf-8'));
+      } catch (e) {
+        // ignore
+      }
     }
+    next();
   });
 
-  // Rate limiting cơ bản (5 req/ip/phút)
+  app.use(express.urlencoded({ extended: true }));
+
+  // CORS
+  app.use((req: Request, res: Response, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(204);
+      return;
+    }
+    next();
+  });
+
+  // Rate limiting
   const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
   app.use((req: Request, res: Response, next) => {
     const ip = req.ip ?? 'unknown';
     const now = Date.now();
     const entry = rateLimitMap.get(ip);
+
     if (!entry || now > entry.resetAt) {
       rateLimitMap.set(ip, { count: 1, resetAt: now + 60_000 });
       return next();
     }
+
     entry.count++;
     if (entry.count > 5) {
-      return res
-        .status(429)
-        .json({ status: 'error', message: 'Quá nhiều yêu cầu. Thử lại sau 1 phút.' });
+      res.status(429).json({
+        status: 'error',
+        message: 'Quá nhiều yêu cầu. Thử lại sau 1 phút.',
+      });
+      return;
     }
     next();
   });
@@ -64,13 +81,18 @@ export function startWebhookServer(
   // Routes
   app.use('/api/df', createWebhookRoutes(database, client));
 
-  // Health check
+  // Health check - Dùng _req, _res để bỏ warning
   app.get('/health', (_req: Request, res: Response) => {
-    res.json({ ok: true });
+    res.json({
+      ok: true,
+      timestamp: new Date().toISOString(),
+      port: port,
+    });
   });
 
   const server = app.listen(port, () => {
-    console.log(`[Webhook] Server chạy trên cổng ${port}`);
+    console.log(`[Webhook] ✅ Server đang chạy tại http://localhost:${port}`);
+    console.log(`[Webhook] Endpoint: http://localhost:${port}/api/df/claim`);
   });
 
   return {
@@ -79,6 +101,7 @@ export function startWebhookServer(
       return new Promise<void>((resolve) => {
         server.close(() => {
           app = null;
+          console.log('[Webhook] Server đã dừng.');
           resolve();
         });
       });

@@ -10,13 +10,20 @@ import { getMyData } from '../services/deltaforce.api.js';
 import { saveDfToken } from '../database/df.token.db.js';
 
 /**
- * Handler business logic — tách riêng để test được dễ dàng.
+ * Handler business logic
  */
 export async function handleClaimRequest(
-  body: { code: string; openid: string; token: string },
+  body: any,
   database: Database.Database,
   client: Client,
 ): Promise<{ status: number; body: Record<string, unknown> }> {
+  if (!body || typeof body !== 'object') {
+    return {
+      status: 400,
+      body: { status: 'error', message: 'Body rỗng hoặc không parse được.' },
+    };
+  }
+
   const { code, openid, token } = body;
 
   if (!code || !openid || !token) {
@@ -38,61 +45,94 @@ export async function handleClaimRequest(
   }
 
   try {
-    const data = await getMyData({ openid, token });
+    // Luôn lưu token — browser đã dùng thành công, không cần validate lại
     saveDfToken(database, discordId, openid, token);
 
-    // DM thông báo thành công
+    // Best-effort: thử validate để lấy nickname
+    let nickname = '';
+    let level = '';
+    try {
+      const data = await getMyData({ openid, token });
+      nickname = data.player_info.nickname;
+      level = String(data.player_info.level);
+    } catch (validateError: any) {
+      console.warn(
+        '[Webhook] Validate skip (token ngắn hạn, vẫn lưu):',
+        validateError.message,
+      );
+    }
+
+    // Gửi DM thông báo
     try {
       const user = await client.users.fetch(discordId).catch(() => null);
       if (user) {
         const dm = await user.createDM().catch(() => null);
         if (dm) {
-          await dm
-            .send({
-              content:
-                '**Đã liên kết tài khoản thành công!**\n\n' +
-                `Nickname: ${data.player_info.nickname}\nLevel: ${data.player_info.level}`,
-            })
-            .catch(() => {
-              /* DM failed, ignore */
-            });
+          let dmContent: string;
+          if (nickname) {
+            dmContent =
+              '**Đã liên kết tài khoản Delta Force thành công!**\n\n' +
+              `**Nickname:** ${nickname}\n` +
+              `**Level:** ${level}`;
+          } else {
+            dmContent =
+              '**Đã liên kết tài khoản Delta Force!**\n\n' +
+              `OpenID: ${openid}\n\n` +
+              '> Token đã hết hạn khi validate — bot vẫn đã lưu. ' +
+              'Lần dùng /df-daily nếu lỗi → dùng /df-link start lại.';
+          }
+          await dm.send({ content: dmContent }).catch(() => {});
         }
       }
-    } catch {
-      // DM fail không ảnh hưởng kết quả
+    } catch (dmError) {
+      console.warn('[Webhook] Không gửi được DM:', dmError);
     }
 
     return {
       status: 200,
-      body: {
-        status: 'linked',
-        nickname: data.player_info.nickname,
-        level: data.player_info.level,
-      },
+      body: { status: 'linked' },
     };
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[Webhook] Claim error:', error);
     return {
-      status: 400,
-      body: {
-        status: 'error',
-        message: `Token không hợp lệ hoặc đã hết hạn: ${(error as Error).message}`,
-      },
+      status: 500,
+      body: { status: 'error', message: 'Lỗi server. Vui lòng thử lại.' },
     };
   }
 }
 
 /**
- * Tạo router với database và discord client được inject.
+ * Tạo router
  */
 export function createWebhookRoutes(database: Database.Database, client: Client): Router {
   const router = Router();
 
-  router.post('/claim', async (req: Request, res: Response) => {
-    const result = await handleClaimRequest(req.body as any, database, client);
-    if (result.status !== 200) {
+  router.post('/claim', async (req: Request, res: Response): Promise<void> => {
+    try {
+      let body = req.body;
+
+      // Fallback parse body mạnh
+      if (
+        (!body || typeof body !== 'object') &&
+        (typeof req.body === 'string' || Buffer.isBuffer(req.body))
+      ) {
+        try {
+          body = JSON.parse(req.body.toString());
+        } catch (e) {
+          console.warn('[Webhook] Không parse được JSON body');
+        }
+      }
+
+      const result = await handleClaimRequest(body, database, client);
+
+      // Sử dụng res rõ ràng
       res.status(result.status).json(result.body);
-    } else {
-      res.json(result.body);
+    } catch (err: any) {
+      console.error('[Webhook] Unexpected error:', err);
+      res.status(500).json({
+        status: 'error',
+        message: 'Lỗi server nội bộ. Vui lòng thử lại.',
+      });
     }
   });
 

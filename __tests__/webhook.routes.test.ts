@@ -65,7 +65,7 @@ describe('webhook.routes — handleClaimRequest', () => {
     expect(getMyData).not.toHaveBeenCalled();
   });
 
-  it('nên liên kết tài khoản thành công', async () => {
+  it('nên liên kết tài khoản thành công khi validate ok', async () => {
     (consumeCode as jest.Mock).mockReturnValue('discord-123');
     (getMyData as jest.Mock).mockResolvedValue({
       player_info: { nickname: 'Player1', level: 50 },
@@ -79,16 +79,14 @@ describe('webhook.routes — handleClaimRequest', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('linked');
-    expect(res.body.nickname).toBe('Player1');
-    expect(res.body.level).toBe(50);
     expect(consumeCode).toHaveBeenCalledWith('ABC123');
     expect(getMyData).toHaveBeenCalledWith({ openid: '123', token: 'abc' });
     expect(saveDfToken).toHaveBeenCalledWith(mockDb, 'discord-123', '123', 'abc');
   });
 
-  it('nên trả về 400 khi API throw lỗi', async () => {
+  it('nên vẫn lưu token khi validate fail (token hết hạn)', async () => {
     (consumeCode as jest.Mock).mockReturnValue('discord-123');
-    (getMyData as jest.Mock).mockRejectedValue(new Error('code=401'));
+    (getMyData as jest.Mock).mockRejectedValue(new Error('Inner token is invalid'));
 
     const res = await handleClaimRequest(
       { code: 'ABC123', openid: '123', token: 'abc' },
@@ -96,9 +94,9 @@ describe('webhook.routes — handleClaimRequest', () => {
       mockClient,
     );
 
-    expect(res.status).toBe(400);
-    expect(res.body.status).toBe('error');
-    expect(saveDfToken).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('linked');
+    expect(saveDfToken).toHaveBeenCalledWith(mockDb, 'discord-123', '123', 'abc');
   });
 
   it('nên DM user khi liên kết thành công', async () => {
