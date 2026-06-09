@@ -9,6 +9,8 @@ import { loadCommands, CommandModule, deployCommands } from './handlers/command.
 import { loadEvents } from './handlers/event.handler.js';
 import { createLogger } from './utils/logger.js';
 import { startSessionCleanup } from './commands/container/container-session.js';
+import { startWebhookServer } from './server/webhook-server.js';
+import { startCleanup as startClaimCleanup } from './services/df-claim-store.js';
 
 const logger = createLogger('Bot');
 
@@ -64,8 +66,25 @@ async function main(): Promise<void> {
   startSessionCleanup();
   logger.info('Session cleanup started');
 
+  // Step 7b: Start claim code cleanup
+  logger.info('Starting claim code cleanup...');
+  startClaimCleanup();
+  logger.info('Claim code cleanup started');
+
   // Attach database to client
   (client as any).database = database;
+
+  // Step 7c: Start webhook server
+  const webhookPort = parseInt(process.env.WEBHOOK_PORT ?? '3500', 10);
+  logger.info(`Starting webhook server on port ${webhookPort}...`);
+  const webhook = startWebhookServer(database, client, webhookPort);
+  logger.info(`Webhook server ready on port ${webhook.port}`);
+
+  // Graceful shutdown: stop webhook server
+  process.on('SIGTERM', () => {
+    webhook.stop();
+    process.exit(0);
+  });
 
   // Step 8: Deploy commands
   logger.info('Deploying commands to Discord...');

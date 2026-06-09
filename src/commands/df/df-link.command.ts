@@ -14,11 +14,19 @@ import {
 } from '../../utils/container.utils.js';
 import { getDfToken, saveDfToken, deleteDfToken } from '../../database/df.token.db.js';
 import { getMyData } from '../../services/deltaforce.api.js';
+import { generateCode } from '../../services/df-claim-store.js';
 
 const CONSOLE_SCRIPT = readFileSync(
   join(process.cwd(), 'dist', 'scraper', 'dfStable.js'),
   'utf8',
 ).trim();
+
+const WEBHOOK_SCRIPT = readFileSync(
+  join(process.cwd(), 'dist', 'scraper', 'df-webhook.js'),
+  'utf8',
+).trim();
+
+const WEBHOOK_URL = process.env.WEBHOOK_URL ?? 'http://localhost:3500';
 
 export const data = new SlashCommandBuilder()
   .setName('df-link')
@@ -29,7 +37,7 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((sub) =>
     sub
       .setName('paste')
-      .setDescription('Dán credentials đã copy từ trang HQ')
+      .setDescription('(fallback) Dán credentials đã copy từ trang HQ')
       .addStringOption((opt) =>
         opt
           .setName('json')
@@ -38,7 +46,10 @@ export const data = new SlashCommandBuilder()
       ),
   )
   .addSubcommand((sub) =>
-    sub.setName('get-script').setDescription('Lấy script để copy token tự động.'),
+    sub.setName('start').setDescription('Bắt đầu liên kết tài khoản qua webhook (nhanh nhất).'),
+  )
+  .addSubcommand((sub) =>
+    sub.setName('get-script').setDescription('(cũ) Lấy script để copy token tự động.'),
   )
   .addSubcommand((sub) => sub.setName('status').setDescription('Xem trạng thái liên kết.'));
 
@@ -80,7 +91,7 @@ export async function execute(
         const existing = getDfToken(database, userId);
         if (!existing) {
           const info = buildInfoContainer(
-            'Bạn chưa liên kết tài khoản Delta Force.\nDùng `/df-link paste` để bắt đầu.',
+            'Bạn chưa liên kết tài khoản Delta Force.\nDùng `/df-link start` để bắt đầu.',
           );
           await interaction.reply({
             components: info.components as any,
@@ -147,6 +158,41 @@ export async function execute(
             flags: err.flags | MessageFlags.Ephemeral,
           });
         }
+        break;
+      }
+
+      case 'start': {
+        const code = generateCode(userId);
+
+        // Thay thế placeholder trong script
+        const scriptContent = WEBHOOK_SCRIPT.replace(/@@WEBHOOK_URL@@/g, WEBHOOK_URL).replace(
+          /@@CLAIM_CODE@@/g,
+          code,
+        );
+
+        const dmChannel = await interaction.user.createDM();
+        await dmChannel.send({
+          content:
+            '**Liên kết tài khoản Delta Force**\n\n' +
+            `**Mã claim: \`${code}\`** (hết hạn sau 10 phút)\n\n` +
+            '1. Truy cập [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html)\n' +
+            '2. Đăng nhập tài khoản\n' +
+            '3. Copy toàn bộ nội dung script bên dưới\n' +
+            '4. Bấm **F12** → tab **Console** → paste → Enter\n' +
+            '5. Nhấn **F5** để reload trang\n' +
+            '6. Script sẽ tự gửi token về — chờ bot DM xác nhận!',
+          files: [
+            new AttachmentBuilder(Buffer.from(scriptContent, 'utf8'), {
+              name: 'df-link-script.js',
+            }),
+          ],
+        });
+
+        await interaction.reply({
+          content: `Script đã gửi qua DM. Mã claim: \`${code}\` — hết hạn sau 10 phút.`,
+          flags: MessageFlags.Ephemeral,
+        });
+
         break;
       }
 

@@ -17,11 +17,24 @@ jest.mock('discord.js', () => ({
 }));
 
 jest.mock('fs', () => ({
-  readFileSync: jest.fn(() => 'console.log("test script")'),
+  readFileSync: jest.fn((path: string) => {
+    if (String(path).includes('df-webhook') || String(path).includes('dfStable')) {
+      return String(path).includes('df-webhook')
+        ? 'var WEBHOOK_URL = "@@WEBHOOK_URL@@"; var CODE = "@@CLAIM_CODE@@";'
+        : 'console.log("test script")';
+    }
+    return 'console.log("test script")';
+  }),
 }));
 
 jest.mock('path', () => ({
-  join: jest.fn(() => '/mock/path/dfStable.js'),
+  join: jest.fn((...args: string[]) => {
+    const last = args[args.length - 1];
+    if (last && last.includes('df-webhook')) {
+      return '/mock/path/df-webhook.js';
+    }
+    return '/mock/path/dfStable.js';
+  }),
 }));
 
 jest.mock('../src/database/df.token.db.js', () => ({
@@ -32,6 +45,10 @@ jest.mock('../src/database/df.token.db.js', () => ({
 
 jest.mock('../src/services/deltaforce.api.js', () => ({
   getMyData: jest.fn(),
+}));
+
+jest.mock('../src/services/df-claim-store.js', () => ({
+  generateCode: jest.fn(),
 }));
 
 jest.mock('../src/utils/container.utils.js', () => ({
@@ -55,6 +72,7 @@ jest.mock('../src/utils/container.utils.js', () => ({
 import { execute } from '../src/commands/df/df-link.command.js';
 import { getDfToken, saveDfToken, deleteDfToken } from '../src/database/df.token.db.js';
 import { getMyData } from '../src/services/deltaforce.api.js';
+import { generateCode } from '../src/services/df-claim-store.js';
 import { MessageFlags } from 'discord.js';
 
 describe('df-link.command', () => {
@@ -189,6 +207,40 @@ describe('df-link.command', () => {
       expect(mockReply).toHaveBeenCalledWith(
         expect.objectContaining({ content: 'Script đã được gửi qua DM.', flags: MessageFlags.Ephemeral }),
       );
+    });
+  });
+
+  describe('subcommand: start', () => {
+    it('nên sinh claim code và gửi script qua DM', async () => {
+      (generateCode as jest.Mock).mockReturnValue('ABC123');
+      const interaction = createMockInteraction({
+        options: { getSubcommand: () => 'start' },
+      });
+      await execute(interaction, mockDb);
+      expect(generateCode).toHaveBeenCalledWith('222');
+      expect(mockCreateDm).toHaveBeenCalled();
+      expect(mockDmSend).toHaveBeenCalled();
+      expect(mockReply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('ABC123'),
+          flags: MessageFlags.Ephemeral,
+        }),
+      );
+    });
+
+    it('nên gửi script có chứa claim code và webhook URL', async () => {
+      (generateCode as jest.Mock).mockReturnValue('XYZ789');
+      const interaction = createMockInteraction({
+        options: { getSubcommand: () => 'start' },
+      });
+      await execute(interaction, mockDb);
+      const dmCall = mockDmSend.mock.calls[0];
+      const files = dmCall[0].files;
+      expect(files).toHaveLength(1);
+      expect(files[0].opts.name).toBe('df-link-script.js');
+      // Script content là Buffer — đọc ra string để kiểm tra
+      const content = files[0].pathOrBuffer.toString();
+      expect(content).toContain('XYZ789');
     });
   });
 });
