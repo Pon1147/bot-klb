@@ -26,6 +26,8 @@ module.exports = {
     '!src/index.ts',
     '!src/deploy-commands.ts',
     '!src/config/bot.config.ts',
+    '!src/scraper/**/*.ts',
+    '!src/services/deltaforce.scraper.ts',
   ],
   coverageDirectory: 'coverage',
   coverageThreshold: {

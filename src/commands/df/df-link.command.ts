@@ -24,20 +24,6 @@ export const data = new SlashCommandBuilder()
   .setName('df-link')
   .setDescription('Liên kết tài khoản Delta Force HQ.')
   .addSubcommand((sub) =>
-    sub
-      .setName('link')
-      .setDescription('Liên kết tài khoản với token + openid')
-      .addStringOption((opt) =>
-        opt.setName('openid').setDescription('OpenID của tài khoản HQ').setRequired(true),
-      )
-      .addStringOption((opt) =>
-        opt
-          .setName('token')
-          .setDescription('Token authentication (64 ký tự hex)')
-          .setRequired(true),
-      ),
-  )
-  .addSubcommand((sub) =>
     sub.setName('unlink').setDescription('Hủy liên kết tài khoản Delta Force.'),
   )
   .addSubcommand((sub) =>
@@ -70,57 +56,6 @@ export async function execute(
 
   try {
     switch (subcommand) {
-      case 'link': {
-        const openid = interaction.options.getString('openid')!;
-        const token = interaction.options.getString('token')!;
-
-        if (!/^[0-9a-f]{40,64}$/i.test(token)) {
-          const err = buildErrorContainer(
-            'Format token không hợp lệ. Token phải là chuỗi hex (40-64 ký tự).',
-          );
-          await interaction.reply({
-            components: err.components as any,
-            flags: err.flags | MessageFlags.Ephemeral,
-          });
-          return;
-        }
-
-        if (!/^\d{15,20}$/.test(openid)) {
-          const err = buildErrorContainer(
-            'Format OpenID không hợp lệ. OpenID phải là chuỗi số (15-20 ký tự).',
-          );
-          await interaction.reply({
-            components: err.components as any,
-            flags: err.flags | MessageFlags.Ephemeral,
-          });
-          return;
-        }
-
-        await interaction.deferReply({ ephemeral: true });
-
-        try {
-          const data = await getMyData({ openid, token });
-          saveDfToken(database, userId, openid, token);
-
-          const result = buildSuccessContainer(
-            `Đã liên kết tài khoản thành công!\nNickname: ${data.player_info.nickname}\nLevel: ${data.player_info.level}`,
-          );
-          await interaction.editReply({
-            components: result.components as any,
-            flags: result.flags | MessageFlags.Ephemeral,
-          });
-        } catch (error) {
-          const err = buildErrorContainer(
-            `Token không hợp lệ hoặc đã hết hạn: ${(error as Error).message}`,
-          );
-          await interaction.editReply({
-            components: err.components as any,
-            flags: err.flags | MessageFlags.Ephemeral,
-          });
-        }
-        break;
-      }
-
       case 'unlink': {
         const existing = getDfToken(database, userId);
         if (!existing) {
@@ -145,7 +80,7 @@ export async function execute(
         const existing = getDfToken(database, userId);
         if (!existing) {
           const info = buildInfoContainer(
-            'Bạn chưa liên kết tài khoản Delta Force.\nDùng `/df-link link` để bắt đầu.',
+            'Bạn chưa liên kết tài khoản Delta Force.\nDùng `/df-link paste` để bắt đầu.',
           );
           await interaction.reply({
             components: info.components as any,
