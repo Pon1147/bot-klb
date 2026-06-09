@@ -1,4 +1,9 @@
-import { AttachmentBuilder, ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
+import {
+  AttachmentBuilder,
+  ChatInputCommandInteraction,
+  MessageFlags,
+  SlashCommandBuilder,
+} from 'discord.js';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import Database from 'better-sqlite3';
