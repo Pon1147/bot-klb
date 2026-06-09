@@ -5,9 +5,11 @@
   "main": "dist/index.js",
   "scripts": {
     "clean": "cmd /c \"if exist dist rmdir /s /q dist\"",
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.scripts.json",
     "build:tree": "tsc -p tsconfig.tree.json",
     "watch:tree": "tsc -p tsconfig.tree.json --watch",
+    "build:scripts": "tsc -p tsconfig.scripts.json",
+    "typecheck:scripts": "tsc -p tsconfig.scripts.json --noEmit",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "test": "jest --forceExit --detectOpenHandles",
@@ -19,14 +21,16 @@
     "deploy-commands": "tsx src/deploy-commands.ts"
   },
   "dependencies": {
+    "axios": "^1.17.0",
     "better-sqlite3": "^11.10.0",
     "discord.js": "^14.26.4",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "puppeteer": "^25.1.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/jest": "^29.5.14",
-    "@types/node": "^22.14.0",
+    "@types/node": "^22.19.19",
     "@typescript-eslint/eslint-plugin": "^8.29.0",
     "@typescript-eslint/parser": "^8.29.0",
     "eslint": "^9.29.0",

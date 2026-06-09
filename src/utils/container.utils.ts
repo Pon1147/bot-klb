@@ -1,4 +1,11 @@
-import { AttachmentBuilder, ComponentType, MessageFlags } from 'discord.js';
+import {
+  ActionRowBuilder,
+  AttachmentBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ComponentType,
+  MessageFlags,
+} from 'discord.js';
 import { ContainerSettings, TemplateContext } from '../types/settings.types.js';
 import { resolveTemplate } from './template.utils.js';
 import { EMBED_COLORS } from '../config/container.variables.js';
@@ -7,6 +14,27 @@ import { EMBED_COLORS } from '../config/container.variables.js';
  * Giới hạn ký tự tối đa cho TextDisplay.
  */
 const MAX_TEXT_DISPLAY_LENGTH = 4000;
+
+/**
+ * Tùy chọn bổ sung cho buildContainer.
+ */
+export interface BuildContainerOptions {
+  /** Type container để thêm nút chỉnh sửa (pencil button). null = không hiển thị. */
+  editType?: 'welcome' | 'leave' | 'booster' | null;
+}
+
+/**
+ * Build hàng nút bút chì để mở container editor.
+ * CustomId encode guildId + type để router có thể extract khi click.
+ */
+export function buildPencilButtonRow(editType: string, guildId: string): ActionRowBuilder<ButtonBuilder> {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`container_edit_pencil_${guildId}_${editType}`)
+      .setLabel('✏️ Chỉnh sửa')
+      .setStyle(ButtonStyle.Secondary),
+  );
+}
 
 /**
  * Kết quả trả về.
@@ -72,9 +100,12 @@ function resolveContentLines(lines: string[], context: TemplateContext): string[
 export function buildContainer(
   settings: ContainerSettings,
   context: TemplateContext,
+  options?: BuildContainerOptions & { guildId?: string },
 ): BuildContainerResult {
   const { accentColor, headerTemplate, contentLines, mediaUrl, mediaDescription, showSeparator, files } = settings;
   const { member, guild } = context;
+  const editType = options?.editType ?? null;
+  const guildId = options?.guildId;
 
   // Resolve & trim text
   const resolvedLines = resolveContentLines(contentLines, context);
@@ -151,8 +182,15 @@ export function buildContainer(
 
   const attachmentFiles = files ? buildAttachments(files) : [];
 
+  const resultComponents: unknown[] = [containerComponents];
+
+  // Append pencil button row if editType is provided
+  if (editType && guildId) {
+    resultComponents.push(buildPencilButtonRow(editType, guildId));
+  }
+
   return {
-    components: [containerComponents],
+    components: resultComponents,
     flags: MessageFlags.IsComponentsV2,
     files: attachmentFiles,
   };
@@ -180,6 +218,16 @@ export function buildSuccessContainer(successMessage: string): BuildContainerRes
 export function buildErrorContainer(errorMessage: string): BuildContainerResult {
   const text = { type: ComponentType.TextDisplay, content: `**❌ Error**\n${errorMessage}` };
   const sep = { type: ComponentType.Separator, accentColor: EMBED_COLORS.ERROR };
+  return {
+    components: [{ type: ComponentType.Container, components: [text, sep] }],
+    flags: MessageFlags.IsComponentsV2,
+    files: [],
+  };
+}
+
+export function buildInfoContainer(infoMessage: string): BuildContainerResult {
+  const text = { type: ComponentType.TextDisplay, content: `**ℹ️ Info**\n${infoMessage}` };
+  const sep = { type: ComponentType.Separator, accentColor: EMBED_COLORS.INFO };
   return {
     components: [{ type: ComponentType.Container, components: [text, sep] }],
     flags: MessageFlags.IsComponentsV2,

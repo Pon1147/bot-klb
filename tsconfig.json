@@ -23,6 +23,6 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*.ts", "tree.ts"],
-  "exclude": ["node_modules", "dist", "__tests__", "tree.ts", "tree.js"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "__tests__", "src/scripts", "src/scraper", "tree.js"]
 }

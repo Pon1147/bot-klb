@@ -25,6 +25,7 @@ import {
   buildLivePreviewContainer,
   buildLinesInfoContainer,
   buildColorPickerInfoContainer,
+  updateEditorMessage,
 } from '../src/commands/container/container-builders.js';
 import { ContainerSettings } from '../src/types/settings.types.js';
 import { CONTAINER_COLOR_PRESETS } from '../src/commands/container/container-session.js';
@@ -434,5 +435,25 @@ describe('Container Builders', () => {
 
       expect(result).toBeDefined();
     });
+  });
+});
+
+describe("updateEditorMessage", () => {
+  it("should update message with live preview", async () => {
+    const mockUpdate = jest.fn().mockResolvedValue(undefined);
+    const mockInteraction = { update: mockUpdate } as any;
+    const session = {
+      draft: {
+        accentColor: 0x5865f2,
+        headerTemplate: "**Test Header**",
+        contentLines: ["Test content"],
+        mediaUrl: null,
+        mediaDescription: null,
+        showSeparator: false,
+        files: [],
+      },
+    } as any;
+    await updateEditorMessage(mockInteraction, session);
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,9 +1,7 @@
 import { ButtonInteraction, MessageFlags } from 'discord.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
-import { ContainerEditSession } from './container-session.js';
+import { ContainerEditSession, CONTAINER_COLOR_PRESETS } from './container-session.js';
 import {
-  buildLivePreviewContainer,
-  buildAllEditorRows,
   buildLinesSubmenuRows,
   buildColorPickerRows,
   buildLinesInfoContainer,
@@ -12,27 +10,8 @@ import {
   buildTextModal,
   buildMediaModal,
   buildEditLineModal,
+  updateEditorMessage,
 } from './container-builders.js';
-import { CONTAINER_COLOR_PRESETS } from './container-session.js';
-
-/**
- * Update message editor với draft mới (live preview).
- *
- * WHY: Dùng interaction.update() thay vì delete+recreate để giữ message ID,
- * tránh lose collector và UX mượt hơn (không flicker).
- */
-async function updateEditorMessage(
-  interaction: ButtonInteraction,
-  session: ContainerEditSession,
-): Promise<void> {
-  const preview = buildLivePreviewContainer(session.draft);
-
-  await interaction.update({
-    components: [...(preview.components as any), ...buildAllEditorRows()],
-    flags: preview.flags,
-    files: preview.files,
-  });
-}
 
 // ─── Lines Handlers ────────────────────────────────────────────
 

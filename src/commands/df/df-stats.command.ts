@@ -1,0 +1,143 @@
+import { ChatInputCommandInteraction, ComponentType, MessageFlags, SlashCommandBuilder } from 'discord.js';
+import Database from 'better-sqlite3';
+import { buildErrorContainer } from '../../utils/container.utils.js';
+import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
+import { getSeasonData } from '../../services/deltaforce.api.js';
+import { resolveRankFromScore } from '../../utils/df-rank.utils.js';
+
+export const data = new SlashCommandBuilder()
+  .setName('df-stats')
+  .setDescription('Xem thống kê tài khoản Delta Force.');
+
+/** Season ID của mùa mới nhất. Update khi mùa mới ra. */
+const LATEST_SEASON = '10009';
+const LATEST_SEASON_NAME = 'S9';
+
+export async function execute(
+  interaction: ChatInputCommandInteraction,
+  database: Database.Database,
+): Promise<void> {
+  if (!interaction.guild) {
+    await interaction.reply({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral });
+    return;
+  }
+
+  const token = getDfToken(database, interaction.user.id);
+  if (!token) {
+    const err = buildErrorContainer('Bạn chưa liên kết tài khoản. Dùng `/df-link paste` để bắt đầu.');
+    await interaction.reply({
+      components: err.components as any,
+      flags: err.flags | MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  await interaction.deferReply({ ephemeral: true });
+
+  try {
+    const apiToken = { openid: token.openid, token: token.token };
+    const data = await getSeasonData(apiToken, LATEST_SEASON);
+    touchDfToken(database, interaction.user.id);
+
+    const playHours = Math.floor(Number(data.player_info.play_duration));
+    const playMinutes = Math.round((Number(data.player_info.play_duration) - playHours) * 60);
+    const regDate = new Date(Number(data.player_info.register_time) * 1000).toLocaleDateString('vi-VN');
+
+    const combat = data.summary_data.combat;
+    const economy = data.summary_data.economy;
+    const team = data.summary_data.team;
+
+    const rankScore = Number(data.rank_data.current_rank_score);
+    const rankInfo = resolveRankFromScore(rankScore);
+    const rankName = rankInfo?.name ?? 'Chưa rõ';
+    const rankImage = rankInfo?.imageUrl;
+    const totalMatches = data.summary_data.total_match_count;
+
+    // ── 1. HEADER SECTION: Rank badge (right) + rank info (left) ──
+    const headerSection: Record<string, unknown> = {
+      type: ComponentType.Section,
+      components: [
+        {
+          type: ComponentType.TextDisplay,
+          content:
+            `## **${rankName}**\n` +
+            `**${LATEST_SEASON_NAME}** • ${rankScore} pts\n` +
+            `${data.player_info.nickname} · Lv.${data.player_info.level}`,
+        },
+      ],
+      accessory: {
+        type: ComponentType.Thumbnail,
+        media: { url: rankImage },
+        description: `${data.player_info.nickname} · Lv.${data.player_info.level}`,
+      },
+    };
+
+    // ── 2. STATS TEXT ──
+    const economyBlock = economy
+      ? [
+          `- **Tổng reward**: ${Number(economy.total_reward).toLocaleString('vi-VN')}`,
+          `- **Extract value**: ${Number(economy.extract_value).toLocaleString('vi-VN')}`,
+          `- **Profit/Loss**: ${economy.profit_loss_ratio}`,
+          `- **Mandel Brick**: ${economy.total_mandel_brick}`,
+        ].join('\n')
+      : '- Chưa có dữ liệu';
+
+    const combatBlock = combat
+      ? [
+          `- **Kill**: ${combat.kill_operator_count}`,
+          `- **Hit rate**: ${combat.hit_rate}`,
+          `- **Headshot**: ${combat.headshot_kill_rate}`,
+          `- **KD**: ${combat.high_kill_death_ratio} / ${combat.med_kill_death_ratio} / ${combat.low_kill_death_ratio}`,
+        ].join('\n')
+      : '- Chưa có dữ liệu';
+
+    const teamBlock = team
+      ? [
+          `- **Revive**: ${team.revive_teammate_count}`,
+          `- **Rescue**: ${team.rescue_teammate_count}`,
+          `- **Retreat rate**: ${team.retreat_rate}`,
+          `- **Team extract**: ${Number(team.teammate_extract_value).toLocaleString('vi-VN')}`,
+        ].join('\n')
+      : '- Chưa có dữ liệu';
+
+    const statsContent = [
+      `Tham gia: ${regDate} · Thời gian: ${playHours}h ${playMinutes}m · Trận: ${totalMatches}`,
+      ``,
+      `__**Kinh Tế**__`,
+      economyBlock,
+      ``,
+      `__**Chiến Đấu**__`,
+      combatBlock,
+      ``,
+      `__**Tiểu Đội**__`,
+      teamBlock,
+    ].join('\n');
+
+    // ── 3. ASSEMBLE CONTAINER ──
+    const containerInner: unknown[] = [];
+    containerInner.push(headerSection);
+    containerInner.push({
+      type: ComponentType.TextDisplay,
+      content: statsContent,
+    });
+    containerInner.push({ type: ComponentType.Separator, accentColor: 0x5865F2 });
+
+    const containerComponents: Record<string, unknown> = {
+      type: ComponentType.Container,
+      components: containerInner,
+    };
+
+    await interaction.editReply({
+      components: [containerComponents] as any,
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+    });
+  } catch (error) {
+    const err = buildErrorContainer(
+      `Lỗi khi lấy dữ liệu: ${(error as Error).message}\nNếu lỗi tiếp tục, hãy unlink và link lại tài khoản.`,
+    );
+    await interaction.editReply({
+      components: err.components as any,
+      flags: err.flags | MessageFlags.Ephemeral,
+    });
+  }
+}

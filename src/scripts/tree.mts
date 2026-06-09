@@ -173,9 +173,7 @@ interface AugmentedWindow extends Window {
     return modules;
   }
 
-  function findModuleByProps<T extends Record<string, unknown>>(
-    props: string[],
-  ): T | null {
+  function findModuleByProps<T extends Record<string, unknown>>(props: string[]): T | null {
     for (const mod of extractWebpackModules()) {
       let cur: WritableExports = mod;
       if (cur?.Z) cur = cur.Z as WritableExports;
@@ -203,10 +201,7 @@ interface AugmentedWindow extends Window {
     }
     if (!gs) gs = findModuleByProps<GuildStore>(['getGuild', 'getGuilds']);
     if (!cs)
-      cs = findModuleByProps<ChannelStore>([
-        'getMutableGuildChannelsForGuild',
-        'getChannel',
-      ]);
+      cs = findModuleByProps<ChannelStore>(['getMutableGuildChannelsForGuild', 'getChannel']);
     return { guildStore: gs, channelStore: cs };
   }
 
@@ -215,10 +210,7 @@ interface AugmentedWindow extends Window {
     return gs.getGuild(guildId) ?? { name: `Server ${guildId}`, id: guildId };
   }
 
-  function collectChannels(
-    cs: ChannelStore | null,
-    guildId: string,
-  ): DiscordChannel[] {
+  function collectChannels(cs: ChannelStore | null, guildId: string): DiscordChannel[] {
     if (!cs) return [];
     const channels: DiscordChannel[] = [];
     const seen = new Set<string>();
@@ -234,7 +226,10 @@ interface AugmentedWindow extends Window {
 
     const methods: (keyof Pick<
       ChannelStore,
-      'getMutableGuildChannelsForGuild' | 'getMutableBasicGuildChannelsForGuild' | 'getGuildChannels' | 'getChannels'
+      | 'getMutableGuildChannelsForGuild'
+      | 'getMutableBasicGuildChannelsForGuild'
+      | 'getGuildChannels'
+      | 'getChannels'
     >)[] = [
       'getMutableGuildChannelsForGuild',
       'getMutableBasicGuildChannelsForGuild',
@@ -270,10 +265,7 @@ interface AugmentedWindow extends Window {
     return channels;
   }
 
-  function buildChannelTree(
-    channels: DiscordChannel[],
-    guild: DiscordGuild,
-  ): ChannelTree {
+  function buildChannelTree(channels: DiscordChannel[], guild: DiscordGuild): ChannelTree {
     const cats: Record<string, CategoryGroup> = {};
     const noCat: CategoryGroup = { name: '(No Category)', position: -1, channels: [] };
 

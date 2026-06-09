@@ -23,6 +23,7 @@ export interface ContainerEditSession {
   messageId: string;
   channelId: string;
   createdAt: number;
+  lastInteractionAt: number;
 }
 
 /**
@@ -60,7 +61,8 @@ export function isSessionValid(
   session: ContainerEditSession | undefined,
 ): session is ContainerEditSession {
   if (!session) return false;
-  return Date.now() - session.createdAt < SESSION_TIMEOUT_MS;
+  const lastActive = session.lastInteractionAt;
+  return Date.now() - lastActive < SESSION_TIMEOUT_MS;
 }
 
 /**
@@ -74,13 +76,15 @@ export function createSession(
   messageId: string,
   channelId: string,
 ): ContainerEditSession {
+  const now = Date.now();
   const session: ContainerEditSession = {
     guildId,
     type,
     draft,
     messageId,
     channelId,
-    createdAt: Date.now(),
+    createdAt: now,
+    lastInteractionAt: now,
   };
   editSessions.set(userId, session);
   return session;
@@ -91,6 +95,16 @@ export function createSession(
  */
 export function deleteSession(userId: string): void {
   editSessions.delete(userId);
+}
+
+/**
+ * Refresh session timeout khi user tương tác.
+ */
+export function touchSession(userId: string): void {
+  const session = editSessions.get(userId);
+  if (session) {
+    session.lastInteractionAt = Date.now();
+  }
 }
 
 /**
@@ -108,7 +122,8 @@ export function startSessionCleanup(): void {
   cleanupInterval = setInterval(() => {
     let cleaned = 0;
     for (const [userId, session] of editSessions.entries()) {
-      if (!isSessionValid(session)) {
+      const expired = Date.now() - session.lastInteractionAt >= SESSION_TIMEOUT_MS;
+      if (expired) {
         editSessions.delete(userId);
         cleaned++;
       }

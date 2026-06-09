@@ -1,0 +1,456 @@
+bot_klb
+├ README.md
+├ **tests**
+│ ├ booster.test.ts
+│ ├ config.test.ts
+│ ├ container-booster-edit.test.ts
+│ ├ container-builders.test.ts
+│ ├ container-edit.handler.test.ts
+│ ├ container-header-template.test.ts
+│ ├ container.command.test.ts
+│ ├ container.session.cleanup.test.ts
+│ ├ container.utils.test.ts
+│ ├ guild.settings.db.deepMerge.test.ts
+│ ├ logger.test.ts
+│ ├ settings.service.test.ts
+│ ├ template.utils.test.ts
+│ ├ tsconfig.json
+│ └ welcome.database.test.ts
+├ coverage
+│ ├ clover.xml
+│ ├ coverage-final.json
+│ ├ lcov-report
+│ │ ├ base.css
+│ │ ├ block-navigation.js
+│ │ ├ commands
+│ │ │ ├ booster
+│ │ │ │ ├ booster-setchannel.handler.ts.html
+│ │ │ │ ├ booster-setrole.handler.ts.html
+│ │ │ │ ├ booster-status.handler.ts.html
+│ │ │ │ ├ booster-test.command.ts.html
+│ │ │ │ ├ booster-toggle.handler.ts.html
+│ │ │ │ ├ booster.command.ts.html
+│ │ │ │ └ index.html
+│ │ │ ├ container
+│ │ │ │ ├ builders
+│ │ │ │ │ ├ index.html
+│ │ │ │ │ └ index.ts.html
+│ │ │ │ ├ container-builders.ts.html
+│ │ │ │ ├ container-edit.handler.ts.html
+│ │ │ │ ├ container-reset.handler.ts.html
+│ │ │ │ ├ container-session.ts.html
+│ │ │ │ ├ container.command.ts.html
+│ │ │ │ ├ container.interactive.edit.ts.html
+│ │ │ │ ├ editor
+│ │ │ │ │ ├ command.ts.html
+│ │ │ │ │ ├ edit.handler.ts.html
+│ │ │ │ │ ├ index.html
+│ │ │ │ │ └ reset.handler.ts.html
+│ │ │ │ ├ index.html
+│ │ │ │ └ state
+│ │ │ │ ├ index.html
+│ │ │ │ └ index.ts.html
+│ │ │ ├ embed
+│ │ │ │ ├ embed.command.ts.html
+│ │ │ │ ├ embed.interactive.edit.ts.html
+│ │ │ │ └ index.html
+│ │ │ └ ticket
+│ │ │ ├ index.html
+│ │ │ └ ticket.command.ts.html
+│ │ ├ config
+│ │ │ ├ bot.config.ts.html
+│ │ │ ├ container.variables.ts.html
+│ │ │ ├ default.settings.ts.html
+│ │ │ ├ embed.variables.ts.html
+│ │ │ ├ index.html
+│ │ │ ├ logger.variables.ts.html
+│ │ │ ├ ticket.variables.ts.html
+│ │ │ └ variables.ts.html
+│ │ ├ container.interactive.edit.ts.html
+│ │ ├ database
+│ │ │ ├ guild.settings.db.ts.html
+│ │ │ ├ index.html
+│ │ │ ├ ticket.database.ts.html
+│ │ │ └ welcome.database.ts.html
+│ │ ├ events
+│ │ │ ├ guildMemberUpdate.event.ts.html
+│ │ │ └ index.html
+│ │ ├ favicon.png
+│ │ ├ features
+│ │ │ ├ index.html
+│ │ │ ├ index.ts.html
+│ │ │ ├ registry.ts.html
+│ │ │ ├ ticket
+│ │ │ │ ├ commands
+│ │ │ │ │ ├ index.html
+│ │ │ │ │ ├ info.handler.ts.html
+│ │ │ │ │ ├ manage.handler.ts.html
+│ │ │ │ │ ├ panel.handler.ts.html
+│ │ │ │ │ └ settings.handler.ts.html
+│ │ │ │ ├ handlers
+│ │ │ │ │ ├ close.handler.ts.html
+│ │ │ │ │ ├ create.handler.ts.html
+│ │ │ │ │ ├ index.html
+│ │ │ │ │ ├ panel.handler.ts.html
+│ │ │ │ │ └ voice.handler.ts.html
+│ │ │ │ ├ index.html
+│ │ │ │ ├ index.ts.html
+│ │ │ │ ├ service.ts.html
+│ │ │ │ ├ state.ts.html
+│ │ │ │ └ voice.ts.html
+│ │ │ └ types.ts.html
+│ │ ├ index.html
+│ │ ├ prettify.css
+│ │ ├ prettify.js
+│ │ ├ services
+│ │ │ ├ index.html
+│ │ │ └ settings.service.ts.html
+│ │ ├ sort-arrow-sprite.png
+│ │ ├ sorter.js
+│ │ ├ types
+│ │ │ ├ index.html
+│ │ │ └ ticket.types.ts.html
+│ │ └ utils
+│ │ ├ container.utils.ts.html
+│ │ ├ embed.utils.ts.html
+│ │ ├ index.html
+│ │ ├ logger.ts.html
+│ │ └ template.utils.ts.html
+│ └ lcov.info
+├ data
+│ ├ bot.db
+│ ├ bot.db-shm
+│ └ bot.db-wal
+├ diagrams.md
+├ dist
+│ ├ commands
+│ │ ├ booster
+│ │ │ ├ booster-setchannel.handler.d.ts
+│ │ │ ├ booster-setchannel.handler.d.ts.map
+│ │ │ ├ booster-setchannel.handler.js
+│ │ │ ├ booster-setchannel.handler.js.map
+│ │ │ ├ booster-setrole.handler.d.ts
+│ │ │ ├ booster-setrole.handler.d.ts.map
+│ │ │ ├ booster-setrole.handler.js
+│ │ │ ├ booster-setrole.handler.js.map
+│ │ │ ├ booster-status.handler.d.ts
+│ │ │ ├ booster-status.handler.d.ts.map
+│ │ │ ├ booster-status.handler.js
+│ │ │ ├ booster-status.handler.js.map
+│ │ │ ├ booster-test.command.d.ts
+│ │ │ ├ booster-test.command.d.ts.map
+│ │ │ ├ booster-test.command.js
+│ │ │ ├ booster-test.command.js.map
+│ │ │ ├ booster-toggle.handler.d.ts
+│ │ │ ├ booster-toggle.handler.d.ts.map
+│ │ │ ├ booster-toggle.handler.js
+│ │ │ ├ booster-toggle.handler.js.map
+│ │ │ ├ booster.command.d.ts
+│ │ │ ├ booster.command.d.ts.map
+│ │ │ ├ booster.command.js
+│ │ │ └ booster.command.js.map
+│ │ ├ container
+│ │ │ ├ container-action.handlers.d.ts
+│ │ │ ├ container-action.handlers.d.ts.map
+│ │ │ ├ container-action.handlers.js
+│ │ │ ├ container-action.handlers.js.map
+│ │ │ ├ container-builders.d.ts
+│ │ │ ├ container-builders.d.ts.map
+│ │ │ ├ container-builders.js
+│ │ │ ├ container-builders.js.map
+│ │ │ ├ container-edit.handler.d.ts
+│ │ │ ├ container-edit.handler.d.ts.map
+│ │ │ ├ container-edit.handler.js
+│ │ │ ├ container-edit.handler.js.map
+│ │ │ ├ container-property.handlers.d.ts
+│ │ │ ├ container-property.handlers.d.ts.map
+│ │ │ ├ container-property.handlers.js
+│ │ │ ├ container-property.handlers.js.map
+│ │ │ ├ container-reset.handler.d.ts
+│ │ │ ├ container-reset.handler.d.ts.map
+│ │ │ ├ container-reset.handler.js
+│ │ │ ├ container-reset.handler.js.map
+│ │ │ ├ container-routers.d.ts
+│ │ │ ├ container-routers.d.ts.map
+│ │ │ ├ container-routers.js
+│ │ │ ├ container-routers.js.map
+│ │ │ ├ container-session.d.ts
+│ │ │ ├ container-session.d.ts.map
+│ │ │ ├ container-session.js
+│ │ │ ├ container-session.js.map
+│ │ │ ├ container.command.d.ts
+│ │ │ ├ container.command.d.ts.map
+│ │ │ ├ container.command.js
+│ │ │ └ container.command.js.map
+│ │ ├ df
+│ │ │ ├ df-daily.command.d.ts
+│ │ │ ├ df-daily.command.d.ts.map
+│ │ │ ├ df-daily.command.js
+│ │ │ ├ df-daily.command.js.map
+│ │ │ ├ df-link.command.d.ts
+│ │ │ ├ df-link.command.d.ts.map
+│ │ │ ├ df-link.command.js
+│ │ │ ├ df-link.command.js.map
+│ │ │ ├ df-matches.command.d.ts
+│ │ │ ├ df-matches.command.d.ts.map
+│ │ │ ├ df-matches.command.js
+│ │ │ ├ df-matches.command.js.map
+│ │ │ ├ df-stats.command.d.ts
+│ │ │ ├ df-stats.command.d.ts.map
+│ │ │ ├ df-stats.command.js
+│ │ │ └ df-stats.command.js.map
+│ │ └ welcome
+│ │ ├ welcome-setchannel.handler.d.ts
+│ │ ├ welcome-setchannel.handler.d.ts.map
+│ │ ├ welcome-setchannel.handler.js
+│ │ ├ welcome-setchannel.handler.js.map
+│ │ ├ welcome-setrole.handler.d.ts
+│ │ ├ welcome-setrole.handler.d.ts.map
+│ │ ├ welcome-setrole.handler.js
+│ │ ├ welcome-setrole.handler.js.map
+│ │ ├ welcome-setup.command.d.ts
+│ │ ├ welcome-setup.command.d.ts.map
+│ │ ├ welcome-setup.command.js
+│ │ ├ welcome-setup.command.js.map
+│ │ ├ welcome-status.handler.d.ts
+│ │ ├ welcome-status.handler.d.ts.map
+│ │ ├ welcome-status.handler.js
+│ │ ├ welcome-status.handler.js.map
+│ │ ├ welcome-test.command.d.ts
+│ │ ├ welcome-test.command.d.ts.map
+│ │ ├ welcome-test.command.js
+│ │ ├ welcome-test.command.js.map
+│ │ ├ welcome-toggle.handler.d.ts
+│ │ ├ welcome-toggle.handler.d.ts.map
+│ │ ├ welcome-toggle.handler.js
+│ │ └ welcome-toggle.handler.js.map
+│ ├ config
+│ │ ├ bot.config.d.ts
+│ │ ├ bot.config.d.ts.map
+│ │ ├ bot.config.js
+│ │ ├ bot.config.js.map
+│ │ ├ container.variables.d.ts
+│ │ ├ container.variables.d.ts.map
+│ │ ├ container.variables.js
+│ │ ├ container.variables.js.map
+│ │ ├ default.settings.d.ts
+│ │ ├ default.settings.d.ts.map
+│ │ ├ default.settings.js
+│ │ ├ default.settings.js.map
+│ │ ├ index.d.ts
+│ │ ├ index.d.ts.map
+│ │ ├ index.js
+│ │ ├ index.js.map
+│ │ ├ intents.d.ts
+│ │ ├ intents.d.ts.map
+│ │ ├ intents.js
+│ │ ├ intents.js.map
+│ │ ├ logger.variables.d.ts
+│ │ ├ logger.variables.d.ts.map
+│ │ ├ logger.variables.js
+│ │ ├ logger.variables.js.map
+│ │ ├ variables.d.ts
+│ │ ├ variables.d.ts.map
+│ │ ├ variables.js
+│ │ └ variables.js.map
+│ ├ database
+│ │ ├ df.token.db.d.ts
+│ │ ├ df.token.db.d.ts.map
+│ │ ├ df.token.db.js
+│ │ ├ df.token.db.js.map
+│ │ ├ guild.settings.db.d.ts
+│ │ ├ guild.settings.db.d.ts.map
+│ │ ├ guild.settings.db.js
+│ │ ├ guild.settings.db.js.map
+│ │ ├ welcome.database.d.ts
+│ │ ├ welcome.database.d.ts.map
+│ │ ├ welcome.database.js
+│ │ └ welcome.database.js.map
+│ ├ events
+│ │ ├ guildMemberAdd.event.d.ts
+│ │ ├ guildMemberAdd.event.d.ts.map
+│ │ ├ guildMemberAdd.event.js
+│ │ ├ guildMemberAdd.event.js.map
+│ │ ├ guildMemberUpdate.event.d.ts
+│ │ ├ guildMemberUpdate.event.d.ts.map
+│ │ ├ guildMemberUpdate.event.js
+│ │ ├ guildMemberUpdate.event.js.map
+│ │ ├ interactionCreate.event.d.ts
+│ │ ├ interactionCreate.event.d.ts.map
+│ │ ├ interactionCreate.event.js
+│ │ └ interactionCreate.event.js.map
+│ ├ handlers
+│ │ ├ command.handler.d.ts
+│ │ ├ command.handler.d.ts.map
+│ │ ├ command.handler.js
+│ │ ├ command.handler.js.map
+│ │ ├ event.handler.d.ts
+│ │ ├ event.handler.d.ts.map
+│ │ ├ event.handler.js
+│ │ └ event.handler.js.map
+│ ├ index.d.ts
+│ ├ index.d.ts.map
+│ ├ index.js
+│ ├ index.js.map
+│ ├ scraper
+│ │ ├ dfStable.js
+│ │ └ getDailyCodes.js
+│ ├ scripts
+│ │ └ tree.mjs
+│ ├ services
+│ │ ├ deltaforce.api.d.ts
+│ │ ├ deltaforce.api.d.ts.map
+│ │ ├ deltaforce.api.js
+│ │ ├ deltaforce.api.js.map
+│ │ ├ deltaforce.scraper.d.ts
+│ │ ├ deltaforce.scraper.d.ts.map
+│ │ ├ deltaforce.scraper.js
+│ │ ├ deltaforce.scraper.js.map
+│ │ ├ settings.service.d.ts
+│ │ ├ settings.service.d.ts.map
+│ │ ├ settings.service.js
+│ │ └ settings.service.js.map
+│ ├ types
+│ │ ├ components-v2.d.ts
+│ │ ├ components-v2.d.ts.map
+│ │ ├ components-v2.js
+│ │ ├ components-v2.js.map
+│ │ ├ deltaforce.types.d.ts
+│ │ ├ deltaforce.types.d.ts.map
+│ │ ├ deltaforce.types.js
+│ │ ├ deltaforce.types.js.map
+│ │ ├ settings.types.d.ts
+│ │ ├ settings.types.d.ts.map
+│ │ ├ settings.types.js
+│ │ └ settings.types.js.map
+│ └ utils
+│ ├ container.utils.d.ts
+│ ├ container.utils.d.ts.map
+│ ├ container.utils.js
+│ ├ container.utils.js.map
+│ ├ df-rank.utils.d.ts
+│ ├ df-rank.utils.d.ts.map
+│ ├ df-rank.utils.js
+│ ├ df-rank.utils.js.map
+│ ├ logger.d.ts
+│ ├ logger.d.ts.map
+│ ├ logger.js
+│ ├ logger.js.map
+│ ├ template.utils.d.ts
+│ ├ template.utils.d.ts.map
+│ ├ template.utils.js
+│ └ template.utils.js.map
+├ jest.config.cjs
+├ judge.md
+├ package-lock.json
+├ package.json
+├ plan.md
+├ src
+│ ├ assets
+│ │ └ img
+│ │ ├ HoA.webp
+│ │ ├ M_y_ch**c_a_Pon_N\_\_\_**channels.md
+│ │ ├ collections_9ca7ace87949ee7c15ded192f3af0eff.png
+│ │ ├ d-wolf.webp
+│ │ ├ gizmo.webp
+│ │ ├ hackclaw.webp
+│ │ ├ luna.webp
+│ │ ├ map_brakkesh.png
+│ │ ├ map_layali.png
+│ │ ├ map_spacecity.png
+│ │ ├ map_tideprison.png
+│ │ ├ map_zero.png
+│ │ ├ morse.webp
+│ │ ├ nox.webp
+│ │ ├ raptor.webp
+│ │ ├ saseed.webp
+│ │ ├ shepherd.webp
+│ │ ├ sineva.webp
+│ │ ├ sticker-1.jpg
+│ │ ├ sticker-1.png
+│ │ ├ sticker-2.jpg
+│ │ ├ sticker-2.png
+│ │ ├ sticker-3.jpg
+│ │ ├ sticker-3.png
+│ │ ├ sticker-4.jpg
+│ │ ├ sticker-4.png
+│ │ ├ sticker-5.jpg
+│ │ ├ sticker-5.png
+│ │ ├ stinger.webp
+│ │ ├ tempest.webp
+│ │ ├ toxic.webp
+│ │ ├ uluru.webp
+│ │ ├ vlinder.webp
+│ │ └ vyron.webp
+│ ├ commands
+│ │ ├ booster
+│ │ │ ├ booster-setchannel.handler.ts
+│ │ │ ├ booster-setrole.handler.ts
+│ │ │ ├ booster-status.handler.ts
+│ │ │ ├ booster-test.command.ts
+│ │ │ ├ booster-toggle.handler.ts
+│ │ │ └ booster.command.ts
+│ │ ├ container
+│ │ │ ├ container-action.handlers.ts
+│ │ │ ├ container-builders.ts
+│ │ │ ├ container-edit.handler.ts
+│ │ │ ├ container-property.handlers.ts
+│ │ │ ├ container-reset.handler.ts
+│ │ │ ├ container-routers.ts
+│ │ │ ├ container-session.ts
+│ │ │ └ container.command.ts
+│ │ ├ df
+│ │ │ ├ df-daily.command.ts
+│ │ │ ├ df-link.command.ts
+│ │ │ ├ df-matches.command.ts
+│ │ │ └ df-stats.command.ts
+│ │ ├ tree.md
+│ │ └ welcome
+│ │ ├ welcome-setchannel.handler.ts
+│ │ ├ welcome-setrole.handler.ts
+│ │ ├ welcome-setup.command.ts
+│ │ ├ welcome-status.handler.ts
+│ │ ├ welcome-test.command.ts
+│ │ └ welcome-toggle.handler.ts
+│ ├ config
+│ │ ├ bot.config.ts
+│ │ ├ container.variables.ts
+│ │ ├ default.settings.ts
+│ │ ├ index.ts
+│ │ ├ intents.ts
+│ │ ├ logger.variables.ts
+│ │ └ variables.ts
+│ ├ database
+│ │ ├ df.token.db.ts
+│ │ ├ guild.settings.db.ts
+│ │ └ welcome.database.ts
+│ ├ events
+│ │ ├ guildMemberAdd.event.ts
+│ │ ├ guildMemberUpdate.event.ts
+│ │ └ interactionCreate.event.ts
+│ ├ handlers
+│ │ ├ command.handler.ts
+│ │ └ event.handler.ts
+│ ├ index.ts
+│ ├ scraper
+│ │ ├ dfStable.ts
+│ │ └ getDailyCodes.ts
+│ ├ scripts
+│ │ ├ tree.js
+│ │ └ tree.mts
+│ ├ services
+│ │ ├ deltaforce.api.ts
+│ │ ├ deltaforce.scraper.ts
+│ │ └ settings.service.ts
+│ ├ types
+│ │ ├ components-v2.ts
+│ │ ├ deltaforce.types.ts
+│ │ └ settings.types.ts
+│ └ utils
+│ ├ container.utils.ts
+│ ├ df-rank.utils.ts
+│ ├ logger.ts
+│ └ template.utils.ts
+├ tsconfig.json
+├ tsconfig.scripts.json
+└ tsconfig.tree.json
