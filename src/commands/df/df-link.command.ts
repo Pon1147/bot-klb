@@ -162,36 +162,50 @@ export async function execute(
       }
 
       case 'start': {
-        const code = generateCode(userId);
+        try {
+          await interaction.deferReply({ ephemeral: true });
+          const code = generateCode(userId);
 
-        // Thay thế placeholder trong script
-        const scriptContent = WEBHOOK_SCRIPT.replace(/@@WEBHOOK_URL@@/g, WEBHOOK_URL).replace(
-          /@@CLAIM_CODE@@/g,
-          code,
-        );
+          // Thay thế placeholder trong script
+          const scriptContent = WEBHOOK_SCRIPT.replace(/@@WEBHOOK_URL@@/g, WEBHOOK_URL).replace(
+            /@@CLAIM_CODE@@/g,
+            code,
+          );
 
-        const dmChannel = await interaction.user.createDM();
-        await dmChannel.send({
-          content:
-            '**Liên kết tài khoản Delta Force**\n\n' +
-            `**Mã claim: \`${code}\`** (hết hạn sau 10 phút)\n\n` +
-            '1. Truy cập [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html)\n' +
-            '2. Đăng nhập tài khoản → chờ trang load xong\n' +
-            '3. Copy toàn bộ nội dung file `df-link-script.js` bên dưới\n' +
-            '4. Bấm **F12** → tab **Console** → paste → Enter\n' +
-            '5. Script tự tìm token & gửi về bot — chờ DM xác nhận!\n' +
-            '6. Nếu Console hiện "chưa tìm thấy" → nhấn vài nút trên trang → script sẽ capture khi có API call',
-          files: [
-            new AttachmentBuilder(Buffer.from(scriptContent, 'utf8'), {
-              name: 'df-link-script.js',
-            }),
-          ],
-        });
+          const dmChannel = await interaction.user.createDM();
+          await dmChannel.send({
+            content:
+              '**Liên kết tài khoản Delta Force**\n\n' +
+              `**Mã claim: \`${code}\`** (hết hạn sau 10 phút)\n\n` +
+              '1. Truy cập [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html)\n' +
+              '2. Đăng nhập tài khoản → chờ trang load xong\n' +
+              '3. Copy toàn bộ nội dung file `df-link-script.js` bên dưới\n' +
+              '4. Bấm **F12** → tab **Console** → paste → Enter\n' +
+              '5. Script tự tìm token & gửi về bot — chờ DM xác nhận!\n' +
+              '6. Nếu Console hiện "chưa tìm thấy" → nhấn vài nút trên trang → script sẽ capture khi có API call',
+            files: [
+              new AttachmentBuilder(Buffer.from(scriptContent, 'utf8'), {
+                name: 'df-link-script.js',
+              }),
+            ],
+          });
 
-        await interaction.reply({
-          content: `Script đã gửi qua DM. Mã claim: \`${code}\` — hết hạn sau 10 phút.`,
-          flags: MessageFlags.Ephemeral,
-        });
+          await interaction.editReply({
+            content: `Script đã gửi qua DM. Mã claim: \`${code}\` — hết hạn sau 10 phút.`,
+          });
+        } catch (error) {
+          console.error('Error in /df-link start:', error);
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({
+              content: 'Lỗi: không thể gửi DM. Hãy mở tin nhắn trong Server Settings.',
+              flags: MessageFlags.Ephemeral,
+            });
+          } else {
+            await interaction.editReply({
+              content: 'Lỗi khi gửi script. Xem console log.',
+            }).catch(() => { /* ignore */ });
+          }
+        }
 
         break;
       }
@@ -217,7 +231,6 @@ export async function execute(
           content: 'Script đã được gửi qua DM.',
           flags: MessageFlags.Ephemeral,
         });
-
         break;
       }
     }

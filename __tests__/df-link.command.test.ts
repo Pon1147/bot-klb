@@ -217,13 +217,13 @@ describe('df-link.command', () => {
         options: { getSubcommand: () => 'start' },
       });
       await execute(interaction, mockDb);
+      expect(mockDeferReply).toHaveBeenCalledWith({ ephemeral: true });
       expect(generateCode).toHaveBeenCalledWith('222');
       expect(mockCreateDm).toHaveBeenCalled();
       expect(mockDmSend).toHaveBeenCalled();
-      expect(mockReply).toHaveBeenCalledWith(
+      expect(mockEditReply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: expect.stringContaining('ABC123'),
-          flags: MessageFlags.Ephemeral,
         }),
       );
     });

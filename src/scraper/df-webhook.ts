@@ -1,5 +1,4 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export {};
 
 /*
  * Delta Force HQ — Webhook userscript (no-F5, instant scan)
@@ -17,10 +16,7 @@ export {};
   var sent = false;
 
   function send(openid: string, token: string): void {
-    console.log(
-      '%c[DF] ✅ Tìm thấy token: openid=' + openid,
-      'color:#0f0; font-weight:bold',
-    );
+    console.log('%c[DF] ✅ Tìm thấy token: openid=' + openid, 'color:#0f0; font-weight:bold');
     try {
       fetch(WEBHOOK_URL + '/api/df/claim', {
         method: 'POST',
@@ -28,19 +24,10 @@ export {};
         body: JSON.stringify({ code: CODE, openid, token }),
         mode: 'no-cors',
       });
-      console.log(
-        '%c[DF] ✅ Đã gửi về bot — chờ DM xác nhận!',
-        'color:#0f0; font-weight:bold',
-      );
+      console.log('%c[DF] ✅ Đã gửi về bot — chờ DM xác nhận!', 'color:#0f0; font-weight:bold');
     } catch (e: unknown) {
-      console.log(
-        '%c[DF] ❌ Gửi fail: ' + (e as Error).message,
-        'color:#f00',
-      );
-      console.log(
-        '%c[DF] Dùng /df-link paste: ' + JSON.stringify({ openid, token }),
-        'color:#f80',
-      );
+      console.log('%c[DF] ❌ Gửi fail: ' + (e as Error).message, 'color:#f00');
+      console.log('%c[DF] Dùng /df-link paste: ' + JSON.stringify({ openid, token }), 'color:#f80');
     }
   }
 
@@ -86,7 +73,9 @@ export {};
                 sent = true;
                 break;
               }
-            } catch (_) { /* not JSON */ }
+            } catch (_) {
+              /* not JSON */
+            }
           }
         }
         if (sent) break;
@@ -115,12 +104,18 @@ export {};
     };
 
     var oldOpen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function (m: string, u: string | URL, ...rest: unknown[]): void {
+    XMLHttpRequest.prototype.open = function (
+      m: string,
+      u: string | URL,
+      ...rest: unknown[]
+    ): void {
       (this as any)._u = u;
       return oldOpen.apply(this, [m, u, ...rest] as any);
     };
     var oldSend = XMLHttpRequest.prototype.send;
-    XMLHttpRequest.prototype.send = function (body?: Document | XMLHttpRequestBodyInit | null): void {
+    XMLHttpRequest.prototype.send = function (
+      body?: Document | XMLHttpRequestBodyInit | null,
+    ): void {
       var u = (this as any)._u as string;
       if (u && u.indexOf('GetMyData') !== -1) {
         var p2 = new URL(u).searchParams;
