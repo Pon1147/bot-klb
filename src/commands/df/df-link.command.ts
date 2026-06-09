@@ -176,11 +176,11 @@ export async function execute(
             '**Liên kết tài khoản Delta Force**\n\n' +
             `**Mã claim: \`${code}\`** (hết hạn sau 10 phút)\n\n` +
             '1. Truy cập [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html)\n' +
-            '2. Đăng nhập tài khoản\n' +
-            '3. Copy toàn bộ nội dung script bên dưới\n' +
+            '2. Đăng nhập tài khoản → chờ trang load xong\n' +
+            '3. Copy toàn bộ nội dung file `df-link-script.js` bên dưới\n' +
             '4. Bấm **F12** → tab **Console** → paste → Enter\n' +
-            '5. Nhấn **F5** để reload trang\n' +
-            '6. Script sẽ tự gửi token về — chờ bot DM xác nhận!',
+            '5. Script tự tìm token & gửi về bot — chờ DM xác nhận!\n' +
+            '6. Nếu Console hiện "chưa tìm thấy" → nhấn vài nút trên trang → script sẽ capture khi có API call',
           files: [
             new AttachmentBuilder(Buffer.from(scriptContent, 'utf8'), {
               name: 'df-link-script.js',
