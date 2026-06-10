@@ -47,10 +47,10 @@ jest.mock('../src/utils/container.utils.js', () => ({
 // ─── Import under-test modules ──────────────────────────────────
 
 import { execute as executeEvent } from '../src/events/guildMemberUpdate.event.js';
-import * as setChannelHandler from '../src/commands/booster/booster-setchannel.handler.js';
-import * as setRoleHandler from '../src/commands/booster/booster-setrole.handler.js';
-import * as toggleHandler from '../src/commands/booster/booster-toggle.handler.js';
-import * as statusHandler from '../src/commands/booster/booster-status.handler.js';
+import * as setChannelHandler from '../src/commands/booster/handlers/set-channel.handler.js';
+import * as setRoleHandler from '../src/commands/booster/handlers/set-role.handler.js';
+import * as toggleHandler from '../src/commands/booster/handlers/toggle.handler.js';
+import * as statusHandler from '../src/commands/booster/handlers/status.handler.js';
 
 // ─── Test Helpers ────────────────────────────────────────────────
 
@@ -529,7 +529,7 @@ describe('Booster Command - /test-booster', () => {
   });
 
   it('phải reply error khi không có guild', async () => {
-    const { execute } = require('../src/commands/booster/booster-test.command.js');
+    const { execute } = require('../src/commands/booster/test.command.js');
     const interaction = {
       guild: null,
       reply: jest.fn().mockResolvedValue({}),
@@ -543,7 +543,7 @@ describe('Booster Command - /test-booster', () => {
   });
 
   it('phải reply error khi không có Administrator permission', async () => {
-    const { execute } = require('../src/commands/booster/booster-test.command.js');
+    const { execute } = require('../src/commands/booster/test.command.js');
     const interaction = createMockInteraction({ hasAdmin: false });
 
     await execute(interaction as any, null);
@@ -554,7 +554,7 @@ describe('Booster Command - /test-booster', () => {
   });
 
   it('phải gửi container vào channel đã cấu hình', async () => {
-    const { execute } = require('../src/commands/booster/booster-test.command.js');
+    const { execute } = require('../src/commands/booster/test.command.js');
 
     const channelMock: any = {
       isTextBased: jest.fn(() => true),
@@ -586,7 +586,7 @@ describe('Booster Command - /test-booster', () => {
   });
 
   it('phải reply ephemeral khi chưa cấu hình channel', async () => {
-    const { execute } = require('../src/commands/booster/booster-test.command.js');
+    const { execute } = require('../src/commands/booster/test.command.js');
     const interaction = createMockInteraction({ hasAdmin: true });
 
     mockGetBooster.mockReturnValue({
@@ -604,7 +604,7 @@ describe('Booster Command - /test-booster', () => {
   });
 
   it('phải catch lỗi khi buildBoosterContainer throw error', async () => {
-    const { execute } = require('../src/commands/booster/booster-test.command.js');
+    const { execute } = require('../src/commands/booster/test.command.js');
     const interaction = createMockInteraction({ hasAdmin: true });
 
     mockGetBooster.mockImplementation(() => {
@@ -634,7 +634,7 @@ describe('Booster Commands - structure', () => {
   });
 
   it('phải có tên command là "test-booster"', () => {
-    const { data } = require('../src/commands/booster/booster-test.command.js');
+    const { data } = require('../src/commands/booster/test.command.js');
     expect(data.name).toBe('test-booster');
   });
 });

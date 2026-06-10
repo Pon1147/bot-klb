@@ -6,10 +6,10 @@ import {
   GuildMember,
 } from 'discord.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
-import { handleSetChannel } from './booster-setchannel.handler.js';
-import { handleSetRole } from './booster-setrole.handler.js';
-import { handleToggle } from './booster-toggle.handler.js';
-import { handleStatus } from './booster-status.handler.js';
+import { handleSetChannel } from './handlers/set-channel.handler.js';
+import { handleSetRole } from './handlers/set-role.handler.js';
+import { handleToggle } from './handlers/toggle.handler.js';
+import { handleStatus } from './handlers/status.handler.js';
 
 /**
  * Command structure: phải export `data` (SlashCommandBuilder) và `execute`.

@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
-import { getSettingsService } from '../../services/settings.service.js';
-import { buildTextOnlyContainer } from '../../utils/container.utils.js';
-import { CONTAINER_COLORS } from '../../config/container.variables.js';
+import { getSettingsService } from '../../../services/settings.service.js';
+import { buildTextOnlyContainer } from '../../../utils/container.utils.js';
+import { CONTAINER_COLORS } from '../../../config/container.variables.js';
 
 /**
  * Handle /booster status: hiển thị cấu hình booster hiện tại.

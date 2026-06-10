@@ -1,24 +1,24 @@
 import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
-import { getSettingsService } from '../../services/settings.service.js';
-import { buildSuccessContainer } from '../../utils/container.utils.js';
+import { getSettingsService } from '../../../services/settings.service.js';
+import { buildSuccessContainer } from '../../../utils/container.utils.js';
 
 /**
- * Handle /booster setrole: thiết lập role tự động cấp khi member boost.
+ * Handle /booster setchannel: thiết lập channel gửi tin nhắn cảm ơn booster.
  */
-export async function handleSetRole(
+export async function handleSetChannel(
   interaction: ChatInputCommandInteraction,
   guildIdentifier: string,
 ): Promise<void> {
-  const selectedRole = interaction.options.getRole('role', true);
+  const selectedChannel = interaction.options.getChannel('channel', true);
 
   const settingsService = getSettingsService();
   await settingsService.update(guildIdentifier, {
     booster: {
-      roleId: selectedRole.id,
+      channelId: selectedChannel.id,
     },
   });
 
-  const container = buildSuccessContainer(`Booster role set to ${selectedRole}.`);
+  const container = buildSuccessContainer(`Booster channel set to ${selectedChannel}.`);
   // WHY: Combine IsComponentsV2 + Ephemeral flags thay vì ephemeral: true (deprecated)
   await interaction.reply({
     components: container.components as any,

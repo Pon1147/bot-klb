@@ -200,7 +200,7 @@ describe('Test Commands E2E — /test-booster', () => {
   beforeEach(() => {
     jest.resetModules();
     db = createTestDb();
-    ({ execute } = require('../../src/commands/booster/booster-test.command'));
+    ({ execute } = require('../../src/commands/booster/test.command'));
   });
 
   afterEach(() => {

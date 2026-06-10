@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
-import { getSettingsService } from '../../services/settings.service.js';
-import { buildSuccessContainer } from '../../utils/container.utils.js';
+import { getSettingsService } from '../../../services/settings.service.js';
+import { buildSuccessContainer } from '../../../utils/container.utils.js';
 
 /**
  * Handle /booster toggle: bật/tắt hệ thống booster.
