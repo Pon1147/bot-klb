@@ -90,9 +90,7 @@ export interface BuildContainerResultV2 {
 /**
  * Type guard: kiểm tra component có phải Container không.
  */
-export function isContainerComponent(
-  component: unknown,
-): component is ContainerComponentV2 {
+export function isContainerComponent(component: unknown): component is ContainerComponentV2 {
   return (
     typeof component === 'object' &&
     component !== null &&
@@ -104,9 +102,7 @@ export function isContainerComponent(
 /**
  * Type guard: kiểm tra component có phải TextDisplay không.
  */
-export function isTextDisplayComponent(
-  component: unknown,
-): component is TextDisplayComponentV2 {
+export function isTextDisplayComponent(component: unknown): component is TextDisplayComponentV2 {
   return (
     typeof component === 'object' &&
     component !== null &&
@@ -118,9 +114,7 @@ export function isTextDisplayComponent(
 /**
  * Type guard: kiểm tra component có phải Separator không.
  */
-export function isSeparatorComponent(
-  component: unknown,
-): component is SeparatorComponentV2 {
+export function isSeparatorComponent(component: unknown): component is SeparatorComponentV2 {
   return (
     typeof component === 'object' &&
     component !== null &&
@@ -132,9 +126,7 @@ export function isSeparatorComponent(
 /**
  * Type guard: kiểm tra component có phải MediaGallery không.
  */
-export function isMediaGalleryComponent(
-  component: unknown,
-): component is MediaGalleryComponentV2 {
+export function isMediaGalleryComponent(component: unknown): component is MediaGalleryComponentV2 {
   return (
     typeof component === 'object' &&
     component !== null &&

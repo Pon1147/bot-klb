@@ -126,7 +126,6 @@ export class SettingsService {
   ): BuildContainerResult {
     return buildContainer(containerSettings, context, options);
   }
-
 }
 
 /**
