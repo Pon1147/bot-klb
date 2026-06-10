@@ -1,5 +1,5 @@
 /**
- * DF Commands E2E — /df-stats, /df-daily.
+ * DF Commands E2E — /df-stats, /df-daily, /df-code, /df-unlink, /df-history.
  * Real DB token lookup, real container building.
  * Mocked: axios (external API), discord.js (constants), scraper (puppeteer).
  */
@@ -24,7 +24,7 @@ jest.mock('axios', () => ({
 jest.mock('discord.js', () => ({
   ComponentType: { TextDisplay: 10, Separator: 14, Container: 17, Section: 9, Thumbnail: 11 },
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
-  SlashCommandBuilder: class { setName() { return this; } setDescription() { return this; } },
+  SlashCommandBuilder: class { setName() { return this; } setDescription() { return this; } addIntegerOption() { return this; } },
 }));
 
 jest.mock('../../src/services/deltaforce.scraper', () => ({
@@ -172,27 +172,25 @@ describe('DF Commands E2E — /df-daily', () => {
     const db = createTestDb();
     const interaction = createMockInteraction({ guild: null });
 
-    await expect(execute(interaction, db)).resolves.not.toThrow();
+    await execute(interaction, db);
 
-    // Should respond (reply or deferReply) without proceeding to API calls
-    const responded = interaction.reply.mock.calls.length > 0 || interaction.deferReply.mock.calls.length > 0;
-    expect(responded).toBe(true);
-    expect(mockDeltaForceApi).not.toHaveBeenCalled();
+    expect(interaction.reply).toHaveBeenCalled();
+    expect(interaction.deferReply).not.toHaveBeenCalled();
     db.close();
   });
 
-  it('phải hiển thị daily codes khi chưa liên kết tài khoản', async () => {
+  it('phải trả về error khi chưa liên kết tài khoản', async () => {
     const db = createTestDb();
     const interaction = createMockInteraction();
 
     await execute(interaction, db);
 
-    expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
-    expect(interaction.editReply).toHaveBeenCalled();
+    expect(interaction.reply).toHaveBeenCalled();
+    expect(mockDeltaForceApi).not.toHaveBeenCalled();
     db.close();
   });
 
-  it('phải hiển thị full data khi có token + API thành công', async () => {
+  it('phải hiển thị battle stats khi có token + API thành công', async () => {
     const db = createTestDb();
     seedDfToken(db, 'user-123', 'openid-1', 'token-abc', '123', 'sig-1', 'user-1');
 
@@ -209,13 +207,233 @@ describe('DF Commands E2E — /df-daily', () => {
     const interaction = createMockInteraction();
     await execute(interaction, db);
 
+    expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
     expect(interaction.editReply).toHaveBeenCalled();
+
     const row = db.prepare('SELECT last_used_at FROM df_tokens WHERE discord_id = ?').get('user-123');
     expect(row?.last_used_at).toBeDefined();
     db.close();
   });
 
   it('phải xử lý API failure gracefully', async () => {
+    const db = createTestDb();
+    seedDfToken(db, 'user-123', 'openid-1', 'token-abc');
+
+    mockDeltaForceApi.mockRejectedValue(new Error('Network error'));
+
+    const interaction = createMockInteraction();
+    await execute(interaction, db);
+
+    expect(interaction.editReply).toHaveBeenCalled();
+    db.close();
+  });
+
+  it('phải xử lý khi battle data là null', async () => {
+    const db = createTestDb();
+    seedDfToken(db, 'user-123', 'openid-1', 'token-abc');
+
+    mockDeltaForceApi.mockResolvedValue({
+      data: {
+        code: 0,
+        msg: 'ok',
+        data: { battlefield_battle: null, beacon_battle: null },
+      },
+    });
+
+    const interaction = createMockInteraction();
+    await execute(interaction, db);
+
+    expect(interaction.editReply).toHaveBeenCalled();
+    db.close();
+  });
+});
+
+// ── /df-code ─────────────────────────────────────────────────────
+
+describe('DF Commands E2E — /df-code', () => {
+  let execute: (interaction: any, db: any) => Promise<void>;
+  let createTestDb: () => any;
+  let createMockInteraction: (overrides?: any) => any;
+
+  beforeEach(() => {
+    jest.resetModules();
+
+    ({ execute } = require('../../src/commands/df/code.command'));
+    ({ createTestDb } = require('./setup'));
+    ({ createMockInteraction } = require('./fixtures'));
+  });
+
+  it('phải trả về error khi không có guild', async () => {
+    const db = createTestDb();
+    const interaction = createMockInteraction();
+    interaction.guild = null;
+
+    await execute(interaction, db);
+
+    expect(interaction.reply).toHaveBeenCalled();
+    db.close();
+  });
+
+  it('phải hiển thị codes khi scraper trả về data (không cần token)', async () => {
+    const db = createTestDb();
+    const interaction = createMockInteraction();
+
+    await execute(interaction, db);
+
+    expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
+    expect(interaction.editReply).toHaveBeenCalled();
+    db.close();
+  });
+
+  it('phải xử lý scraper trả về null gracefully', async () => {
+    const db = createTestDb();
+    const { fetchDailyCodes } = require('../../src/services/deltaforce.scraper');
+    (fetchDailyCodes as jest.Mock).mockResolvedValue(null);
+
+    const interaction = createMockInteraction();
+    await execute(interaction, db);
+
+    expect(interaction.editReply).toHaveBeenCalled();
+    db.close();
+  });
+});
+
+// ── /df-unlink ───────────────────────────────────────────────────
+
+describe('DF Commands E2E — /df-unlink', () => {
+  let execute: (interaction: any, db: any) => Promise<void>;
+  let createTestDb: () => any;
+  let seedDfToken: (db: any, ...args: any[]) => void;
+  let createMockInteraction: (overrides?: any) => any;
+
+  beforeEach(() => {
+    jest.resetModules();
+
+    ({ createTestDb, seedDfToken } = require('./setup'));
+    ({ createMockInteraction } = require('./fixtures'));
+    ({ execute } = require('../../src/commands/df/unlink.command'));
+  });
+
+  it('phải trả về error khi không có guild', async () => {
+    const db = createTestDb();
+    const interaction = createMockInteraction({ guild: null });
+
+    await execute(interaction, db);
+
+    expect(interaction.reply).toHaveBeenCalled();
+    db.close();
+  });
+
+  it('phải trả về info khi chưa liên kết tài khoản', async () => {
+    const db = createTestDb();
+    const interaction = createMockInteraction();
+
+    await execute(interaction, db);
+
+    expect(interaction.reply).toHaveBeenCalled();
+    const row = db.prepare('SELECT * FROM df_tokens WHERE discord_id = ?').get('user-123');
+    expect(row).toBeUndefined();
+    db.close();
+  });
+
+  it('phải xóa token khi có tài khoản liên kết', async () => {
+    const db = createTestDb();
+    seedDfToken(db, 'user-123', 'openid-1', 'token-abc');
+
+    const interaction = createMockInteraction();
+    await execute(interaction, db);
+
+    expect(interaction.reply).toHaveBeenCalled();
+    const row = db.prepare('SELECT * FROM df_tokens WHERE discord_id = ?').get('user-123');
+    expect(row).toBeUndefined();
+    db.close();
+  });
+});
+
+// ── /df-history ──────────────────────────────────────────────────
+
+describe('DF Commands E2E — /df-history', () => {
+  let execute: (interaction: any, db: any) => Promise<void>;
+  let createTestDb: () => any;
+  let seedDfToken: (db: any, ...args: any[]) => void;
+  let createMockInteraction: (overrides?: any) => any;
+
+  beforeEach(() => {
+    jest.resetModules();
+    mockDeltaForceApi.mockReset();
+
+    ({ createTestDb, seedDfToken } = require('./setup'));
+    ({ createMockInteraction } = require('./fixtures'));
+    ({ execute } = require('../../src/commands/df/history.command'));
+  });
+
+  it('phải trả về error khi không có guild', async () => {
+    const db = createTestDb();
+    const interaction = createMockInteraction({ guild: null });
+
+    await execute(interaction, db);
+
+    expect(interaction.reply).toHaveBeenCalled();
+    expect(interaction.deferReply).not.toHaveBeenCalled();
+    db.close();
+  });
+
+  it('phải trả về error khi chưa liên kết tài khoản', async () => {
+    const db = createTestDb();
+    const interaction = createMockInteraction();
+
+    await execute(interaction, db);
+
+    expect(interaction.reply).toHaveBeenCalled();
+    expect(mockDeltaForceApi).not.toHaveBeenCalled();
+    db.close();
+  });
+
+  it('phải hiển thị match list khi có token + API thành công', async () => {
+    const db = createTestDb();
+    seedDfToken(db, 'user-123', 'openid-1', 'token-abc', '123', 'sig-1', 'user-1');
+
+    mockDeltaForceApi.mockResolvedValue({
+      data: {
+        code: 0,
+        msg: 'ok',
+        data: {
+          commonly_used_operators_id: '1',
+          list: [
+            { carry_out_value: '50000', is_leave: 0, kill_count: 5, map_id: 2201, match_time: '1609459200', net_income: '10000', operator_icon: '', operator_id: '1', result: 1, room_id: '1', score: 1000 },
+          ],
+        },
+      },
+    });
+
+    const interaction = createMockInteraction();
+    await execute(interaction, db);
+
+    expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
+    expect(interaction.editReply).toHaveBeenCalled();
+    db.close();
+  });
+
+  it('phải trả về error khi không có match nào', async () => {
+    const db = createTestDb();
+    seedDfToken(db, 'user-123', 'openid-1', 'token-abc');
+
+    mockDeltaForceApi.mockResolvedValue({
+      data: {
+        code: 0,
+        msg: 'ok',
+        data: { commonly_used_operators_id: '1', list: [] },
+      },
+    });
+
+    const interaction = createMockInteraction();
+    await execute(interaction, db);
+
+    expect(interaction.editReply).toHaveBeenCalled();
+    db.close();
+  });
+
+  it('phải xử lý API error gracefully', async () => {
     const db = createTestDb();
     seedDfToken(db, 'user-123', 'openid-1', 'token-abc');
 

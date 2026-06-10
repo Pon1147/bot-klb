@@ -29,7 +29,7 @@ module.exports = {
     '!src/scraper/**/*.ts',
     '!src/services/deltaforce.scraper.ts',
     '!src/commands/df/link.command.ts',
-    '!src/commands/df/matches.command.ts',
+    '!src/commands/df/history.command.ts',
   ],
   coverageDirectory: 'coverage',
   coverageThreshold: {
@@ -43,7 +43,7 @@ module.exports = {
     // - welcome-test.command.ts: v8 coverage misses lines when module is loaded via require() + resetModules()
     // - webhook.routes.ts: express router fallback parse + outer catch block are hard to isolate
     // - df-claim-store.ts: makeCode() fallback path requires 10 random collisions (virtually impossible)
-    'src/commands/welcome/welcome-test.command.ts': {
+    'src/commands/welcome/test.command.ts': {
       branches: 38,
       functions: 50,
       lines: 60,

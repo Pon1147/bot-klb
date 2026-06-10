@@ -1,5 +1,5 @@
 /**
- * Unit tests cho df-matches.command.ts — /df-matches slash command.
+ * Unit tests cho df-history.command.ts — /df-history slash command.
  */
 
 jest.mock('discord.js', () => ({
@@ -34,12 +34,12 @@ jest.mock('../src/utils/container.utils.js', () => ({
   })),
 }));
 
-import { execute } from '../src/commands/df/matches.command.js';
+import { execute } from '../src/commands/df/history.command.js';
 import { getDfToken, touchDfToken } from '../src/database/df.token.db.js';
 import { getMatchList } from '../src/services/deltaforce.api.js';
 import { MessageFlags } from 'discord.js';
 
-describe('df-matches.command', () => {
+describe('df-history.command', () => {
   const mockDb: any = { prepare: jest.fn(() => ({ get: jest.fn(), run: jest.fn() })) };
   const mockReply = jest.fn().mockResolvedValue(undefined);
   const mockEditReply = jest.fn().mockResolvedValue(undefined);
