@@ -1,24 +1,25 @@
 import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
-import { getSettingsService } from '../../services/settings.service.js';
-import { buildSuccessContainer } from '../../utils/container.utils.js';
+import { getSettingsService } from '../../../services/settings.service.js';
+import { buildSuccessContainer } from '../../../utils/container.utils.js';
 
 /**
- * Handle /welcome setrole: lưu role welcome đã cấu hình.
+ * Handle /welcome toggle: bật/tắt hệ thống welcome.
  */
-export async function handleSetRole(
+export async function handleToggle(
   interaction: ChatInputCommandInteraction,
   guildIdentifier: string,
 ): Promise<void> {
-  const selectedRole = interaction.options.getRole('role', true);
+  const shouldBeEnabled = interaction.options.getBoolean('enabled', true);
 
   const settingsService = getSettingsService();
   settingsService.update(guildIdentifier, {
     welcome: {
-      roleId: selectedRole.id,
+      enabled: shouldBeEnabled,
     },
   });
 
-  const container = buildSuccessContainer(`Welcome role set to ${selectedRole.name}.`);
+  const statusText = shouldBeEnabled ? 'enabled' : 'disabled';
+  const container = buildSuccessContainer(`Welcome system ${statusText}.`);
   // WHY: Combine IsComponentsV2 + Ephemeral flags thay vì ephemeral: true (deprecated)
   await interaction.reply({
     components: container.components as any,

@@ -79,7 +79,7 @@ describe('Test Commands E2E — /test-welcome', () => {
   beforeEach(() => {
     jest.resetModules();
     db = createTestDb();
-    ({ execute } = require('../../src/commands/welcome/welcome-test.command'));
+    ({ execute } = require('../../src/commands/welcome/test.command'));
   });
 
   afterEach(() => {
