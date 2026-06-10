@@ -34,7 +34,7 @@ jest.mock('../src/utils/container.utils.js', () => ({
   })),
 }));
 
-import { execute } from '../src/commands/df/df-matches.command.js';
+import { execute } from '../src/commands/df/matches.command.js';
 import { getDfToken, touchDfToken } from '../src/database/df.token.db.js';
 import { getMatchList } from '../src/services/deltaforce.api.js';
 import { MessageFlags } from 'discord.js';

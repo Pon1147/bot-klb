@@ -29,7 +29,7 @@ jest.mock('../src/utils/container.utils.js', () => ({
   })),
 }));
 
-import { execute, data } from '../src/commands/df/df-daily.command.js';
+import { execute, data } from '../src/commands/df/daily.command.js';
 import { getDfToken, touchDfToken } from '../src/database/df.token.db.js';
 import { fetchDailyCodes } from '../src/services/deltaforce.scraper.js';
 import { getDailyReport } from '../src/services/deltaforce.api.js';

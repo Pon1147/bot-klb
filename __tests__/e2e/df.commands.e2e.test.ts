@@ -51,7 +51,7 @@ describe('DF Commands E2E — /df-stats', () => {
 
     ({ createTestDb, seedDfToken } = require('./setup'));
     ({ createMockInteraction } = require('./fixtures'));
-    ({ execute } = require('../../src/commands/df/df-stats.command'));
+    ({ execute } = require('../../src/commands/df/stats.command'));
   });
 
   it('phải trả về error khi không có guild', async () => {
@@ -163,7 +163,7 @@ describe('DF Commands E2E — /df-daily', () => {
     jest.resetModules();
     mockDeltaForceApi.mockReset();
 
-    ({ execute } = require('../../src/commands/df/df-daily.command'));
+    ({ execute } = require('../../src/commands/df/daily.command'));
     ({ createTestDb, seedDfToken } = require('./setup'));
     ({ createMockInteraction } = require('./fixtures'));
   });

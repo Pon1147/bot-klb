@@ -29,7 +29,7 @@ jest.mock('../src/utils/container.utils.js', () => ({
   })),
 }));
 
-import { execute } from '../src/commands/df/df-stats.command.js';
+import { execute } from '../src/commands/df/stats.command.js';
 import { getDfToken, touchDfToken } from '../src/database/df.token.db.js';
 import { getSeasonData } from '../src/services/deltaforce.api.js';
 import { resolveRankFromScore } from '../src/utils/df-rank.utils.js';

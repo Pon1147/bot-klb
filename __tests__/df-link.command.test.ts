@@ -69,7 +69,7 @@ jest.mock('../src/utils/container.utils.js', () => ({
   })),
 }));
 
-import { execute } from '../src/commands/df/df-link.command.js';
+import { execute } from '../src/commands/df/link.command.js';
 import { getDfToken, saveDfToken, deleteDfToken } from '../src/database/df.token.db.js';
 import { getMyData } from '../src/services/deltaforce.api.js';
 import { generateCode } from '../src/services/df-claim-store.js';
