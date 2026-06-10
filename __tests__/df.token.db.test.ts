@@ -10,6 +10,16 @@ jest.mock('better-sqlite3', () => {
   }));
   return jest.fn(() => ({
     exec: jest.fn(),
+    pragma: jest.fn(() => [
+      { name: 'discord_id' },
+      { name: 'openid' },
+      { name: 'token' },
+      { name: 'ts' },
+      { name: 's' },
+      { name: 'u' },
+      { name: 'linked_at' },
+      { name: 'last_used_at' },
+    ]),
     prepare: prepareMock,
   }));
 }, { virtual: true });
@@ -97,7 +107,7 @@ describe('df.token.db', () => {
       expect(mockDb.prepare).toHaveBeenCalledWith(
         expect.stringContaining('INSERT OR REPLACE INTO df_tokens'),
       );
-      expect(prepared.run).toHaveBeenCalledWith('123', 'openid1', 'token1');
+      expect(prepared.run).toHaveBeenCalledWith('123', 'openid1', 'token1', null, null, null);
     });
   });
 
