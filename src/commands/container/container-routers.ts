@@ -14,8 +14,8 @@ import {
   handleCustomColorModal,
   handleSeparatorToggle,
   handleMediaEdit,
-} from './container-property.handlers.js';
-import { handleSave, handleReset, handleCancel } from './container-action.handlers.js';
+} from './handlers/property.handler.js';
+import { handleSave, handleReset, handleCancel } from './handlers/action.handler.js';
 
 /**
  * Main handler cho tất cả button interactions trong container editor.

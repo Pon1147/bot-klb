@@ -1,6 +1,6 @@
 import { ButtonInteraction, MessageFlags } from 'discord.js';
-import { buildErrorContainer } from '../../utils/container.utils.js';
-import { ContainerEditSession, CONTAINER_COLOR_PRESETS } from './container-session.js';
+import { buildErrorContainer } from '../../../utils/container.utils.js';
+import { ContainerEditSession, CONTAINER_COLOR_PRESETS } from '../container-session.js';
 import {
   buildLinesSubmenuRows,
   buildColorPickerRows,
@@ -11,7 +11,7 @@ import {
   buildMediaModal,
   buildEditLineModal,
   updateEditorMessage,
-} from './container-builders.js';
+} from '../container-builders.js';
 
 // ─── Lines Handlers ────────────────────────────────────────────
 
