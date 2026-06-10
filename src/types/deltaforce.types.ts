@@ -86,6 +86,9 @@ export interface DfCollectionResponse {
 export interface DfApiToken {
   openid: string;
   token: string;
+  ts?: string;
+  s?: string;
+  u?: string;
 }
 
 export interface DfBattlefieldBattle {

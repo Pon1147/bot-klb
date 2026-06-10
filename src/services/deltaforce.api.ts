@@ -16,9 +16,6 @@ const FIXED_PARAMS = new URLSearchParams({
   account_type: '1',
   lang_type: 'vi',
   a: '10005',
-  ts: '0',
-  s: '0',
-  // ts/s are not validated by the server -- safe to use dummy values
 });
 
 const HEADERS = {
@@ -28,12 +25,19 @@ const HEADERS = {
 };
 
 function buildInstance(token: DfApiToken): AxiosInstance {
+  console.log('[DfApi] buildInstance: openid=' + token.openid +
+    ', token_len=' + token.token.length +
+    ', ts=' + (token.ts || '0') +
+    ', s=' + (token.s || '0') +
+    ', u=' + (token.u || crypto.randomUUID()));
   return axios.create({
     baseURL: BASE,
     params: {
       openid: token.openid,
       token: token.token,
-      u: crypto.randomUUID(),
+      ts: token.ts || '0',
+      s: token.s || '0',
+      u: token.u || crypto.randomUUID(),
       ...Object.fromEntries(FIXED_PARAMS),
     },
     headers: HEADERS,
@@ -60,6 +64,7 @@ export async function getMyData(token: DfApiToken): Promise<DfMyDataResponse> {
 
   const res = await instance.post<DfApiResponse<DfMyDataResponse>>('/GetMyData', body);
   if (res.data.code !== 0) {
+    console.log('[DfApi] GetMyData failed: code=' + res.data.code + ', msg=' + res.data.msg);
     throw new Error(`GetMyData failed: code=${res.data.code} msg=${res.data.msg}`);
   }
   return res.data.data;
@@ -87,6 +92,7 @@ export async function getSeasonData(
 
   const res = await instance.post<DfApiResponse<DfMyDataResponse>>('/GetMyData', body);
   if (res.data.code !== 0) {
+    console.log('[DfApi] GetMyData(season=' + seasonNo + ') failed: code=' + res.data.code + ', msg=' + res.data.msg);
     throw new Error(`GetMyData (season ${seasonNo}) failed: code=${res.data.code} msg=${res.data.msg}`);
   }
   return res.data.data;
@@ -111,6 +117,7 @@ export async function getMatchList(token: DfApiToken): Promise<DfMatchListRespon
 
   const res = await instance.post<DfApiResponse<DfMatchListResponse>>('/GetMatchList', body);
   if (res.data.code !== 0) {
+    console.log('[DfApi] GetMatchList failed: code=' + res.data.code + ', msg=' + res.data.msg);
     throw new Error(`GetMatchList failed: code=${res.data.code} msg=${res.data.msg}`);
   }
   return res.data.data;
@@ -124,6 +131,7 @@ export async function getCollection(token: DfApiToken): Promise<DfCollectionResp
 
   const res = await instance.post<DfApiResponse<DfCollectionResponse>>('/GetDahongCollection', {});
   if (res.data.code !== 0) {
+    console.log('[DfApi] GetDahongCollection failed: code=' + res.data.code + ', msg=' + res.data.msg);
     throw new Error(`GetDahongCollection failed: code=${res.data.code} msg=${res.data.msg}`);
   }
   return res.data.data;
@@ -148,6 +156,7 @@ export async function getDailyReport(token: DfApiToken): Promise<DfDailyReportRe
 
   const res = await instance.post<DfApiResponse<DfDailyReportResponse>>('/GetDailyReport', body);
   if (res.data.code !== 0) {
+    console.log('[DfApi] GetDailyReport failed: code=' + res.data.code + ', msg=' + res.data.msg);
     throw new Error(`GetDailyReport failed: code=${res.data.code} msg=${res.data.msg}`);
   }
   return res.data.data;

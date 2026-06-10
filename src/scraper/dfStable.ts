@@ -26,7 +26,7 @@ interface DfCredentials {
 
 (function (): void {
   console.clear();
-  console.log('%c[DF] Đã khởi động – chờ intercept GetMyData...', 'color:#0f0; font-weight:bold');
+  console.log('%c[DF] Đã khởi động – chờ intercept DfTools API...', 'color:#0f0; font-weight:bold');
 
   // ─── 1. Daily Passwords ──────────────────────────────────────
   function getDailyPasswords(): DailyPasswords {
@@ -54,14 +54,16 @@ interface DfCredentials {
   window.fetch = async function (...args: Parameters<typeof fetch>): Promise<Response> {
     const url = args[0] as string;
 
-    if (url.includes('GetMyData') && !capturedCredentials) {
+    if (url.includes('DfTools') && !capturedCredentials) {
       const params = new URL(url).searchParams;
       const openid = params.get('openid');
       const token = params.get('token');
+      const endpoint = url.split('/').pop() || 'unknown';
 
       if (openid && token) {
         capturedCredentials = { openid, token };
-        console.log('%c[DF] ✅ Đã capture credentials:', 'color:#0f0', capturedCredentials);
+        console.log('%c[DF] ✅ Đã capture từ ' + endpoint + ':', 'color:#0f0', capturedCredentials);
+        console.log('%c[DF] token_len=' + token.length + ', ts=' + params.get('ts') + ', s=' + params.get('s'), 'color:#888');
 
         // Copy JSON vào clipboard
         const json = JSON.stringify(capturedCredentials, null, 2);
@@ -94,7 +96,7 @@ interface DfCredentials {
   XMLHttpRequest.prototype.send = function (body?: Document | XMLHttpRequestBodyInit | null): void {
     const url = (this as any)._url as string;
 
-    if (url && url.includes('GetMyData') && !capturedCredentials) {
+    if (url && url.includes('DfTools') && !capturedCredentials) {
       const params = new URL(url).searchParams;
       const openid = params.get('openid');
       const token = params.get('token');
@@ -116,6 +118,6 @@ interface DfCredentials {
     return origSend.apply(this, arguments as any);
   };
 
-  console.log('%c[DF] Chờ trang gọi GetMyData...', 'color:#888');
-  console.log('%c[DF] Nếu đã login → refresh trang (F5) để trigger API', 'color:#888');
+  console.log('%c[DF] Chờ trang gọi DfTools API...', 'color:#888');
+  console.log('%c[DF] Nếu đã login → nhấn vài nút trên trang để trigger API', 'color:#888');
 })();
