@@ -109,7 +109,7 @@ describe('df-daily.command', () => {
   });
 
   it('nên gọi API daily report khi có token liên kết', async () => {
-    const mockToken = { openid: '123', token: 'abc', linked_at: '2026-06-09', last_used_at: null };
+    const mockToken = { openid: '123', token: 'abc', ts: '42', s: 'sig1', u: 'dev1', linked_at: '2026-06-09', last_used_at: null };
     (getDfToken as jest.Mock).mockReturnValue(mockToken);
     (fetchDailyCodes as jest.Mock).mockResolvedValue(null);
     (getDailyReport as jest.Mock).mockResolvedValue({
@@ -117,7 +117,13 @@ describe('df-daily.command', () => {
       beacon_battle: null,
     });
     await execute(createMockInteraction(), mockDb);
-    expect(getDailyReport).toHaveBeenCalledWith({ openid: '123', token: 'abc' });
+    expect(getDailyReport).toHaveBeenCalledWith({
+      openid: '123',
+      token: 'abc',
+      ts: '42',
+      s: 'sig1',
+      u: 'dev1',
+    });
     expect(touchDfToken).toHaveBeenCalledWith(mockDb, '222');
   });
 

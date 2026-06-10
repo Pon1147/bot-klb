@@ -136,7 +136,7 @@ export async function execute(
           return;
         }
 
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         try {
           const data = await getMyData({ openid: parsed.openid, token: parsed.token });
@@ -163,7 +163,7 @@ export async function execute(
 
       case 'start': {
         try {
-          await interaction.deferReply({ ephemeral: true });
+          await interaction.deferReply({ flags: MessageFlags.Ephemeral });
           const code = generateCode(userId);
 
           // Thay thế placeholder trong script

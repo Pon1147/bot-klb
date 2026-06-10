@@ -46,7 +46,13 @@ export async function execute(
   await interaction.deferReply({ ephemeral: true });
 
   try {
-    const apiToken = { openid: token.openid, token: token.token };
+    const apiToken = {
+      openid: token.openid,
+      token: token.token,
+      ts: token.ts ?? undefined,
+      s: token.s ?? undefined,
+      u: token.u ?? undefined,
+    };
     const matchData = await getMatchList(apiToken);
     touchDfToken(database, interaction.user.id);
 

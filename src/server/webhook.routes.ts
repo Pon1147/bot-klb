@@ -6,7 +6,6 @@ import { Router, Request, Response } from 'express';
 import { Client } from 'discord.js';
 import Database from 'better-sqlite3';
 import { consumeCode } from '../services/df-claim-store.js';
-import { getMyData } from '../services/deltaforce.api.js';
 import { saveDfToken } from '../database/df.token.db.js';
 
 /**
@@ -24,14 +23,19 @@ export async function handleClaimRequest(
     };
   }
 
-  const { code, openid, token } = body;
+  const { code, openid, token, ts, s, u } = body;
 
   if (!code || !openid || !token) {
+    console.log('[Webhook] ❌ Thiếu fields — code=' + code + ', openid=' + openid + ', token=' + token);
     return {
       status: 400,
       body: { status: 'error', message: 'Thiếu thông tin: cần code, openid, và token.' },
     };
   }
+
+  console.log('[Webhook] Nhận claim: code=' + code + ', openid=' + openid +
+    ', token_len=' + token.length + ', token_preview=' + token.substring(0, 20) +
+    ', ts=' + ts + ', s=' + s + ', u=' + u);
 
   const discordId = consumeCode(code);
   if (!discordId) {
@@ -45,22 +49,9 @@ export async function handleClaimRequest(
   }
 
   try {
-    // Luôn lưu token — browser đã dùng thành công, không cần validate lại
-    saveDfToken(database, discordId, openid, token);
-
-    // Best-effort: thử validate để lấy nickname
-    let nickname = '';
-    let level = '';
-    try {
-      const data = await getMyData({ openid, token });
-      nickname = data.player_info.nickname;
-      level = String(data.player_info.level);
-    } catch (validateError: any) {
-      console.warn(
-        '[Webhook] Validate skip (token ngắn hạn, vẫn lưu):',
-        validateError.message,
-      );
-    }
+    // Lưu token cùng params (ts, s, u) từ browser
+    saveDfToken(database, discordId, openid, token, ts, s, u);
+    console.log('[Webhook] ✅ Lưu token: openid=' + openid + ' ts=' + ts + ' s=' + s);
 
     // Gửi DM thông báo
     try {
@@ -68,19 +59,10 @@ export async function handleClaimRequest(
       if (user) {
         const dm = await user.createDM().catch(() => null);
         if (dm) {
-          let dmContent: string;
-          if (nickname) {
-            dmContent =
-              '**Đã liên kết tài khoản Delta Force thành công!**\n\n' +
-              `**Nickname:** ${nickname}\n` +
-              `**Level:** ${level}`;
-          } else {
-            dmContent =
-              '**Đã liên kết tài khoản Delta Force!**\n\n' +
-              `OpenID: ${openid}\n\n` +
-              '> Token đã hết hạn khi validate — bot vẫn đã lưu. ' +
-              'Lần dùng /df-daily nếu lỗi → dùng /df-link start lại.';
-          }
+          const dmContent =
+            '**Đã liên kết tài khoản Delta Force!**\n\n' +
+            `OpenID: ${openid}` +
+            (ts && ts !== '0' ? '\n\n> ✅ Params đầy đủ — `/df-daily` sẽ hoạt động.' : '');
           await dm.send({ content: dmContent }).catch(() => {});
         }
       }

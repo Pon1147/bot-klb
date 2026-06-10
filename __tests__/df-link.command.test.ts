@@ -119,7 +119,7 @@ describe('df-link.command', () => {
       });
       (getMyData as jest.Mock).mockResolvedValue({ player_info: { nickname: 'TestPlayer', level: 50 } });
       await execute(interaction, mockDb);
-      expect(mockDeferReply).toHaveBeenCalledWith({ ephemeral: true });
+      expect(mockDeferReply).toHaveBeenCalledWith({ flags: MessageFlags.Ephemeral });
       expect(getMyData).toHaveBeenCalledWith({ openid: '123456789012345', token: 'abc123' });
       expect(saveDfToken).toHaveBeenCalledWith(mockDb, '222', '123456789012345', 'abc123');
       expect(mockEditReply).toHaveBeenCalled();
@@ -217,7 +217,7 @@ describe('df-link.command', () => {
         options: { getSubcommand: () => 'start' },
       });
       await execute(interaction, mockDb);
-      expect(mockDeferReply).toHaveBeenCalledWith({ ephemeral: true });
+      expect(mockDeferReply).toHaveBeenCalledWith({ flags: MessageFlags.Ephemeral });
       expect(generateCode).toHaveBeenCalledWith('222');
       expect(mockCreateDm).toHaveBeenCalled();
       expect(mockDmSend).toHaveBeenCalled();

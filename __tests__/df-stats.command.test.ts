@@ -75,7 +75,7 @@ describe('df-stats.command', () => {
   });
 
   it('nên hiển thị stats khi có token và API trả về data', async () => {
-    const mockToken = { openid: '123', token: 'abc', linked_at: '2026-06-09', last_used_at: null };
+    const mockToken = { openid: '123', token: 'abc', ts: '42', s: 'sig1', u: 'dev1', linked_at: '2026-06-09', last_used_at: null };
     (getDfToken as jest.Mock).mockReturnValue(mockToken);
     (getSeasonData as jest.Mock).mockResolvedValue({
       player_info: { avatar: '', level: 50, nickname: 'TestPlayer', play_duration: '100.5', register_time: '1609459200' },
@@ -94,7 +94,10 @@ describe('df-stats.command', () => {
       rankId: 32, mode: 'SOL', name: 'Vàng III', minScore: 2100, maxScore: 2299, imageUrl: 'https://example.com/rank.png',
     });
     await execute(createMockInteraction(), mockDb);
-    expect(getSeasonData).toHaveBeenCalledWith({ openid: '123', token: 'abc' }, '10009');
+    expect(getSeasonData).toHaveBeenCalledWith(
+      { openid: '123', token: 'abc', ts: '42', s: 'sig1', u: 'dev1' },
+      '10009',
+    );
     expect(touchDfToken).toHaveBeenCalledWith(mockDb, '222');
     expect(mockEditReply).toHaveBeenCalled();
   });

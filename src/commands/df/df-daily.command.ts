@@ -93,7 +93,13 @@ export async function execute(
     // Fetch in parallel — API fast, scraper slow (puppeteer launch)
     const [battleReport, codes] = await Promise.all([
       linkedToken
-        ? getDailyReport({ openid: linkedToken.openid, token: linkedToken.token }).catch((e) => {
+        ? getDailyReport({
+            openid: linkedToken.openid,
+            token: linkedToken.token,
+            ts: linkedToken.ts ?? undefined,
+            s: linkedToken.s ?? undefined,
+            u: linkedToken.u ?? undefined,
+          }).catch((e) => {
             console.warn('[df-daily] API fail:', (e as Error).message);
             return null;
           })

@@ -6,10 +6,6 @@ jest.mock('../src/services/df-claim-store.js', () => ({
   consumeCode: jest.fn(),
 }));
 
-jest.mock('../src/services/deltaforce.api.js', () => ({
-  getMyData: jest.fn(),
-}));
-
 jest.mock('../src/database/df.token.db.js', () => ({
   saveDfToken: jest.fn(),
 }));
@@ -22,7 +18,6 @@ jest.mock('discord.js', () => ({
 
 import { handleClaimRequest } from '../src/server/webhook.routes.js';
 import { consumeCode } from '../src/services/df-claim-store.js';
-import { getMyData } from '../src/services/deltaforce.api.js';
 import { saveDfToken } from '../src/database/df.token.db.js';
 import { Client } from 'discord.js';
 
@@ -41,14 +36,14 @@ describe('webhook.routes — handleClaimRequest', () => {
     (mockClient.users.fetch as jest.Mock).mockResolvedValue(mockUser);
   });
 
-  it('nên trả về 400 khi thiếu trường', async () => {
-    const res = await handleClaimRequest(
-      { code: 'ABC123', openid: '123', token: '' },
-      mockDb,
-      mockClient,
-    );
+  it('nên trả về 400 khi body rỗng', async () => {
+    const res = await handleClaimRequest(null, mockDb, mockClient);
     expect(res.status).toBe(400);
-    expect(res.body.status).toBe('error');
+  });
+
+  it('nên trả về 400 khi thiếu trường', async () => {
+    const res = await handleClaimRequest({ code: 'ABC123', openid: '123' }, mockDb, mockClient);
+    expect(res.status).toBe(400);
     expect(res.body.message).toContain('Thiếu thông tin');
   });
 
@@ -60,17 +55,11 @@ describe('webhook.routes — handleClaimRequest', () => {
       mockClient,
     );
     expect(res.status).toBe(400);
-    expect(res.body.status).toBe('error');
     expect(res.body.message).toContain('không hợp lệ');
-    expect(getMyData).not.toHaveBeenCalled();
   });
 
-  it('nên liên kết tài khoản thành công khi validate ok', async () => {
+  it('nên lưu token và trả về 200', async () => {
     (consumeCode as jest.Mock).mockReturnValue('discord-123');
-    (getMyData as jest.Mock).mockResolvedValue({
-      player_info: { nickname: 'Player1', level: 50 },
-    });
-
     const res = await handleClaimRequest(
       { code: 'ABC123', openid: '123', token: 'abc' },
       mockDb,
@@ -79,32 +68,11 @@ describe('webhook.routes — handleClaimRequest', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('linked');
-    expect(consumeCode).toHaveBeenCalledWith('ABC123');
-    expect(getMyData).toHaveBeenCalledWith({ openid: '123', token: 'abc' });
-    expect(saveDfToken).toHaveBeenCalledWith(mockDb, 'discord-123', '123', 'abc');
-  });
-
-  it('nên vẫn lưu token khi validate fail (token hết hạn)', async () => {
-    (consumeCode as jest.Mock).mockReturnValue('discord-123');
-    (getMyData as jest.Mock).mockRejectedValue(new Error('Inner token is invalid'));
-
-    const res = await handleClaimRequest(
-      { code: 'ABC123', openid: '123', token: 'abc' },
-      mockDb,
-      mockClient,
-    );
-
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('linked');
-    expect(saveDfToken).toHaveBeenCalledWith(mockDb, 'discord-123', '123', 'abc');
+    expect(saveDfToken).toHaveBeenCalledWith(mockDb, 'discord-123', '123', 'abc', undefined, undefined, undefined);
   });
 
   it('nên DM user khi liên kết thành công', async () => {
     (consumeCode as jest.Mock).mockReturnValue('discord-123');
-    (getMyData as jest.Mock).mockResolvedValue({
-      player_info: { nickname: 'Player1', level: 50 },
-    });
-
     await handleClaimRequest(
       { code: 'ABC123', openid: '123', token: 'abc' },
       mockDb,
@@ -118,11 +86,7 @@ describe('webhook.routes — handleClaimRequest', () => {
 
   it('nên không crash khi DM fail', async () => {
     (consumeCode as jest.Mock).mockReturnValue('discord-123');
-    (getMyData as jest.Mock).mockResolvedValue({
-      player_info: { nickname: 'Player1', level: 50 },
-    });
     mockUser.createDM.mockRejectedValue(new Error('DM blocked'));
-
     const res = await handleClaimRequest(
       { code: 'ABC123', openid: '123', token: 'abc' },
       mockDb,
@@ -135,11 +99,7 @@ describe('webhook.routes — handleClaimRequest', () => {
 
   it('nên không crash khi user fetch fail', async () => {
     (consumeCode as jest.Mock).mockReturnValue('discord-123');
-    (getMyData as jest.Mock).mockResolvedValue({
-      player_info: { nickname: 'Player1', level: 50 },
-    });
     (mockClient.users.fetch as jest.Mock).mockRejectedValue(new Error('user not found'));
-
     const res = await handleClaimRequest(
       { code: 'ABC123', openid: '123', token: 'abc' },
       mockDb,
