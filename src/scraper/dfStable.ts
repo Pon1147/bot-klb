@@ -63,7 +63,15 @@ interface DfCredentials {
       if (openid && token) {
         capturedCredentials = { openid, token };
         console.log('%c[DF] ✅ Đã capture từ ' + endpoint + ':', 'color:#0f0', capturedCredentials);
-        console.log('%c[DF] token_len=' + token.length + ', ts=' + params.get('ts') + ', s=' + params.get('s'), 'color:#888');
+        console.log(
+          '%c[DF] token_len=' +
+            token.length +
+            ', ts=' +
+            params.get('ts') +
+            ', s=' +
+            params.get('s'),
+          'color:#888',
+        );
 
         // Copy JSON vào clipboard
         const json = JSON.stringify(capturedCredentials, null, 2);

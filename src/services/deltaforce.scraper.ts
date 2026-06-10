@@ -135,7 +135,10 @@ export async function extractToken(
 
     // Intercept GetMyData request to extract token
     const tokenPromise = new Promise<{ openid: string; token: string }>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('Timeout: không tìm thấy token trong 20s')), timeoutMs);
+      const timer = setTimeout(
+        () => reject(new Error('Timeout: không tìm thấy token trong 20s')),
+        timeoutMs,
+      );
 
       page.setRequestInterception(true);
       page.on('request', (req: any) => {

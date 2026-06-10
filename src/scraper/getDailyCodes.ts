@@ -5,7 +5,13 @@
  * Chạy standalone: npx tsx src/scraper/getDailyCodes.ts
  */
 
-import type { Browser } from 'puppeteer';
+/**
+ * Delta Force HQ – Daily Codes Scraper
+ *
+ * Dùng Puppeteer để extract daily operation codes từ trang HQ.
+ * Chạy standalone: npx tsx src/scraper/getDailyCodes.ts
+ */
+import type { Browser } from 'puppeteer' with { 'resolution-mode': 'import' };
 
 export interface DailyCodes {
   'Đập Nước Zero': string | null;
@@ -52,9 +58,7 @@ export async function getDailyCodes(url: string = HQ_URL): Promise<DailyCodes> {
         const result: any = {};
         for (const [selector, name] of Object.entries(keys)) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const el = (globalThis as any).document?.querySelector(
-            `span[data-info="${selector}"]`,
-          );
+          const el = (globalThis as any).document?.querySelector(`span[data-info="${selector}"]`);
           if (el) {
             const text = el.textContent?.trim();
             if (text) {
