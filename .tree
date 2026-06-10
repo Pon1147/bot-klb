@@ -1,6 +1,6 @@
 bot_klb
 ├ README.md
-├ **tests**
+├ __tests__
 │ ├ booster.test.ts
 │ ├ config.test.ts
 │ ├ container-booster-edit.test.ts
@@ -10,11 +10,20 @@ bot_klb
 │ ├ container.command.test.ts
 │ ├ container.session.cleanup.test.ts
 │ ├ container.utils.test.ts
+│ ├ deltaforce.api.test.ts
+│ ├ df-claim-store.test.ts
+│ ├ df-daily.command.test.ts
+│ ├ df-link.command.test.ts
+│ ├ df-matches.command.test.ts
+│ ├ df-rank.utils.test.ts
+│ ├ df-stats.command.test.ts
+│ ├ df.token.db.test.ts
 │ ├ guild.settings.db.deepMerge.test.ts
 │ ├ logger.test.ts
 │ ├ settings.service.test.ts
 │ ├ template.utils.test.ts
 │ ├ tsconfig.json
+│ ├ webhook.routes.test.ts
 │ └ welcome.database.test.ts
 ├ coverage
 │ ├ clover.xml
@@ -48,15 +57,21 @@ bot_klb
 │ │ │ │ │ └ reset.handler.ts.html
 │ │ │ │ ├ index.html
 │ │ │ │ └ state
-│ │ │ │ ├ index.html
-│ │ │ │ └ index.ts.html
+│ │ │ │   ├ index.html
+│ │ │ │   └ index.ts.html
+│ │ │ ├ df
+│ │ │ │ ├ df-daily.command.ts.html
+│ │ │ │ ├ df-link.command.ts.html
+│ │ │ │ ├ df-matches.command.ts.html
+│ │ │ │ ├ df-stats.command.ts.html
+│ │ │ │ └ index.html
 │ │ │ ├ embed
 │ │ │ │ ├ embed.command.ts.html
 │ │ │ │ ├ embed.interactive.edit.ts.html
 │ │ │ │ └ index.html
 │ │ │ └ ticket
-│ │ │ ├ index.html
-│ │ │ └ ticket.command.ts.html
+│ │ │   ├ index.html
+│ │ │   └ ticket.command.ts.html
 │ │ ├ config
 │ │ │ ├ bot.config.ts.html
 │ │ │ ├ container.variables.ts.html
@@ -68,6 +83,7 @@ bot_klb
 │ │ │ └ variables.ts.html
 │ │ ├ container.interactive.edit.ts.html
 │ │ ├ database
+│ │ │ ├ df.token.db.ts.html
 │ │ │ ├ guild.settings.db.ts.html
 │ │ │ ├ index.html
 │ │ │ ├ ticket.database.ts.html
@@ -102,7 +118,12 @@ bot_klb
 │ │ ├ index.html
 │ │ ├ prettify.css
 │ │ ├ prettify.js
+│ │ ├ server
+│ │ │ ├ index.html
+│ │ │ └ webhook.routes.ts.html
 │ │ ├ services
+│ │ │ ├ deltaforce.api.ts.html
+│ │ │ ├ df-claim-store.ts.html
 │ │ │ ├ index.html
 │ │ │ └ settings.service.ts.html
 │ │ ├ sort-arrow-sprite.png
@@ -111,11 +132,12 @@ bot_klb
 │ │ │ ├ index.html
 │ │ │ └ ticket.types.ts.html
 │ │ └ utils
-│ │ ├ container.utils.ts.html
-│ │ ├ embed.utils.ts.html
-│ │ ├ index.html
-│ │ ├ logger.ts.html
-│ │ └ template.utils.ts.html
+│ │   ├ container.utils.ts.html
+│ │   ├ df-rank.utils.ts.html
+│ │   ├ embed.utils.ts.html
+│ │   ├ index.html
+│ │   ├ logger.ts.html
+│ │   └ template.utils.ts.html
 │ └ lcov.info
 ├ data
 │ ├ bot.db
@@ -200,30 +222,30 @@ bot_klb
 │ │ │ ├ df-stats.command.js
 │ │ │ └ df-stats.command.js.map
 │ │ └ welcome
-│ │ ├ welcome-setchannel.handler.d.ts
-│ │ ├ welcome-setchannel.handler.d.ts.map
-│ │ ├ welcome-setchannel.handler.js
-│ │ ├ welcome-setchannel.handler.js.map
-│ │ ├ welcome-setrole.handler.d.ts
-│ │ ├ welcome-setrole.handler.d.ts.map
-│ │ ├ welcome-setrole.handler.js
-│ │ ├ welcome-setrole.handler.js.map
-│ │ ├ welcome-setup.command.d.ts
-│ │ ├ welcome-setup.command.d.ts.map
-│ │ ├ welcome-setup.command.js
-│ │ ├ welcome-setup.command.js.map
-│ │ ├ welcome-status.handler.d.ts
-│ │ ├ welcome-status.handler.d.ts.map
-│ │ ├ welcome-status.handler.js
-│ │ ├ welcome-status.handler.js.map
-│ │ ├ welcome-test.command.d.ts
-│ │ ├ welcome-test.command.d.ts.map
-│ │ ├ welcome-test.command.js
-│ │ ├ welcome-test.command.js.map
-│ │ ├ welcome-toggle.handler.d.ts
-│ │ ├ welcome-toggle.handler.d.ts.map
-│ │ ├ welcome-toggle.handler.js
-│ │ └ welcome-toggle.handler.js.map
+│ │   ├ welcome-setchannel.handler.d.ts
+│ │   ├ welcome-setchannel.handler.d.ts.map
+│ │   ├ welcome-setchannel.handler.js
+│ │   ├ welcome-setchannel.handler.js.map
+│ │   ├ welcome-setrole.handler.d.ts
+│ │   ├ welcome-setrole.handler.d.ts.map
+│ │   ├ welcome-setrole.handler.js
+│ │   ├ welcome-setrole.handler.js.map
+│ │   ├ welcome-setup.command.d.ts
+│ │   ├ welcome-setup.command.d.ts.map
+│ │   ├ welcome-setup.command.js
+│ │   ├ welcome-setup.command.js.map
+│ │   ├ welcome-status.handler.d.ts
+│ │   ├ welcome-status.handler.d.ts.map
+│ │   ├ welcome-status.handler.js
+│ │   ├ welcome-status.handler.js.map
+│ │   ├ welcome-test.command.d.ts
+│ │   ├ welcome-test.command.d.ts.map
+│ │   ├ welcome-test.command.js
+│ │   ├ welcome-test.command.js.map
+│ │   ├ welcome-toggle.handler.d.ts
+│ │   ├ welcome-toggle.handler.d.ts.map
+│ │   ├ welcome-toggle.handler.js
+│ │   └ welcome-toggle.handler.js.map
 │ ├ config
 │ │ ├ bot.config.d.ts
 │ │ ├ bot.config.d.ts.map
@@ -293,10 +315,20 @@ bot_klb
 │ ├ index.js
 │ ├ index.js.map
 │ ├ scraper
+│ │ ├ df-webhook.js
 │ │ ├ dfStable.js
 │ │ └ getDailyCodes.js
 │ ├ scripts
 │ │ └ tree.mjs
+│ ├ server
+│ │ ├ webhook-server.d.ts
+│ │ ├ webhook-server.d.ts.map
+│ │ ├ webhook-server.js
+│ │ ├ webhook-server.js.map
+│ │ ├ webhook.routes.d.ts
+│ │ ├ webhook.routes.d.ts.map
+│ │ ├ webhook.routes.js
+│ │ └ webhook.routes.js.map
 │ ├ services
 │ │ ├ deltaforce.api.d.ts
 │ │ ├ deltaforce.api.d.ts.map
@@ -306,6 +338,10 @@ bot_klb
 │ │ ├ deltaforce.scraper.d.ts.map
 │ │ ├ deltaforce.scraper.js
 │ │ ├ deltaforce.scraper.js.map
+│ │ ├ df-claim-store.d.ts
+│ │ ├ df-claim-store.d.ts.map
+│ │ ├ df-claim-store.js
+│ │ ├ df-claim-store.js.map
 │ │ ├ settings.service.d.ts
 │ │ ├ settings.service.d.ts.map
 │ │ ├ settings.service.js
@@ -324,22 +360,22 @@ bot_klb
 │ │ ├ settings.types.js
 │ │ └ settings.types.js.map
 │ └ utils
-│ ├ container.utils.d.ts
-│ ├ container.utils.d.ts.map
-│ ├ container.utils.js
-│ ├ container.utils.js.map
-│ ├ df-rank.utils.d.ts
-│ ├ df-rank.utils.d.ts.map
-│ ├ df-rank.utils.js
-│ ├ df-rank.utils.js.map
-│ ├ logger.d.ts
-│ ├ logger.d.ts.map
-│ ├ logger.js
-│ ├ logger.js.map
-│ ├ template.utils.d.ts
-│ ├ template.utils.d.ts.map
-│ ├ template.utils.js
-│ └ template.utils.js.map
+│   ├ container.utils.d.ts
+│   ├ container.utils.d.ts.map
+│   ├ container.utils.js
+│   ├ container.utils.js.map
+│   ├ df-rank.utils.d.ts
+│   ├ df-rank.utils.d.ts.map
+│   ├ df-rank.utils.js
+│   ├ df-rank.utils.js.map
+│   ├ logger.d.ts
+│   ├ logger.d.ts.map
+│   ├ logger.js
+│   ├ logger.js.map
+│   ├ template.utils.d.ts
+│   ├ template.utils.d.ts.map
+│   ├ template.utils.js
+│   └ template.utils.js.map
 ├ jest.config.cjs
 ├ judge.md
 ├ package-lock.json
@@ -348,40 +384,40 @@ bot_klb
 ├ src
 │ ├ assets
 │ │ └ img
-│ │ ├ HoA.webp
-│ │ ├ M_y_ch**c_a_Pon_N\_\_\_**channels.md
-│ │ ├ collections_9ca7ace87949ee7c15ded192f3af0eff.png
-│ │ ├ d-wolf.webp
-│ │ ├ gizmo.webp
-│ │ ├ hackclaw.webp
-│ │ ├ luna.webp
-│ │ ├ map_brakkesh.png
-│ │ ├ map_layali.png
-│ │ ├ map_spacecity.png
-│ │ ├ map_tideprison.png
-│ │ ├ map_zero.png
-│ │ ├ morse.webp
-│ │ ├ nox.webp
-│ │ ├ raptor.webp
-│ │ ├ saseed.webp
-│ │ ├ shepherd.webp
-│ │ ├ sineva.webp
-│ │ ├ sticker-1.jpg
-│ │ ├ sticker-1.png
-│ │ ├ sticker-2.jpg
-│ │ ├ sticker-2.png
-│ │ ├ sticker-3.jpg
-│ │ ├ sticker-3.png
-│ │ ├ sticker-4.jpg
-│ │ ├ sticker-4.png
-│ │ ├ sticker-5.jpg
-│ │ ├ sticker-5.png
-│ │ ├ stinger.webp
-│ │ ├ tempest.webp
-│ │ ├ toxic.webp
-│ │ ├ uluru.webp
-│ │ ├ vlinder.webp
-│ │ └ vyron.webp
+│ │   ├ HoA.webp
+│ │   ├ M_y_ch__c_a_Pon_N_____channels.md
+│ │   ├ collections_9ca7ace87949ee7c15ded192f3af0eff.png
+│ │   ├ d-wolf.webp
+│ │   ├ gizmo.webp
+│ │   ├ hackclaw.webp
+│ │   ├ luna.webp
+│ │   ├ map_brakkesh.png
+│ │   ├ map_layali.png
+│ │   ├ map_spacecity.png
+│ │   ├ map_tideprison.png
+│ │   ├ map_zero.png
+│ │   ├ morse.webp
+│ │   ├ nox.webp
+│ │   ├ raptor.webp
+│ │   ├ saseed.webp
+│ │   ├ shepherd.webp
+│ │   ├ sineva.webp
+│ │   ├ sticker-1.jpg
+│ │   ├ sticker-1.png
+│ │   ├ sticker-2.jpg
+│ │   ├ sticker-2.png
+│ │   ├ sticker-3.jpg
+│ │   ├ sticker-3.png
+│ │   ├ sticker-4.jpg
+│ │   ├ sticker-4.png
+│ │   ├ sticker-5.jpg
+│ │   ├ sticker-5.png
+│ │   ├ stinger.webp
+│ │   ├ tempest.webp
+│ │   ├ toxic.webp
+│ │   ├ uluru.webp
+│ │   ├ vlinder.webp
+│ │   └ vyron.webp
 │ ├ commands
 │ │ ├ booster
 │ │ │ ├ booster-setchannel.handler.ts
@@ -406,12 +442,12 @@ bot_klb
 │ │ │ └ df-stats.command.ts
 │ │ ├ tree.md
 │ │ └ welcome
-│ │ ├ welcome-setchannel.handler.ts
-│ │ ├ welcome-setrole.handler.ts
-│ │ ├ welcome-setup.command.ts
-│ │ ├ welcome-status.handler.ts
-│ │ ├ welcome-test.command.ts
-│ │ └ welcome-toggle.handler.ts
+│ │   ├ welcome-setchannel.handler.ts
+│ │   ├ welcome-setrole.handler.ts
+│ │   ├ welcome-setup.command.ts
+│ │   ├ welcome-status.handler.ts
+│ │   ├ welcome-test.command.ts
+│ │   └ welcome-toggle.handler.ts
 │ ├ config
 │ │ ├ bot.config.ts
 │ │ ├ container.variables.ts
@@ -433,24 +469,29 @@ bot_klb
 │ │ └ event.handler.ts
 │ ├ index.ts
 │ ├ scraper
+│ │ ├ df-webhook.ts
 │ │ ├ dfStable.ts
 │ │ └ getDailyCodes.ts
 │ ├ scripts
 │ │ ├ tree.js
 │ │ └ tree.mts
+│ ├ server
+│ │ ├ webhook-server.ts
+│ │ └ webhook.routes.ts
 │ ├ services
 │ │ ├ deltaforce.api.ts
 │ │ ├ deltaforce.scraper.ts
+│ │ ├ df-claim-store.ts
 │ │ └ settings.service.ts
 │ ├ types
 │ │ ├ components-v2.ts
 │ │ ├ deltaforce.types.ts
 │ │ └ settings.types.ts
 │ └ utils
-│ ├ container.utils.ts
-│ ├ df-rank.utils.ts
-│ ├ logger.ts
-│ └ template.utils.ts
+│   ├ container.utils.ts
+│   ├ df-rank.utils.ts
+│   ├ logger.ts
+│   └ template.utils.ts
 ├ tsconfig.json
 ├ tsconfig.scripts.json
 └ tsconfig.tree.json
