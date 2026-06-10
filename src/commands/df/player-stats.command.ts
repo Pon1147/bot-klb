@@ -6,7 +6,7 @@ import { getSeasonData } from '../../services/deltaforce.api.js';
 import { resolveRankFromScore } from '../../utils/df-rank.utils.js';
 
 export const data = new SlashCommandBuilder()
-  .setName('df-stats')
+  .setName('df-player-stats')
   .setDescription('Xem thống kê tài khoản Delta Force.');
 
 /** Season ID của mùa mới nhất. Update khi mùa mới ra. */

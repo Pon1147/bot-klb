@@ -1,6 +1,6 @@
 /**
  * Unit tests cho df-link.command.ts — /df-link slash command.
- * Test các subcommands: paste, unlink, get-script, status.
+ * Test các subcommands: paste, unlink, start, status.
  */
 
 jest.mock('discord.js', () => ({
@@ -17,24 +17,11 @@ jest.mock('discord.js', () => ({
 }));
 
 jest.mock('fs', () => ({
-  readFileSync: jest.fn((path: string) => {
-    if (String(path).includes('df-webhook') || String(path).includes('dfStable')) {
-      return String(path).includes('df-webhook')
-        ? 'var WEBHOOK_URL = "@@WEBHOOK_URL@@"; var CODE = "@@CLAIM_CODE@@";'
-        : 'console.log("test script")';
-    }
-    return 'console.log("test script")';
-  }),
+  readFileSync: jest.fn(() => 'var WEBHOOK_URL = "@@WEBHOOK_URL@@"; var CODE = "@@CLAIM_CODE@";'),
 }));
 
 jest.mock('path', () => ({
-  join: jest.fn((...args: string[]) => {
-    const last = args[args.length - 1];
-    if (last && last.includes('df-webhook')) {
-      return '/mock/path/df-webhook.js';
-    }
-    return '/mock/path/dfStable.js';
-  }),
+  join: jest.fn(() => '/mock/path/df-webhook.js'),
 }));
 
 jest.mock('../src/database/df.token.db.js', () => ({
@@ -193,20 +180,6 @@ describe('df-link.command', () => {
       (getDfToken as jest.Mock).mockReturnValue(undefined);
       await execute(interaction, mockDb);
       expect(mockReply).toHaveBeenCalled();
-    });
-  });
-
-  describe('subcommand: get-script', () => {
-    it('nên gửi script qua DM', async () => {
-      const interaction = createMockInteraction({
-        options: { getSubcommand: () => 'get-script' },
-      });
-      await execute(interaction, mockDb);
-      expect(mockCreateDm).toHaveBeenCalled();
-      expect(mockDmSend).toHaveBeenCalled();
-      expect(mockReply).toHaveBeenCalledWith(
-        expect.objectContaining({ content: 'Script đã được gửi qua DM.', flags: MessageFlags.Ephemeral }),
-      );
     });
   });
 

@@ -12,8 +12,8 @@ import { fetchDailyCodes, DailyCodes } from '../../services/deltaforce.scraper.j
 import type { DfBattlefieldBattle } from '../../types/deltaforce.types.js';
 
 export const data = new SlashCommandBuilder()
-  .setName('df-daily')
-  .setDescription('Lấy mật khẩu và trạng thái chiến đấu hàng ngày.');
+  .setName('df-daily-rewards')
+  .setDescription('Mật khẩu và thưởng chiến đấu hàng ngày.');
 
 const MAP_DISPLAY: Record<keyof DailyCodes, string> = {
   'Đập Nước Zero': 'Zero Dam',
