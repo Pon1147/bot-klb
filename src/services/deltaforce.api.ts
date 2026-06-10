@@ -25,11 +25,18 @@ const HEADERS = {
 };
 
 function buildInstance(token: DfApiToken): AxiosInstance {
-  console.log('[DfApi] buildInstance: openid=' + token.openid +
-    ', token_len=' + token.token.length +
-    ', ts=' + (token.ts || '0') +
-    ', s=' + (token.s || '0') +
-    ', u=' + (token.u || crypto.randomUUID()));
+  console.log(
+    '[DfApi] buildInstance: openid=' +
+      token.openid +
+      ', token_len=' +
+      token.token.length +
+      ', ts=' +
+      (token.ts || '0') +
+      ', s=' +
+      (token.s || '0') +
+      ', u=' +
+      (token.u || crypto.randomUUID()),
+  );
   return axios.create({
     baseURL: BASE,
     params: {
@@ -92,8 +99,17 @@ export async function getSeasonData(
 
   const res = await instance.post<DfApiResponse<DfMyDataResponse>>('/GetMyData', body);
   if (res.data.code !== 0) {
-    console.log('[DfApi] GetMyData(season=' + seasonNo + ') failed: code=' + res.data.code + ', msg=' + res.data.msg);
-    throw new Error(`GetMyData (season ${seasonNo}) failed: code=${res.data.code} msg=${res.data.msg}`);
+    console.log(
+      '[DfApi] GetMyData(season=' +
+        seasonNo +
+        ') failed: code=' +
+        res.data.code +
+        ', msg=' +
+        res.data.msg,
+    );
+    throw new Error(
+      `GetMyData (season ${seasonNo}) failed: code=${res.data.code} msg=${res.data.msg}`,
+    );
   }
   return res.data.data;
 }
@@ -131,7 +147,9 @@ export async function getCollection(token: DfApiToken): Promise<DfCollectionResp
 
   const res = await instance.post<DfApiResponse<DfCollectionResponse>>('/GetDahongCollection', {});
   if (res.data.code !== 0) {
-    console.log('[DfApi] GetDahongCollection failed: code=' + res.data.code + ', msg=' + res.data.msg);
+    console.log(
+      '[DfApi] GetDahongCollection failed: code=' + res.data.code + ', msg=' + res.data.msg,
+    );
     throw new Error(`GetDahongCollection failed: code=${res.data.code} msg=${res.data.msg}`);
   }
   return res.data.data;

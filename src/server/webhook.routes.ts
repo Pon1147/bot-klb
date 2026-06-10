@@ -26,16 +26,31 @@ export async function handleClaimRequest(
   const { code, openid, token, ts, s, u } = body;
 
   if (!code || !openid || !token) {
-    console.log('[Webhook] ❌ Thiếu fields — code=' + code + ', openid=' + openid + ', token=' + token);
+    console.log(
+      '[Webhook] ❌ Thiếu fields — code=' + code + ', openid=' + openid + ', token=' + token,
+    );
     return {
       status: 400,
       body: { status: 'error', message: 'Thiếu thông tin: cần code, openid, và token.' },
     };
   }
 
-  console.log('[Webhook] Nhận claim: code=' + code + ', openid=' + openid +
-    ', token_len=' + token.length + ', token_preview=' + token.substring(0, 20) +
-    ', ts=' + ts + ', s=' + s + ', u=' + u);
+  console.log(
+    '[Webhook] Nhận claim: code=' +
+      code +
+      ', openid=' +
+      openid +
+      ', token_len=' +
+      token.length +
+      ', token_preview=' +
+      token.substring(0, 20) +
+      ', ts=' +
+      ts +
+      ', s=' +
+      s +
+      ', u=' +
+      u,
+  );
 
   const discordId = consumeCode(code);
   if (!discordId) {
