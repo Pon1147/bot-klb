@@ -82,7 +82,10 @@ export function loadEvents(botClient: Client): void {
       }
 
       if (typeof eventModule.execute !== 'function') {
-        logger.warn(`Skipping "${file}": missing or invalid "execute" export (must be a function).`, { file });
+        logger.warn(
+          `Skipping "${file}": missing or invalid "execute" export (must be a function).`,
+          { file },
+        );
         skippedCount++;
         continue;
       }

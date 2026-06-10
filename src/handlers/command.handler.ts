@@ -135,10 +135,10 @@ function commandFingerprint(commandData: any): string {
  * Kết quả phân tích diff giữa local commands và Discord commands.
  */
 interface DiffResult {
-  toAdd: string[];       // Commands mới cần đăng ký
-  toUpdate: string[];    // Commands đã thay đổi cần cập nhật
-  unchanged: string[];   // Commands không thay đổi (bỏ qua)
-  toRemove: string[];    // Commands trên Discord nhưng không còn local (bỏ qua, không auto-remove)
+  toAdd: string[]; // Commands mới cần đăng ký
+  toUpdate: string[]; // Commands đã thay đổi cần cập nhật
+  unchanged: string[]; // Commands không thay đổi (bỏ qua)
+  toRemove: string[]; // Commands trên Discord nhưng không còn local (bỏ qua, không auto-remove)
 }
 
 /**
@@ -279,15 +279,12 @@ export async function deployCommands(
   }
 
   // Bước 5: Deploy đến Discord
-  logger.info(
-    `Deploying ${localCommands.length} command(s) đến Guild: ${botConfig.guildId}`,
-    {
-      clientId: botConfig.clientId,
-      guildId: botConfig.guildId,
-      newCommands: diff.toAdd,
-      changedCommands: diff.toUpdate,
-    },
-  );
+  logger.info(`Deploying ${localCommands.length} command(s) đến Guild: ${botConfig.guildId}`, {
+    clientId: botConfig.clientId,
+    guildId: botConfig.guildId,
+    newCommands: diff.toAdd,
+    changedCommands: diff.toUpdate,
+  });
 
   try {
     await rest.put(Routes.applicationGuildCommands(botConfig.clientId, botConfig.guildId), {
