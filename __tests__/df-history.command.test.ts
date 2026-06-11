@@ -3,13 +3,27 @@
  */
 
 jest.mock('discord.js', () => ({
-  ComponentType: { TextDisplay: 10, Separator: 14, Container: 17 },
+  ComponentType: {
+    TextDisplay: 10,
+    Separator: 14,
+    Container: 17,
+    Section: 9,
+    Thumbnail: 11,
+  },
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
   SlashCommandBuilder: class {
     setName() { return this; }
     setDescription() { return this; }
     addIntegerOption() { return this; }
   },
+  ActionRowBuilder: class { addComponents() { return this; } toJSON() { return {}; } },
+  ButtonBuilder: class {
+    setCustomId() { return this; }
+    setLabel() { return this; }
+    setStyle() { return this; }
+    toJSON() { return {}; }
+  },
+  ButtonStyle: { Secondary: 2 },
 }));
 
 jest.mock('../src/database/df.token.db.js', () => ({
@@ -24,11 +38,6 @@ jest.mock('../src/services/deltaforce.api.js', () => ({
 jest.mock('../src/utils/container.utils.js', () => ({
   buildErrorContainer: jest.fn((msg) => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
-    flags: 65536,
-    files: [],
-  })),
-  buildTextOnlyContainer: jest.fn((content) => ({
-    components: [{ type: 17, components: [{ type: 10, content }] }],
     flags: 65536,
     files: [],
   })),
