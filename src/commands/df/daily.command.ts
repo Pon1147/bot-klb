@@ -18,24 +18,26 @@ function formatOperations(battle: DfBattlefieldBattle | null): string {
   if (!battle) return '  _Chua co du lieu (chua choi tran nao hom nay)_';
 
   const lines: string[] = [];
-  lines.push(`- **Thuong**: ${Number(battle.revenue).toLocaleString('vi-VN')}`);
-  lines.push(`- **Dach su ha goc**: ${battle.kill_count}`);
-  lines.push(`- **Tran dau**: ${battle.match_count}`);
-  lines.push(`- **KD**: ${battle.kd_ratio}`);
-  lines.push(`- **Rut quan**: ${battle.retreat_rate}%`);
+  lines.push(`- **Thưởng**: ${Number(battle.revenue).toLocaleString('vi-VN')}`);
+  lines.push(`- **Số Đặc Vụ Hạ Gục**: ${battle.kill_count}`);
+  lines.push(`- **Số Trận Đấu**: ${battle.match_count}`);
+  lines.push(`- **K/D**: ${battle.kd_ratio}`);
+  lines.push(`- **Tỉ Lệ Rút Quân**: ${battle.retreat_rate}%`);
   return lines.join('\n');
 }
 
-function buildBattleContainer(battleText: string, dateStr: string): {
+function buildBattleContainer(
+  battleText: string,
+  dateStr: string,
+): {
   components: unknown[];
   flags: number;
 } {
-  const content =
-    `## Trang Thai Chien Dau Hien Tai\n\n${battleText}\n\n_${dateStr}_`;
+  const content = `## Trang Thai Chien Dau Hien Tai\n\n${battleText}\n\n_${dateStr}_`;
 
   const inner: unknown[] = [
     { type: ComponentType.TextDisplay, content },
-    { type: ComponentType.Separator, accentColor: 0x5865F2 },
+    { type: ComponentType.Separator, accentColor: 0x5865f2 },
   ];
 
   return {
@@ -83,7 +85,10 @@ export async function execute(
     touchDfToken(database, interaction.user.id);
 
     const now = new Date();
-    const dateStr = now.toLocaleDateString('vi-VN') + ' ' + now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const dateStr =
+      now.toLocaleDateString('vi-VN') +
+      ' ' +
+      now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
     const battleText = formatOperations(battle);
     const container = buildBattleContainer(battleText, dateStr);

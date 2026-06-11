@@ -6,7 +6,7 @@ import { getSeasonData } from '../../services/deltaforce.api.js';
 import { resolveRankFromScore } from '../../utils/df-rank.utils.js';
 
 export const data = new SlashCommandBuilder()
-  .setName('df-player-stats')
+  .setName('df-stats')
   .setDescription('Xem thống kê tài khoản Delta Force.');
 
 /** Season ID của mùa mới nhất. Update khi mùa mới ra. */
@@ -24,7 +24,7 @@ export async function execute(
 
   const token = getDfToken(database, interaction.user.id);
   if (!token) {
-    const err = buildErrorContainer('Bạn chưa liên kết tài khoản. Dùng `/df-link paste` để bắt đầu.');
+    const err = buildErrorContainer('Bạn chưa liên kết tài khoản. Dùng `/df-link` để bắt đầu.');
     await interaction.reply({
       components: err.components as any,
       flags: err.flags | MessageFlags.Ephemeral,
