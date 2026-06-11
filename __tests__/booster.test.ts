@@ -12,18 +12,21 @@ const mockBuildBoosterContainer = {
   components: [{ type: 17, components: [] }],
   flags: 0,
   files: undefined,
+  toJSON() { return this.components; },
 };
 
 const mockBuildSuccessContainer = {
   components: [{ type: 17, components: [{ type: 10, content: '' }] }],
   flags: 64,
   files: undefined,
+  toJSON() { return this.components; },
 };
 
 const mockBuildTextOnlyContainer = {
   components: [{ type: 17, components: [{ type: 10, content: '' }] }],
   flags: 64,
   files: undefined,
+  toJSON() { return this.components; },
 };
 
 const mockGetBooster = jest.fn();
@@ -41,16 +44,45 @@ jest.mock('../src/services/settings.service.js', () => ({
 jest.mock('../src/utils/container.utils.js', () => ({
   buildSuccessContainer: jest.fn(() => mockBuildSuccessContainer),
   buildTextOnlyContainer: jest.fn(() => mockBuildTextOnlyContainer),
-  buildErrorContainer: jest.fn(() => ({ components: [], flags: 64 })),
+  buildErrorContainer: jest.fn(() => ({ components: [], flags: 64, toJSON() { return []; } })),
 }));
 
 // ─── Import under-test modules ──────────────────────────────────
 
+import { ChatInputCommandInteraction, GuildMember } from 'discord.js';
 import { execute as executeEvent } from '../src/events/guildMemberUpdate.event.js';
 import * as setChannelHandler from '../src/commands/booster/handlers/set-channel.handler.js';
 import * as setRoleHandler from '../src/commands/booster/handlers/set-role.handler.js';
 import * as toggleHandler from '../src/commands/booster/handlers/toggle.handler.js';
 import * as statusHandler from '../src/commands/booster/handlers/status.handler.js';
+
+// ─── Mock Interfaces ─────────────────────────────────────────────
+
+interface MockChannel {
+  isTextBased: jest.Mock;
+  send: jest.Mock;
+}
+
+interface MockMember {
+  user: { bot: boolean; id: string; tag: string; username: string };
+  guild: { id: string; channels: { cache: { get: jest.Mock } }; roles: { cache: { get: jest.Mock } } };
+  roles: { add: jest.Mock };
+  premiumSince: string | null;
+  _channelMock: MockChannel;
+  _roleMock: { name: string };
+}
+
+interface MockInteraction {
+  guild: { id: string; channels: { cache: { get: jest.Mock } } };
+  member: { permissions: { has: jest.Mock } };
+  options: {
+    getSubcommand: jest.Mock;
+    getChannel: jest.Mock;
+    getRole: jest.Mock;
+    getBoolean: jest.Mock;
+  };
+  reply: jest.Mock;
+}
 
 // ─── Test Helpers ────────────────────────────────────────────────
 
@@ -62,17 +94,17 @@ function createMockMember(
     userId?: string;
     username?: string;
   } = {},
-): any {
-  const channelMock: any = {
+): MockMember {
+  const channelMock: MockChannel = {
     isTextBased: jest.fn(() => true),
     send: jest.fn().mockResolvedValue({}),
   };
 
-  const roleMock: any = {
+  const roleMock = {
     name: 'Booster',
   };
 
-  const guild: any = {
+  const guild = {
     id: overrides.guildId || 'guild-123',
     channels: {
       cache: {
@@ -86,14 +118,14 @@ function createMockMember(
     },
   };
 
-  const user: any = {
+  const user = {
     bot: overrides.bot ?? false,
     id: overrides.userId || 'user-456',
     tag: (overrides.username ?? 'TestUser') + '#0001',
     username: overrides.username ?? 'TestUser',
   };
 
-  const roles: any = {
+  const roles = {
     add: jest.fn().mockResolvedValue(undefined),
   };
 
@@ -116,26 +148,31 @@ function createMockInteraction(
     enabled?: boolean;
     hasAdmin?: boolean;
   } = {},
-): any {
-  const channel: any = {
+): MockInteraction {
+  const channel = {
     id: overrides.channelId || 'channel-999',
     toString: () => '<#channel-999>',
   };
 
-  const role: any = {
+  const role = {
     id: overrides.roleId || 'role-999',
     toString: () => '<@&role-999>',
   };
 
-  const member: any = {
+  const member = {
     permissions: {
-      has: () => overrides.hasAdmin ?? true,
+      has: jest.fn(() => overrides.hasAdmin ?? true),
     },
   };
 
   return {
     guild: {
       id: overrides.guildId || 'guild-123',
+      channels: {
+        cache: {
+          get: jest.fn(() => undefined),
+        },
+      },
     },
     member,
     options: {
@@ -167,7 +204,7 @@ describe('Booster Feature - guildMemberUpdate.event', () => {
         container: { contentLines: [], accentColor: 0xfb663a },
       });
 
-      await executeEvent(null, oldMember, newMember);
+      await executeEvent(null, oldMember as unknown as GuildMember, newMember as unknown as GuildMember);
 
       expect(mockGetBooster).toHaveBeenCalledWith('guild-123');
       expect(mockBuildBoosterContainerFn).toHaveBeenCalled();
@@ -185,7 +222,7 @@ describe('Booster Feature - guildMemberUpdate.event', () => {
         container: { contentLines: [], accentColor: 0xfb663a },
       });
 
-      await executeEvent(null, oldMember, newMember);
+      await executeEvent(null, oldMember as unknown as GuildMember, newMember as unknown as GuildMember);
 
       expect(newMember.roles.add).toHaveBeenCalled();
     });
@@ -196,7 +233,7 @@ describe('Booster Feature - guildMemberUpdate.event', () => {
       const oldMember = createMockMember({ bot: true, premiumSince: null });
       const newMember = createMockMember({ bot: true, premiumSince: '2026-01-01T00:00:00.000Z' });
 
-      await executeEvent(null, oldMember, newMember);
+      await executeEvent(null, oldMember as unknown as GuildMember, newMember as unknown as GuildMember);
 
       expect(mockGetBooster).not.toHaveBeenCalled();
     });
@@ -212,7 +249,7 @@ describe('Booster Feature - guildMemberUpdate.event', () => {
         container: { contentLines: [], accentColor: 0xfb663a },
       });
 
-      await executeEvent(null, oldMember, newMember);
+      await executeEvent(null, oldMember as unknown as GuildMember, newMember as unknown as GuildMember);
 
       expect(mockBuildBoosterContainerFn).not.toHaveBeenCalled();
     });
@@ -228,7 +265,7 @@ describe('Booster Feature - guildMemberUpdate.event', () => {
         container: { contentLines: [], accentColor: 0xfb663a },
       });
 
-      await executeEvent(null, oldMember, newMember);
+      await executeEvent(null, oldMember as unknown as GuildMember, newMember as unknown as GuildMember);
 
       expect(mockBuildBoosterContainerFn).not.toHaveBeenCalled();
     });
@@ -237,7 +274,7 @@ describe('Booster Feature - guildMemberUpdate.event', () => {
       const oldMember = createMockMember({ premiumSince: '2025-01-01T00:00:00.000Z' });
       const newMember = createMockMember({ premiumSince: '2026-01-01T00:00:00.000Z' });
 
-      await executeEvent(null, oldMember, newMember);
+      await executeEvent(null, oldMember as unknown as GuildMember, newMember as unknown as GuildMember);
 
       expect(mockGetBooster).not.toHaveBeenCalled();
     });
@@ -254,7 +291,7 @@ describe('Booster Feature - guildMemberUpdate.event', () => {
         container: { contentLines: [], accentColor: 0xfb663a },
       });
 
-      await executeEvent(null, oldMember, newMember);
+      await executeEvent(null, oldMember as unknown as GuildMember, newMember as unknown as GuildMember);
 
       expect(mockBuildBoosterContainerFn).not.toHaveBeenCalled();
     });
@@ -271,7 +308,7 @@ describe('Booster Feature - guildMemberUpdate.event', () => {
         container: { contentLines: [], accentColor: 0xfb663a },
       });
 
-      await executeEvent(null, oldMember, newMember);
+      await executeEvent(null, oldMember as unknown as GuildMember, newMember as unknown as GuildMember);
 
       expect(mockBuildBoosterContainerFn).not.toHaveBeenCalled();
     });
@@ -290,7 +327,7 @@ describe('Booster Feature - guildMemberUpdate.event', () => {
         container: { contentLines: [], accentColor: 0xfb663a },
       });
 
-      await expect(executeEvent(null, oldMember, newMember)).resolves.not.toThrow();
+      await expect(executeEvent(null, oldMember as unknown as GuildMember, newMember as unknown as GuildMember)).resolves.not.toThrow();
     });
 
     it('phải handle lỗi khi role không tồn tại', async () => {
@@ -305,7 +342,7 @@ describe('Booster Feature - guildMemberUpdate.event', () => {
         container: { contentLines: [], accentColor: 0xfb663a },
       });
 
-      await expect(executeEvent(null, oldMember, newMember)).resolves.not.toThrow();
+      await expect(executeEvent(null, oldMember as unknown as GuildMember, newMember as unknown as GuildMember)).resolves.not.toThrow();
     });
 
     it('phải handle lỗi khi roles.add() throw error (line 91)', async () => {
@@ -322,7 +359,7 @@ describe('Booster Feature - guildMemberUpdate.event', () => {
       });
 
       // Should not throw — roles.add error is caught internally
-      await expect(executeEvent(null, oldMember, newMember)).resolves.not.toThrow();
+      await expect(executeEvent(null, oldMember as unknown as GuildMember, newMember as unknown as GuildMember)).resolves.not.toThrow();
     });
   });
 });
@@ -338,7 +375,7 @@ describe('Booster Handlers', () => {
     it('phải lưu channelId và reply success', async () => {
       const interaction = createMockInteraction({ subcommand: 'setchannel' });
 
-      await setChannelHandler.handleSetChannel(interaction as any, 'guild-123');
+      await setChannelHandler.handleSetChannel(interaction as unknown as ChatInputCommandInteraction, 'guild-123');
 
       expect(mockUpdate).toHaveBeenCalledWith('guild-123', {
         booster: { channelId: 'channel-999' },
@@ -351,7 +388,7 @@ describe('Booster Handlers', () => {
     it('phải lưu roleId và reply success', async () => {
       const interaction = createMockInteraction({ subcommand: 'setrole' });
 
-      await setRoleHandler.handleSetRole(interaction as any, 'guild-123');
+      await setRoleHandler.handleSetRole(interaction as unknown as ChatInputCommandInteraction, 'guild-123');
 
       expect(mockUpdate).toHaveBeenCalledWith('guild-123', {
         booster: { roleId: 'role-999' },
@@ -364,7 +401,7 @@ describe('Booster Handlers', () => {
     it('phải set enabled=true và reply success', async () => {
       const interaction = createMockInteraction({ subcommand: 'toggle', enabled: true });
 
-      await toggleHandler.handleToggle(interaction as any, 'guild-123');
+      await toggleHandler.handleToggle(interaction as unknown as ChatInputCommandInteraction, 'guild-123');
 
       expect(mockUpdate).toHaveBeenCalledWith('guild-123', {
         booster: { enabled: true },
@@ -375,7 +412,7 @@ describe('Booster Handlers', () => {
     it('phải set enabled=false và reply success', async () => {
       const interaction = createMockInteraction({ subcommand: 'toggle', enabled: false });
 
-      await toggleHandler.handleToggle(interaction as any, 'guild-123');
+      await toggleHandler.handleToggle(interaction as unknown as ChatInputCommandInteraction, 'guild-123');
 
       expect(mockUpdate).toHaveBeenCalledWith('guild-123', {
         booster: { enabled: false },
@@ -395,7 +432,7 @@ describe('Booster Handlers', () => {
         container: { contentLines: [], accentColor: 0xfb663a },
       });
 
-      await statusHandler.handleStatus(interaction as any, 'guild-123');
+      await statusHandler.handleStatus(interaction as unknown as ChatInputCommandInteraction, 'guild-123');
 
       expect(mockGetBooster).toHaveBeenCalledWith('guild-123');
       expect(interaction.reply).toHaveBeenCalled();
@@ -411,7 +448,7 @@ describe('Booster Handlers', () => {
         container: { contentLines: [], accentColor: 0xfb663a },
       });
 
-      await statusHandler.handleStatus(interaction as any, 'guild-123');
+      await statusHandler.handleStatus(interaction as unknown as ChatInputCommandInteraction, 'guild-123');
 
       expect(interaction.reply).toHaveBeenCalled();
     });
@@ -432,7 +469,7 @@ describe('Booster Command - execute router', () => {
       reply: jest.fn().mockResolvedValue({}),
     };
 
-    await execute(interaction as any, null);
+    await execute(interaction as unknown as ChatInputCommandInteraction, null);
 
     expect(interaction.reply).toHaveBeenCalledWith(
       expect.objectContaining({ content: expect.stringContaining('server') }),
@@ -443,7 +480,7 @@ describe('Booster Command - execute router', () => {
     const { execute } = require('../src/commands/booster/booster.command.js');
     const interaction = createMockInteraction({ hasAdmin: false });
 
-    await execute(interaction as any, null);
+    await execute(interaction as unknown as ChatInputCommandInteraction, null);
 
     expect(interaction.reply).toHaveBeenCalledWith(
       expect.objectContaining({ content: expect.stringContaining('Administrator') }),
@@ -461,7 +498,7 @@ describe('Booster Command - execute router', () => {
       container: { contentLines: [], accentColor: 0xfb663a },
     });
 
-    await execute(interaction as any, null);
+    await execute(interaction as unknown as ChatInputCommandInteraction, null);
 
     expect(interaction.reply).toHaveBeenCalled();
   });
@@ -470,7 +507,7 @@ describe('Booster Command - execute router', () => {
     const { execute } = require('../src/commands/booster/booster.command.js');
     const interaction = createMockInteraction({ subcommand: 'toggle', enabled: true });
 
-    await execute(interaction as any, null);
+    await execute(interaction as unknown as ChatInputCommandInteraction, null);
 
     expect(mockUpdate).toHaveBeenCalled();
     expect(interaction.reply).toHaveBeenCalled();
@@ -480,7 +517,7 @@ describe('Booster Command - execute router', () => {
     const { execute } = require('../src/commands/booster/booster.command.js');
     const interaction = createMockInteraction({ subcommand: 'setchannel' });
 
-    await execute(interaction as any, null);
+    await execute(interaction as unknown as ChatInputCommandInteraction, null);
 
     expect(mockUpdate).toHaveBeenCalled();
     expect(interaction.reply).toHaveBeenCalled();
@@ -490,7 +527,7 @@ describe('Booster Command - execute router', () => {
     const { execute } = require('../src/commands/booster/booster.command.js');
     const interaction = createMockInteraction({ subcommand: 'setrole' });
 
-    await execute(interaction as any, null);
+    await execute(interaction as unknown as ChatInputCommandInteraction, null);
 
     expect(mockUpdate).toHaveBeenCalled();
     expect(interaction.reply).toHaveBeenCalled();
@@ -504,7 +541,7 @@ describe('Booster Command - execute router', () => {
 
     // The execute function has a try-catch that should handle the error
     // and call interaction.reply with an error container
-    await expect(execute(interaction as any, null)).resolves.not.toThrow();
+    await expect(execute(interaction as unknown as ChatInputCommandInteraction, null)).resolves.not.toThrow();
     expect(interaction.reply).toHaveBeenCalled();
   });
 
@@ -512,7 +549,7 @@ describe('Booster Command - execute router', () => {
     const { execute } = require('../src/commands/booster/booster.command.js');
     const interaction = createMockInteraction({ subcommand: 'unknown' });
 
-    await execute(interaction as any, null);
+    await execute(interaction as unknown as ChatInputCommandInteraction, null);
 
     // buildErrorContainer returns { components, flags }, not content
     expect(interaction.reply).toHaveBeenCalledWith(
@@ -535,7 +572,7 @@ describe('Booster Command - /test-booster', () => {
       reply: jest.fn().mockResolvedValue({}),
     };
 
-    await execute(interaction as any, null);
+    await execute(interaction as unknown as ChatInputCommandInteraction, null);
 
     expect(interaction.reply).toHaveBeenCalledWith(
       expect.objectContaining({ content: expect.stringContaining('server') }),
@@ -546,7 +583,7 @@ describe('Booster Command - /test-booster', () => {
     const { execute } = require('../src/commands/booster/test.command.js');
     const interaction = createMockInteraction({ hasAdmin: false });
 
-    await execute(interaction as any, null);
+    await execute(interaction as unknown as ChatInputCommandInteraction, null);
 
     expect(interaction.reply).toHaveBeenCalledWith(
       expect.objectContaining({ content: expect.stringContaining('Administrator') }),
@@ -556,7 +593,7 @@ describe('Booster Command - /test-booster', () => {
   it('phải gửi container vào channel đã cấu hình', async () => {
     const { execute } = require('../src/commands/booster/test.command.js');
 
-    const channelMock: any = {
+    const channelMock: MockChannel & { toString: () => string } = {
       isTextBased: jest.fn(() => true),
       send: jest.fn().mockResolvedValue({}),
       toString: () => '<#channel-789>',
@@ -577,7 +614,7 @@ describe('Booster Command - /test-booster', () => {
       container: { contentLines: [], accentColor: 0xfb663a },
     });
 
-    await execute(interaction as any, null);
+    await execute(interaction as unknown as ChatInputCommandInteraction, null);
 
     expect(channelMock.send).toHaveBeenCalled();
     expect(interaction.reply).toHaveBeenCalledWith(
@@ -596,7 +633,7 @@ describe('Booster Command - /test-booster', () => {
       container: { contentLines: [], accentColor: 0xfb663a },
     });
 
-    await execute(interaction as any, null);
+    await execute(interaction as unknown as ChatInputCommandInteraction, null);
 
     expect(interaction.reply).toHaveBeenCalledWith(
       expect.objectContaining({ components: expect.any(Array), flags: expect.any(Number) }),
@@ -611,7 +648,7 @@ describe('Booster Command - /test-booster', () => {
       throw new Error('Settings Error');
     });
 
-    await expect(execute(interaction as any, null)).resolves.not.toThrow();
+    await expect(execute(interaction as unknown as ChatInputCommandInteraction, null)).resolves.not.toThrow();
     expect(interaction.reply).toHaveBeenCalled();
   });
 });
@@ -623,7 +660,7 @@ describe('Booster Commands - structure', () => {
     const { data } = require('../src/commands/booster/booster.command.js');
     const json = data.toJSON();
     expect(json.options).toHaveLength(4);
-    expect(json.options.map((o: any) => o.name)).toEqual(
+    expect(json.options.map((o: { name: string }) => o.name)).toEqual(
       expect.arrayContaining(['setchannel', 'setrole', 'toggle', 'status']),
     );
   });

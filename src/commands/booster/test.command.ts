@@ -1,4 +1,4 @@
-import {
+﻿import {
   ChatInputCommandInteraction,
   MessageFlags,
   PermissionFlagsBits,
@@ -59,7 +59,7 @@ export async function execute(
       const channel = interaction.guild.channels.cache.get(booster.channelId);
       if (channel && channel.isTextBased()) {
         await channel.send({
-          components: boosterContainer.components as any,
+          components: boosterContainer.toJSON(),
           flags: boosterContainer.flags,
           files: boosterContainer.files,
         });
@@ -73,7 +73,7 @@ export async function execute(
 
     // Fallback: reply trực tiếp cho người gọi dưới dạng Container V2
     await interaction.reply({
-      components: boosterContainer.components as any,
+      components: boosterContainer.toJSON(),
       // WHY: Combine IsComponentsV2 + Ephemeral flags
       flags: boosterContainer.flags | MessageFlags.Ephemeral,
       files: boosterContainer.files,
@@ -84,7 +84,7 @@ export async function execute(
       'Xảy ra lỗi khi test booster. Kiểm tra console logs.',
     );
     await interaction.reply({
-      components: errorContainer.components as any,
+      components: errorContainer.toJSON(),
       flags: errorContainer.flags | MessageFlags.Ephemeral,
     });
   }

@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+﻿import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { getSettingsService } from '../../../services/settings.service.js';
 import { buildSuccessContainer } from '../../../utils/container.utils.js';
 
@@ -22,7 +22,7 @@ export async function handleToggle(
   const container = buildSuccessContainer(`Booster system ${statusText}.`);
   // WHY: Combine IsComponentsV2 + Ephemeral flags thay vì ephemeral: true (deprecated)
   await interaction.reply({
-    components: container.components as any,
+    components: container.toJSON(),
     flags: container.flags | MessageFlags.Ephemeral,
   });
 }
