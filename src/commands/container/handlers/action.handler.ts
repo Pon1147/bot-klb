@@ -1,4 +1,4 @@
-import { ButtonInteraction, MessageFlags } from 'discord.js';
+﻿import { ButtonInteraction, MessageFlags } from 'discord.js';
 import { getSettingsService } from '../../../services/settings.service.js';
 import { buildErrorContainer, buildSuccessContainer } from '../../../utils/container.utils.js';
 import { cloneDefaultSettings } from '../../../config/default.settings.js';
@@ -31,14 +31,14 @@ export async function handleSave(
       `Đã lưu container "${session.type}" thành công!`,
     );
     await interaction.update({
-      components: successContainer.components as any,
+      components: successContainer.toJSON(),
       flags: successContainer.flags,
     });
   } catch (error) {
     console.error('Error saving container settings:', error);
     const errorContainer = buildErrorContainer(`Lỗi khi lưu: ${(error as Error).message}`);
     await interaction.reply({
-      components: errorContainer.components as any,
+      components: errorContainer.toJSON(),
       flags: errorContainer.flags | MessageFlags.Ephemeral,
     });
   }
@@ -57,7 +57,7 @@ export async function handleReset(
   const preview = buildLivePreviewContainer(session.draft);
 
   await interaction.update({
-    components: [...(preview.components as any), ...buildAllEditorRows()],
+    components: [...preview.toJSON(), ...buildAllEditorRows()],
     flags: preview.flags,
     files: preview.files,
   });
@@ -71,7 +71,7 @@ export async function handleCancel(interaction: ButtonInteraction): Promise<void
 
   const cancelContainer = buildErrorContainer('Đã hủy bỏ chỉnh sửa.');
   await interaction.update({
-    components: cancelContainer.components as any,
+    components: cancelContainer.toJSON(),
     flags: cancelContainer.flags,
   });
 }

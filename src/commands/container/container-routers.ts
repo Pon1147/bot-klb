@@ -1,4 +1,4 @@
-import { ButtonInteraction, GuildMember, MessageFlags, ModalSubmitInteraction, PermissionFlagsBits } from 'discord.js';
+﻿import { ButtonInteraction, GuildMember, MessageFlags, ModalSubmitInteraction, PermissionFlagsBits } from 'discord.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { getSettingsService } from '../../services/settings.service.js';
 import { editSessions, isSessionValid, touchSession, cloneContainerSettings, createSession } from './container-session.js';
@@ -36,7 +36,7 @@ export async function handleEditorButtonInteraction(
       'Session edit đã hết hạn. Vui lòng bắt đầu lại với /container edit.',
     );
     await interaction.reply({
-      components: errorContainer.components as any,
+      components: errorContainer.toJSON(),
       flags: errorContainer.flags | MessageFlags.Ephemeral,
     });
     return;
@@ -128,7 +128,7 @@ export async function handleEditorModalSubmit(
   if (!isSessionValid(session)) {
     const errorContainer = buildErrorContainer('Session edit đã hết hạn.');
     await interaction.reply({
-      components: errorContainer.components as any,
+      components: errorContainer.toJSON(),
       flags: errorContainer.flags | MessageFlags.Ephemeral,
     });
     return;
@@ -148,7 +148,7 @@ export async function handleEditorModalSubmit(
     if (isNaN(index) || index < 0 || index >= session.draft.contentLines.length) {
       const errorContainer = buildErrorContainer(`Index không hợp lệ: "${indexValue}".`);
       await interaction.reply({
-        components: errorContainer.components as any,
+        components: errorContainer.toJSON(),
         flags: errorContainer.flags | MessageFlags.Ephemeral,
       });
       return;
@@ -161,7 +161,7 @@ export async function handleEditorModalSubmit(
     if (isNaN(index) || index < 0 || index >= session.draft.contentLines.length) {
       const errorContainer = buildErrorContainer(`Index không hợp lệ: "${value}".`);
       await interaction.reply({
-        components: errorContainer.components as any,
+        components: errorContainer.toJSON(),
         flags: errorContainer.flags | MessageFlags.Ephemeral,
       });
       return;
@@ -175,7 +175,7 @@ export async function handleEditorModalSubmit(
         `Mã màu không hợp lệ: "${value}". Dùng định dạng #RRGGBB (6 ký tự hex).`,
       );
       await interaction.reply({
-        components: errorContainer.components as any,
+        components: errorContainer.toJSON(),
         flags: errorContainer.flags | MessageFlags.Ephemeral,
       });
       return;
@@ -186,7 +186,7 @@ export async function handleEditorModalSubmit(
         `Mã màu không hợp lệ: "${value}". Dùng định dạng #RRGGBB.`,
       );
       await interaction.reply({
-        components: errorContainer.components as any,
+        components: errorContainer.toJSON(),
         flags: errorContainer.flags | MessageFlags.Ephemeral,
       });
       return;
@@ -201,7 +201,7 @@ export async function handleEditorModalSubmit(
     console.warn(`Unknown container modal submission: ${modalId}`);
     const errorContainer = buildErrorContainer('Modal không hợp lệ.');
     await interaction.reply({
-      components: errorContainer.components as any,
+      components: errorContainer.toJSON(),
       flags: errorContainer.flags | MessageFlags.Ephemeral,
     });
     return;
@@ -231,7 +231,7 @@ async function updateModalEditorPreview(
 
     const preview = buildLivePreviewContainer(session.draft);
     await message.edit({
-      components: [...(preview.components as any), ...buildAllEditorRows()],
+      components: [...preview.toJSON(), ...buildAllEditorRows()],
       files: preview.files,
     });
   } catch (error) {
@@ -282,7 +282,7 @@ async function handlePencilButtonClick(
     const preview = buildLivePreviewContainer(draft);
 
     await interaction.update({
-      components: [...(preview.components as any), ...buildAllEditorRows()],
+      components: [...preview.toJSON(), ...buildAllEditorRows()],
       flags: preview.flags,
       files: preview.files,
     });
@@ -300,7 +300,7 @@ async function handlePencilButtonClick(
     if (!interaction.replied) {
       const errorContainer = buildErrorContainer(`Lỗi khi mở editor: ${(error as Error).message}`);
       await interaction.reply({
-        components: errorContainer.components as any,
+        components: errorContainer.toJSON(),
         flags: errorContainer.flags | MessageFlags.Ephemeral,
       });
     }

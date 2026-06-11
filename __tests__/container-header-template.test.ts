@@ -19,12 +19,12 @@ const mockMember = {
     username: 'TestUser',
   },
   toString: () => '@TestUser',
-} as any;
+} as unknown as TemplateContext['member'];
 
 const mockGuild = {
   name: 'TestGuild',
   id: '123456',
-} as any;
+} as unknown as TemplateContext['guild'];
 
 const baseContext: TemplateContext = {
   member: mockMember,
@@ -57,7 +57,7 @@ describe('buildContainer - headerTemplate', () => {
       const result = buildContainer(settings, baseContext);
 
       // Container phải có Section component với header resolved
-      const container = result.components[0] as any;
+      const container = result.components[0] as Record<string, unknown>;
       expect(container.type).toBe(ComponentType.Container);
       expect(container.components).toBeDefined();
       expect(container.components.length).toBeGreaterThan(0);
@@ -85,9 +85,9 @@ describe('buildContainer - headerTemplate', () => {
       const welcomeResult = buildContainer(welcomeSettings, baseContext);
       const boosterResult = buildContainer(boosterSettings, baseContext);
 
-      const welcomeHeader = (welcomeResult.components[0] as any).components[0].components[0]
+      const welcomeHeader = (welcomeResult.components[0] as Record<string, unknown>).components[0].components[0]
         .content;
-      const boosterHeader = (boosterResult.components[0] as any).components[0].components[0]
+      const boosterHeader = (boosterResult.components[0] as Record<string, unknown>).components[0].components[0]
         .content;
 
       // Hai header phải khác nhau
@@ -104,7 +104,7 @@ describe('buildContainer - headerTemplate', () => {
 
       const result = buildContainer(settings, baseContext);
 
-      const container = result.components[0] as any;
+      const container = result.components[0] as Record<string, unknown>;
       // Khi headerTemplate = null, không có Section header, component đầu = TextDisplay content
       expect(container.components[0].type).toBe(ComponentType.TextDisplay);
       expect(container.components[0].content).toContain('Line 1');
@@ -118,7 +118,7 @@ describe('buildContainer - headerTemplate', () => {
 
       const result = buildContainer(settings, baseContext);
 
-      const container = result.components[0] as any;
+      const container = result.components[0] as Record<string, unknown>;
       // Khi headerTemplate = '', không có Section header
       expect(container.components[0].type).toBe(ComponentType.TextDisplay);
     });

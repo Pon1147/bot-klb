@@ -1,4 +1,4 @@
-import {
+﻿import {
   ChatInputCommandInteraction,
   MessageFlags,
   PermissionFlagsBits,
@@ -122,7 +122,7 @@ export async function execute(
       default: {
         const errorContainer = buildErrorContainer('Subcommand không hợp lệ.');
         await interaction.reply({
-          components: errorContainer.components as any,
+          components: errorContainer.toJSON(),
           flags: errorContainer.flags | MessageFlags.Ephemeral,
         });
       }
@@ -133,7 +133,7 @@ export async function execute(
     if (!interaction.replied) {
       const errorContainer = buildErrorContainer('Xảy ra lỗi. Kiểm tra console logs.');
       await interaction.reply({
-        components: errorContainer.components as any,
+        components: errorContainer.toJSON(),
         flags: errorContainer.flags | MessageFlags.Ephemeral,
       });
     }

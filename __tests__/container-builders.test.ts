@@ -28,7 +28,8 @@ import {
   updateEditorMessage,
 } from '../src/commands/container/container-builders.js';
 import { ContainerSettings } from '../src/types/settings.types.js';
-import { CONTAINER_COLOR_PRESETS } from '../src/commands/container/container-session.js';
+import { CONTAINER_COLOR_PRESETS, ContainerEditSession } from '../src/commands/container/container-session.js';
+import { ButtonInteraction } from 'discord.js';
 
 const mockContainerSettings: ContainerSettings = {
   accentColor: 0x5865f2,
@@ -47,13 +48,13 @@ describe('Container Builders', () => {
       const row = buildEditRow1();
 
       expect(row).toBeInstanceOf(ActionRowBuilder);
-      const components = (row as any).components as ButtonBuilder[];
+      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
       expect(components).toHaveLength(4);
     });
 
     it('tất cả buttons phải là ButtonBuilder', () => {
       const row = buildEditRow1();
-      const components = (row as any).components as ButtonBuilder[];
+      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
       components.forEach((comp) => {
         expect(comp).toBeInstanceOf(ButtonBuilder);
       });
@@ -65,13 +66,13 @@ describe('Container Builders', () => {
       const row = buildLinesRow();
 
       expect(row).toBeInstanceOf(ActionRowBuilder);
-      const components = (row as any).components as ButtonBuilder[];
+      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
       expect(components).toHaveLength(4);
     });
 
     it('tất cả buttons phải là ButtonBuilder', () => {
       const row = buildLinesRow();
-      const components = (row as any).components as ButtonBuilder[];
+      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
       components.forEach((comp) => {
         expect(comp).toBeInstanceOf(ButtonBuilder);
       });
@@ -83,13 +84,13 @@ describe('Container Builders', () => {
       const row = buildActionRow();
 
       expect(row).toBeInstanceOf(ActionRowBuilder);
-      const components = (row as any).components as ButtonBuilder[];
+      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
       expect(components).toHaveLength(3);
     });
 
     it('tất cả buttons phải là ButtonBuilder', () => {
       const row = buildActionRow();
-      const components = (row as any).components as ButtonBuilder[];
+      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
       components.forEach((comp) => {
         expect(comp).toBeInstanceOf(ButtonBuilder);
       });
@@ -106,13 +107,13 @@ describe('Container Builders', () => {
 
     it('row đầu tiên phải có 4 buttons (edit row)', () => {
       const rows = buildAllEditorRows();
-      const components = (rows[0] as any).components as ButtonBuilder[];
+      const components = (rows[0] as unknown as Record<string, unknown>).components as ButtonBuilder[];
       expect(components).toHaveLength(4);
     });
 
     it('row thứ hai phải có 3 buttons (action row)', () => {
       const rows = buildAllEditorRows();
-      const components = (rows[1] as any).components as ButtonBuilder[];
+      const components = (rows[1] as unknown as Record<string, unknown>).components as ButtonBuilder[];
       expect(components).toHaveLength(3);
     });
   });
@@ -122,14 +123,14 @@ describe('Container Builders', () => {
       const row = buildColorPresetRow();
 
       expect(row).toBeInstanceOf(ActionRowBuilder);
-      const components = (row as any).components as ButtonBuilder[];
+      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
       // 4 presets + 1 custom = 5 buttons
       expect(components.length).toBe(CONTAINER_COLOR_PRESETS.length + 1);
     });
 
     it('tất cả components phải là ButtonBuilder', () => {
       const row = buildColorPresetRow();
-      const components = (row as any).components as ButtonBuilder[];
+      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
       components.forEach((comp) => {
         expect(comp).toBeInstanceOf(ButtonBuilder);
       });
@@ -137,7 +138,7 @@ describe('Container Builders', () => {
 
     it('phải có đúng số lượng buttons (presets + 1 custom)', () => {
       const row = buildColorPresetRow();
-      const components = (row as any).components as ButtonBuilder[];
+      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
       expect(components.length).toBe(5);
     });
   });
@@ -147,13 +148,13 @@ describe('Container Builders', () => {
       const row = buildBackRow();
 
       expect(row).toBeInstanceOf(ActionRowBuilder);
-      const components = (row as any).components as ButtonBuilder[];
+      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
       expect(components).toHaveLength(1);
     });
 
     it('button phải là ButtonBuilder', () => {
       const row = buildBackRow();
-      const components = (row as any).components as ButtonBuilder[];
+      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
       expect(components[0]).toBeInstanceOf(ButtonBuilder);
     });
   });
@@ -168,13 +169,13 @@ describe('Container Builders', () => {
 
     it('row đầu tiên phải có 4 buttons (lines row)', () => {
       const rows = buildLinesSubmenuRows();
-      const components = (rows[0] as any).components as ButtonBuilder[];
+      const components = (rows[0] as unknown as Record<string, unknown>).components as ButtonBuilder[];
       expect(components).toHaveLength(4);
     });
 
     it('row thứ hai phải có 1 button (back row)', () => {
       const rows = buildLinesSubmenuRows();
-      const components = (rows[1] as any).components as ButtonBuilder[];
+      const components = (rows[1] as unknown as Record<string, unknown>).components as ButtonBuilder[];
       expect(components).toHaveLength(1);
     });
   });
@@ -189,13 +190,13 @@ describe('Container Builders', () => {
 
     it('row đầu tiên phải có 5 buttons (4 presets + 1 custom)', () => {
       const rows = buildColorPickerRows();
-      const components = (rows[0] as any).components as ButtonBuilder[];
+      const components = (rows[0] as unknown as Record<string, unknown>).components as ButtonBuilder[];
       expect(components).toHaveLength(5);
     });
 
     it('row thứ hai phải có 1 button (back row)', () => {
       const rows = buildColorPickerRows();
-      const components = (rows[1] as any).components as ButtonBuilder[];
+      const components = (rows[1] as unknown as Record<string, unknown>).components as ButtonBuilder[];
       expect(components).toHaveLength(1);
     });
   });
@@ -212,7 +213,7 @@ describe('Container Builders', () => {
     it('phải có 1 ActionRow component', () => {
       const modal = buildTextModal('test_id', 'Label', 'Placeholder', 'Value');
 
-      const components = (modal as any).components;
+      const components = (modal as unknown as Record<string, unknown>).components;
       expect(components).toHaveLength(1);
     });
 
@@ -225,7 +226,7 @@ describe('Container Builders', () => {
     it('phải có ActionRow với TextInput bên trong', () => {
       const modal = buildTextModal('test_id', 'Label', 'Placeholder', 'Value');
 
-      const components = (modal as any).components;
+      const components = (modal as unknown as Record<string, unknown>).components;
       expect(components[0]).toBeInstanceOf(ActionRowBuilder);
     });
   });
@@ -240,7 +241,7 @@ describe('Container Builders', () => {
     it('phải có 1 ActionRow component', () => {
       const modal = buildLongTextModal('test_id', 'Label', 'Placeholder', 'Value');
 
-      const components = (modal as any).components;
+      const components = (modal as unknown as Record<string, unknown>).components;
       expect(components).toHaveLength(1);
     });
 
@@ -253,7 +254,7 @@ describe('Container Builders', () => {
     it('phải có ActionRow với TextInput bên trong', () => {
       const modal = buildLongTextModal('test_id', 'Label', 'Placeholder', 'Value');
 
-      const components = (modal as any).components;
+      const components = (modal as unknown as Record<string, unknown>).components;
       expect(components[0]).toBeInstanceOf(ActionRowBuilder);
     });
   });
@@ -268,7 +269,7 @@ describe('Container Builders', () => {
     it('phải có 2 ActionRows (url + description)', () => {
       const modal = buildMediaModal('url', 'desc');
 
-      const components = (modal as any).components;
+      const components = (modal as unknown as Record<string, unknown>).components;
       expect(components).toHaveLength(2);
     });
 
@@ -301,7 +302,7 @@ describe('Container Builders', () => {
     it('phải có 2 ActionRows (index + content)', () => {
       const modal = buildEditLineModal(3);
 
-      const components = (modal as any).components;
+      const components = (modal as unknown as Record<string, unknown>).components;
       expect(components).toHaveLength(2);
     });
 
@@ -345,7 +346,7 @@ describe('Container Builders', () => {
     it('phải render container type component', () => {
       const result = buildLivePreviewContainer(mockContainerSettings);
 
-      const container = result.components[0] as any;
+      const container = result.components[0] as Record<string, unknown>;
       expect(container.type).toBe(ComponentType.Container);
     });
 
@@ -441,7 +442,7 @@ describe('Container Builders', () => {
 describe("updateEditorMessage", () => {
   it("should update message with live preview", async () => {
     const mockUpdate = jest.fn().mockResolvedValue(undefined);
-    const mockInteraction = { update: mockUpdate } as any;
+    const mockInteraction = { update: mockUpdate } as unknown as ButtonInteraction;
     const session = {
       draft: {
         accentColor: 0x5865f2,
@@ -452,7 +453,7 @@ describe("updateEditorMessage", () => {
         showSeparator: false,
         files: [],
       },
-    } as any;
+    } as unknown as ContainerEditSession;
     await updateEditorMessage(mockInteraction, session);
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });

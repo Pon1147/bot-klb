@@ -1,4 +1,4 @@
-import { ButtonInteraction, MessageFlags } from 'discord.js';
+﻿import { ButtonInteraction, MessageFlags } from 'discord.js';
 import { buildErrorContainer } from '../../../utils/container.utils.js';
 import { ContainerEditSession, CONTAINER_COLOR_PRESETS } from '../container-session.js';
 import {
@@ -25,7 +25,7 @@ export async function handleLinesSubmenu(
   const infoContainer = buildLinesInfoContainer(session.draft.contentLines);
 
   await interaction.update({
-    components: [...(infoContainer.components as any), ...buildLinesSubmenuRows()],
+    components: [...infoContainer.toJSON(), ...buildLinesSubmenuRows()],
     flags: infoContainer.flags,
   });
 }
@@ -55,7 +55,7 @@ export async function handleEditLine(
   if (lineCount === 0) {
     const errorContainer = buildErrorContainer('Không có dòng nào để chỉnh sửa.');
     await interaction.reply({
-      components: errorContainer.components as any,
+      components: errorContainer.toJSON(),
       flags: errorContainer.flags | MessageFlags.Ephemeral,
     });
     return;
@@ -77,7 +77,7 @@ export async function handleRemoveLine(
   if (lineCount === 0) {
     const errorContainer = buildErrorContainer('Không có dòng nào để xóa.');
     await interaction.reply({
-      components: errorContainer.components as any,
+      components: errorContainer.toJSON(),
       flags: errorContainer.flags | MessageFlags.Ephemeral,
     });
     return;
@@ -115,7 +115,7 @@ export async function handleColorPicker(
   const infoContainer = buildColorPickerInfoContainer(session.draft.accentColor);
 
   await interaction.update({
-    components: [...(infoContainer.components as any), ...buildColorPickerRows()],
+    components: [...infoContainer.toJSON(), ...buildColorPickerRows()],
     flags: infoContainer.flags,
   });
 }

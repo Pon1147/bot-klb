@@ -82,11 +82,11 @@ function createMockContext(): TemplateContext {
         createdTimestamp: Date.now() - 30 * 24 * 60 * 60 * 1000,
         displayAvatarURL: jest.fn(() => 'https://cdn.discordapp.com/avatars/123/avatar.png'),
       },
-    } as any,
+    } as unknown as TemplateContext['member'],
     guild: {
       name: 'TestServer',
       memberCount: 100,
-    } as any,
+    } as unknown as TemplateContext['guild'],
   };
 }
 

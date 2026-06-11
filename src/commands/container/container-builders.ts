@@ -1,7 +1,9 @@
-import {
+﻿import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  Guild,
+  GuildMember,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
@@ -260,11 +262,11 @@ export function buildLivePreviewContainer(
         displayAvatarURL: () => 'https://cdn.discordapp.com/embed/avatars/0.png',
       },
       joinedAt: new Date(),
-    } as any,
+    } as GuildMember,
     guild: {
       name: 'Preview Server',
       memberCount: 0,
-    } as any,
+    } as Guild,
   };
 
   return buildContainer(draft, mockContext);
@@ -312,7 +314,7 @@ export async function updateEditorMessage(
   const preview = buildLivePreviewContainer(session.draft);
 
   await interaction.update({
-    components: [...(preview.components as any), ...buildAllEditorRows()],
+    components: [...preview.toJSON(), ...buildAllEditorRows()],
     flags: preview.flags,
     files: preview.files,
   });

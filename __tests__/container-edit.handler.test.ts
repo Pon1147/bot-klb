@@ -1,10 +1,10 @@
-/**
- * Test cho container-edit.handler.ts và container-reset.handler.ts.
- * Verify startInteractiveEdit và handleContainerReset đạt 100% coverage.
+﻿/**
+ * Test cho container-edit.handler.ts vÃ  container-reset.handler.ts.
+ * Verify startInteractiveEdit vÃ  handleContainerReset Ä‘áº¡t 100% coverage.
  */
 import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 
-// Mock settings service trước khi import handlers
+// Mock settings service trÆ°á»›c khi import handlers
 jest.mock('../src/services/settings.service.js', () => {
   const mockSettingsService: any = {
     get: jest.fn(),
@@ -25,14 +25,17 @@ jest.mock('../src/utils/container.utils.js', () => ({
     components: [{ type: 17, components: [] }],
     flags: MessageFlags.IsComponentsV2,
     files: [],
+    toJSON() { return this.components; },
   })),
   buildErrorContainer: jest.fn((message: string) => ({
     components: [{ type: 17, components: [{ type: 10, content: message }] }],
     flags: MessageFlags.IsComponentsV2,
+    toJSON() { return this.components; },
   })),
   buildSuccessContainer: jest.fn((message: string) => ({
     components: [{ type: 17, components: [{ type: 10, content: message }] }],
     flags: MessageFlags.IsComponentsV2,
+    toJSON() { return this.components; },
   })),
 }));
 
@@ -58,6 +61,7 @@ jest.mock('../src/commands/container/container-builders.js', () => ({
     components: [{ type: 17, components: [] }],
     flags: MessageFlags.IsComponentsV2,
     files: [],
+    toJSON() { return this.components; },
   })),
   buildAllEditorRows: jest.fn(() => []),
 }));
@@ -68,7 +72,7 @@ import { handleContainerReset } from '../src/commands/container/container-reset.
 // Access mock via jest.requireMock
 const { mockSettingsService } = jest.requireMock('../src/services/settings.service.js');
 
-// ─── Helpers ──────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function createMockInteraction(overrides: Record<string, unknown> = {}): any {
   const base: Record<string, unknown> = {
@@ -132,42 +136,42 @@ describe('container-edit.handler - startInteractiveEdit', () => {
   });
 
   describe('happy path', () => {
-    it('phải gọi settingsService.get với guildId đúng', async () => {
+    it('pháº£i gá»i settingsService.get vá»›i guildId Ä‘Ãºng', async () => {
       const interaction = createMockInteraction();
       await startInteractiveEdit(interaction, 'welcome');
 
       expect(mockSettingsService.get).toHaveBeenCalledWith('guild-123');
     });
 
-    it('phải gọi interaction.reply', async () => {
+    it('pháº£i gá»i interaction.reply', async () => {
       const interaction = createMockInteraction();
       await startInteractiveEdit(interaction, 'welcome');
 
       expect(interaction.reply).toHaveBeenCalled();
     });
 
-    it('phải gọi interaction.fetchReply', async () => {
+    it('pháº£i gá»i interaction.fetchReply', async () => {
       const interaction = createMockInteraction();
       await startInteractiveEdit(interaction, 'welcome');
 
       expect(interaction.fetchReply).toHaveBeenCalled();
     });
 
-    it('phải hoạt động với type=welcome', async () => {
+    it('pháº£i hoáº¡t Ä‘á»™ng vá»›i type=welcome', async () => {
       const interaction = createMockInteraction();
       await startInteractiveEdit(interaction, 'welcome');
 
       expect(interaction.reply).toHaveBeenCalled();
     });
 
-    it('phải hoạt động với type=leave', async () => {
+    it('pháº£i hoáº¡t Ä‘á»™ng vá»›i type=leave', async () => {
       const interaction = createMockInteraction();
       await startInteractiveEdit(interaction, 'leave');
 
       expect(interaction.reply).toHaveBeenCalled();
     });
 
-    it('phải hoạt động với type=booster', async () => {
+    it('pháº£i hoáº¡t Ä‘á»™ng vá»›i type=booster', async () => {
       const interaction = createMockInteraction();
       await startInteractiveEdit(interaction, 'booster');
 
@@ -176,7 +180,7 @@ describe('container-edit.handler - startInteractiveEdit', () => {
   });
 
   describe('error handling', () => {
-    it('phải catch lỗi từ settingsService.get', async () => {
+    it('pháº£i catch lá»—i tá»« settingsService.get', async () => {
       mockSettingsService.get.mockImplementation(() => {
         throw new Error('DB Error');
       });
@@ -188,7 +192,7 @@ describe('container-edit.handler - startInteractiveEdit', () => {
       expect(interaction.reply).toHaveBeenCalled();
     });
 
-    it('phải reply error container khi có lỗi và interaction chưa replied', async () => {
+    it('pháº£i reply error container khi cÃ³ lá»—i vÃ  interaction chÆ°a replied', async () => {
       mockSettingsService.get.mockImplementation(() => {
         throw new Error('Test Error');
       });
@@ -199,7 +203,7 @@ describe('container-edit.handler - startInteractiveEdit', () => {
       expect(interaction.reply).toHaveBeenCalled();
     });
 
-    it('phải không reply lại nếu interaction đã replied khi có lỗi', async () => {
+    it('pháº£i khÃ´ng reply láº¡i náº¿u interaction Ä‘Ã£ replied khi cÃ³ lá»—i', async () => {
       mockSettingsService.get.mockImplementation(() => {
         throw new Error('Test Error');
       });
@@ -210,11 +214,11 @@ describe('container-edit.handler - startInteractiveEdit', () => {
       });
       await startInteractiveEdit(interaction, 'welcome');
 
-      // interaction.replied = true nên không gọi reply nữa
+      // interaction.replied = true nÃªn khÃ´ng gá»i reply ná»¯a
       expect(interaction.reply).not.toHaveBeenCalled();
     });
 
-    it('phải xử lý fetchReply fail (fallback messageId)', async () => {
+    it('pháº£i xá»­ lÃ½ fetchReply fail (fallback messageId)', async () => {
       const interaction = createMockInteraction({
         fetchReply: jest.fn().mockRejectedValue(new Error('Fetch failed')),
       });
@@ -236,7 +240,7 @@ describe('container-reset.handler - handleContainerReset', () => {
   });
 
   describe('happy path', () => {
-    it('phải gọi options.getString("type")', async () => {
+    it('pháº£i gá»i options.getString("type")', async () => {
       const getStringMock = jest.fn().mockReturnValue('welcome');
       const interaction = createMockInteraction({
         options: { getString: getStringMock, getSubcommand: jest.fn() },
@@ -247,7 +251,7 @@ describe('container-reset.handler - handleContainerReset', () => {
       expect(getStringMock).toHaveBeenCalledWith('type');
     });
 
-    it('phải gọi settingsService.update với đúng guildId', async () => {
+    it('pháº£i gá»i settingsService.update vá»›i Ä‘Ãºng guildId', async () => {
       const getStringMock = jest.fn().mockReturnValue('welcome');
       const interaction = createMockInteraction({
         options: { getString: getStringMock, getSubcommand: jest.fn() },
@@ -258,7 +262,7 @@ describe('container-reset.handler - handleContainerReset', () => {
       expect(mockSettingsService.update).toHaveBeenCalledWith('guild-456', expect.any(Object));
     });
 
-    it('phải reset container settings cho type=welcome', async () => {
+    it('pháº£i reset container settings cho type=welcome', async () => {
       const getStringMock = jest.fn().mockReturnValue('welcome');
       const interaction = createMockInteraction({
         options: { getString: getStringMock, getSubcommand: jest.fn() },
@@ -271,7 +275,7 @@ describe('container-reset.handler - handleContainerReset', () => {
       }));
     });
 
-    it('phải reset container settings cho type=leave', async () => {
+    it('pháº£i reset container settings cho type=leave', async () => {
       const getStringMock = jest.fn().mockReturnValue('leave');
       const interaction = createMockInteraction({
         options: { getString: getStringMock, getSubcommand: jest.fn() },
@@ -284,7 +288,7 @@ describe('container-reset.handler - handleContainerReset', () => {
       }));
     });
 
-    it('phải reset container settings cho type=booster', async () => {
+    it('pháº£i reset container settings cho type=booster', async () => {
       const getStringMock = jest.fn().mockReturnValue('booster');
       const interaction = createMockInteraction({
         options: { getString: getStringMock, getSubcommand: jest.fn() },
@@ -297,7 +301,7 @@ describe('container-reset.handler - handleContainerReset', () => {
       }));
     });
 
-    it('phải reply success container', async () => {
+    it('pháº£i reply success container', async () => {
       const getStringMock = jest.fn().mockReturnValue('welcome');
       const interaction = createMockInteraction({
         options: { getString: getStringMock, getSubcommand: jest.fn() },

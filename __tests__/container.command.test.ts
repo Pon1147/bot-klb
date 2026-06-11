@@ -1,6 +1,6 @@
-/**
+﻿/**
  * Test cho container.command.ts.
- * Verify execute function (lines 88-135) đạt 100% coverage.
+ * Verify execute function (lines 88-135) Ä‘áº¡t 100% coverage.
  */
 import {
   ChatInputCommandInteraction,
@@ -14,6 +14,7 @@ jest.mock('../src/utils/container.utils.js', () => ({
   buildErrorContainer: jest.fn((message: string) => ({
     components: [{ type: 17, components: [{ type: 10, content: message }] }],
     flags: MessageFlags.IsComponentsV2,
+    toJSON() { return this.components; },
   })),
 }));
 
@@ -29,7 +30,7 @@ import { startInteractiveEdit } from '../src/commands/container/container-edit.h
 import { handleContainerReset } from '../src/commands/container/container-reset.handler.js';
 import { data, execute, buildEditSubcommand, buildResetSubcommand } from '../src/commands/container/container.command.js';
 
-// ─── Helpers ──────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function createMockInteraction(overrides: Record<string, unknown> = {}): any {
   const base: Record<string, unknown> = {
@@ -55,17 +56,17 @@ function createMockInteraction(overrides: Record<string, unknown> = {}): any {
 }
 
 describe('container.command - data', () => {
-  it('phải có name là "container"', () => {
-    expect((data as any).name).toBe('container');
+  it('pháº£i cÃ³ name lÃ  "container"', () => {
+    expect(data.name).toBe('container');
   });
 
-  it('phải có description', () => {
-    expect((data as any).description).toBeDefined();
+  it('pháº£i cÃ³ description', () => {
+    expect(data.description).toBeDefined();
   });
 });
 
 describe('container.command - buildEditSubcommand', () => {
-  it('phải trả về subcommand có name "edit"', () => {
+  it('pháº£i tráº£ vá» subcommand cÃ³ name "edit"', () => {
     const mockSub: any = {
       setName: jest.fn().mockReturnThis(),
       setDescription: jest.fn().mockReturnThis(),
@@ -81,7 +82,7 @@ describe('container.command - buildEditSubcommand', () => {
 });
 
 describe('container.command - buildResetSubcommand', () => {
-  it('phải trả về subcommand có name "reset"', () => {
+  it('pháº£i tráº£ vá» subcommand cÃ³ name "reset"', () => {
     const mockSub: any = {
       setName: jest.fn().mockReturnThis(),
       setDescription: jest.fn().mockReturnThis(),
@@ -102,7 +103,7 @@ describe('container.command - execute', () => {
   });
 
   describe('guard clause: no guild', () => {
-    it('phải reply và return khi không có guild', async () => {
+    it('pháº£i reply vÃ  return khi khÃ´ng cÃ³ guild', async () => {
       const interaction = createMockInteraction({
         guild: null,
       });
@@ -111,7 +112,7 @@ describe('container.command - execute', () => {
 
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
-          content: 'Lệnh này chỉ dùng được trong server.',
+          content: 'Lá»‡nh nÃ y chá»‰ dÃ¹ng Ä‘Æ°á»£c trong server.',
           flags: MessageFlags.Ephemeral,
         }),
       );
@@ -119,7 +120,7 @@ describe('container.command - execute', () => {
   });
 
   describe('guard clause: no Administrator permission', () => {
-    it('phải reply và return khi không có permission Administrator', async () => {
+    it('pháº£i reply vÃ  return khi khÃ´ng cÃ³ permission Administrator', async () => {
       const interaction = createMockInteraction({
         member: {
           permissions: {
@@ -132,13 +133,13 @@ describe('container.command - execute', () => {
 
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
-          content: 'Bạn cần quyền Administrator để sử dụng lệnh này.',
+          content: 'Báº¡n cáº§n quyá»n Administrator Ä‘á»ƒ sá»­ dá»¥ng lá»‡nh nÃ y.',
           flags: MessageFlags.Ephemeral,
         }),
       );
     });
 
-    it('phải reply và return khi member là null', async () => {
+    it('pháº£i reply vÃ  return khi member lÃ  null', async () => {
       const interaction = createMockInteraction({
         member: null,
       });
@@ -147,7 +148,7 @@ describe('container.command - execute', () => {
 
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
-          content: 'Bạn cần quyền Administrator để sử dụng lệnh này.',
+          content: 'Báº¡n cáº§n quyá»n Administrator Ä‘á»ƒ sá»­ dá»¥ng lá»‡nh nÃ y.',
           flags: MessageFlags.Ephemeral,
         }),
       );
@@ -155,7 +156,7 @@ describe('container.command - execute', () => {
   });
 
   describe('subcommand: edit', () => {
-    it('phải gọi startInteractiveEdit với type=welcome', async () => {
+    it('pháº£i gá»i startInteractiveEdit vá»›i type=welcome', async () => {
       const interaction = createMockInteraction({
         options: {
           getString: jest.fn().mockReturnValue('welcome'),
@@ -168,7 +169,7 @@ describe('container.command - execute', () => {
       expect(startInteractiveEdit).toHaveBeenCalledWith(interaction, 'welcome');
     });
 
-    it('phải gọi startInteractiveEdit với type=leave', async () => {
+    it('pháº£i gá»i startInteractiveEdit vá»›i type=leave', async () => {
       const interaction = createMockInteraction({
         options: {
           getString: jest.fn().mockReturnValue('leave'),
@@ -181,7 +182,7 @@ describe('container.command - execute', () => {
       expect(startInteractiveEdit).toHaveBeenCalledWith(interaction, 'leave');
     });
 
-    it('phải gọi startInteractiveEdit với type=booster', async () => {
+    it('pháº£i gá»i startInteractiveEdit vá»›i type=booster', async () => {
       const interaction = createMockInteraction({
         options: {
           getString: jest.fn().mockReturnValue('booster'),
@@ -196,7 +197,7 @@ describe('container.command - execute', () => {
   });
 
   describe('subcommand: reset', () => {
-    it('phải gọi handleContainerReset với guildId đúng', async () => {
+    it('pháº£i gá»i handleContainerReset vá»›i guildId Ä‘Ãºng', async () => {
       const interaction = createMockInteraction({
         options: {
           getString: jest.fn().mockReturnValue('welcome'),
@@ -211,7 +212,7 @@ describe('container.command - execute', () => {
   });
 
   describe('subcommand: default (unknown)', () => {
-    it('phải reply error container khi subcommand không hợp lệ', async () => {
+    it('pháº£i reply error container khi subcommand khÃ´ng há»£p lá»‡', async () => {
       const interaction = createMockInteraction({
         options: {
           getString: jest.fn().mockReturnValue('welcome'),
@@ -226,7 +227,7 @@ describe('container.command - execute', () => {
   });
 
   describe('error handling (outer catch)', () => {
-    it('phải catch lỗi từ handler và log error', async () => {
+    it('pháº£i catch lá»—i tá»« handler vÃ  log error', async () => {
       const errorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       // Make startInteractiveEdit throw
@@ -245,7 +246,7 @@ describe('container.command - execute', () => {
       errorSpy.mockRestore();
     });
 
-    it('phải reply error container khi handler throw và interaction chưa replied', async () => {
+    it('pháº£i reply error container khi handler throw vÃ  interaction chÆ°a replied', async () => {
       const errorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       (startInteractiveEdit as jest.Mock).mockRejectedValue(new Error('Handler Error'));
@@ -265,7 +266,7 @@ describe('container.command - execute', () => {
       errorSpy.mockRestore();
     });
 
-    it('phải KHÔNG reply lại nếu interaction đã replied khi handler throw', async () => {
+    it('pháº£i KHÃ”NG reply láº¡i náº¿u interaction Ä‘Ã£ replied khi handler throw', async () => {
       const errorSpy = jest.spyOn(console, 'error').mockImplementation();
 
       (startInteractiveEdit as jest.Mock).mockRejectedValue(new Error('Handler Error'));
@@ -281,7 +282,7 @@ describe('container.command - execute', () => {
 
       await execute(interaction, {});
 
-      // interaction.replied = true nên không gọi reply
+      // interaction.replied = true nÃªn khÃ´ng gá»i reply
       expect(interaction.reply).not.toHaveBeenCalled();
       errorSpy.mockRestore();
     });

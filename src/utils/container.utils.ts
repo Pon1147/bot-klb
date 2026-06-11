@@ -1,3 +1,4 @@
+import type { APIMessageTopLevelComponent } from 'discord-api-types/v10';
 import {
   ActionRowBuilder,
   AttachmentBuilder,
@@ -39,10 +40,41 @@ export function buildPencilButtonRow(editType: string, guildId: string): ActionR
 /**
  * Kết quả trả về.
  */
+/** Components payload compatible with discord.js reply/editReply(). */
+export type ComponentsPayload = readonly APIMessageTopLevelComponent[];
+
 export interface BuildContainerResult {
-  components: unknown[];
+  components: readonly unknown[];
   flags: typeof MessageFlags.IsComponentsV2;
   files: AttachmentBuilder[];
+
+  /**
+   * Cast components to the type discord.js expects for reply/editReply.
+   * Container V2 (Section, TextDisplay, etc.) has no official types in
+   * discord.js v14 — this single cast replaces ~59 `as any` casts at call sites.
+   */
+  toJSON(): ComponentsPayload;
+}
+
+/** Single cast point for Container V2 components. */
+export function toComponentsV2(c: readonly unknown[]): ComponentsPayload {
+  return c as unknown as ComponentsPayload;
+}
+
+/** Factory — all builder functions use this to ensure toJSON() is present. */
+export function makeResult(
+  components: readonly unknown[],
+  flags: number,
+  files: AttachmentBuilder[],
+): BuildContainerResult {
+  return {
+    components,
+    flags,
+    files,
+    toJSON() {
+      return toComponentsV2(this.components);
+    },
+  };
 }
 
 /** Validate URL */
@@ -189,50 +221,46 @@ export function buildContainer(
     resultComponents.push(buildPencilButtonRow(editType, guildId));
   }
 
-  return {
-    components: resultComponents,
-    flags: MessageFlags.IsComponentsV2,
-    files: attachmentFiles,
-  };
+  return makeResult(resultComponents, MessageFlags.IsComponentsV2, attachmentFiles);
 }
 
 /* ====================== Các hàm khác giữ nguyên ====================== */
 export function buildEmptyContainer(_accentColor: number): BuildContainerResult {
-  return {
-    components: [{ type: ComponentType.Container, components: [] as unknown[] }],
-    flags: MessageFlags.IsComponentsV2,
-    files: [],
-  };
+  return makeResult(
+    [{ type: ComponentType.Container, components: [] as unknown[] }],
+    MessageFlags.IsComponentsV2,
+    [],
+  );
 }
 
 export function buildSuccessContainer(successMessage: string): BuildContainerResult {
   const text = { type: ComponentType.TextDisplay, content: `**✅ Success**\n${successMessage}` };
   const sep = { type: ComponentType.Separator, accentColor: EMBED_COLORS.SUCCESS };
-  return {
-    components: [{ type: ComponentType.Container, components: [text, sep] }],
-    flags: MessageFlags.IsComponentsV2,
-    files: [],
-  };
+  return makeResult(
+    [{ type: ComponentType.Container, components: [text, sep] }],
+    MessageFlags.IsComponentsV2,
+    [],
+  );
 }
 
 export function buildErrorContainer(errorMessage: string): BuildContainerResult {
   const text = { type: ComponentType.TextDisplay, content: `**❌ Error**\n${errorMessage}` };
   const sep = { type: ComponentType.Separator, accentColor: EMBED_COLORS.ERROR };
-  return {
-    components: [{ type: ComponentType.Container, components: [text, sep] }],
-    flags: MessageFlags.IsComponentsV2,
-    files: [],
-  };
+  return makeResult(
+    [{ type: ComponentType.Container, components: [text, sep] }],
+    MessageFlags.IsComponentsV2,
+    [],
+  );
 }
 
 export function buildInfoContainer(infoMessage: string): BuildContainerResult {
   const text = { type: ComponentType.TextDisplay, content: `**ℹ️ Info**\n${infoMessage}` };
   const sep = { type: ComponentType.Separator, accentColor: EMBED_COLORS.INFO };
-  return {
-    components: [{ type: ComponentType.Container, components: [text, sep] }],
-    flags: MessageFlags.IsComponentsV2,
-    files: [],
-  };
+  return makeResult(
+    [{ type: ComponentType.Container, components: [text, sep] }],
+    MessageFlags.IsComponentsV2,
+    [],
+  );
 }
 
 export function buildTextOnlyContainer(
@@ -245,9 +273,9 @@ export function buildTextOnlyContainer(
   const components: unknown[] = [{ type: ComponentType.TextDisplay, content: finalContent }];
   if (accentColor) components.push({ type: ComponentType.Separator, accentColor });
 
-  return {
-    components: [{ type: ComponentType.Container, components }],
-    flags: MessageFlags.IsComponentsV2,
-    files: [],
-  };
+  return makeResult(
+    [{ type: ComponentType.Container, components }],
+    MessageFlags.IsComponentsV2,
+    [],
+  );
 }

@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+﻿import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { getSettingsService } from '../../services/settings.service.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { cloneContainerSettings, createSession } from './container-session.js';
@@ -24,7 +24,7 @@ export async function startInteractiveEdit(
         `Lỗi khi khởi tạo editor: ${(error as Error).message}`,
       );
       await interaction.reply({
-        components: errorContainer.components as any,
+        components: errorContainer.toJSON(),
         flags: errorContainer.flags | MessageFlags.Ephemeral,
       });
     }
@@ -45,7 +45,7 @@ async function sendEditorMessage(
   // Gửi message editor với container preview + buttons
   // WHY: Không dùng ephemeral, dùng flags thuần túy (ephemeral param đã deprecated)
   await interaction.reply({
-    components: [...(preview.components as any), ...buildAllEditorRows()],
+    components: [...preview.toJSON(), ...buildAllEditorRows()],
     flags: preview.flags,
     files: preview.files,
   });
