@@ -2,7 +2,7 @@
  * Custom types cho Discord Components V2 (Container, TextDisplay, MediaGallery, Separator).
  *
  * WHY: discord.js v14 chưa có official types cho Components V2,
- * nên phải định nghĩa manual để replace `as any` casts.
+ * nên phải định nghĩa manual.
  *
  * Source of truth: discord-api-types v10 (node_modules/discord-api-types/payloads/v10/message.d.ts)
  */
@@ -43,16 +43,16 @@ export interface SeparatorComponentV2 {
  */
 export interface MediaGalleryComponentV2 {
   type: ComponentType.MediaGallery;
-  components: Array<MediaGalleryItemV2>;
+  items: Array<MediaGalleryItemV2>;
 }
 
 /**
  * MediaGalleryItem - item trong MediaGallery.
  */
 export interface MediaGalleryItemV2 {
-  type: 13; // MediaGalleryItem (không có trong ComponentType enum, hardcode an toàn)
-  image: string;
-  description?: string;
+  media: { url: string; proxy_url?: string };
+  description?: string | null;
+  spoiler?: boolean;
 }
 
 /**
@@ -77,7 +77,6 @@ export type ContainerV2Component =
 
 /**
  * Kết quả trả về từ buildContainer / buildLivePreviewContainer.
- * Thay thế `as any` khi cast components array.
  */
 export interface BuildContainerResultV2 {
   components: Array<Record<string, unknown>>;
@@ -95,7 +94,7 @@ export function isContainerComponent(component: unknown): component is Container
     typeof component === 'object' &&
     component !== null &&
     'type' in component &&
-    (component as any).type === ComponentType.Container
+    (component as { type: unknown }).type === ComponentType.Container
   );
 }
 
@@ -107,7 +106,7 @@ export function isTextDisplayComponent(component: unknown): component is TextDis
     typeof component === 'object' &&
     component !== null &&
     'type' in component &&
-    (component as any).type === ComponentType.TextDisplay
+    (component as { type: unknown }).type === ComponentType.TextDisplay
   );
 }
 
@@ -119,7 +118,7 @@ export function isSeparatorComponent(component: unknown): component is Separator
     typeof component === 'object' &&
     component !== null &&
     'type' in component &&
-    (component as any).type === ComponentType.Separator
+    (component as { type: unknown }).type === ComponentType.Separator
   );
 }
 
@@ -131,6 +130,6 @@ export function isMediaGalleryComponent(component: unknown): component is MediaG
     typeof component === 'object' &&
     component !== null &&
     'type' in component &&
-    (component as any).type === ComponentType.MediaGallery
+    (component as { type: unknown }).type === ComponentType.MediaGallery
   );
 }
