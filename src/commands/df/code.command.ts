@@ -3,54 +3,78 @@ import {
   ComponentType,
   MessageFlags,
   SlashCommandBuilder,
+  AttachmentBuilder,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
 } from 'discord.js';
-import { buildErrorContainer } from '../../utils/container.utils.js';
+
+import { buildErrorContainer, makeResult } from '../../utils/container.utils.js';
 import { fetchDailyCodes, DailyCodes } from '../../services/deltaforce.scraper.js';
 
 export const data = new SlashCommandBuilder()
   .setName('df-code')
-  .setDescription('Mat khau hang ngay cua Delta Force HQ.');
+  .setDescription('Mật khẩu hằng ngày của các map.');
 
-const MAP_DISPLAY: Record<keyof DailyCodes, string> = {
-  'Đập Nước Zero': 'Zero Dam',
-  'Thung lũng Layali': 'Layali',
-  'Phố Cổ Brakkesh': 'Brakkesh',
-  'Trạm Không Gian': 'Space City',
-  'Ngục Giam Thủy Triều': 'Tide Prison',
+const ASSETS_PATH = './src/assets/img/map/';
+
+const MAP_DISPLAY: Record<keyof DailyCodes, { name: string; image: string }> = {
+  'Đập Nước Zero': { name: 'Zero Dam', image: 'map_zero.png' },
+  'Thung lũng Layali': { name: 'Layali', image: 'map_layali.png' },
+  'Phố Cổ Brakkesh': { name: 'Brakkesh', image: 'map_brakkesh.png' },
+  'Trạm Không Gian': { name: 'Space City', image: 'map_spacecity.png' },
+  'Ngục Giam Thủy Triều': { name: 'Tide Prison', image: 'map_tideprison.png' },
 };
 
-function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean): {
-  components: unknown[];
-  flags: number;
-} {
-  let content: string;
+function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean) {
+  const attachments: AttachmentBuilder[] = [];
+  const container = new ContainerBuilder();
 
   if (hasCodes && codes) {
-    const parts: string[] = [];
-    const maps = Object.entries(MAP_DISPLAY) as [keyof DailyCodes, string][];
-    for (let i = 0; i < maps.length; i++) {
-      const [fullName, shortName] = maps[i];
+    const maps = Object.entries(MAP_DISPLAY) as [
+      keyof DailyCodes,
+      { name: string; image: string },
+    ][];
+
+    maps.forEach(([fullName, mapInfo], index) => {
       const code = codes[fullName] || 'Chưa có';
-      if (i > 0) parts.push('');
-      parts.push(`**${shortName}**`);
-      parts.push('```diff');
-      parts.push(`+ ${code}`);
-      parts.push('```');
-    }
-    content = parts.join('\n');
+
+      const attachment = new AttachmentBuilder(`${ASSETS_PATH}${mapInfo.image}`).setName(
+        `${mapInfo.name.toLowerCase().replace(/\s+/g, '-')}.png`,
+      );
+      attachments.push(attachment);
+
+      // Tên map + code
+      container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`**${mapInfo.name}**\n\`\`\`diff\n+ ${code}\n\`\`\``),
+      );
+
+      // Ảnh to, full width bằng MediaGallery
+      container.addMediaGalleryComponents(
+        new MediaGalleryBuilder().addItems(
+          new MediaGalleryItemBuilder({
+            media: { url: `attachment://${attachment.name}` },
+          }),
+        ),
+      );
+
+      if (index < maps.length - 1) {
+        container.addSeparatorComponents(new SeparatorBuilder());
+      }
+    });
   } else {
-    content = '_Khong tim thay mat khau hom nay._';
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent('_Không tìm thấy mật khẩu hôm nay._'),
+    );
   }
 
-  const inner: unknown[] = [
-    { type: ComponentType.TextDisplay, content },
-    { type: ComponentType.Separator, accentColor: 0x5865F2 },
-  ];
-
-  return {
-    components: [{ type: ComponentType.Container, components: inner }],
-    flags: MessageFlags.IsComponentsV2,
-  };
+  return makeResult(
+    [{ type: ComponentType.Container, components: container.components }],
+    MessageFlags.IsComponentsV2,
+    attachments,
+  );
 }
 
 export async function execute(
@@ -58,29 +82,31 @@ export async function execute(
   _database: unknown,
 ): Promise<void> {
   if (!interaction.guild) {
-    await interaction.reply({ content: 'Chi dung trong server.', flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral });
     return;
   }
 
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ ephemeral: false });
 
   try {
     const codes = await fetchDailyCodes().catch(() => null);
 
     let hasCodes = false;
     if (codes) {
-      hasCodes = Object.values(codes).some((v) => v !== null);
+      hasCodes = Object.values(codes).some((v) => v !== null && v !== undefined);
     }
 
     const container = buildCodesContainer(codes, hasCodes);
+
     await interaction.editReply({
-      components: container.components as any,
-      flags: container.flags | MessageFlags.Ephemeral,
+      components: container.toJSON(),
+      files: container.files,
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
     });
   } catch (error) {
-    const err = buildErrorContainer(`Loi khi lay du lieu: ${(error as Error).message}`);
+    const err = buildErrorContainer(`Lỗi khi lấy dữ liệu: ${(error as Error).message}`);
     await interaction.editReply({
-      components: err.components as any,
+      components: err.toJSON(),
       flags: err.flags | MessageFlags.Ephemeral,
     });
   }

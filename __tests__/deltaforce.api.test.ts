@@ -61,7 +61,7 @@ describe('deltaforce.api', () => {
 
   describe('getSeasonData', () => {
     it('nên gửi đúng seasonNo', async () => {
-      mockSuccess({} as any);
+      mockSuccess({});
       await getSeasonData(MOCK_TOKEN, '10009');
       const body = mockPost.mock.calls[0][1];
       expect(body.seasonno).toEqual(['10009']);

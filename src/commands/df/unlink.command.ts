@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
+﻿import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import Database from 'better-sqlite3';
 import {
   buildSuccessContainer,
@@ -23,7 +23,7 @@ export async function execute(
   if (!existing) {
     const info = buildInfoContainer('Bạn chưa liên kết tài khoản Delta Force nào.');
     await interaction.reply({
-      components: info.components as any,
+      components: info.toJSON(),
       flags: info.flags | MessageFlags.Ephemeral,
     });
     return;
@@ -32,7 +32,7 @@ export async function execute(
   deleteDfToken(database, interaction.user.id);
   const result = buildSuccessContainer('Đã hủy liên kết tài khoản Delta Force.');
   await interaction.reply({
-    components: result.components as any,
+    components: result.toJSON(),
     flags: result.flags | MessageFlags.Ephemeral,
   });
 }

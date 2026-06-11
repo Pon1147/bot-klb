@@ -1,3 +1,17 @@
+interface PuppeteerPage {
+  setUserAgent(ua: string): Promise<void>;
+  goto(url: string, opts: { waitUntil: string; timeout: number }): Promise<string | null>;
+  waitForSelector(selector: string, opts: { timeout: number }): Promise<unknown>;
+  evaluate<T>(fn: () => T): Promise<T>;
+  setRequestInterception(enabled: boolean): void;
+  on(event: string, handler: (req: { url: () => string; continue: () => void }) => void): void;
+}
+
+interface PuppeteerBrowser {
+  close(): Promise<void>;
+  newPage(): Promise<PuppeteerPage>;
+}
+
 export interface DailyCodes {
   'Đập Nước Zero': string | null;
   'Thung lũng Layali': string | null;
@@ -34,14 +48,13 @@ export async function fetchDailyCodes(): Promise<DailyCodes> {
 
 export async function fetchDailyAll(): Promise<DailyData> {
   const puppeteer = await loadPuppeteer();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let browser: any = null;
+  let browser: PuppeteerBrowser | null = null;
 
   try {
-    browser = await puppeteer.launch({
+    browser = (await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    })) as PuppeteerBrowser;
 
     const page = await browser.newPage();
     await page.setUserAgent(
@@ -88,7 +101,6 @@ export async function fetchDailyAll(): Promise<DailyData> {
 
       const operations: Record<string, string | null> = {};
       if (hasNoData) {
-        // No real data on page — leave all null
         for (const key of Object.values(opMap)) {
           operations[key] = null;
         }
@@ -102,7 +114,7 @@ export async function fetchDailyAll(): Promise<DailyData> {
       return { codes, operations };
     });
 
-    return result;
+    return result as unknown as DailyData;
   } finally {
     if (browser) {
       await browser.close();
@@ -119,14 +131,13 @@ export async function extractToken(
   timeoutMs = 20000,
 ): Promise<{ openid: string; token: string } | null> {
   const puppeteer = await loadPuppeteer();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let browser: any = null;
+  let browser: PuppeteerBrowser | null = null;
 
   try {
-    browser = await puppeteer.launch({
+    browser = (await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    })) as PuppeteerBrowser;
 
     const page = await browser.newPage();
     await page.setUserAgent(
@@ -141,7 +152,7 @@ export async function extractToken(
       );
 
       page.setRequestInterception(true);
-      page.on('request', (req: any) => {
+      page.on('request', (req: { url: () => string; continue: () => void }) => {
         const url = req.url();
         if (url.includes('GetMyData')) {
           clearTimeout(timer);

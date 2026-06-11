@@ -1,5 +1,5 @@
-/**
- * Unit tests cho df-daily.command.ts — /df-daily slash command (battle stats only).
+﻿/**
+ * Unit tests cho df-daily.command.ts â€” /df-daily slash command (battle stats only).
  */
 
 jest.mock('discord.js', () => ({
@@ -22,6 +22,7 @@ jest.mock('../src/utils/container.utils.js', () => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
     flags: 65536,
     files: [],
+    toJSON() { return this.components; },
   })),
 }));
 

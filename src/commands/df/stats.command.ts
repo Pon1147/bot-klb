@@ -1,6 +1,6 @@
-import { ChatInputCommandInteraction, ComponentType, MessageFlags, SlashCommandBuilder } from 'discord.js';
+﻿import { ChatInputCommandInteraction, ComponentType, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import Database from 'better-sqlite3';
-import { buildErrorContainer } from '../../utils/container.utils.js';
+import { buildErrorContainer, toComponentsV2 } from '../../utils/container.utils.js';
 import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
 import { getSeasonData } from '../../services/deltaforce.api.js';
 import { resolveRankFromScore } from '../../utils/df-rank.utils.js';
@@ -26,7 +26,7 @@ export async function execute(
   if (!token) {
     const err = buildErrorContainer('Bạn chưa liên kết tài khoản. Dùng `/df-link` để bắt đầu.');
     await interaction.reply({
-      components: err.components as any,
+      components: err.toJSON(),
       flags: err.flags | MessageFlags.Ephemeral,
     });
     return;
@@ -134,7 +134,7 @@ export async function execute(
     };
 
     await interaction.editReply({
-      components: [containerComponents] as any,
+      components: toComponentsV2([containerComponents]),
       flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
     });
   } catch (error) {
@@ -142,7 +142,7 @@ export async function execute(
       `Lỗi khi lấy dữ liệu: ${(error as Error).message}\nNếu lỗi tiếp tục, hãy unlink và link lại tài khoản.`,
     );
     await interaction.editReply({
-      components: err.components as any,
+      components: err.toJSON(),
       flags: err.flags | MessageFlags.Ephemeral,
     });
   }

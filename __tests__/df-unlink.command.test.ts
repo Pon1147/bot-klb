@@ -1,5 +1,5 @@
-/**
- * Unit tests cho df-unlink.command.ts — /df-unlink slash command.
+﻿/**
+ * Unit tests cho df-unlink.command.ts â€” /df-unlink slash command.
  */
 
 jest.mock('discord.js', () => ({
@@ -20,11 +20,13 @@ jest.mock('../src/utils/container.utils.js', () => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
     flags: 65536,
     files: [],
+    toJSON() { return this.components; },
   })),
   buildInfoContainer: jest.fn((msg) => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
     flags: 65536,
     files: [],
+    toJSON() { return this.components; },
   })),
 }));
 
@@ -52,7 +54,7 @@ describe('df-unlink.command', () => {
     jest.clearAllMocks();
   });
 
-  it('nên trả về error khi không có guild', async () => {
+  it('nÃªn tráº£ vá» error khi khÃ´ng cÃ³ guild', async () => {
     const interaction = createMockInteraction({ guild: null });
     await execute(interaction, mockDb);
     expect(mockReply).toHaveBeenCalledWith(
@@ -60,7 +62,7 @@ describe('df-unlink.command', () => {
     );
   });
 
-  it('nên hủy liên kết khi có token', async () => {
+  it('nÃªn há»§y liÃªn káº¿t khi cÃ³ token', async () => {
     (getDfToken as jest.Mock).mockReturnValue({
       openid: '123',
       token: 'abc',
@@ -74,7 +76,7 @@ describe('df-unlink.command', () => {
     expect(mockReply).toHaveBeenCalled();
   });
 
-  it('nên trả về info khi chưa liên kết tài khoản', async () => {
+  it('nÃªn tráº£ vá» info khi chÆ°a liÃªn káº¿t tÃ i khoáº£n', async () => {
     (getDfToken as jest.Mock).mockReturnValue(undefined);
     const interaction = createMockInteraction();
     await execute(interaction, mockDb);

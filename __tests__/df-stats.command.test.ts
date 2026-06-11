@@ -26,6 +26,7 @@ jest.mock('../src/utils/container.utils.js', () => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
     flags: 65536,
     files: [],
+    toJSON() { return this.components; },
   })),
 }));
 

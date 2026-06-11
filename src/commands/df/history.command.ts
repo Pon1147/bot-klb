@@ -1,4 +1,4 @@
-import {
+﻿import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -8,13 +8,17 @@ import {
   SlashCommandBuilder,
 } from 'discord.js';
 import Database from 'better-sqlite3';
-import { buildErrorContainer } from '../../utils/container.utils.js';
+import { buildErrorContainer, toComponentsV2 } from '../../utils/container.utils.js';
 import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
 import { getMatchList } from '../../services/deltaforce.api.js';
 import { DEFAULT_OPERATOR_AVATAR, resolveOperator } from '../../utils/df-operator.utils.js';
 import type { DfMatchEntry } from '../../types/deltaforce.types.js';
 
-const DF_RED = 0xc30027;
+const DF_RED = 0x0ff695;
+const EMOJI_WIN = '<a:HoA:1512368174614446181>';
+const EMOJI_DEFEAT = '<:hom_xac:1514470840312401971>';
+const EMOJI_MONEY = '<:icon9De6T9unB:1514474246779306115>';
+const EMOJI_KILL = '<:kill:1514482180254990407>';
 
 const MAP_NAMES: Record<number, string> = {
   2201: 'Haven',
@@ -49,13 +53,13 @@ function buildMatchItemSection(match: DfMatchEntry): Record<string, unknown> {
     minute: '2-digit',
   });
   const mapName = MAP_NAMES[match.map_id] || `Map ${match.map_id}`;
-  const result = match.result === 1 ? '🏆 Win' : '💀 Defeat';
+  const result = match.result === 1 ? `${EMOJI_WIN} Win` : `${EMOJI_DEFEAT} Defeat`;
   const extract = Number(match.carry_out_value).toLocaleString('vi-VN');
 
   const content =
     `**${operator.name}**\n` +
     `Chiến Dịch Sinh Tồn | ${mapName} • ${time}\n` +
-    `${result}  ·  💰 ${extract}  ·  ☠ ${match.kill_count}`;
+    `${result}  ·  ${EMOJI_MONEY} ${extract}  ·  ${EMOJI_KILL} ${match.kill_count}`;
 
   return {
     type: ComponentType.Section,
@@ -95,7 +99,7 @@ export async function execute(
   if (!token) {
     const err = buildErrorContainer('Bạn chưa liên kết tài khoản. Dùng `/df-link` để bắt đầu.');
     await interaction.reply({
-      components: err.components as any,
+      components: err.toJSON(),
       flags: err.flags | MessageFlags.Ephemeral,
     });
     return;
@@ -120,7 +124,7 @@ export async function execute(
     if (!matches.length) {
       const err = buildErrorContainer('Không có trận đấu nào trong lịch sử.');
       await interaction.editReply({
-        components: err.components as any,
+        components: err.toJSON(),
         flags: err.flags | MessageFlags.Ephemeral,
       });
       return;
@@ -183,7 +187,7 @@ export async function execute(
     const buttonRow = buildViewAllButtonRow();
 
     await interaction.editReply({
-      components: [containerComponent, buttonRow.toJSON()] as any,
+      components: toComponentsV2([containerComponent, buttonRow.toJSON()]),
       flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
     });
   } catch (error) {
@@ -191,7 +195,7 @@ export async function execute(
       `Lỗi khi lấy dữ liệu: ${(error as Error).message}\nNếu lỗi tiếp tục, hãy unlink và link lại tài khoản.`,
     );
     await interaction.editReply({
-      components: err.components as any,
+      components: err.toJSON(),
       flags: err.flags | MessageFlags.Ephemeral,
     });
   }

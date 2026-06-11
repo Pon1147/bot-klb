@@ -1,5 +1,5 @@
-/**
- * Unit tests cho df-history.command.ts — /df-history slash command.
+﻿/**
+ * Unit tests cho df-history.command.ts â€” /df-history slash command.
  */
 
 jest.mock('discord.js', () => ({
@@ -40,6 +40,7 @@ jest.mock('../src/utils/container.utils.js', () => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
     flags: 65536,
     files: [],
+    toJSON() { return this.components; },
   })),
 }));
 
@@ -73,22 +74,22 @@ describe('df-history.command', () => {
     jest.clearAllMocks();
   });
 
-  it('nên trả về error khi không có guild', async () => {
+  it('nÃªn tráº£ vá» error khi khÃ´ng cÃ³ guild', async () => {
     const interaction = createMockInteraction({ guild: null });
     await execute(interaction, mockDb);
     expect(mockReply).toHaveBeenCalledWith(
-      expect.objectContaining({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral }),
+      expect.objectContaining({ content: 'Chá»‰ dÃ¹ng trong server.', flags: MessageFlags.Ephemeral }),
     );
   });
 
-  it('nên trả về error khi chưa liên kết tài khoản', async () => {
+  it('nÃªn tráº£ vá» error khi chÆ°a liÃªn káº¿t tÃ i khoáº£n', async () => {
     (getDfToken as jest.Mock).mockReturnValue(undefined);
     await execute(createMockInteraction(), mockDb);
     expect(mockReply).toHaveBeenCalled();
     expect(getMatchList).not.toHaveBeenCalled();
   });
 
-  it('nên hiển thị match list khi có data', async () => {
+  it('nÃªn hiá»ƒn thá»‹ match list khi cÃ³ data', async () => {
     const mockToken = { openid: '123', token: 'abc', linked_at: '2026-06-09', last_used_at: null };
     (getDfToken as jest.Mock).mockReturnValue(mockToken);
     (getMatchList as jest.Mock).mockResolvedValue({
@@ -104,7 +105,7 @@ describe('df-history.command', () => {
     expect(mockEditReply).toHaveBeenCalled();
   });
 
-  it('nên limit số trận theo option', async () => {
+  it('nÃªn limit sá»‘ tráº­n theo option', async () => {
     const mockToken = { openid: '123', token: 'abc', linked_at: '2026-06-09', last_used_at: null };
     (getDfToken as jest.Mock).mockReturnValue(mockToken);
     (getMatchList as jest.Mock).mockResolvedValue({
@@ -120,7 +121,7 @@ describe('df-history.command', () => {
     expect(mockEditReply).toHaveBeenCalled();
   });
 
-  it('nên trả về error khi không có match nào', async () => {
+  it('nÃªn tráº£ vá» error khi khÃ´ng cÃ³ match nÃ o', async () => {
     const mockToken = { openid: '123', token: 'abc', linked_at: '2026-06-09', last_used_at: null };
     (getDfToken as jest.Mock).mockReturnValue(mockToken);
     (getMatchList as jest.Mock).mockResolvedValue({ commonly_used_operators_id: '1', list: [] });
@@ -128,7 +129,7 @@ describe('df-history.command', () => {
     expect(mockEditReply).toHaveBeenCalled();
   });
 
-  it('nên handle API error', async () => {
+  it('nÃªn handle API error', async () => {
     const mockToken = { openid: '123', token: 'abc', linked_at: '2026-06-09', last_used_at: null };
     (getDfToken as jest.Mock).mockReturnValue(mockToken);
     (getMatchList as jest.Mock).mockRejectedValue(new Error('Network error'));

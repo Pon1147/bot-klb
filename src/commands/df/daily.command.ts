@@ -1,11 +1,11 @@
-import {
+﻿import {
   ChatInputCommandInteraction,
   ComponentType,
   MessageFlags,
   SlashCommandBuilder,
 } from 'discord.js';
 import Database from 'better-sqlite3';
-import { buildErrorContainer } from '../../utils/container.utils.js';
+import { buildErrorContainer, makeResult } from '../../utils/container.utils.js';
 import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
 import { getDailyReport } from '../../services/deltaforce.api.js';
 import type { DfBattlefieldBattle } from '../../types/deltaforce.types.js';
@@ -26,24 +26,19 @@ function formatOperations(battle: DfBattlefieldBattle | null): string {
   return lines.join('\n');
 }
 
-function buildBattleContainer(
-  battleText: string,
-  dateStr: string,
-): {
-  components: unknown[];
-  flags: number;
-} {
-  const content = `## Trang Thai Chien Dau Hien Tai\n\n${battleText}\n\n_${dateStr}_`;
+function buildBattleContainer(battleText: string, dateStr: string) {
+  const content = `## Trạng Thái Chiến Đấu Hiện Tại\n\n${battleText}\n\n_${dateStr}_`;
 
   const inner: unknown[] = [
     { type: ComponentType.TextDisplay, content },
     { type: ComponentType.Separator, accentColor: 0x5865f2 },
   ];
 
-  return {
-    components: [{ type: ComponentType.Container, components: inner }],
-    flags: MessageFlags.IsComponentsV2,
-  };
+  return makeResult(
+    [{ type: ComponentType.Container, components: inner }],
+    MessageFlags.IsComponentsV2,
+    [],
+  );
 }
 
 export async function execute(
@@ -59,7 +54,7 @@ export async function execute(
   if (!linkedToken) {
     const err = buildErrorContainer('Ban chua lien ket tai khoan. Dung `/df-link` de bat dau.');
     await interaction.reply({
-      components: err.components as any,
+      components: err.toJSON(),
       flags: err.flags | MessageFlags.Ephemeral,
     });
     return;
@@ -94,13 +89,13 @@ export async function execute(
     const container = buildBattleContainer(battleText, dateStr);
 
     await interaction.editReply({
-      components: container.components as any,
+      components: container.toJSON(),
       flags: container.flags | MessageFlags.Ephemeral,
     });
   } catch (error) {
     const err = buildErrorContainer(`Loi khi lay du lieu: ${(error as Error).message}`);
     await interaction.editReply({
-      components: err.components as any,
+      components: err.toJSON(),
       flags: err.flags | MessageFlags.Ephemeral,
     });
   }

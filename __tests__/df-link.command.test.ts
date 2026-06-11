@@ -1,5 +1,5 @@
-/**
- * Unit tests cho df-link.command.ts — /df-link slash command.
+﻿/**
+ * Unit tests cho df-link.command.ts â€” /df-link slash command.
  * Version: simplified command (no subcommands), sends JS script via DM.
  */
 
@@ -31,6 +31,7 @@ jest.mock('../src/utils/container.utils.js', () => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
     flags: 65536,
     files: [],
+    toJSON() { return this.components; },
   })),
 }));
 
@@ -64,15 +65,15 @@ describe('df-link.command', () => {
     jest.clearAllMocks();
   });
 
-  it('nên trả về error khi không có guild', async () => {
+  it('nÃªn tráº£ vá» error khi khÃ´ng cÃ³ guild', async () => {
     const interaction = createMockInteraction({ guild: null });
     await execute(interaction, mockDb);
     expect(mockReply).toHaveBeenCalledWith(
-      expect.objectContaining({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral }),
+      expect.objectContaining({ content: 'Chá»‰ dÃ¹ng trong server.', flags: MessageFlags.Ephemeral }),
     );
   });
 
-  it('nên sinh claim code và gửi script qua DM', async () => {
+  it('nÃªn sinh claim code vÃ  gá»­i script qua DM', async () => {
     (generateCode as jest.Mock).mockReturnValue('ABC123');
     const interaction = createMockInteraction();
     await execute(interaction, mockDb);
@@ -83,7 +84,7 @@ describe('df-link.command', () => {
     expect(mockDmSend).toHaveBeenCalled();
   });
 
-  it('nên trả về xác nhận với claim code', async () => {
+  it('nÃªn tráº£ vá» xÃ¡c nháº­n vá»›i claim code', async () => {
     (generateCode as jest.Mock).mockReturnValue('ABC123');
     const interaction = createMockInteraction();
     await execute(interaction, mockDb);
@@ -95,7 +96,7 @@ describe('df-link.command', () => {
     );
   });
 
-  it('nên gửi script file có đúng tên và chứa claim code', async () => {
+  it('nÃªn gá»­i script file cÃ³ Ä‘Ãºng tÃªn vÃ  chá»©a claim code', async () => {
     (generateCode as jest.Mock).mockReturnValue('XYZ789');
     const interaction = createMockInteraction();
     await execute(interaction, mockDb);
@@ -108,7 +109,7 @@ describe('df-link.command', () => {
     expect(content).toContain('XYZ789');
   });
 
-  it('nên gửi script có thay thế WEBHOOK_URL', async () => {
+  it('nÃªn gá»­i script cÃ³ thay tháº¿ WEBHOOK_URL', async () => {
     (generateCode as jest.Mock).mockReturnValue('ABC123');
     const interaction = createMockInteraction();
     await execute(interaction, mockDb);
@@ -119,7 +120,7 @@ describe('df-link.command', () => {
     expect(content).not.toContain('@@CLAIM_CODE@@');
   });
 
-  it('nên handle DM error gracefully', async () => {
+  it('nÃªn handle DM error gracefully', async () => {
     (generateCode as jest.Mock).mockReturnValue('ABC123');
     const mockConsoleError = console.error;
     console.error = jest.fn();

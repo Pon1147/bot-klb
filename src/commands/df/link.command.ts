@@ -1,4 +1,4 @@
-import { AttachmentBuilder, ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
+﻿import { AttachmentBuilder, ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import Database from 'better-sqlite3';
@@ -59,7 +59,7 @@ export async function execute(
     if (!interaction.replied && !interaction.deferred) {
       const err = buildErrorContainer('Không thể gửi DM. Hãy mở tin nhắn trong Server Settings.');
       await interaction.reply({
-        components: err.components as any,
+        components: err.toJSON(),
         flags: err.flags | MessageFlags.Ephemeral,
       });
     } else {
