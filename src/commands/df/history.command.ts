@@ -1,8 +1,20 @@
-import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ChatInputCommandInteraction,
+  ComponentType,
+  MessageFlags,
+  SlashCommandBuilder,
+} from 'discord.js';
 import Database from 'better-sqlite3';
-import { buildErrorContainer, buildTextOnlyContainer } from '../../utils/container.utils.js';
+import { buildErrorContainer } from '../../utils/container.utils.js';
 import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
 import { getMatchList } from '../../services/deltaforce.api.js';
+import { DEFAULT_OPERATOR_AVATAR, resolveOperator } from '../../utils/df-operator.utils.js';
+import type { DfMatchEntry } from '../../types/deltaforce.types.js';
+
+const DF_RED = 0xc30027;
 
 const MAP_NAMES: Record<number, string> = {
   2201: 'Haven',
@@ -18,11 +30,57 @@ const MAP_NAMES: Record<number, string> = {
 const MAX_MATCHES = 10;
 
 export const data = new SlashCommandBuilder()
-  .setName('df-matches')
+  .setName('df-history')
   .setDescription('Xem lịch sử trận đấu Delta Force.')
   .addIntegerOption((opt) =>
     opt.setName('limit').setDescription('Số trận hiển thị (1-20)').setMinValue(1).setMaxValue(20),
   );
+
+function buildMatchItemSection(match: DfMatchEntry): Record<string, unknown> {
+  const operatorId = match.operator_id;
+  const operatorIcon = match.operator_icon;
+  const operator = resolveOperator(operatorId);
+
+  const avatarUrl = operatorIcon || operator.avatarUrl;
+  const time = new Date(Number(match.match_time) * 1000).toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const mapName = MAP_NAMES[match.map_id] || `Map ${match.map_id}`;
+  const result = match.result === 1 ? '🏆 Win' : '💀 Defeat';
+  const extract = Number(match.carry_out_value).toLocaleString('vi-VN');
+
+  const content =
+    `**${operator.name}**\n` +
+    `Chiến Dịch Sinh Tồn | ${mapName} • ${time}\n` +
+    `${result}  ·  💰 ${extract}  ·  ☠ ${match.kill_count}`;
+
+  return {
+    type: ComponentType.Section,
+    components: [
+      {
+        type: ComponentType.TextDisplay,
+        content,
+      },
+    ],
+    accessory: {
+      type: ComponentType.Thumbnail,
+      media: { url: avatarUrl },
+      description: operator.name,
+    },
+  };
+}
+
+function buildViewAllButtonRow(): ActionRowBuilder<ButtonBuilder> {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId('df_history_view_all')
+      .setLabel('Xem tất cả')
+      .setStyle(ButtonStyle.Secondary),
+  );
+}
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
@@ -35,7 +93,7 @@ export async function execute(
 
   const token = getDfToken(database, interaction.user.id);
   if (!token) {
-    const err = buildErrorContainer('Bạn chưa liên kết tài khoản. Dùng `/df-link paste` để bắt đầu.');
+    const err = buildErrorContainer('Bạn chưa liên kết tài khoản. Dùng `/df-link` để bắt đầu.');
     await interaction.reply({
       components: err.components as any,
       flags: err.flags | MessageFlags.Ephemeral,
@@ -68,31 +126,65 @@ export async function execute(
       return;
     }
 
-    const lines = [`## ​`, `### 🎮 Lịch sử trận đấu (${matches.length}/${matchData.list.length})`, ``];
+    // ── 1. HEADER SECTION ──
+    const headerSection: Record<string, unknown> = {
+      type: ComponentType.Section,
+      components: [
+        {
+          type: ComponentType.TextDisplay,
+          content: `## Trận Đấu Gần Đây`,
+        },
+      ],
+      accessory: {
+        type: ComponentType.Thumbnail,
+        media: {
+          url: DEFAULT_OPERATOR_AVATAR,
+        },
+        description: 'Delta Force',
+      },
+    };
 
-    for (let i = 0; i < matches.length; i++) {
-      const m = matches[i];
-      const time = new Date(Number(m.match_time) * 1000).toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      const map = MAP_NAMES[m.map_id] || `Map ${m.map_id}`;
-      const result = m.result === 1 ? '✅ Win' : '❌ Defeat';
-      const extract = Number(m.carry_out_value).toLocaleString('vi-VN');
+    // ── 2. COUNT TEXT ──
+    const countText: Record<string, unknown> = {
+      type: ComponentType.TextDisplay,
+      content: `${matches.length} / ${matchData.list.length} trận`,
+    };
 
-      lines.push(
-        `**#${matches.length - i}** ${result} • ${map}`,
-        `⏱ ${time} • 🔫 ${m.kill_count} kills • 💎 ${extract}`,
-        ``,
-      );
-    }
+    // ── 3. SEPARATOR ──
+    const separator: Record<string, unknown> = {
+      type: ComponentType.Separator,
+    };
 
-    const container = buildTextOnlyContainer(lines.join('\n'), 0x5865F2);
+    // ── 4. MATCH ITEMS ──
+    const matchSections = matches.map(buildMatchItemSection);
+
+    // ── 5. FOOTER TEXT ──
+    const footerText: Record<string, unknown> = {
+      type: ComponentType.TextDisplay,
+      content: `[Xem trên playdeltaforce.com](https://www.playdeltaforce.com)`,
+    };
+
+    // ── ASSEMBLE CONTAINER ──
+    const containerInner: unknown[] = [
+      headerSection,
+      countText,
+      separator,
+      ...matchSections,
+      footerText,
+    ];
+
+    const containerComponent: Record<string, unknown> = {
+      type: ComponentType.Container,
+      components: containerInner,
+      accent_color: DF_RED,
+    };
+
+    // ── BUTTON ROW (outside container) ──
+    const buttonRow = buildViewAllButtonRow();
+
     await interaction.editReply({
-      components: container.components as any,
-      flags: container.flags | MessageFlags.Ephemeral,
+      components: [containerComponent, buttonRow.toJSON()] as any,
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
     });
   } catch (error) {
     const err = buildErrorContainer(
