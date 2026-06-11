@@ -1,4 +1,5 @@
-import { Collection, REST, Routes } from 'discord.js';
+import type { APIApplicationCommand, ChatInputCommandInteraction } from 'discord.js';
+import { Collection, REST, Routes, SlashCommandBuilder } from 'discord.js';
 import { readdirSync, statSync } from 'fs';
 import path from 'path';
 import { botConfig } from '../config/bot.config.js';
@@ -11,8 +12,8 @@ const logger = createLogger('CommandHandler');
  * Mỗi file command phải export `data` (SlashCommandBuilder) và `execute` function.
  */
 export interface CommandModule {
-  data: any;
-  execute: (...args: any[]) => Promise<any>;
+  data: SlashCommandBuilder;
+  execute: (interaction: ChatInputCommandInteraction, ...args: unknown[]) => Promise<unknown>;
 }
 
 /**
@@ -48,10 +49,13 @@ function collectCommandFiles(dirPath: string): string[] {
  * Kiểm tra xem một module có phải là command hợp lệ không.
  * Valid command = có export `data` (với name) + có export `execute` (function).
  */
-function isValidCommandModule(module: any): module is CommandModule {
-  if (!module.data) return false;
-  if (!module.data.name) return false;
-  if (typeof module.execute !== 'function') return false;
+function isValidCommandModule(module: unknown): module is CommandModule {
+  if (typeof module !== 'object' || module === null) return false;
+  const m = module as Record<string, unknown>;
+  if (!m.data || typeof m.data !== 'object') return false;
+  const data = m.data as Record<string, unknown>;
+  if (!data.name) return false;
+  if (typeof m.execute !== 'function') return false;
   return true;
 }
 
@@ -126,9 +130,11 @@ export function loadCommands(collection: Collection<string, CommandModule>): voi
  * Tạo fingerprint (string so sánh) cho một command.
  * Dùng để phát hiện thay đổi giữa local và Discord.
  */
-function commandFingerprint(commandData: any): string {
-  const cmd = typeof commandData.toJSON === 'function' ? commandData.toJSON() : commandData;
-  return JSON.stringify(cmd);
+function commandFingerprint(commandData: SlashCommandBuilder | APIApplicationCommand): string {
+  if ('toJSON' in commandData && typeof commandData.toJSON === 'function') {
+    return JSON.stringify(commandData.toJSON());
+  }
+  return JSON.stringify(commandData);
 }
 
 /**
@@ -147,7 +153,7 @@ interface DiffResult {
  */
 function computeDiff(
   localCollection: Collection<string, CommandModule>,
-  existingCommands: any[],
+  existingCommands: APIApplicationCommand[],
 ): DiffResult {
   const result: DiffResult = {
     toAdd: [],
@@ -211,14 +217,14 @@ export async function deployCommands(
   const rest = new REST().setToken(botConfig.token);
 
   // Bước 1: Fetch existing commands từ Discord
-  let existingCommands: any[] = [];
+  let existingCommands: APIApplicationCommand[] = [];
   try {
     existingCommands = (await rest.get(
       Routes.applicationGuildCommands(botConfig.clientId, botConfig.guildId),
-    )) as any[];
+    )) as APIApplicationCommand[];
     logger.info(`Đã fetch ${existingCommands.length} command(s) từ Discord`, {
       guildId: botConfig.guildId,
-      existingCommands: existingCommands.map((c: any) => c.name),
+      existingCommands: existingCommands.map((c) => c.name),
     });
   } catch (error) {
     logger.warn('Không thể fetch existing commands. Sẽ deploy tất cả commands.', { error });

@@ -8,6 +8,8 @@ import Database from 'better-sqlite3';
 import { createTestDb, seedDfToken, seedGuildSettings, seedWelcomeConfig } from './setup.js';
 import type { GuildSettings } from '../../src/types/settings.types.js';
 
+type DbRow = Record<string, unknown>;
+
 /* ==================== df_tokens ==================== */
 
 describe('Database E2E — df_tokens', () => {
@@ -27,13 +29,13 @@ describe('Database E2E — df_tokens', () => {
 
       const row = db.prepare('SELECT * FROM df_tokens WHERE discord_id = ?').get('discord-123');
       expect(row).toBeDefined();
-      expect((row as any).discord_id).toBe('discord-123');
-      expect((row as any).openid).toBe('openid-1');
-      expect((row as any).token).toBe('token-abc');
-      expect((row as any).ts).toBe('123');
-      expect((row as any).s).toBe('sig-1');
-      expect((row as any).u).toBe('user-1');
-      expect((row as any).linked_at).toBeDefined();
+      expect((row as DbRow).discord_id).toBe('discord-123');
+      expect((row as DbRow).openid).toBe('openid-1');
+      expect((row as DbRow).token).toBe('token-abc');
+      expect((row as DbRow).ts).toBe('123');
+      expect((row as DbRow).s).toBe('sig-1');
+      expect((row as DbRow).u).toBe('user-1');
+      expect((row as DbRow).linked_at).toBeDefined();
     });
 
     it('phải lưu token mà không có ts/s/u', () => {
@@ -41,9 +43,9 @@ describe('Database E2E — df_tokens', () => {
 
       const row = db.prepare('SELECT * FROM df_tokens WHERE discord_id = ?').get('discord-456');
       expect(row).toBeDefined();
-      expect((row as any).ts).toBeNull();
-      expect((row as any).s).toBeNull();
-      expect((row as any).u).toBeNull();
+      expect((row as DbRow).ts).toBeNull();
+      expect((row as DbRow).s).toBeNull();
+      expect((row as DbRow).u).toBeNull();
     });
 
     it('phải UPSERT khi discord_id trùng', () => {
@@ -51,9 +53,9 @@ describe('Database E2E — df_tokens', () => {
       seedDfToken(db, 'discord-123', 'openid-new', 'token-new', '999', 'sig-new', 'u-new');
 
       const row = db.prepare('SELECT * FROM df_tokens WHERE discord_id = ?').get('discord-123');
-      expect((row as any).openid).toBe('openid-new');
-      expect((row as any).token).toBe('token-new');
-      expect((row as any).ts).toBe('999');
+      expect((row as DbRow).openid).toBe('openid-new');
+      expect((row as DbRow).token).toBe('token-new');
+      expect((row as DbRow).ts).toBe('999');
 
       const count = db.prepare('SELECT COUNT(*) as c FROM df_tokens').get() as { c: number };
       expect(count.c).toBe(1);
@@ -65,13 +67,13 @@ describe('Database E2E — df_tokens', () => {
       seedDfToken(db, 'discord-123', 'openid-1', 'token-1');
 
       const before = db.prepare('SELECT last_used_at FROM df_tokens WHERE discord_id = ?').get('discord-123');
-      expect((before as any).last_used_at).toBeNull();
+      expect((before as DbRow).last_used_at).toBeNull();
 
       db.prepare('UPDATE df_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE discord_id = ?').run('discord-123');
 
       const after = db.prepare('SELECT last_used_at FROM df_tokens WHERE discord_id = ?').get('discord-123');
-      expect((after as any).last_used_at).toBeDefined();
-      expect((after as any).last_used_at).not.toBeNull();
+      expect((after as DbRow).last_used_at).toBeDefined();
+      expect((after as DbRow).last_used_at).not.toBeNull();
     });
   });
 
@@ -106,10 +108,10 @@ describe('Database E2E — welcome_configuration', () => {
       seedWelcomeConfig(db, 'guild-1', 'ch-welcome', 'role-welcome', true);
 
       const row = db.prepare('SELECT * FROM welcome_configuration WHERE guild_id = ?').get('guild-1');
-      expect((row as any).guild_id).toBe('guild-1');
-      expect((row as any).channel_id).toBe('ch-welcome');
-      expect((row as any).role_id).toBe('role-welcome');
-      expect((row as any).is_enabled).toBe(1);
+      expect((row as DbRow).guild_id).toBe('guild-1');
+      expect((row as DbRow).channel_id).toBe('ch-welcome');
+      expect((row as DbRow).role_id).toBe('role-welcome');
+      expect((row as DbRow).is_enabled).toBe(1);
     });
 
     it('phải UPSERT khi guild_id trùng', () => {
@@ -117,8 +119,8 @@ describe('Database E2E — welcome_configuration', () => {
       seedWelcomeConfig(db, 'guild-1', 'ch-new', 'role-new', false);
 
       const row = db.prepare('SELECT * FROM welcome_configuration WHERE guild_id = ?').get('guild-1');
-      expect((row as any).channel_id).toBe('ch-new');
-      expect((row as any).is_enabled).toBe(0);
+      expect((row as DbRow).channel_id).toBe('ch-new');
+      expect((row as DbRow).is_enabled).toBe(0);
     });
   });
 
@@ -129,7 +131,7 @@ describe('Database E2E — welcome_configuration', () => {
       db.prepare('UPDATE welcome_configuration SET is_enabled = ? WHERE guild_id = ?').run(0, 'guild-1');
 
       const row = db.prepare('SELECT is_enabled FROM welcome_configuration WHERE guild_id = ?').get('guild-1');
-      expect((row as any).is_enabled).toBe(0);
+      expect((row as DbRow).is_enabled).toBe(0);
     });
   });
 
@@ -201,7 +203,7 @@ describe('Database E2E — guild_settings', () => {
 
       const row = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get('guild-1');
       expect(row).toBeDefined();
-      const parsed = JSON.parse((row as any).settings_json) as GuildSettings;
+      const parsed = JSON.parse((row as DbRow).settings_json) as GuildSettings;
       expect(parsed.welcome.channelId).toBe('ch-welcome');
       expect(parsed.welcome.container.accentColor).toBe(0x5865f2);
       expect(parsed.welcome.container.contentLines).toEqual(['Dòng 1', 'Dòng 2']);
@@ -221,11 +223,11 @@ describe('Database E2E — guild_settings', () => {
       `).run('guild-corrupt', 'NOT VALID JSON{{{');
 
       const row = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get('guild-corrupt');
-      expect((row as any).settings_json).toBe('NOT VALID JSON{{{');
+      expect((row as DbRow).settings_json).toBe('NOT VALID JSON{{{');
 
       let parseError = false;
       try {
-        JSON.parse((row as any).settings_json);
+        JSON.parse((row as DbRow).settings_json);
       } catch {
         parseError = true;
       }
@@ -272,12 +274,12 @@ describe('Database E2E — integration', () => {
     seedDfToken(db, 'user-2', 'o2', 't2');
     seedDfToken(db, 'user-3', 'o3', 't3');
 
-    const rows = db.prepare('SELECT * FROM df_tokens').all() as Array<any>;
+    const rows = db.prepare('SELECT * FROM df_tokens').all() as Array<DbRow>;
     expect(rows.length).toBe(3);
 
     db.prepare('UPDATE df_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE discord_id = ?').run('user-2');
 
     const updated = db.prepare('SELECT last_used_at FROM df_tokens WHERE discord_id = ?').get('user-2');
-    expect((updated as any).last_used_at).toBeDefined();
+    expect((updated as DbRow).last_used_at).toBeDefined();
   });
 });

@@ -1,4 +1,4 @@
-import { GuildMember } from 'discord.js';
+﻿import { GuildMember } from 'discord.js';
 import { getSettingsService } from '../services/settings.service.js';
 
 /**
@@ -59,7 +59,7 @@ export async function execute(
     // Gửi Container V2 message
     // Note: cast components vì discord.js v14 chưa có type chính thức cho Components V2
     await boosterChannel.send({
-      components: boosterContainer.components as any,
+      components: boosterContainer.toJSON(),
       flags: boosterContainer.flags,
       files: boosterContainer.files,
     });

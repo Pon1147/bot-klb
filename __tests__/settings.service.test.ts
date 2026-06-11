@@ -18,12 +18,12 @@ const mockMember = {
   guild: {
     id: 'guild-123',
   },
-} as any;
+} as unknown as TemplateContext['member'];
 
 const mockGuild = {
   id: 'guild-123',
   name: 'TestGuild',
-} as any;
+} as unknown as TemplateContext['guild'];
 
 const mockContext: TemplateContext = {
   member: mockMember,
@@ -293,7 +293,7 @@ describe('SettingsService', () => {
   describe('singleton (getSettingsService / setSettingsService)', () => {
     it('phải throw error khi chưa set instance', () => {
       // Clear singleton
-      (global as any).__settingsServiceTestCleared = true;
+      (global as Record<string, unknown>).__settingsServiceTestCleared = true;
       expect(() => getSettingsService()).toThrow('SettingsService chưa được khởi tạo');
     });
 

@@ -14,11 +14,11 @@ function createMockTemplateContext(overrides: Partial<TemplateContext> = {}): Te
         toString: jest.fn().mockReturnValue('<@123456789>'),
       },
       joinedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 ngày trước
-    } as any,
+    } as unknown as TemplateContext['member'],
     guild: {
       name: 'Test Guild',
       memberCount: 42,
-    } as any,
+    } as unknown as TemplateContext['guild'],
     ...overrides,
   };
 }
@@ -40,7 +40,7 @@ describe('Template Utils', () => {
               toString: jest.fn().mockReturnValue('<@123456789>'),
             },
             joinedAt: new Date(),
-          } as any,
+          } as unknown as TemplateContext['member'],
         });
 
         const result = resolveTemplate('Tài khoản tạo: {accountAge}', context);
@@ -59,7 +59,7 @@ describe('Template Utils', () => {
               toString: jest.fn().mockReturnValue('<@123456789>'),
             },
             joinedAt: new Date(),
-          } as any,
+          } as unknown as TemplateContext['member'],
         });
 
         const result = resolveTemplate('Tuổi tài khoản: {accountAge}', context);
@@ -78,7 +78,7 @@ describe('Template Utils', () => {
               toString: jest.fn().mockReturnValue('<@123456789>'),
             },
             joinedAt: new Date(),
-          } as any,
+          } as unknown as TemplateContext['member'],
         });
 
         const result = resolveTemplate('Tuổi tài khoản: {accountAge}', context);
@@ -167,7 +167,7 @@ describe('Template Utils', () => {
               toString: jest.fn().mockReturnValue('<@123456789>'),
             },
             joinedAt: null,
-          } as any,
+          } as unknown as TemplateContext['member'],
         });
         const result = resolveTemplate('Ngày join: {serverJoiningDate}', context);
         // Khi joinedAt = null → dùng Date.now() → ngày hiện tại

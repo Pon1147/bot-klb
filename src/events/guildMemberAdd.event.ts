@@ -1,4 +1,4 @@
-import { Client, GuildMember } from 'discord.js';
+﻿import { Client, GuildMember } from 'discord.js';
 import { getSettingsService } from '../services/settings.service.js';
 
 /**
@@ -43,7 +43,7 @@ export async function execute(_client: Client, member: GuildMember): Promise<voi
     // Gửi Container V2 message
     // Note: cast components vì discord.js v14 chưa có type chính thức cho Components V2
     await welcomeChannel.send({
-      components: welcomeContainer.components as any,
+      components: welcomeContainer.toJSON(),
       flags: welcomeContainer.flags,
       files: welcomeContainer.files,
     });

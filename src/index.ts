@@ -53,7 +53,7 @@ async function main(): Promise<void> {
   logger.info('Loading commands...');
   const commands = new Collection<string, CommandModule>();
   loadCommands(commands);
-  (client as any).commands = commands;
+  client.commands = commands;
   logger.info(`Commands loaded: ${commands.size} command(s)`);
 
   // Step 6: Load events
@@ -72,7 +72,7 @@ async function main(): Promise<void> {
   logger.info('Claim code cleanup started');
 
   // Attach database to client
-  (client as any).database = database;
+  client.database = database;
 
   // Step 7c: Start webhook server
   const webhookPort = parseInt(process.env.WEBHOOK_PORT ?? '3500', 10);
