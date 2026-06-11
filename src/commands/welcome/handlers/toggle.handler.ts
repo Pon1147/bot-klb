@@ -22,7 +22,7 @@ export async function handleToggle(
   const container = buildSuccessContainer(`Welcome system ${statusText}.`);
   // WHY: Combine IsComponentsV2 + Ephemeral flags thay vì ephemeral: true (deprecated)
   await interaction.reply({
-    components: container.components as any,
+    components: container.toJSON(),
     flags: container.flags | MessageFlags.Ephemeral,
   });
 }

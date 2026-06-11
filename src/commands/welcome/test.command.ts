@@ -1,4 +1,4 @@
-import {
+﻿import {
   ChatInputCommandInteraction,
   MessageFlags,
   PermissionFlagsBits,
@@ -61,7 +61,7 @@ export async function execute(
     if (!targetMember) {
       const errorContainer = buildErrorContainer('Không thể lấy thông tin thành viên.');
       await interaction.reply({
-        components: errorContainer.components as any,
+        components: errorContainer.toJSON(),
         // WHY: Combine IsComponentsV2 + Ephemeral flags thay vì dùng ephemeral: true (deprecated)
         flags: errorContainer.flags | MessageFlags.Ephemeral,
       });
@@ -79,7 +79,7 @@ export async function execute(
       const channel = interaction.guild.channels.cache.get(welcome.channelId);
       if (channel && channel.isTextBased()) {
         await channel.send({
-          components: welcomeContainer.components as any,
+          components: welcomeContainer.toJSON(),
           flags: welcomeContainer.flags,
           files: welcomeContainer.files,
         });
@@ -93,7 +93,7 @@ export async function execute(
 
     // Fallback: reply trực tiếp cho người gọi dưới dạng Container V2
     await interaction.reply({
-      components: welcomeContainer.components as any,
+      components: welcomeContainer.toJSON(),
       // WHY: Combine IsComponentsV2 + Ephemeral flags
       flags: welcomeContainer.flags | MessageFlags.Ephemeral,
       files: welcomeContainer.files,
@@ -102,7 +102,7 @@ export async function execute(
     console.error('Error in /test-welcome:', error);
     const errorContainer = buildErrorContainer('Xảy ra lỗi khi test welcome. Kiểm tra console logs.');
     await interaction.reply({
-      components: errorContainer.components as any,
+      components: errorContainer.toJSON(),
       flags: errorContainer.flags | MessageFlags.Ephemeral,
     });
   }

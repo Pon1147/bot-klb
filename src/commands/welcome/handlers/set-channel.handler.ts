@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+﻿import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { getSettingsService } from '../../../services/settings.service.js';
 import { buildSuccessContainer } from '../../../utils/container.utils.js';
 
@@ -21,7 +21,7 @@ export async function handleSetChannel(
   const container = buildSuccessContainer(`Welcome channel set to ${selectedChannel}.`);
   // WHY: Combine IsComponentsV2 + Ephemeral flags thay vì ephemeral: true (deprecated)
   await interaction.reply({
-    components: container.components as any,
+    components: container.toJSON(),
     flags: container.flags | MessageFlags.Ephemeral,
   });
 }

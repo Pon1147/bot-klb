@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+﻿import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { getSettingsService } from '../../../services/settings.service.js';
 import { buildTextOnlyContainer } from '../../../utils/container.utils.js';
 import { EMBED_COLORS } from '../../../config/container.variables.js';
@@ -29,7 +29,7 @@ export async function handleStatus(
   const container = buildTextOnlyContainer(statusContent, EMBED_COLORS.SUCCESS);
   // WHY: Combine IsComponentsV2 + Ephemeral flags thay vì ephemeral: true (deprecated)
   await interaction.reply({
-    components: container.components as any,
+    components: container.toJSON(),
     flags: container.flags | MessageFlags.Ephemeral,
   });
 }

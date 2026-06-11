@@ -1,4 +1,4 @@
-import {
+﻿import {
   ChatInputCommandInteraction,
   MessageFlags,
   PermissionFlagsBits,
@@ -101,7 +101,7 @@ export async function execute(
       default: {
         const errorContainer = buildErrorContainer('Unknown subcommand.');
         await interaction.reply({
-          components: errorContainer.components as any,
+          components: errorContainer.toJSON(),
           flags: errorContainer.flags | MessageFlags.Ephemeral,
         });
       }
@@ -110,7 +110,7 @@ export async function execute(
     console.error(`Error in /welcome ${subcommandName}:`, error);
     const errorContainer = buildErrorContainer('An error occurred. Check console logs.');
     await interaction.reply({
-      components: errorContainer.components as any,
+      components: errorContainer.toJSON(),
       flags: errorContainer.flags | MessageFlags.Ephemeral,
     });
   }
