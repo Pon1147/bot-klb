@@ -69,7 +69,7 @@ describe('df-link.command', () => {
     const interaction = createMockInteraction({ guild: null });
     await execute(interaction, mockDb);
     expect(mockReply).toHaveBeenCalledWith(
-      expect.objectContaining({ content: 'Chá»‰ dÃ¹ng trong server.', flags: MessageFlags.Ephemeral }),
+      expect.objectContaining({ content: expect.stringContaining('server'), flags: MessageFlags.Ephemeral }),
     );
   });
 

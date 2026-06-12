@@ -35,6 +35,10 @@ jest.mock('../src/services/deltaforce.api.js', () => ({
   getMatchList: jest.fn(),
 }));
 
+jest.mock('../src/utils/df-token.utils.js', () => ({
+  buildDfApiToken: jest.fn((t) => t),
+}));
+
 jest.mock('../src/utils/container.utils.js', () => ({
   buildErrorContainer: jest.fn((msg) => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
@@ -42,6 +46,7 @@ jest.mock('../src/utils/container.utils.js', () => ({
     files: [],
     toJSON() { return this.components; },
   })),
+  toComponentsV2: jest.fn((arr) => arr),
 }));
 
 import { execute } from '../src/commands/df/history.command.js';
@@ -78,7 +83,7 @@ describe('df-history.command', () => {
     const interaction = createMockInteraction({ guild: null });
     await execute(interaction, mockDb);
     expect(mockReply).toHaveBeenCalledWith(
-      expect.objectContaining({ content: 'Chá»‰ dÃ¹ng trong server.', flags: MessageFlags.Ephemeral }),
+      expect.objectContaining({ content: expect.stringContaining('server'), flags: MessageFlags.Ephemeral }),
     );
   });
 

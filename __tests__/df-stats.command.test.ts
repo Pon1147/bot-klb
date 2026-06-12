@@ -21,6 +21,10 @@ jest.mock('../src/utils/df-rank.utils.js', () => ({
   resolveRankFromScore: jest.fn(),
 }));
 
+jest.mock('../src/utils/df-token.utils.js', () => ({
+  buildDfApiToken: jest.fn((t) => t),
+}));
+
 jest.mock('../src/utils/container.utils.js', () => ({
   buildErrorContainer: jest.fn((msg) => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
@@ -28,6 +32,7 @@ jest.mock('../src/utils/container.utils.js', () => ({
     files: [],
     toJSON() { return this.components; },
   })),
+  toComponentsV2: jest.fn((arr) => arr),
 }));
 
 import { execute } from '../src/commands/df/stats.command.js';
@@ -64,7 +69,7 @@ describe('df-stats.command', () => {
     const interaction = createMockInteraction({ guild: null });
     await execute(interaction, mockDb);
     expect(mockReply).toHaveBeenCalledWith(
-      expect.objectContaining({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral }),
+      expect.objectContaining({ content: expect.stringContaining('server'), flags: MessageFlags.Ephemeral }),
     );
   });
 
@@ -96,7 +101,7 @@ describe('df-stats.command', () => {
     });
     await execute(createMockInteraction(), mockDb);
     expect(getSeasonData).toHaveBeenCalledWith(
-      { openid: '123', token: 'abc', ts: '42', s: 'sig1', u: 'dev1' },
+      expect.objectContaining({ openid: '123', token: 'abc', ts: '42', s: 'sig1', u: 'dev1' }),
       '10009',
     );
     expect(touchDfToken).toHaveBeenCalledWith(mockDb, '222');

@@ -106,7 +106,7 @@ describe('DF Commands E2E — /df-stats', () => {
     const interaction = createMockInteraction();
     await execute(interaction, db);
 
-    expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
+    expect(interaction.deferReply).toHaveBeenCalledWith({ flags: 64 });
     expect(interaction.editReply).toHaveBeenCalled();
 
     const row = db.prepare('SELECT last_used_at FROM df_tokens WHERE discord_id = ?').get('user-123');
@@ -207,7 +207,7 @@ describe('DF Commands E2E — /df-daily', () => {
     const interaction = createMockInteraction();
     await execute(interaction, db);
 
-    expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
+    expect(interaction.deferReply).toHaveBeenCalledWith({ flags: 64 });
     expect(interaction.editReply).toHaveBeenCalled();
 
     const row = db.prepare('SELECT last_used_at FROM df_tokens WHERE discord_id = ?').get('user-123');
@@ -280,7 +280,7 @@ describe('DF Commands E2E — /df-code', () => {
 
     await execute(interaction, db);
 
-    expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
+    expect(interaction.deferReply).toHaveBeenCalledWith({ flags: 64 });
     expect(interaction.editReply).toHaveBeenCalled();
     db.close();
   });
@@ -409,7 +409,7 @@ describe('DF Commands E2E — /df-history', () => {
     const interaction = createMockInteraction();
     await execute(interaction, db);
 
-    expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
+    expect(interaction.deferReply).toHaveBeenCalledWith({ flags: 64 });
     expect(interaction.editReply).toHaveBeenCalled();
     db.close();
   });

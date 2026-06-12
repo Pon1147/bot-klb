@@ -112,7 +112,7 @@ describe('container.command - execute', () => {
 
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
-          content: 'Lá»‡nh nÃ y chá»‰ dÃ¹ng Ä‘Æ°á»£c trong server.',
+          content: 'Lệnh này chỉ dùng được trong server.',
           flags: MessageFlags.Ephemeral,
         }),
       );
@@ -133,7 +133,7 @@ describe('container.command - execute', () => {
 
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
-          content: 'Báº¡n cáº§n quyá»n Administrator Ä‘á»ƒ sá»­ dá»¥ng lá»‡nh nÃ y.',
+          content: 'Bạn cần quyền Administrator để sử dụng lệnh này.',
           flags: MessageFlags.Ephemeral,
         }),
       );
@@ -148,7 +148,7 @@ describe('container.command - execute', () => {
 
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
-          content: 'Báº¡n cáº§n quyá»n Administrator Ä‘á»ƒ sá»­ dá»¥ng lá»‡nh nÃ y.',
+          content: 'Bạn cần quyền Administrator để sử dụng lệnh này.',
           flags: MessageFlags.Ephemeral,
         }),
       );

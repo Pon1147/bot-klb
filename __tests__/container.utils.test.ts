@@ -57,7 +57,7 @@ jest.mock('../src/utils/template.utils.js', () => ({
 }));
 
 // Import sau khi mock
-import { EMBED_COLORS } from '../src/config/container.variables.js';
+import { COLORS } from '../src/config/container.variables.js';
 import {
   buildContainer,
   buildEmptyContainer,
@@ -627,7 +627,7 @@ describe('buildSuccessContainer', () => {
 
     const separator = innerComponents[1] as Record<string, unknown>;
     expect(separator.type).toBe(ComponentType.Separator);
-    expect(separator.accentColor).toBe(0x00FF00);
+    expect(separator.accentColor).toBe(COLORS.SUCCESS);
 
     expect(result.flags).toBe(MessageFlags.IsComponentsV2);
     expect(result.files).toEqual([]);
@@ -652,7 +652,7 @@ describe('buildErrorContainer', () => {
 
     const separator = innerComponents[1] as Record<string, unknown>;
     expect(separator.type).toBe(ComponentType.Separator);
-    expect(separator.accentColor).toBe(0xFF0000);
+    expect(separator.accentColor).toBe(COLORS.ERROR);
 
     expect(result.flags).toBe(MessageFlags.IsComponentsV2);
     expect(result.files).toEqual([]);
@@ -673,7 +673,7 @@ describe("buildInfoContainer", () => {
     expect(td.content).toBe("**ℹ️ Info**\nThis is info.");
     const sep = inner[1] as Record<string, unknown>;
     expect(sep.type).toBe(ComponentType.Separator);
-    expect(sep.accentColor).toBe(EMBED_COLORS.INFO);
+    expect(sep.accentColor).toBe(COLORS.INFO);
     expect(result.flags).toBe(MessageFlags.IsComponentsV2);
     expect(result.files).toEqual([]);
   });

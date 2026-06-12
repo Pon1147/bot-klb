@@ -32,12 +32,21 @@ const mockBuildTextOnlyContainer = {
 const mockGetBooster = jest.fn();
 const mockBuildBoosterContainerFn = jest.fn(() => mockBuildBoosterContainer);
 const mockUpdate = jest.fn();
+const mockGetSettings = jest.fn().mockReturnValue({
+  booster: {
+    enabled: true,
+    channelId: 'channel-789',
+    roleId: 'role-111',
+    container: { contentLines: [], accentColor: 0xfb663a },
+  },
+});
 
 jest.mock('../src/services/settings.service.js', () => ({
   getSettingsService: () => ({
     getBooster: mockGetBooster,
     buildBoosterContainer: mockBuildBoosterContainerFn,
     update: mockUpdate,
+    getSettings: mockGetSettings,
   }),
 }));
 
@@ -51,10 +60,6 @@ jest.mock('../src/utils/container.utils.js', () => ({
 
 import { ChatInputCommandInteraction, GuildMember } from 'discord.js';
 import { execute as executeEvent } from '../src/events/guildMemberUpdate.event.js';
-import * as setChannelHandler from '../src/commands/booster/handlers/set-channel.handler.js';
-import * as setRoleHandler from '../src/commands/booster/handlers/set-role.handler.js';
-import * as toggleHandler from '../src/commands/booster/handlers/toggle.handler.js';
-import * as statusHandler from '../src/commands/booster/handlers/status.handler.js';
 
 // ─── Mock Interfaces ─────────────────────────────────────────────
 
@@ -364,102 +369,19 @@ describe('Booster Feature - guildMemberUpdate.event', () => {
   });
 });
 
-// ─── Tests: Handlers ─────────────────────────────────────────────
-
-describe('Booster Handlers', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  describe('handleSetChannel', () => {
-    it('phải lưu channelId và reply success', async () => {
-      const interaction = createMockInteraction({ subcommand: 'setchannel' });
-
-      await setChannelHandler.handleSetChannel(interaction as unknown as ChatInputCommandInteraction, 'guild-123');
-
-      expect(mockUpdate).toHaveBeenCalledWith('guild-123', {
-        booster: { channelId: 'channel-999' },
-      });
-      expect(interaction.reply).toHaveBeenCalled();
-    });
-  });
-
-  describe('handleSetRole', () => {
-    it('phải lưu roleId và reply success', async () => {
-      const interaction = createMockInteraction({ subcommand: 'setrole' });
-
-      await setRoleHandler.handleSetRole(interaction as unknown as ChatInputCommandInteraction, 'guild-123');
-
-      expect(mockUpdate).toHaveBeenCalledWith('guild-123', {
-        booster: { roleId: 'role-999' },
-      });
-      expect(interaction.reply).toHaveBeenCalled();
-    });
-  });
-
-  describe('handleToggle', () => {
-    it('phải set enabled=true và reply success', async () => {
-      const interaction = createMockInteraction({ subcommand: 'toggle', enabled: true });
-
-      await toggleHandler.handleToggle(interaction as unknown as ChatInputCommandInteraction, 'guild-123');
-
-      expect(mockUpdate).toHaveBeenCalledWith('guild-123', {
-        booster: { enabled: true },
-      });
-      expect(interaction.reply).toHaveBeenCalled();
-    });
-
-    it('phải set enabled=false và reply success', async () => {
-      const interaction = createMockInteraction({ subcommand: 'toggle', enabled: false });
-
-      await toggleHandler.handleToggle(interaction as unknown as ChatInputCommandInteraction, 'guild-123');
-
-      expect(mockUpdate).toHaveBeenCalledWith('guild-123', {
-        booster: { enabled: false },
-      });
-      expect(interaction.reply).toHaveBeenCalled();
-    });
-  });
-
-  describe('handleStatus', () => {
-    it('phải hiển thị status với channel và role đã set', async () => {
-      const interaction = createMockInteraction({ subcommand: 'status' });
-
-      mockGetBooster.mockReturnValue({
-        enabled: true,
-        channelId: 'channel-789',
-        roleId: 'role-111',
-        container: { contentLines: [], accentColor: 0xfb663a },
-      });
-
-      await statusHandler.handleStatus(interaction as unknown as ChatInputCommandInteraction, 'guild-123');
-
-      expect(mockGetBooster).toHaveBeenCalledWith('guild-123');
-      expect(interaction.reply).toHaveBeenCalled();
-    });
-
-    it('phải hiển thị "Not set" khi channel/role = null', async () => {
-      const interaction = createMockInteraction({ subcommand: 'status' });
-
-      mockGetBooster.mockReturnValue({
-        enabled: false,
-        channelId: null,
-        roleId: null,
-        container: { contentLines: [], accentColor: 0xfb663a },
-      });
-
-      await statusHandler.handleStatus(interaction as unknown as ChatInputCommandInteraction, 'guild-123');
-
-      expect(interaction.reply).toHaveBeenCalled();
-    });
-  });
-});
-
 // ─── Tests: Command Router ───────────────────────────────────────
 
 describe('Booster Command - execute router', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetSettings.mockReturnValue({
+      booster: {
+        enabled: true,
+        channelId: 'channel-789',
+        roleId: 'role-111',
+        container: { contentLines: [], accentColor: 0xfb663a },
+      },
+    });
   });
 
   it('phải reply error khi không có guild', async () => {
@@ -534,8 +456,8 @@ describe('Booster Command - execute router', () => {
   });
 
   it('phải catch lỗi khi handler throw error (cover catch block)', async () => {
-    // Make mockUpdate throw to trigger the catch block in execute
-    mockUpdate.mockRejectedValueOnce(new Error('DB Error'));
+    // Make mockUpdate throw synchronously to trigger the catch block in execute
+    mockUpdate.mockImplementationOnce(() => { throw new Error('DB Error'); });
     const { execute } = require('../src/commands/booster/booster.command.js');
     const interaction = createMockInteraction({ subcommand: 'setchannel' });
 

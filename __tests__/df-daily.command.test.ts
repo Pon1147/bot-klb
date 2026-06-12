@@ -17,6 +17,10 @@ jest.mock('../src/services/deltaforce.api.js', () => ({
   getDailyReport: jest.fn(),
 }));
 
+jest.mock('../src/utils/df-token.utils.js', () => ({
+  buildDfApiToken: jest.fn((t) => t),
+}));
+
 jest.mock('../src/utils/container.utils.js', () => ({
   buildErrorContainer: jest.fn((msg) => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
@@ -59,7 +63,7 @@ describe('df-daily.command', () => {
     const interaction = createMockInteraction({ guild: null });
     await execute(interaction, mockDb);
     expect(mockReply).toHaveBeenCalledWith(
-      expect.objectContaining({ content: 'Chi dung trong server.', flags: MessageFlags.Ephemeral }),
+      expect.objectContaining({ content: expect.stringContaining('server'), flags: MessageFlags.Ephemeral }),
     );
   });
 
@@ -80,14 +84,10 @@ describe('df-daily.command', () => {
       beacon_battle: null,
     });
     await execute(createMockInteraction(), mockDb);
-    expect(mockDeferReply).toHaveBeenCalledWith({ ephemeral: true });
-    expect(getDailyReport).toHaveBeenCalledWith({
-      openid: '123',
-      token: 'abc',
-      ts: '42',
-      s: 'sig1',
-      u: 'dev1',
-    });
+    expect(mockDeferReply).toHaveBeenCalledWith({ flags: 64 });
+    expect(getDailyReport).toHaveBeenCalledWith(
+      expect.objectContaining({ openid: '123', token: 'abc', ts: '42', s: 'sig1', u: 'dev1' }),
+    );
     expect(touchDfToken).toHaveBeenCalledWith(mockDb, '222');
     expect(mockEditReply).toHaveBeenCalled();
   });

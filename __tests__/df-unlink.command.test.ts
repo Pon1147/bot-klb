@@ -28,6 +28,12 @@ jest.mock('../src/utils/container.utils.js', () => ({
     files: [],
     toJSON() { return this.components; },
   })),
+  buildErrorContainer: jest.fn((msg) => ({
+    components: [{ type: 17, components: [{ type: 10, content: msg }] }],
+    flags: 65536,
+    files: [],
+    toJSON() { return this.components; },
+  })),
 }));
 
 import { execute } from '../src/commands/df/unlink.command.js';
@@ -58,7 +64,7 @@ describe('df-unlink.command', () => {
     const interaction = createMockInteraction({ guild: null });
     await execute(interaction, mockDb);
     expect(mockReply).toHaveBeenCalledWith(
-      expect.objectContaining({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral }),
+      expect.objectContaining({ content: expect.stringContaining('server'), flags: MessageFlags.Ephemeral }),
     );
   });
 

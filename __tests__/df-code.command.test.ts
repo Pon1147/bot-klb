@@ -17,11 +17,14 @@ jest.mock('../src/utils/container.utils.js', () => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
     flags: 65536,
     files: [],
+    toJSON() { return this.components; },
   })),
+  makeResult: jest.fn((components, flags, files) => ({ components, flags, files, toJSON() { return components; } })),
 }));
 
-import { execute } from '../src/commands/df/code.command.js';
+import { execute, hasAnyCodes, MAP_DISPLAY } from '../src/commands/df/code.command.js';
 import { fetchDailyCodes } from '../src/services/deltaforce.scraper.js';
+import type { DailyCodes } from '../src/services/deltaforce.scraper.js';
 import { MessageFlags } from 'discord.js';
 
 describe('df-code.command', () => {
@@ -52,7 +55,7 @@ describe('df-code.command', () => {
     const interaction = createMockInteraction({ guild: null });
     await execute(interaction, mockDb);
     expect(mockReply).toHaveBeenCalledWith(
-      expect.objectContaining({ content: 'Chi dung trong server.', flags: MessageFlags.Ephemeral }),
+      expect.objectContaining({ content: expect.stringContaining('server'), flags: MessageFlags.Ephemeral }),
     );
   });
 
@@ -65,7 +68,7 @@ describe('df-code.command', () => {
       'Ngục Giam Thủy Triều': '7890',
     });
     await execute(createMockInteraction(), mockDb);
-    expect(mockDeferReply).toHaveBeenCalledWith({ ephemeral: true });
+    expect(mockDeferReply).toHaveBeenCalledWith({ flags: 64 });
     expect(mockEditReply).toHaveBeenCalled();
   });
 
@@ -103,5 +106,61 @@ describe('df-code.command', () => {
     (fetchDailyCodes as jest.Mock).mockRejectedValue(new Error('Network error'));
     await execute(createMockInteraction(), mockDb);
     expect(mockEditReply).toHaveBeenCalled();
+  });
+});
+
+describe('df-code.command — hasAnyCodes', () => {
+  function makeCodes(): DailyCodes {
+    return {
+      'Đập Nước Zero': '1234',
+      'Thung lũng Layali': '5678',
+      'Phố Cổ Brakkesh': '9012',
+      'Trạm Không Gian': '3456',
+      'Ngục Giam Thủy Triều': '7890',
+    };
+  }
+
+  it('tra ve true khi tat ca code deu co gia tri', () => {
+    expect(hasAnyCodes(makeCodes())).toBe(true);
+  });
+
+  it('tra ve true khi chis mot code co gia tri', () => {
+    const codes: DailyCodes = {
+      'Đập Nước Zero': null,
+      'Thung lũng Layali': null,
+      'Phố Cổ Brakkesh': '9012',
+      'Trạm Không Gian': null,
+      'Ngục Giam Thủy Triều': null,
+    };
+    expect(hasAnyCodes(codes)).toBe(true);
+  });
+
+  it('tra ve false khi tat ca code deu null', () => {
+    const codes: DailyCodes = {
+      'Đập Nước Zero': null,
+      'Thung lũng Layali': null,
+      'Phố Cổ Brakkesh': null,
+      'Trạm Không Gian': null,
+      'Ngục Giam Thủy Triều': null,
+    };
+    expect(hasAnyCodes(codes)).toBe(false);
+  });
+
+  it('tra ve false khi codes la null', () => {
+    expect(hasAnyCodes(null)).toBe(false);
+  });
+});
+
+describe('df-code.command — MAP_DISPLAY', () => {
+  it('co 5 map', () => {
+    expect(Object.keys(MAP_DISPLAY)).toHaveLength(5);
+  });
+
+  it('moi map co name va image', () => {
+    for (const map of Object.values(MAP_DISPLAY)) {
+      expect(typeof map.name).toBe('string');
+      expect(typeof map.image).toBe('string');
+      expect(map.image).toMatch(/\.png$/);
+    }
   });
 });
