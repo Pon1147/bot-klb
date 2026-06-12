@@ -12,5 +12,5 @@
     "outDir": "dist",
     "rootDir": "src"
   },
-  "include": ["src/scripts/*.mts", "src/scraper/**/*.ts"]
+  "include": ["src/scraper/**/*.ts"]
 }

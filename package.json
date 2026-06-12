@@ -5,11 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "clean": "cmd /c \"if exist dist rmdir /s /q dist\"",
-    "build": "tsc && tsc -p tsconfig.scripts.json",
-    "build:tree": "tsc -p tsconfig.tree.json",
-    "watch:tree": "tsc -p tsconfig.tree.json --watch",
-    "build:scripts": "tsc -p tsconfig.scripts.json",
-    "typecheck:scripts": "tsc -p tsconfig.scripts.json --noEmit",
+    "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "test": "jest --forceExit --detectOpenHandles",
@@ -19,7 +15,6 @@
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
-    "deploy-commands": "tsx src/deploy-commands.ts",
     "=== Type Check ===": "",
     "check": "tsc --noEmit -p tsconfig.json",
     "check:types": "tsc --noEmit -p tsconfig.json"
