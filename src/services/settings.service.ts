@@ -35,6 +35,7 @@ type DeepPartial<T> = {
  * - Build embed từ settings + context
  */
 export class SettingsService {
+  [x: string]: any;
   private cache = new Map<string, GuildSettings>();
   private database: Database.Database;
 

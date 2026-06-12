@@ -13,6 +13,7 @@ import {
 
 import { buildErrorContainer, makeResult } from '../../utils/container.utils.js';
 import { fetchDailyCodes, DailyCodes } from '../../services/deltaforce.scraper.js';
+import { requireGuild } from '../../utils/df-guards.js';
 
 export const data = new SlashCommandBuilder()
   .setName('df-code')
@@ -20,13 +21,19 @@ export const data = new SlashCommandBuilder()
 
 const ASSETS_PATH = './src/assets/img/map/';
 
-const MAP_DISPLAY: Record<keyof DailyCodes, { name: string; image: string }> = {
+export const MAP_DISPLAY: Record<keyof DailyCodes, { name: string; image: string }> = {
   'Đập Nước Zero': { name: 'Zero Dam', image: 'map_zero.png' },
   'Thung lũng Layali': { name: 'Layali', image: 'map_layali.png' },
   'Phố Cổ Brakkesh': { name: 'Brakkesh', image: 'map_brakkesh.png' },
   'Trạm Không Gian': { name: 'Space City', image: 'map_spacecity.png' },
   'Ngục Giam Thủy Triều': { name: 'Tide Prison', image: 'map_tideprison.png' },
 };
+
+/** Check if DailyCodes object has at least one non-null value */
+export function hasAnyCodes(codes: DailyCodes | null): boolean {
+  if (!codes) return false;
+  return Object.values(codes).some((v) => v !== null && v !== undefined);
+}
 
 function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean) {
   const attachments: AttachmentBuilder[] = [];
@@ -81,20 +88,14 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   _database: unknown,
 ): Promise<void> {
-  if (!interaction.guild) {
-    await interaction.reply({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral });
-    return;
-  }
+  if (await requireGuild(interaction)) return;
 
-  await interaction.deferReply({ ephemeral: false });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
     const codes = await fetchDailyCodes().catch(() => null);
 
-    let hasCodes = false;
-    if (codes) {
-      hasCodes = Object.values(codes).some((v) => v !== null && v !== undefined);
-    }
+    const hasCodes = hasAnyCodes(codes);
 
     const container = buildCodesContainer(codes, hasCodes);
 

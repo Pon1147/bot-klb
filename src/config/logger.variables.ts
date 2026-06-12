@@ -56,12 +56,3 @@ export const LEVEL_ICONS = {
   fatal: '✖',
 } as const;
 
-/**
- * Border characters cho box-style logs.
- */
-export const BORDER = {
-  TOP: '┌',
-  BOTTOM: '┐',
-  HORIZONTAL: '─',
-  VERTICAL: '│',
-} as const;

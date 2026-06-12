@@ -9,12 +9,14 @@
 } from 'discord.js';
 import Database from 'better-sqlite3';
 import { buildErrorContainer, toComponentsV2 } from '../../utils/container.utils.js';
-import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
+import { COLORS } from '../../config/container.variables.js';
 import { getMatchList } from '../../services/deltaforce.api.js';
 import { DEFAULT_OPERATOR_AVATAR, resolveOperator } from '../../utils/df-operator.utils.js';
+import { requireGuild } from '../../utils/df-guards.js';
+import { buildDfApiToken } from '../../utils/df-token.utils.js';
+import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
 import type { DfMatchEntry } from '../../types/deltaforce.types.js';
 
-const DF_RED = 0x0ff695;
 const EMOJI_WIN = '<a:HoA:1512368174614446181>';
 const EMOJI_DEFEAT = '<:hom_xac:1514470840312401971>';
 const EMOJI_MONEY = '<:icon9De6T9unB:1514474246779306115>';
@@ -90,10 +92,7 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
-  if (!interaction.guild) {
-    await interaction.reply({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral });
-    return;
-  }
+  if (await requireGuild(interaction)) return;
 
   const token = getDfToken(database, interaction.user.id);
   if (!token) {
@@ -105,16 +104,10 @@ export async function execute(
     return;
   }
 
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
-    const apiToken = {
-      openid: token.openid,
-      token: token.token,
-      ts: token.ts ?? undefined,
-      s: token.s ?? undefined,
-      u: token.u ?? undefined,
-    };
+    const apiToken = buildDfApiToken(token);
     const matchData = await getMatchList(apiToken);
     touchDfToken(database, interaction.user.id);
 
@@ -180,7 +173,7 @@ export async function execute(
     const containerComponent: Record<string, unknown> = {
       type: ComponentType.Container,
       components: containerInner,
-      accent_color: DF_RED,
+      accent_color: COLORS.DF,
     };
 
     // ── BUTTON ROW (outside container) ──

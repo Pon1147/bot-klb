@@ -24,6 +24,15 @@ export const data = new SlashCommandBuilder()
       .setRequired(false),
   );
 
+/** Resolve the target member from interaction options, falling back to commanding member. */
+export function resolveTargetMember(
+  interaction: ChatInputCommandInteraction,
+  commandingMember: GuildMember,
+): GuildMember | null {
+  const resolvedMember = interaction.options.getMember('member');
+  return (resolvedMember instanceof GuildMember ? resolvedMember : null) || commandingMember;
+}
+
 /**
  * Execute the /test-welcome command: hiển thị welcome Container V2 test.
  */
@@ -54,10 +63,7 @@ export async function execute(
     const settingsService = getSettingsService();
     const welcome = settingsService.getWelcome(interaction.guild.id);
 
-    // Lấy member được chỉ định, hoặc dùng người gọi lệnh
-    const resolvedMember = interaction.options.getMember('member');
-    const targetMember =
-      (resolvedMember instanceof GuildMember ? resolvedMember : null) || commandingMember;
+    const targetMember = resolveTargetMember(interaction, commandingMember);
     if (!targetMember) {
       const errorContainer = buildErrorContainer('Không thể lấy thông tin thành viên.');
       await interaction.reply({

@@ -9,7 +9,7 @@ import {
 } from 'discord.js';
 import { ContainerSettings, TemplateContext } from '../types/settings.types.js';
 import { resolveTemplate } from './template.utils.js';
-import { EMBED_COLORS } from '../config/container.variables.js';
+import { COLORS } from '../config/container.variables.js';
 
 /**
  * Giới hạn ký tự tối đa cho TextDisplay.
@@ -235,7 +235,7 @@ export function buildEmptyContainer(_accentColor: number): BuildContainerResult 
 
 export function buildSuccessContainer(successMessage: string): BuildContainerResult {
   const text = { type: ComponentType.TextDisplay, content: `**✅ Success**\n${successMessage}` };
-  const sep = { type: ComponentType.Separator, accentColor: EMBED_COLORS.SUCCESS };
+  const sep = { type: ComponentType.Separator, accentColor: COLORS.SUCCESS };
   return makeResult(
     [{ type: ComponentType.Container, components: [text, sep] }],
     MessageFlags.IsComponentsV2,
@@ -245,7 +245,7 @@ export function buildSuccessContainer(successMessage: string): BuildContainerRes
 
 export function buildErrorContainer(errorMessage: string): BuildContainerResult {
   const text = { type: ComponentType.TextDisplay, content: `**❌ Error**\n${errorMessage}` };
-  const sep = { type: ComponentType.Separator, accentColor: EMBED_COLORS.ERROR };
+  const sep = { type: ComponentType.Separator, accentColor: COLORS.ERROR };
   return makeResult(
     [{ type: ComponentType.Container, components: [text, sep] }],
     MessageFlags.IsComponentsV2,
@@ -255,7 +255,7 @@ export function buildErrorContainer(errorMessage: string): BuildContainerResult 
 
 export function buildInfoContainer(infoMessage: string): BuildContainerResult {
   const text = { type: ComponentType.TextDisplay, content: `**ℹ️ Info**\n${infoMessage}` };
-  const sep = { type: ComponentType.Separator, accentColor: EMBED_COLORS.INFO };
+  const sep = { type: ComponentType.Separator, accentColor: COLORS.INFO };
   return makeResult(
     [{ type: ComponentType.Container, components: [text, sep] }],
     MessageFlags.IsComponentsV2,

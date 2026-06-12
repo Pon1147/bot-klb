@@ -2,7 +2,7 @@
  * Config barrel export - tập trung tất cả config variables ở 1 nơi.
  *
  * Import từ đây thay vì import từng file riêng lẻ:
- *   import { EMBED_COLORS, BOT_INTENTS, TEMPLATE_VARIABLES } from './config/index.js';
+ *   import { COLORS, BOT_INTENTS, TEMPLATE_VARIABLES } from './config/index.js';
  */
 
 // Bot core config
@@ -13,8 +13,8 @@ export { TEMPLATE_VARIABLES, TEMPLATE_VARIABLE_DESCRIPTIONS } from './variables.
 
 // Container variables (colors, defaults)
 export {
+  COLORS,
   CONTAINER_COLORS,
-  EMBED_COLORS,
   WELCOME_CONTAINER_DEFAULTS,
   LEAVE_CONTAINER_DEFAULTS,
 } from './container.variables.js';

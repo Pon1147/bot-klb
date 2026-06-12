@@ -1,9 +1,17 @@
-﻿import { ChatInputCommandInteraction, ComponentType, MessageFlags, SlashCommandBuilder } from 'discord.js';
+﻿import {
+  ChatInputCommandInteraction,
+  ComponentType,
+  MessageFlags,
+  SlashCommandBuilder,
+} from 'discord.js';
 import Database from 'better-sqlite3';
 import { buildErrorContainer, toComponentsV2 } from '../../utils/container.utils.js';
-import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
+import { COLORS } from '../../config/container.variables.js';
 import { getSeasonData } from '../../services/deltaforce.api.js';
 import { resolveRankFromScore } from '../../utils/df-rank.utils.js';
+import { requireGuild } from '../../utils/df-guards.js';
+import { buildDfApiToken } from '../../utils/df-token.utils.js';
+import { touchDfToken, getDfToken } from '../../database/df.token.db.js';
 
 export const data = new SlashCommandBuilder()
   .setName('df-stats')
@@ -17,10 +25,7 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
-  if (!interaction.guild) {
-    await interaction.reply({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral });
-    return;
-  }
+  if (await requireGuild(interaction)) return;
 
   const token = getDfToken(database, interaction.user.id);
   if (!token) {
@@ -32,22 +37,18 @@ export async function execute(
     return;
   }
 
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
-    const apiToken = {
-      openid: token.openid,
-      token: token.token,
-      ts: token.ts ?? undefined,
-      s: token.s ?? undefined,
-      u: token.u ?? undefined,
-    };
+    const apiToken = buildDfApiToken(token);
     const data = await getSeasonData(apiToken, LATEST_SEASON);
     touchDfToken(database, interaction.user.id);
 
     const playHours = Math.floor(Number(data.player_info.play_duration));
     const playMinutes = Math.round((Number(data.player_info.play_duration) - playHours) * 60);
-    const regDate = new Date(Number(data.player_info.register_time) * 1000).toLocaleDateString('vi-VN');
+    const regDate = new Date(Number(data.player_info.register_time) * 1000).toLocaleDateString(
+      'vi-VN',
+    );
 
     const combat = data.summary_data.combat;
     const economy = data.summary_data.economy;
@@ -126,7 +127,7 @@ export async function execute(
       type: ComponentType.TextDisplay,
       content: statsContent,
     });
-    containerInner.push({ type: ComponentType.Separator, accentColor: 0x5865F2 });
+    containerInner.push({ type: ComponentType.Separator, accentColor: COLORS.WELCOME });
 
     const containerComponents: Record<string, unknown> = {
       type: ComponentType.Container,

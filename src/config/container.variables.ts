@@ -2,7 +2,7 @@
  * Container V2 color palette - tập trung tất cả màu sắc accent cho Container.
  * Thay đổi màu → chỉ cần chỉnh file này.
  */
-export const CONTAINER_COLORS = {
+export const COLORS = {
   /** Xanh tím Discord Blurple - default welcome container */
   WELCOME: 0x5865f2,
   /** Đỏ - leave container */
@@ -13,24 +13,16 @@ export const CONTAINER_COLORS = {
   WARNING: 0xfee75c,
   /** Cam - màu Server Boost của Discord */
   BOOSTER: 0xfb663a,
+  /** Đỏ - error messages */
+  ERROR: 0xed4245,
+  /** Xanh tím - info messages */
+  INFO: 0x5865f2,
+  /** Xanh cyan - Delta Force module accent */
+  DF: 0x0ff695,
 } as const;
 
-/**
- * Embed color palette - dùng cho buildSuccessContainer, buildErrorContainer.
- * Giữ lại để tái sử dụng màu sắc cho container success/error.
- */
-export const EMBED_COLORS = {
-  /** Xanh lá - welcome messages */
-  WELCOME: 0x00FF00,
-  /** Đỏ - leave messages */
-  LEAVE: 0xFF0000,
-  /** Đỏ - error messages */
-  ERROR: 0xFF0000,
-  /** Xanh lá - success messages */
-  SUCCESS: 0x00FF00,
-  /** Xanh dương - info messages */
-  INFO: 0x0099FF,
-} as const;
+/** @deprecated Use {@link COLORS} instead. Kept for backwards compat. */
+export const CONTAINER_COLORS = COLORS;
 
 /**
  * Default welcome container settings.

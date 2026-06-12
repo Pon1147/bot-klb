@@ -6,8 +6,11 @@
 } from 'discord.js';
 import Database from 'better-sqlite3';
 import { buildErrorContainer, makeResult } from '../../utils/container.utils.js';
-import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
+import { COLORS } from '../../config/container.variables.js';
 import { getDailyReport } from '../../services/deltaforce.api.js';
+import { requireGuild } from '../../utils/df-guards.js';
+import { buildDfApiToken } from '../../utils/df-token.utils.js';
+import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
 import type { DfBattlefieldBattle } from '../../types/deltaforce.types.js';
 
 export const data = new SlashCommandBuilder()
@@ -31,7 +34,7 @@ function buildBattleContainer(battleText: string, dateStr: string) {
 
   const inner: unknown[] = [
     { type: ComponentType.TextDisplay, content },
-    { type: ComponentType.Separator, accentColor: 0x5865f2 },
+    { type: ComponentType.Separator, accentColor: COLORS.WELCOME },
   ];
 
   return makeResult(
@@ -45,10 +48,7 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
-  if (!interaction.guild) {
-    await interaction.reply({ content: 'Chi dung trong server.', flags: MessageFlags.Ephemeral });
-    return;
-  }
+  if (await requireGuild(interaction)) return;
 
   const linkedToken = getDfToken(database, interaction.user.id);
   if (!linkedToken) {
@@ -60,16 +60,11 @@ export async function execute(
     return;
   }
 
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
-    const battleReport = await getDailyReport({
-      openid: linkedToken.openid,
-      token: linkedToken.token,
-      ts: linkedToken.ts ?? undefined,
-      s: linkedToken.s ?? undefined,
-      u: linkedToken.u ?? undefined,
-    }).catch((e) => {
+    const apiToken = buildDfApiToken(linkedToken);
+    const battleReport = await getDailyReport(apiToken).catch((e) => {
       console.warn('[df-daily] API fail:', (e as Error).message);
       return null;
     });

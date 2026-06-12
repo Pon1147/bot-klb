@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import Database from 'better-sqlite3';
 import { buildErrorContainer } from '../../utils/container.utils.js';
+import { requireGuild } from '../../utils/df-guards.js';
 import { generateCode } from '../../services/df-claim-store.js';
 
 const WEBHOOK_SCRIPT = readFileSync(
@@ -20,10 +21,7 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   _database: Database.Database,
 ): Promise<void> {
-  if (!interaction.guild) {
-    await interaction.reply({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral });
-    return;
-  }
+  if (await requireGuild(interaction)) return;
 
   try {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });

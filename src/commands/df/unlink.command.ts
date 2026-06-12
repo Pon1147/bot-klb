@@ -1,10 +1,8 @@
 ﻿import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import Database from 'better-sqlite3';
-import {
-  buildSuccessContainer,
-  buildInfoContainer,
-} from '../../utils/container.utils.js';
-import { getDfToken, deleteDfToken } from '../../database/df.token.db.js';
+import { buildSuccessContainer } from '../../utils/container.utils.js';
+import { requireGuild, requireDfTokenOrInfo } from '../../utils/df-guards.js';
+import { deleteDfToken } from '../../database/df.token.db.js';
 
 export const data = new SlashCommandBuilder()
   .setName('df-unlink')
@@ -14,20 +12,8 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
-  if (!interaction.guild) {
-    await interaction.reply({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral });
-    return;
-  }
-
-  const existing = getDfToken(database, interaction.user.id);
-  if (!existing) {
-    const info = buildInfoContainer('Bạn chưa liên kết tài khoản Delta Force nào.');
-    await interaction.reply({
-      components: info.toJSON(),
-      flags: info.flags | MessageFlags.Ephemeral,
-    });
-    return;
-  }
+  if (await requireGuild(interaction)) return;
+  if (await requireDfTokenOrInfo(interaction, database)) return;
 
   deleteDfToken(database, interaction.user.id);
   const result = buildSuccessContainer('Đã hủy liên kết tài khoản Delta Force.');
