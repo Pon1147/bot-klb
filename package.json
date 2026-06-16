@@ -6,6 +6,7 @@
   "scripts": {
     "clean": "cmd /c \"if exist dist rmdir /s /q dist\"",
     "build": "tsc",
+    "rebuild": "npm run clean && npm run build",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "test": "jest --forceExit --detectOpenHandles",
