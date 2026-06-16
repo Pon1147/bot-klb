@@ -1,5 +1,5 @@
 /**
- * Unit tests cho webhook.routes.ts — handleClaimRequest handler.
+ * Unit tests cho webhook.routes.ts — handleClaimRequest + createWebhookRoutes.
  */
 
 jest.mock('../src/services/df-claim-store.js', () => ({
@@ -16,7 +16,7 @@ jest.mock('discord.js', () => ({
   },
 }));
 
-import { handleClaimRequest } from '../src/server/webhook.routes.js';
+import { handleClaimRequest, createWebhookRoutes } from '../src/server/webhook.routes.js';
 import { consumeCode } from '../src/services/df-claim-store.js';
 import { saveDfToken } from '../src/database/df.token.db.js';
 import { Client } from 'discord.js';
@@ -108,5 +108,100 @@ describe('webhook.routes — handleClaimRequest', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('linked');
+  });
+
+  it('nên không crash khi user.fetch trả về null (DM fallback)', async () => {
+    (consumeCode as jest.Mock).mockReturnValue('discord-123');
+    (mockClient.users.fetch as jest.Mock).mockResolvedValue(null);
+    const res = await handleClaimRequest(
+      { code: 'ABC123', openid: '123', token: 'abc' },
+      mockDb,
+      mockClient,
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('linked');
+  });
+
+  it('nên trigger catch DM block khi user.createDM throw không phải Promise', async () => {
+    (consumeCode as jest.Mock).mockReturnValue('discord-123');
+    const badUser: any = {
+      createDM: jest.fn(() => { throw new Error('sync DM error'); }),
+    };
+    (mockClient.users.fetch as jest.Mock).mockResolvedValue(badUser);
+
+    const res = await handleClaimRequest(
+      { code: 'ABC123', openid: '123', token: 'abc' },
+      mockDb,
+      mockClient,
+    );
+
+    expect(res.status).toBe(200);
+  });
+});
+
+describe('webhook.routes — createWebhookRoutes', () => {
+  it('nên tạo router thành công', () => {
+    const mockDb: any = { prepare: jest.fn(() => ({ get: jest.fn(), run: jest.fn() })) };
+    const mockClient = new Client();
+    const router = createWebhookRoutes(mockDb, mockClient);
+    expect(router).toBeDefined();
+  });
+
+  it('nên xử lý request body đúng định dạng (middleware parse JSON)', async () => {
+    const mockDb: any = { prepare: jest.fn(() => ({ get: jest.fn(), run: jest.fn() })) };
+    const mockClient: any = {
+      users: { fetch: jest.fn().mockResolvedValue(null) },
+    };
+    const router = createWebhookRoutes(mockDb, mockClient);
+
+    // Get the route handler function
+    const layer = router.stack[0];
+    const handlerFn = layer.route.stack[0].handle;
+
+    // Create mock req/res
+    const mockRes: any = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+    const mockReq: any = {
+      body: { code: 'ABC123', openid: '123', token: 'abc' },
+    };
+
+    (consumeCode as jest.Mock).mockReturnValue('discord-123');
+
+    await handlerFn(mockReq, mockRes, () => {});
+
+    expect(mockRes.status).toHaveBeenCalledWith(200);
+    expect(mockRes.json).toHaveBeenCalledWith({ status: 'linked' });
+  });
+
+  it('nên handle outer catch khi có lỗi không mong đợi (lines 128-129)', async () => {
+    const mockDb: any = { prepare: jest.fn(() => ({ get: jest.fn(), run: jest.fn() })) };
+    const mockClient: any = {
+      users: { fetch: jest.fn() },
+    };
+    const router = createWebhookRoutes(mockDb, mockClient);
+
+    const layer = router.stack[0];
+    const handlerFn = layer.route.stack[0].handle;
+
+    // Make consumeCode throw so handleClaimRequest throws
+    (consumeCode as jest.Mock).mockImplementation(() => {
+      throw new Error('unexpected crash');
+    });
+
+    const mockRes: any = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+    const mockReq: any = {
+      body: { code: 'ABC123', openid: '123', token: 'abc' },
+    };
+
+    await handlerFn(mockReq, mockRes, () => {});
+
+    // Should hit the outer catch and return 500
+    expect(mockRes.status).toHaveBeenCalledWith(500);
   });
 });

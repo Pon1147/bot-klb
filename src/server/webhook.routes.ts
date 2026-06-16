@@ -12,7 +12,7 @@ import { saveDfToken } from '../database/df.token.db.js';
  * Handler business logic
  */
 export async function handleClaimRequest(
-  body: any,
+  body: unknown,
   database: Database.Database,
   client: Client,
 ): Promise<{ status: number; body: Record<string, unknown> }> {
@@ -23,11 +23,17 @@ export async function handleClaimRequest(
     };
   }
 
-  const { code, openid, token, ts, s, u } = body;
+  const obj = body as Record<string, unknown>;
+  const { code, openid, token, ts, s, u } = obj;
 
   if (!code || !openid || !token) {
     console.log(
-      '[Webhook] ❌ Thiếu fields — code=' + code + ', openid=' + openid + ', token=' + token,
+      '[Webhook] ❌ Thiếu fields — code=' +
+        (code ?? '<empty>') +
+        ', openid=' +
+        (openid ?? '<empty>') +
+        ', token=' +
+        (token ?? '<empty>'),
     );
     return {
       status: 400,
@@ -35,24 +41,23 @@ export async function handleClaimRequest(
     };
   }
 
+  const codeStr = String(code);
+  const openidStr = String(openid);
+  const tokenStr = String(token);
+  const tsStr = ts ? String(ts) : undefined;
+  const sStr = s ? String(s) : undefined;
+  const uStr = u ? String(u) : undefined;
+
   console.log(
     '[Webhook] Nhận claim: code=' +
-      code +
+      codeStr +
       ', openid=' +
-      openid +
+      openidStr +
       ', token_len=' +
-      token.length +
-      ', token_preview=' +
-      token.substring(0, 20) +
-      ', ts=' +
-      ts +
-      ', s=' +
-      s +
-      ', u=' +
-      u,
+      tokenStr.length,
   );
 
-  const discordId = consumeCode(code);
+  const discordId = consumeCode(codeStr);
   if (!discordId) {
     return {
       status: 400,
@@ -65,8 +70,8 @@ export async function handleClaimRequest(
 
   try {
     // Lưu token cùng params (ts, s, u) từ browser
-    saveDfToken(database, discordId, openid, token, ts, s, u);
-    console.log('[Webhook] ✅ Lưu token: openid=' + openid + ' ts=' + ts + ' s=' + s);
+    const isNew = saveDfToken(database, discordId, openidStr, tokenStr, tsStr, sStr, uStr);
+    console.log('[Webhook] ✅ Lưu token: openid=' + openidStr + ', new=' + isNew);
 
     // Gửi DM thông báo
     try {
@@ -76,8 +81,8 @@ export async function handleClaimRequest(
         if (dm) {
           const dmContent =
             '**Đã liên kết tài khoản Delta Force!**\n\n' +
-            `OpenID: ${openid}` +
-            (ts && ts !== '0' ? '\n\n> ✅ Params đầy đủ — `/df-daily` sẽ hoạt động.' : '');
+            `OpenID: ${openidStr}` +
+            (tsStr && tsStr !== '0' ? '\n\n> ✅ Params đầy đủ — `/df-daily` sẽ hoạt động.' : '');
           await dm.send({ content: dmContent }).catch(() => {});
         }
       }
@@ -90,7 +95,7 @@ export async function handleClaimRequest(
       body: { status: 'linked' },
     };
   } catch (error: any) {
-    console.error('[Webhook] Claim error:', error);
+    console.error('[Webhook] Claim error:', error.message ?? error);
     return {
       status: 500,
       body: { status: 'error', message: 'Lỗi server. Vui lòng thử lại.' },
@@ -106,26 +111,10 @@ export function createWebhookRoutes(database: Database.Database, client: Client)
 
   router.post('/claim', async (req: Request, res: Response): Promise<void> => {
     try {
-      let body = req.body;
-
-      // Fallback parse body mạnh
-      if (
-        (!body || typeof body !== 'object') &&
-        (typeof req.body === 'string' || Buffer.isBuffer(req.body))
-      ) {
-        try {
-          body = JSON.parse(req.body.toString());
-        } catch (e) {
-          console.warn('[Webhook] Không parse được JSON body');
-        }
-      }
-
-      const result = await handleClaimRequest(body, database, client);
-
-      // Sử dụng res rõ ràng
+      const result = await handleClaimRequest(req.body, database, client);
       res.status(result.status).json(result.body);
     } catch (err: any) {
-      console.error('[Webhook] Unexpected error:', err);
+      console.error('[Webhook] Unexpected error:', err.message ?? err);
       res.status(500).json({
         status: 'error',
         message: 'Lỗi server nội bộ. Vui lòng thử lại.',
