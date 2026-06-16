@@ -24,7 +24,42 @@ jest.mock('axios', () => ({
 jest.mock('discord.js', () => ({
   ComponentType: { TextDisplay: 10, Separator: 14, Container: 17, Section: 9, Thumbnail: 11 },
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
-  SlashCommandBuilder: class { setName() { return this; } setDescription() { return this; } addIntegerOption() { return this; } },
+  SlashCommandBuilder: class {
+    setName() { return this; }
+    setDescription() { return this; }
+    addIntegerOption = (cb: (opt: any) => any) => { cb({ setName() { return this; }, setDescription() { return this; }, setMinValue() { return this; }, setMaxValue() { return this; } }); return this; };
+  },
+  AttachmentBuilder: class {
+    constructor(public pathOrBuffer: any, public opts?: any) {
+      this.name = opts?.name ?? 'file.png';
+    }
+  },
+  ContainerBuilder: class {
+    components: any[] = [];
+    addTextDisplayComponents(c: any) { this.components.push(c); return this; }
+    addMediaGalleryComponents(c: any) { this.components.push(c); return this; }
+    addSeparatorComponents(c: any) { this.components.push(c); return this; }
+  },
+  TextDisplayBuilder: class {
+    setContent(c: string) { this.content = c; return this; }
+    content: string = '';
+  },
+  SeparatorBuilder: class {},
+  MediaGalleryBuilder: class {
+    items: any[] = [];
+    addItems(...i: any[]) { this.items.push(...i); return this; }
+  },
+  MediaGalleryItemBuilder: class {
+    constructor(public options: any) {}
+  },
+  ActionRowBuilder: class { addComponents() { return this; } toJSON() { return {}; } },
+  ButtonBuilder: class {
+    setCustomId() { return this; }
+    setLabel() { return this; }
+    setStyle() { return this; }
+    toJSON() { return {}; }
+  },
+  ButtonStyle: { Secondary: 2 },
 }));
 
 jest.mock('../../src/services/deltaforce.scraper', () => ({

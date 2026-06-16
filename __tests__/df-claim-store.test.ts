@@ -2,7 +2,13 @@
  * Unit tests cho df-claim-store.ts — In-memory claim code store.
  */
 
-import { generateCode, consumeCode, cleanupExpired, resetStore, startCleanup } from '../src/services/df-claim-store.js';
+import {
+  generateCode,
+  consumeCode,
+  cleanupExpired,
+  resetStore,
+  startCleanup,
+} from '../src/services/df-claim-store.js';
 
 describe('df-claim-store', () => {
   beforeEach(() => {
@@ -103,13 +109,46 @@ describe('df-claim-store', () => {
     });
   });
 
+  describe('makeCode fallback (lines 30-33)', () => {
+    it('nên trigger fallback khi 10 lần sinh mã đều trùng', () => {
+      jest.resetModules();
+
+      jest.doMock('crypto', () => ({
+        ...jest.requireActual('crypto'),
+        randomBytes: (size: number) => Buffer.alloc(Number(size)), // all zeros → 'A' indices
+      }));
+
+      const {
+        generateCode: gen,
+        resetStore: reset,
+      } = require('../src/services/df-claim-store.js');
+
+      reset();
+
+      // First call: store is empty, "AAAAAA" is generated and stored (attempt 1 succeeds)
+      const code1 = gen('user-1');
+      expect(code1).toBe('AAAAAA');
+
+      // For the next user, "AAAAAA" already exists in store (from user-1)
+      // makeCode() retries 10 times, all returning "AAAAAA" → hits fallback
+      const code2 = gen('user-2');
+      expect(code2).not.toBe('AAAAAA');
+      expect(code2).toHaveLength(6);
+
+      jest.unmock('crypto');
+    });
+  });
+
   describe('expired code consumption', () => {
     it('nên trả về null và xóa mã đã hết hạn khi consume', () => {
       // Use jest.useFakeTimers to simulate time past TTL (10 min)
       jest.useFakeTimers({ now: 0 });
       try {
-        const { generateCode: genCode, consumeCode: consume, resetStore: reset } =
-          require('../src/services/df-claim-store.js');
+        const {
+          generateCode: genCode,
+          consumeCode: consume,
+          resetStore: reset,
+        } = require('../src/services/df-claim-store.js');
         reset();
         const code = genCode('user-expired');
 
@@ -128,8 +167,11 @@ describe('df-claim-store', () => {
     it('nên xóa mã hết hạn khi cleanupExpired chạy', () => {
       jest.useFakeTimers({ now: 0 });
       try {
-        const { generateCode: genCode, cleanupExpired: cleanup, consumeCode: consume } =
-          require('../src/services/df-claim-store.js');
+        const {
+          generateCode: genCode,
+          cleanupExpired: cleanup,
+          consumeCode: consume,
+        } = require('../src/services/df-claim-store.js');
 
         // Generate a code, then advance past TTL
         const code = genCode('user-cleanup');

@@ -14,7 +14,7 @@ jest.mock('discord.js', () => ({
   SlashCommandBuilder: class {
     setName() { return this; }
     setDescription() { return this; }
-    addIntegerOption() { return this; }
+    addIntegerOption = (cb: (opt: any) => any) => { cb({ setName() { return this; }, setDescription() { return this; }, setMinValue() { return this; }, setMaxValue() { return this; } }); return this; };
   },
   ActionRowBuilder: class { addComponents() { return this; } toJSON() { return {}; } },
   ButtonBuilder: class {
