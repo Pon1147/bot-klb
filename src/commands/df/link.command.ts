@@ -1,4 +1,9 @@
-﻿import { AttachmentBuilder, ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
+﻿import {
+  AttachmentBuilder,
+  ChatInputCommandInteraction,
+  MessageFlags,
+  SlashCommandBuilder,
+} from 'discord.js';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import Database from 'better-sqlite3';
@@ -6,10 +11,21 @@ import { buildErrorContainer } from '../../utils/container.utils.js';
 import { requireGuild } from '../../utils/df-guards.js';
 import { generateCode } from '../../services/df-claim-store.js';
 
-const WEBHOOK_SCRIPT = readFileSync(
-  join(process.cwd(), 'dist', 'scraper', 'df-webhook.js'),
-  'utf8',
-).trim();
+/**
+ * Read compiled df-webhook.js and strip tsc-injected module boilerplate
+ * (Object.defineProperty / "use strict") so the IIFE runs in a browser console.
+ */
+function getBrowserScript(src: string): string {
+  return src
+    .split('\n')
+    .filter((line) => !line.includes('Object.defineProperty') && line.trim() !== '"use strict";')
+    .join('\n')
+    .trim();
+}
+
+const WEBHOOK_SCRIPT = getBrowserScript(
+  readFileSync(join(process.cwd(), 'dist', 'scraper', 'df-webhook.js'), 'utf8'),
+);
 
 const WEBHOOK_URL = process.env.WEBHOOK_URL ?? 'http://localhost:3500';
 
@@ -27,9 +43,10 @@ export async function execute(
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const code = generateCode(interaction.user.id);
 
-    const scriptContent = WEBHOOK_SCRIPT
-      .replace(/@@WEBHOOK_URL@@/g, WEBHOOK_URL)
-      .replace(/@@CLAIM_CODE@@/g, code);
+    const scriptContent = WEBHOOK_SCRIPT.replace(/@@WEBHOOK_URL@@/g, WEBHOOK_URL).replace(
+      /@@CLAIM_CODE@@/g,
+      code,
+    );
 
     const dmChannel = await interaction.user.createDM();
     await dmChannel.send({
@@ -61,7 +78,9 @@ export async function execute(
         flags: err.flags | MessageFlags.Ephemeral,
       });
     } else {
-      await interaction.editReply({ content: 'Lỗi khi gửi script. Xem console log.' }).catch(() => {});
+      await interaction
+        .editReply({ content: 'Lỗi khi gửi script. Xem console log.' })
+        .catch(() => {});
     }
   }
 }

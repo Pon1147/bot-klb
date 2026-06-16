@@ -136,4 +136,27 @@ describe('df-link.command', () => {
       console.error = mockConsoleError;
     }
   });
+
+  it('nên handle editReply error sau khi deferReply (line 64)', async () => {
+    (generateCode as jest.Mock).mockReturnValue('ABC123');
+    const mockConsoleError = console.error;
+    console.error = jest.fn();
+
+    try {
+      // deferReply succeeds, then createDM fails → deferred branch calls editReply
+      const mockEditReplyThrows = jest.fn().mockRejectedValue(new Error('already replied'));
+      const interaction = createMockInteraction({
+        deferred: true, // deferReply already succeeded in mock
+        user: { id: '222', createDM: jest.fn().mockRejectedValue(new Error('DM blocked')) },
+      });
+      // Override editReply to throw
+      interaction.editReply = mockEditReplyThrows;
+
+      await expect(execute(interaction, mockDb)).resolves.not.toThrow();
+      // Should try editReply but catch the error silently
+      expect(mockEditReplyThrows).toHaveBeenCalled();
+    } finally {
+      console.error = mockConsoleError;
+    }
+  });
 });
