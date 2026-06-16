@@ -97,17 +97,18 @@ describe('df.token.db', () => {
   });
 
   describe('saveDfToken', () => {
-    it('nên INSERT OR REPLACE token mới', () => {
+    it('nên INSERT token mới và trả về true khi thành công', () => {
       const prepared = mockDb.prepare();
-      prepared.run.mockReturnValue(undefined);
+      prepared.run.mockReturnValue({ changes: 1 });
 
       const { saveDfToken } = require('../src/database/df.token.db.js');
-      saveDfToken(mockDb, '123', 'openid1', 'token1');
+      const result = saveDfToken(mockDb, '123', 'openid1', 'token1');
 
       expect(mockDb.prepare).toHaveBeenCalledWith(
         expect.stringContaining('INSERT OR REPLACE INTO df_tokens'),
       );
       expect(prepared.run).toHaveBeenCalledWith('123', 'openid1', 'token1', null, null, null);
+      expect(result).toBe(true);
     });
   });
 
