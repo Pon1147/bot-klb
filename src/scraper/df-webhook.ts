@@ -103,7 +103,9 @@
     return oldOpen.apply(this, [m, u, ...rest] as any);
   };
   var oldSend = XMLHttpRequest.prototype.send;
-  XMLHttpRequest.prototype.send = function (body?: Document | XMLHttpRequestBodyInit | null): void {
+  XMLHttpRequest.prototype.send = function (
+    _body?: Document | XMLHttpRequestBodyInit | null,
+  ): void {
     var url = (this as any)._u as string;
     if (url && url.indexOf('DfTools') !== -1) {
       extractFromUrl(url, (this as any)._m || 'xhr', 'xhr');
