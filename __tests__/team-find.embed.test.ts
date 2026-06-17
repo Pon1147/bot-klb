@@ -77,7 +77,7 @@ describe('team-find.embed — buildTeamFindEmbed', () => {
     channelId: 'vc-123',
     username: 'PlayerOne',
     avatarUrl: 'https://example.com/avatar.png',
-    rank: 'Trung Úy III',
+    rank: 'Vàng III',
   };
 
   it('nên trả về result có components, flags, files', () => {
@@ -113,7 +113,7 @@ describe('team-find.embed — buildTeamFindEmbed', () => {
   it('nên chứa rank name trong content', () => {
     const result = buildTeamFindEmbed(mockParams);
     const content = JSON.stringify(result.components);
-    expect(content).toContain('Trung Úy III');
+    expect(content).toContain('Vàng III');
   });
 
   it('nên chứa difficulty label trong content', () => {

@@ -76,7 +76,7 @@ jest.mock('../src/config/team-find.config.js', () => ({
     'Trạm Không Gian': ['normal', 'hard'],
     'Ngục Giam Thủy Triều': ['hard'],
   },
-  TEAM_FIND_RANKS: ['Binh Nhì III', 'Nguyên Soái'],
+  TEAM_FIND_RANKS: ['Đồng III', 'Thách Đấu DF'],
 }));
 
 import { data, execute } from '../src/commands/df/team-find.command.js';
@@ -214,7 +214,7 @@ describe('team-find.command — execute', () => {
         getString: jest.fn((name: string) => {
           if (name === 'map') return 'Phố Cổ Brakkesh';
           if (name === 'mode') return 'Thường';
-          if (name === 'rank') return 'Trung Úy III';
+          if (name === 'rank') return 'Vàng III';
           return null;
         }),
       },
@@ -222,7 +222,7 @@ describe('team-find.command — execute', () => {
 
     await execute(interaction, mockDb);
     const embedCall = (buildTeamFindEmbed as jest.Mock).mock.calls[0][0];
-    expect(embedCall.rank).toBe('Trung Úy III');
+    expect(embedCall.rank).toBe('Vàng III');
     expect(embedCall.difficulty).toBe('normal');
   });
 
