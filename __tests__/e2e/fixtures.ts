@@ -35,7 +35,7 @@ interface MockInteractionOverrides {
 
 export function createMockInteraction(overrides: MockInteractionOverrides = {}): any {
   const mockReply = jest.fn().mockResolvedValue(undefined);
-  const mockEditReply = jest.fn().mockResolvedValue(undefined);
+  const mockEditReply = jest.fn().mockResolvedValue({ id: 'msg-e2e-123' });
   const mockDeferReply = jest.fn().mockResolvedValue(undefined);
 
   const guild = overrides.guild ?? createMockGuild();
@@ -62,6 +62,7 @@ export function createMockInteraction(overrides: MockInteractionOverrides = {}):
   return {
     guild,
     user,
+    channel: { id: 'channel-e2e-123' },
     member,
     options: {
       getSubcommand: overrides.options?.getSubcommand ?? jest.fn(() => 'status'),

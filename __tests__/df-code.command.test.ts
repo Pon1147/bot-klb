@@ -49,17 +49,20 @@ import { execute, hasAnyCodes, MAP_DISPLAY } from '../src/commands/df/code.comma
 import { fetchDailyCodes } from '../src/services/deltaforce.scraper.js';
 import type { DailyCodes } from '../src/services/deltaforce.scraper.js';
 import { MessageFlags } from 'discord.js';
+import { randomUUID } from 'crypto';
 
 describe('df-code.command', () => {
   const mockDb: any = { prepare: jest.fn(() => ({ get: jest.fn(), run: jest.fn() })) };
   const mockReply = jest.fn().mockResolvedValue(undefined);
-  const mockEditReply = jest.fn().mockResolvedValue(undefined);
+  const mockEditReply = jest.fn().mockResolvedValue({ id: 'msg-123' });
   const mockDeferReply = jest.fn().mockResolvedValue(undefined);
 
   function createMockInteraction(overrides: any = {}): any {
     return {
       guild: { id: '111' },
       user: { id: '222' },
+      // Unique channel ID per call to prevent LAST_MESSAGE map pollution
+      channel: { id: `ch-${randomUUID()}` },
       reply: mockReply,
       editReply: mockEditReply,
       deferReply: mockDeferReply,
@@ -91,7 +94,7 @@ describe('df-code.command', () => {
       'Ngục Giam Thủy Triều': '7890',
     });
     await execute(createMockInteraction(), mockDb);
-    expect(mockDeferReply).toHaveBeenCalledWith({ flags: 64 });
+    expect(mockDeferReply).toHaveBeenCalledWith({});
     expect(mockEditReply).toHaveBeenCalled();
   });
 
