@@ -11,6 +11,7 @@ import { createLogger } from './utils/logger.js';
 import { startSessionCleanup } from './commands/container/container-session.js';
 import { startWebhookServer } from './server/webhook-server.js';
 import { startCleanup as startClaimCleanup } from './services/df-claim-store.js';
+import { setupTunnel, stopTunnel } from './services/webhook-tunnel.js';
 
 const logger = createLogger('Bot');
 
@@ -49,6 +50,32 @@ async function main(): Promise<void> {
   });
   logger.info('Discord client created');
 
+  // Step 4b: Start webhook server (needed before tunnel)
+  const webhookPort = parseInt(process.env.WEBHOOK_PORT ?? '3500', 10);
+  logger.info(`Starting webhook server on port ${webhookPort}...`);
+  const webhook = startWebhookServer(database, client, webhookPort);
+  logger.info(`Webhook server ready on port ${webhook.port}`);
+
+  // Step 4c: Setup cloudflared quick tunnel (auto HTTPS)
+  try {
+    const url = await setupTunnel(webhook.port);
+    process.env.WEBHOOK_URL = url;
+  } catch (err) {
+    logger.warn(`Cloudflared tunnel setup failed: ${(err as Error).message}. Using localhost fallback.`);
+  }
+
+  // Graceful shutdown: stop webhook server + tunnel
+  process.on('SIGTERM', () => {
+    stopTunnel();
+    webhook.stop();
+    process.exit(0);
+  });
+  process.on('SIGINT', () => {
+    stopTunnel();
+    webhook.stop();
+    process.exit(0);
+  });
+
   // Step 5: Load commands
   logger.info('Loading commands...');
   const commands = new Collection<string, CommandModule>();
@@ -73,18 +100,6 @@ async function main(): Promise<void> {
 
   // Attach database to client
   client.database = database;
-
-  // Step 7c: Start webhook server
-  const webhookPort = parseInt(process.env.WEBHOOK_PORT ?? '3500', 10);
-  logger.info(`Starting webhook server on port ${webhookPort}...`);
-  const webhook = startWebhookServer(database, client, webhookPort);
-  logger.info(`Webhook server ready on port ${webhook.port}`);
-
-  // Graceful shutdown: stop webhook server
-  process.on('SIGTERM', () => {
-    webhook.stop();
-    process.exit(0);
-  });
 
   // Step 8: Deploy commands
   logger.info('Deploying commands to Discord...');
