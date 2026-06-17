@@ -51,6 +51,7 @@ export const data = {
       name: 'mode',
       description: 'Độ khó muốn chơi',
       required: true,
+      choices: Object.values(DIFFICULTY_CONFIG).map((c) => ({ name: c.label, value: c.label })),
     },
     {
       type: 3, // STRING
