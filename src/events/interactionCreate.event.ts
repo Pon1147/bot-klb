@@ -25,6 +25,68 @@ export async function execute(
       }
       return;
     }
+
+    // Team find join button (customId: team-find-join:{channelId})
+    if (interaction.customId.startsWith('team-find-join:')) {
+      try {
+        const channelId = interaction.customId.split(':')[1];
+        const channel = await interaction.guild?.channels.fetch(channelId).catch(() => null);
+
+        if (!channel || channel.type !== 2) {
+          await interaction.reply({
+            content: 'Phòng thoại không còn tồn tại.',
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+
+        // Check if user is already in the channel
+        const memberVoice = (interaction.member as any).voice;
+        if (memberVoice?.channel?.id === channelId) {
+          await interaction.reply({
+            content: 'Bạn đã đang trong phòng này.',
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+
+        // Check if channel is full
+        if (channel.full) {
+          await interaction.reply({
+            content: 'Phòng thoại đã đầy (99 người).',
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+
+        // Check bot permissions
+        const botPerms = channel.permissionsFor(interaction.guild!.members.me);
+        if (!botPerms?.has(32768)) { // VoiceConnect = 1 << 15
+          await interaction.reply({
+            content: 'Bot không có quyền tham gia phòng thoại này.',
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+
+        // Join the voice channel
+        await channel.join();
+        await interaction.reply({
+          content: 'Đã join phòng thành công!',
+          flags: MessageFlags.Ephemeral,
+        });
+      } catch (error) {
+        console.error('Error in team-find join button handler:', error);
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({
+            content: 'Có lỗi xảy ra khi tham gia phòng thoại.',
+            flags: MessageFlags.Ephemeral,
+          });
+        }
+      }
+      return;
+    }
+
     return;
   }
 

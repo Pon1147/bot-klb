@@ -16,20 +16,14 @@ import {
 import { buildErrorContainer, makeResult } from '../../utils/container.utils.js';
 import { fetchDailyCodes, DailyCodes } from '../../services/deltaforce.scraper.js';
 import { requireGuild } from '../../utils/df-guards.js';
+import { MAP_DISPLAY, type MapKey, type MapInfo } from '../../config/team-find.config.js';
+export { MAP_DISPLAY };
 
 export const data = new SlashCommandBuilder()
   .setName('df-code')
   .setDescription('Mật khẩu hằng ngày của các map.');
 
 const ASSETS_PATH = './src/assets/img/map/';
-
-export const MAP_DISPLAY: Record<keyof DailyCodes, { name: string; image: string }> = {
-  'Đập Nước Zero': { name: 'Zero Dam', image: 'map_zero.png' },
-  'Thung lũng Layali': { name: 'Layali', image: 'map_layali.png' },
-  'Phố Cổ Brakkesh': { name: 'Brakkesh', image: 'map_brakkesh.png' },
-  'Trạm Không Gian': { name: 'Space City', image: 'map_spacecity.png' },
-  'Ngục Giam Thủy Triều': { name: 'Tide Prison', image: 'map_tideprison.png' },
-};
 
 const LAST_MESSAGE = new Map<string, Snowflake>();
 
@@ -44,10 +38,7 @@ function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean) {
   const container = new ContainerBuilder();
 
   if (hasCodes && codes) {
-    const maps = Object.entries(MAP_DISPLAY) as [
-      keyof DailyCodes,
-      { name: string; image: string },
-    ][];
+    const maps = Object.entries(MAP_DISPLAY) as [MapKey, MapInfo][];
 
     maps.forEach(([fullName, mapInfo], index) => {
       const code = codes[fullName] || 'Chưa có';
