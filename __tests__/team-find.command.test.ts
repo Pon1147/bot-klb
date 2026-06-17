@@ -2,43 +2,9 @@
  * Unit tests cho team-find.command.ts — /team-find slash command.
  */
 
-jest.mock('discord.js', () => {
-  class SlashCommandBuilder {
-    name = '';
-    description = '';
-    options: any[] = [];
-    behaviorDependencies: any[] = [];
-
-    setName(n: string) { this.name = n; return this; }
-    setDescription(d: string) { this.description = d; return this; }
-
-    addStringOption(cb: (o: any) => any) {
-      const opt: any = {
-        name: '',
-        description: '',
-        required: false,
-        choices: [],
-        setRequired(r: boolean) { this.required = r; return this; },
-        setName(n: string) { this.name = n; return this; },
-        setDescription(d: string) { this.description = d; return this; },
-        addChoices(c: any[]) { this.choices = c; return this; },
-      };
-      this.options.push(cb(opt));
-      return this;
-    }
-  }
-
-  return {
-    ComponentType: { TextDisplay: 10, Separator: 14, Container: 17 },
-    MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
-    SlashCommandBuilder,
-    AttachmentBuilder: class {
-      constructor(public pathOrBuffer: any) {
-        this.name = 'file.png';
-      }
-    },
-  };
-});
+jest.mock('discord.js', () => ({
+  MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
+}));
 
 jest.mock('../src/utils/df-guards.js', () => ({
   requireGuild: jest.fn().mockResolvedValue(false),
@@ -54,6 +20,13 @@ jest.mock('../src/commands/df/team-find.embed.js', () => ({
     flags: 65536,
     files: [],
     toJSON() { return this.components; },
+  }),
+}));
+
+jest.mock('../src/utils/container.utils.js', () => ({
+  buildErrorContainer: jest.fn().mockReturnValue({
+    toJSON() { return []; },
+    flags: 0,
   }),
 }));
 
@@ -76,7 +49,10 @@ jest.mock('../src/config/team-find.config.js', () => ({
     'Trạm Không Gian': ['normal', 'hard'],
     'Ngục Giam Thủy Triều': ['hard'],
   },
-  TEAM_FIND_RANKS: ['Đồng III', 'Thách Đấu DF'],
+  TEAM_FIND_RANKS: [
+    { name: 'Đồng III', value: 'Đồng III' },
+    { name: 'Thách Đấu DF', value: 'Thách Đấu DF' },
+  ],
 }));
 
 import { data, execute } from '../src/commands/df/team-find.command.js';
@@ -102,7 +78,7 @@ describe('team-find.command — data', () => {
     expect(modeOpt.required).toBe(true);
   });
 
-  it('rank nên là string option có choices', () => {
+  it('rank nên có choices', () => {
     const rankOpt = data.options.find((o: any) => o.name === 'rank');
     expect(rankOpt.choices.length).toBeGreaterThan(0);
   });
@@ -118,11 +94,8 @@ describe('team-find.command — data', () => {
   it('mode choices nên conditional theo MAP_MODES mapping', () => {
     const dep = data.behavior_dependencies[0];
     const values = dep.values;
-    // Layali chỉ có Dễ
     expect(values['Thung lũng Layali']).toEqual(['Dễ']);
-    // Zero có Dễ, Thường
     expect(values['Đập Nước Zero']).toEqual(['Dễ', 'Thường']);
-    // Tide Prison chỉ có Khó
     expect(values['Ngục Giam Thủy Triều']).toEqual(['Khó']);
   });
 });
@@ -226,7 +199,7 @@ describe('team-find.command — execute', () => {
     expect(embedCall.difficulty).toBe('normal');
   });
 
-  it('nên resolve difficulty từ mode label', async () => {
+  it('nên resolve difficulty từ mode label Khó', async () => {
     (requireGuild as jest.Mock).mockResolvedValue(false);
     (checkVoiceForTeamFind as jest.Mock).mockReturnValue({
       success: true,
@@ -234,7 +207,6 @@ describe('team-find.command — execute', () => {
       channelName: 'Gaming Room',
     });
 
-    // Test with 'Khó' → hard
     const interaction = createMockInteraction({
       options: {
         getString: jest.fn((name: string) => {

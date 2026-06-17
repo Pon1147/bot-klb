@@ -130,12 +130,11 @@ export function loadCommands(collection: Collection<string, CommandModule>): voi
  * Tạo fingerprint (string so sánh) cho một command.
  * Dùng để phát hiện thay đổi giữa local và Discord.
  */
-function commandFingerprint(commandData: SlashCommandBuilder | APIApplicationCommand): string {
+function commandFingerprint(commandData: any): string {
   if ('toJSON' in commandData && typeof commandData.toJSON === 'function') {
-    const json = commandData.toJSON();
-    const bd = (commandData as any).behavior_dependencies;
-    return JSON.stringify(bd ? { ...json, behavior_dependencies: bd } : json);
+    return JSON.stringify(commandData.toJSON());
   }
+  // Plain JSON object — already has all properties
   return JSON.stringify(commandData);
 }
 
@@ -283,11 +282,11 @@ export async function deployCommands(
   // Nhưng chỉ log những command thực sự thay đổi
   const localCommands = [];
   for (const [_name, command] of commandCollection) {
-    const json = command.data.toJSON();
-    // Merge custom properties set directly on the builder (behavior_dependencies)
-    const bd = (command.data as any).behavior_dependencies;
-    const cmd = bd ? { ...json, behavior_dependencies: bd } : json;
-    localCommands.push(cmd);
+    // data can be a SlashCommandBuilder (has toJSON) or a plain JSON object
+    const json = 'toJSON' in command.data && typeof command.data.toJSON === 'function'
+      ? command.data.toJSON()
+      : command.data;
+    localCommands.push(json);
   }
 
   // Bước 5: Deploy đến Discord
