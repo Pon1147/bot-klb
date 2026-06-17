@@ -56,13 +56,14 @@ export function createMockInteraction(overrides: MockInteractionOverrides = {}):
       add: jest.fn().mockResolvedValue(undefined),
       remove: jest.fn().mockResolvedValue(undefined),
     },
+    voice: undefined,
     ...overrides.member,
   };
 
   return {
     guild,
     user,
-    channel: { id: 'channel-e2e-123' },
+    channel: { id: 'channel-e2e-123', messages: { fetch: jest.fn().mockResolvedValue(null) } },
     member,
     options: {
       getSubcommand: overrides.options?.getSubcommand ?? jest.fn(() => 'status'),
@@ -119,12 +120,13 @@ export function createMockGuild(overrides: MockGuildOverrides = {}): any {
 
 /* ==================== Mock text channel ==================== */
 
-export function createMockTextChannel(overrides: { id?: string; name?: string; isTextBased?: () => boolean; send?: jest.Mock; toString?: () => string } = {}): any {
+export function createMockTextChannel(overrides: { id?: string; name?: string; isTextBased?: () => boolean; send?: jest.Mock; toString?: () => string; messages?: any } = {}): any {
   return {
     id: overrides.id ?? 'channel-999',
     name: 'test-channel',
     isTextBased: () => true,
     send: jest.fn().mockResolvedValue({}),
+    messages: overrides.messages ?? { fetch: jest.fn().mockResolvedValue(null) },
     toString: () => `<#${overrides.id ?? 'channel-999'}`,
     ...overrides,
   };
@@ -153,6 +155,7 @@ interface MockMemberOverrides {
   roleId?: string;
   channelIdExists?: boolean;
   roleIdExists?: boolean;
+  voice?: any;
 }
 
 export function createMockGuildMember(overrides: MockMemberOverrides = {}): any {
@@ -200,6 +203,7 @@ export function createMockGuildMember(overrides: MockMemberOverrides = {}): any 
     user,
     guild,
     roles,
+    voice: overrides.voice ?? undefined,
     premiumSince: overrides.premiumSince ?? null,
     _channelMock: channel,
     _roleMock: role,

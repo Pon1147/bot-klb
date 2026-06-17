@@ -84,6 +84,12 @@ jest.mock('../src/utils/df-rank.utils.js', () => ({
   }),
 }));
 
+jest.mock('../src/services/team-find-message-store.js', () => ({
+  storeMessage: jest.fn(),
+  getMessageRef: jest.fn().mockReturnValue(null),
+  deleteMessageRef: jest.fn(),
+}));
+
 import { data, execute } from '../src/commands/df/team-find.command.js';
 import { requireGuild } from '../src/utils/df-guards.js';
 import { checkVoiceForTeamFind } from '../src/utils/df-voice.utils.js';
@@ -111,12 +117,16 @@ describe('team-find.command — data', () => {
 
 describe('team-find.command — execute', () => {
   const mockDb: any = { prepare: jest.fn(() => ({ get: jest.fn(), run: jest.fn() })) };
-  const mockReply = jest.fn().mockResolvedValue(undefined);
+  const mockReply = jest.fn().mockResolvedValue({ id: 'msg-123' });
 
   function createMockInteraction(overrides: any = {}): any {
     return {
       guild: { id: 'guild-1', members: { me: { id: 'bot-1' } } },
-      user: { id: 'user-1', username: 'PlayerOne' },
+      user: {
+        id: 'user-1',
+        username: 'PlayerOne',
+        displayAvatarURL: () => 'https://example.com/avatar.png',
+      },
       member: {
         roles: {},
         voice: { channel: { id: 'vc-123', name: 'Gaming Room' }, deaf: false, mute: false },
@@ -125,6 +135,7 @@ describe('team-find.command — execute', () => {
         getString: jest.fn(),
         getInteger: jest.fn(),
       },
+      channel: { id: 'channel-1', messages: { fetch: jest.fn().mockResolvedValue(null) } },
       reply: mockReply,
       replied: false,
       deferred: false,
@@ -140,7 +151,6 @@ describe('team-find.command — execute', () => {
     (requireGuild as jest.Mock).mockResolvedValue(true);
     const interaction = createMockInteraction({ guild: null });
     await execute(interaction, mockDb);
-    // requireGuild returns true → execute returns early, should not build embed or reply
     expect(buildTeamFindEmbed).not.toHaveBeenCalled();
     expect(mockReply).not.toHaveBeenCalled();
   });

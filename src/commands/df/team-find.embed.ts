@@ -1,4 +1,4 @@
-/** Build Container V2 embed cho /team-find */
+/** Build Container V2 embed cho /team-find — tactical, emoji-free design */
 
 import {
   ActionRowBuilder,
@@ -26,6 +26,7 @@ export interface TeamFindParams {
   channelName: string;
   channelId: string;
   username: string;
+  avatarUrl: string;
   rank?: DfRank | null;
 }
 
@@ -34,42 +35,41 @@ export function buildTeamFindEmbed(params: TeamFindParams) {
   const mapInfo = MAP_DISPLAY[params.mapKey] as MapInfo;
   const diff = DIFFICULTY_CONFIG[params.difficulty];
 
-  // Attach ảnh map
   const attachmentName = mapInfo.name.toLowerCase().replace(/\s+/g, '-') + '.png';
   const mapAttachment = new AttachmentBuilder(`${ASSETS_PATH}${mapInfo.image}`).setName(attachmentName);
 
-  // ── Header Section: avatar + title ──
+  // ── Header: username + avatar thumbnail ──
   const headerSection: Record<string, unknown> = {
     type: ComponentType.Section,
     components: [
       {
         type: ComponentType.TextDisplay,
-        content: `## 🔍 **${params.username}** đang tìm đồng đội`,
+        content: `## **${params.username}** đang tìm đồng đội`,
       },
     ],
     accessory: {
       type: ComponentType.Thumbnail,
-      media: { url: `attachment://${attachmentName}` },
-      description: mapInfo.name,
+      media: { url: params.avatarUrl },
     },
   };
 
-  // ── Stats Text ──
+  // ── Stats: MODE / RANK / ROOM ──
   const lines: string[] = [];
 
-  lines.push(`🗺️ **Bản đồ**: ${mapInfo.name}`);
-  lines.push(`🎯 **Chế độ**: ${diff.emoji} ${diff.label}`);
+  lines.push(`**MODE**`);
+  lines.push(diff.label);
+  lines.push('');
 
   if (params.rank) {
-    const rankInfo = params.rank;
-    lines.push(`🏅 **Rank**: ${rankInfo.name}`);
+    lines.push(`**RANK**`);
+    lines.push(params.rank.name);
+    lines.push('');
   }
 
-  lines.push(`🎧 **Phòng**: ${params.channelName}`);
-  lines.push('');
-  lines.push('_Nhấn nút bên dưới để tham gia!_');
+  lines.push(`**ROOM**`);
+  lines.push(params.channelName);
 
-  // ── Separator with difficulty color ──
+  // ── Separator with difficulty accent color ──
   const separator: Record<string, unknown> = {
     type: ComponentType.Separator,
     accentColor: diff.color,
@@ -80,7 +80,6 @@ export function buildTeamFindEmbed(params: TeamFindParams) {
     headerSection,
     { type: ComponentType.TextDisplay, content: lines.join('\n') },
     separator,
-    // Map image as media gallery
     {
       type: ComponentType.MediaGallery,
       items: [
@@ -100,7 +99,7 @@ export function buildTeamFindEmbed(params: TeamFindParams) {
   // ── Button Row ──
   const joinButton = new ButtonBuilder()
     .setCustomId(`team-find-join:${params.channelId}`)
-    .setLabel('🎧 Tôi muốn join')
+    .setLabel('Join Room')
     .setStyle(ButtonStyle.Primary);
 
   const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(joinButton);

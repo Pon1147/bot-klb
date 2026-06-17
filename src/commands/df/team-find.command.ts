@@ -2,6 +2,7 @@
 
 import {
   ChatInputCommandInteraction,
+  GuildTextBasedChannel,
   MessageFlags,
   SlashCommandBuilder,
 } from 'discord.js';
@@ -10,6 +11,11 @@ import { checkVoiceForTeamFind } from '../../utils/df-voice.utils.js';
 import { buildTeamFindEmbed } from './team-find.embed.js';
 import { resolveRankFromScore } from '../../utils/df-rank.utils.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
+import {
+  storeMessage,
+  getMessageRef,
+  deleteMessageRef,
+} from '../../services/team-find-message-store.js';
 
 export const data = new SlashCommandBuilder()
   .setName('team-find')
@@ -47,6 +53,26 @@ export const data = new SlashCommandBuilder()
       .setMaxValue(6000),
   );
 
+/** Xóa message cũ của user — fetch từ channel đúng nơi message được lưu */
+async function deleteOldTeamFindMessage(
+  guild: any,
+  userId: string,
+): Promise<void> {
+  const ref = getMessageRef(guild.id, userId);
+  if (!ref) return;
+
+  try {
+    const oldChannel = await guild.channels.fetch(ref.channelId).catch(() => null);
+    if (oldChannel && oldChannel.isTextBased()) {
+      const oldMsg = await oldChannel.messages.fetch(ref.messageId).catch(() => null);
+      if (oldMsg) await oldMsg.delete();
+    }
+  } catch {
+    // Message already gone
+  }
+  deleteMessageRef(guild.id, userId);
+}
+
 export async function execute(
   interaction: ChatInputCommandInteraction,
   _database: unknown,
@@ -72,6 +98,12 @@ export async function execute(
   // Resolve rank if provided
   const rank = rankScore ? resolveRankFromScore(rankScore) : null;
 
+  const channel = interaction.channel as GuildTextBasedChannel;
+  const guild = interaction.guild!;
+
+  // Delete old message (fetch from stored channel, not current interaction channel)
+  await deleteOldTeamFindMessage(guild, interaction.user.id);
+
   // Build embed
   const embed = buildTeamFindEmbed({
     mapKey,
@@ -79,12 +111,16 @@ export async function execute(
     channelName: voiceResult.channelName!,
     channelId: voiceResult.channelId!,
     username: interaction.user.username,
+    avatarUrl: interaction.user.displayAvatarURL({ extension: 'png', size: 256 }),
     rank,
   });
 
-  await interaction.reply({
+  const response = await interaction.reply({
     components: embed.toJSON(),
     files: embed.files,
     flags: MessageFlags.IsComponentsV2,
-  });
+  }) as any;
+
+  // Store message reference for future updates
+  storeMessage(guild.id, interaction.user.id, response.id, channel.id);
 }

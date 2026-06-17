@@ -42,6 +42,7 @@ describe('team-find.embed — buildTeamFindEmbed', () => {
     channelName: 'Gaming Room',
     channelId: 'vc-123',
     username: 'PlayerOne',
+    avatarUrl: 'https://example.com/avatar.png',
     rank: {
       rankId: 'gold',
       mode: 'MP' as const,

@@ -13,4 +13,6 @@ export const BOT_INTENTS = [
   GatewayIntentBits.GuildMessages,
   /** Cần để đọc nội dung tin nhắn */
   GatewayIntentBits.MessageContent,
+  /** Cần để track voice channel state (interaction.member.voice.channel) */
+  GatewayIntentBits.GuildVoiceStates,
 ] as const;

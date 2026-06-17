@@ -1,14 +1,11 @@
-﻿import { GuildMember } from 'discord.js';
+import { GuildMember } from 'discord.js';
 import { getSettingsService } from '../services/settings.service.js';
+import { getMessageRef, deleteMessageRef } from '../services/team-find-message-store.js';
 
 /**
- * Handle guildMemberUpdate event: detect khi member Server Boost.
- * Discord không có event riêng cho boost, phải so sánh premiumSince field.
- *
- * Logic: oldMember.premiumSince === null && newMember.premiumSince !== null
- * → Member vừa boost server! → Gửi tin nhắn cảm ơn + cấp role.
- *
- * Arg đầu tiên luôn là `client` (được bind từ event handler).
+ * Handle guildMemberUpdate event:
+ * - Detect khi member Server Boost
+ * - Tự động xóa team-find embed khi user rời/chuyển phòng thoại
  */
 export async function execute(
   _client: unknown,
@@ -20,70 +17,73 @@ export async function execute(
     return;
   }
 
-  // Detect boost: premiumSince chuyển từ null → có giá trị
+  // ── 1. Booster detection ──
   const wasBoosting = oldMember.premiumSince !== null;
   const isNowBoosting = newMember.premiumSince !== null;
 
-  // Guard clause: chỉ xử lý khi member vừa boost (chưa boost → đang boost)
-  if (wasBoosting || !isNowBoosting) {
-    return;
+  if (!wasBoosting && isNowBoosting) {
+    try {
+      const settingsService = getSettingsService();
+      const booster = settingsService.getBooster(newMember.guild.id);
+
+      if (!booster.enabled) return;
+      if (!booster.channelId) return;
+
+      const boosterChannel = newMember.guild.channels.cache.get(booster.channelId);
+      if (!boosterChannel || !boosterChannel.isTextBased()) return;
+
+      const boosterContainer = settingsService.buildBoosterContainer(newMember.guild.id, {
+        member: newMember,
+        guild: newMember.guild,
+      });
+
+      await boosterChannel.send({
+        components: boosterContainer.toJSON(),
+        flags: boosterContainer.flags,
+        files: boosterContainer.files,
+      });
+
+      if (booster.roleId) {
+        await assignBoosterRole(newMember, booster.roleId);
+      }
+    } catch (error) {
+      console.error(`Error sending booster message for ${newMember.user.tag}:`, error);
+    }
   }
 
-  try {
-    const settingsService = getSettingsService();
-    const booster = settingsService.getBooster(newMember.guild.id);
+  // ── 2. Voice channel change → xóa team-find embed cũ ──
+  const oldChannelId = oldMember.voice?.channelId;
+  const newChannelId = newMember.voice?.channelId;
 
-    // Guard clause: booster bị tắt
-    if (!booster.enabled) {
-      return;
+  // Helper: xóa embed theo reference
+  async function cleanupOldEmbed(guild: any, userId: string): Promise<void> {
+    const ref = getMessageRef(guild.id, userId);
+    if (!ref) return;
+    try {
+      const channel = await guild.channels.fetch(ref.channelId).catch(() => null);
+      if (channel && channel.isTextBased()) {
+        const msg = await channel.messages.fetch(ref.messageId).catch(() => null);
+        if (msg) await msg.delete();
+      }
+    } catch {
+      // Message already gone
     }
+    deleteMessageRef(guild.id, userId);
+  }
 
-    // Guard clause: chưa cấu hình channel
-    if (!booster.channelId) {
-      return;
-    }
+  if (oldChannelId && newChannelId && oldChannelId !== newChannelId) {
+    await cleanupOldEmbed(newMember.guild, newMember.user.id);
+  }
 
-    const boosterChannel = newMember.guild.channels.cache.get(booster.channelId);
-
-    // Guard clause: channel không tồn tại hoặc không phải text channel
-    if (!boosterChannel || !boosterChannel.isTextBased()) {
-      return;
-    }
-
-    // Build booster container V2 (Components V2)
-    const boosterContainer = settingsService.buildBoosterContainer(newMember.guild.id, {
-      member: newMember,
-      guild: newMember.guild,
-    });
-
-    // Gửi Container V2 message
-    // Note: cast components vì discord.js v14 chưa có type chính thức cho Components V2
-    await boosterChannel.send({
-      components: boosterContainer.toJSON(),
-      flags: boosterContainer.flags,
-      files: boosterContainer.files,
-    });
-
-    // Gán role booster nếu có cấu hình
-    if (booster.roleId) {
-      await assignBoosterRole(newMember, booster.roleId);
-    }
-  } catch (error) {
-    console.error(`Error sending booster message for ${newMember.user.tag}:`, error);
+  // User rời phòng thoại → xóa embed
+  if (oldChannelId && !newChannelId) {
+    await cleanupOldEmbed(newMember.guild, newMember.user.id);
   }
 }
 
-/**
- * Gán role booster cho member vừa boost server.
- * Xử lý lỗi gracefully để fail role không chặn booster message.
- */
 async function assignBoosterRole(member: GuildMember, roleId: string): Promise<void> {
   const role = member.guild.roles.cache.get(roleId);
-
-  if (!role) {
-    console.warn(`Booster role ${roleId} not found in guild ${member.guild.id}.`);
-    return;
-  }
+  if (!role) return;
 
   try {
     await member.roles.add(role);

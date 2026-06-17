@@ -26,12 +26,11 @@ export type Difficulty = 'easy' | 'normal' | 'hard';
 export interface DifficultyConfig {
   id: Difficulty;
   label: string;
-  emoji: string;
   color: number;
 }
 
 export const DIFFICULTY_CONFIG: Record<Difficulty, DifficultyConfig> = {
-  easy: { id: 'easy', label: 'Dễ', emoji: '\u{1f7e2}', color: 0x57f287 },
-  normal: { id: 'normal', label: 'Thường', emoji: '\u{1f7e1}', color: 0xfee75c },
-  hard: { id: 'hard', label: 'Khó', emoji: '\u{1f534}', color: 0xed4245 },
+  easy: { id: 'easy', label: 'Dễ', color: 0x57f287 },
+  normal: { id: 'normal', label: 'Thường', color: 0xfee75c },
+  hard: { id: 'hard', label: 'Khó', color: 0xed4245 },
 };
