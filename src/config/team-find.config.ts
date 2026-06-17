@@ -34,3 +34,41 @@ export const DIFFICULTY_CONFIG: Record<Difficulty, DifficultyConfig> = {
   normal: { id: 'normal', label: 'Thường', color: 0xfee75c },
   hard: { id: 'hard', label: 'Khó', color: 0xed4245 },
 };
+
+/** Map → available modes mapping (controls dependent options) */
+export const MAP_MODES: Record<MapKey, Difficulty[]> = {
+  'Thung lũng Layali': ['easy'],
+  'Đập Nước Zero': ['easy', 'normal'],
+  'Phố Cổ Brakkesh': ['normal', 'hard'],
+  'Trạm Không Gian': ['normal', 'hard'],
+  'Ngục Giam Thủy Triều': ['hard'],
+};
+
+/** MP rank choices for /team-find — user picks rank name directly */
+export const TEAM_FIND_RANKS: { name: string; value: string }[] = [
+  { name: 'Binh Nhì III', value: 'Binh Nhì III' },
+  { name: 'Binh Nhì II', value: 'Binh Nhì II' },
+  { name: 'Binh Nhì I', value: 'Binh Nhì I' },
+  { name: 'Hạ Sĩ III', value: 'Hạ Sĩ III' },
+  { name: 'Hạ Sĩ II', value: 'Hạ Sĩ II' },
+  { name: 'Hạ Sĩ I', value: 'Hạ Sĩ I' },
+  { name: 'Trung Sĩ IV', value: 'Trung Sĩ IV' },
+  { name: 'Trung Sĩ III', value: 'Trung Sĩ III' },
+  { name: 'Trung Sĩ II', value: 'Trung Sĩ II' },
+  { name: 'Trung Sĩ I', value: 'Trung Sĩ I' },
+  { name: 'Trung Úy IV', value: 'Trung Úy IV' },
+  { name: 'Trung Úy III', value: 'Trung Úy III' },
+  { name: 'Trung Úy II', value: 'Trung Úy II' },
+  { name: 'Trung Úy I', value: 'Trung Úy I' },
+  { name: 'Đại Tá V', value: 'Đại Tá V' },
+  { name: 'Đại Tá IV', value: 'Đại Tá IV' },
+  { name: 'Đại Tá III', value: 'Đại Tá III' },
+  { name: 'Đại Tá II', value: 'Đại Tá II' },
+  { name: 'Đại Tá I', value: 'Đại Tá I' },
+  { name: 'Đại Tướng V', value: 'Đại Tướng V' },
+  { name: 'Đại Tướng IV', value: 'Đại Tướng IV' },
+  { name: 'Đại Tướng III', value: 'Đại Tướng III' },
+  { name: 'Đại Tướng II', value: 'Đại Tướng II' },
+  { name: 'Đại Tướng I', value: 'Đại Tướng I' },
+  { name: 'Nguyên Soái', value: 'Nguyên Soái' },
+];

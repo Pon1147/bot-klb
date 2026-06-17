@@ -3,33 +3,67 @@
  */
 
 jest.mock('discord.js', () => ({
-  ComponentType: { TextDisplay: 10, Separator: 14, Container: 17, Section: 15, Thumbnail: 16, MediaGallery: 11, ActionRow: 1 },
+  ComponentType: {
+    TextDisplay: 10,
+    Separator: 14,
+    Container: 17,
+    Section: 15,
+    Thumbnail: 16,
+    MediaGallery: 11,
+    ActionRow: 1,
+  },
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
   ButtonStyle: { Primary: 1 },
   ButtonBuilder: class {
     label: string = '';
     customId: string = '';
     style: number = 1;
-    setLabel(l: string) { this.label = l; return this; }
-    setCustomId(id: string) { this.customId = id; return this; }
-    setStyle(s: number) { this.style = s; return this; }
-    toJSON() { return { type: 2, label: this.label, custom_id: this.customId, style: this.style }; }
+    setLabel(l: string) {
+      this.label = l;
+      return this;
+    }
+    setCustomId(id: string) {
+      this.customId = id;
+      return this;
+    }
+    setStyle(s: number) {
+      this.style = s;
+      return this;
+    }
+    toJSON() {
+      return { type: 2, label: this.label, custom_id: this.customId, style: this.style };
+    }
   },
   ActionRowBuilder: class {
     components: any[] = [];
-    addComponents(...c: any[]) { this.components.push(...c); return this; }
-    toJSON() { return { type: 1, components: this.components.map(c => c.toJSON ? c.toJSON() : c) }; }
+    addComponents(...c: any[]) {
+      this.components.push(...c);
+      return this;
+    }
+    toJSON() {
+      return { type: 1, components: this.components.map((c) => (c.toJSON ? c.toJSON() : c)) };
+    }
   },
   AttachmentBuilder: class {
     constructor(public pathOrBuffer: any) {
       this.name = 'attachment.png';
     }
-    setName(n: string) { this.name = n; return this; }
+    setName(n: string) {
+      this.name = n;
+      return this;
+    }
   },
 }));
 
 jest.mock('../src/utils/container.utils.js', () => ({
-  makeResult: jest.fn((components, flags, files) => ({ components, flags, files, toJSON() { return components; } })),
+  makeResult: jest.fn((components, flags, files) => ({
+    components,
+    flags,
+    files,
+    toJSON() {
+      return components;
+    },
+  })),
 }));
 
 import { buildTeamFindEmbed } from '../src/commands/df/team-find.embed.js';
@@ -43,14 +77,7 @@ describe('team-find.embed — buildTeamFindEmbed', () => {
     channelId: 'vc-123',
     username: 'PlayerOne',
     avatarUrl: 'https://example.com/avatar.png',
-    rank: {
-      rankId: 'gold',
-      mode: 'MP' as const,
-      name: 'Gold',
-      minScore: 3000,
-      maxScore: 4000,
-      imageUrl: 'https://example.com/rank_gold.png',
-    },
+    rank: 'Trung Úy III',
   };
 
   it('nên trả về result có components, flags, files', () => {
@@ -86,7 +113,7 @@ describe('team-find.embed — buildTeamFindEmbed', () => {
   it('nên chứa rank name trong content', () => {
     const result = buildTeamFindEmbed(mockParams);
     const content = JSON.stringify(result.components);
-    expect(content).toContain('Gold');
+    expect(content).toContain('Trung Úy III');
   });
 
   it('nên chứa difficulty label trong content', () => {

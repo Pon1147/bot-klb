@@ -16,7 +16,6 @@ import {
   type MapInfo,
 } from '../../config/team-find.config.js';
 import { DIFFICULTY_CONFIG } from '../../config/team-find.config.js';
-import type { DfRank } from '../../utils/df-rank.utils.js';
 
 const ASSETS_PATH = './src/assets/img/map/';
 
@@ -27,7 +26,7 @@ export interface TeamFindParams {
   channelId: string;
   username: string;
   avatarUrl: string;
-  rank?: DfRank | null;
+  rank?: string | null;
 }
 
 /** Build embed hiển thị thông tin tìm đồng đội + button join. */
@@ -62,7 +61,7 @@ export function buildTeamFindEmbed(params: TeamFindParams) {
 
   if (params.rank) {
     lines.push(`**RANK**`);
-    lines.push(params.rank.name);
+    lines.push(params.rank);
     lines.push('');
   }
 
