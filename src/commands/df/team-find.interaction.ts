@@ -1,4 +1,4 @@
-/** Handle select menu interactions for /team-find flow */
+/** Handle interactions for /team-find flow — buttons for Map/Mode, select for Rank */
 
 import { MessageFlags } from 'discord.js';
 import {
@@ -12,28 +12,78 @@ import { buildTeamFindEmbed } from './team-find.embed.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { DIFFICULTY_CONFIG, type Difficulty } from '../../config/team-find.config.js';
 
+/** Check customId and handle team-find interactions. Returns true if handled. */
 export async function handleTeamFindInteraction(interaction: any): Promise<boolean> {
-  // ── Select Menu ──
-  if (interaction.isStringSelectMenu()) {
-    console.log('[team-find] Select menu interaction:', interaction.customId);
-    const customId = interaction.customId;
-    if (!customId.startsWith('team-find-select-')) return false;
+  const customId = interaction.customId;
 
-    const parts = customId.replace('team-find-select-', '').split(':');
-    const field = parts[0] as 'map' | 'mode' | 'rank';
+  // ── Map Button ──
+  if (interaction.isButton() && customId.startsWith('team-find-map:')) {
+    const parts = customId.replace('team-find-map:', '').split(':');
+    const value = parts[0];
     const userId = parts[1];
-    console.log('[team-find] field=%s, userId=%s, interactionUserId=%s', field, userId, interaction.user.id);
 
     if (userId !== interaction.user.id) {
+      await interaction.reply({ content: 'Đây không phải session của bạn.', flags: MessageFlags.Ephemeral });
+      return true;
+    }
+
+    const session = getSession(userId);
+    if (!session) {
       await interaction.reply({
-        content: 'Đây không phải session của bạn.',
+        content: 'Session đã hết hạn. Dùng `/team-find` để bắt đầu lại.',
         flags: MessageFlags.Ephemeral,
       });
       return true;
     }
 
+    updateSelection(userId, 'map', value);
+    const updated = getSession(userId)!;
+    const menu = buildSelectMenuMessage(userId, interaction.user.username, {
+      map: updated.map, mode: updated.mode, rank: updated.rank,
+    });
+    await interaction.update({ content: menu.content, components: menu.components, flags: MessageFlags.Ephemeral });
+    return true;
+  }
+
+  // ── Mode Button ──
+  if (interaction.isButton() && customId.startsWith('team-find-mode:')) {
+    const parts = customId.replace('team-find-mode:', '').split(':');
+    const value = parts[0];
+    const userId = parts[1];
+
+    if (userId !== interaction.user.id) {
+      await interaction.reply({ content: 'Đây không phải session của bạn.', flags: MessageFlags.Ephemeral });
+      return true;
+    }
+
     const session = getSession(userId);
-    console.log('[team-find] session:', session ? session.map + '/' + session.mode + '/' + session.rank : 'null');
+    if (!session) {
+      await interaction.reply({
+        content: 'Session đã hết hạn. Dùng `/team-find` để bắt đầu lại.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return true;
+    }
+
+    updateSelection(userId, 'mode', value);
+    const updated = getSession(userId)!;
+    const menu = buildSelectMenuMessage(userId, interaction.user.username, {
+      map: updated.map, mode: updated.mode, rank: updated.rank,
+    });
+    await interaction.update({ content: menu.content, components: menu.components, flags: MessageFlags.Ephemeral });
+    return true;
+  }
+
+  // ── Rank Select Menu ──
+  if (interaction.isStringSelectMenu() && customId.startsWith('team-find-rank:')) {
+    const userId = customId.split(':')[1];
+
+    if (userId !== interaction.user.id) {
+      await interaction.reply({ content: 'Đây không phải session của bạn.', flags: MessageFlags.Ephemeral });
+      return true;
+    }
+
+    const session = getSession(userId);
     if (!session) {
       await interaction.reply({
         content: 'Session đã hết hạn. Dùng `/team-find` để bắt đầu lại.',
@@ -43,42 +93,25 @@ export async function handleTeamFindInteraction(interaction: any): Promise<boole
     }
 
     const value = interaction.values[0];
-    console.log('[team-find] selected value:', value);
-    updateSelection(userId, field, value);
-
+    updateSelection(userId, 'rank', value);
     const updated = getSession(userId)!;
-    console.log('[team-find] updated session:', updated.map + '/' + updated.mode + '/' + updated.rank);
     const menu = buildSelectMenuMessage(userId, interaction.user.username, {
-      map: updated.map,
-      mode: updated.mode,
-      rank: updated.rank,
+      map: updated.map, mode: updated.mode, rank: updated.rank,
     });
-
-    console.log('[team-find] calling interaction.update()');
-    await interaction.update({
-      content: menu.content,
-      components: menu.components,
-      flags: MessageFlags.Ephemeral,
-    });
+    await interaction.update({ content: menu.content, components: menu.components, flags: MessageFlags.Ephemeral });
     return true;
   }
 
   // ── Done Button ──
-  if (interaction.isButton() && interaction.customId.startsWith('team-find-done:')) {
-    console.log('[team-find] Done button clicked:', interaction.customId);
-    const userId = interaction.customId.split(':')[1];
-    console.log('[team-find] userId=%s, interactionUserId=%s', userId, interaction.user.id);
+  if (interaction.isButton() && customId.startsWith('team-find-done:')) {
+    const userId = customId.split(':')[1];
 
     if (userId !== interaction.user.id) {
-      await interaction.reply({
-        content: 'Đây không phải session của bạn.',
-        flags: MessageFlags.Ephemeral,
-      });
+      await interaction.reply({ content: 'Đây không phải session của bạn.', flags: MessageFlags.Ephemeral });
       return true;
     }
 
     const session = getSession(userId);
-    console.log('[team-find] Done session:', session ? { map: session.map, mode: session.mode, rank: session.rank } : 'null');
     if (!session || !session.map || !session.mode) {
       return true;
     }
@@ -91,31 +124,24 @@ export async function handleTeamFindInteraction(interaction: any): Promise<boole
         break;
       }
     }
-    console.log('[team-find] difficulty:', difficulty);
 
     // Re-check voice state
     const voiceChannel = (interaction.member as any).voice?.channel;
-    console.log('[team-find] voiceChannel:', voiceChannel ? voiceChannel.name : 'null');
     if (!voiceChannel) {
       const err = buildErrorContainer('Bạn phải đang trong phòng thoại để sử dụng lệnh này.');
-      await interaction.reply({
-        components: err.toJSON(),
-        flags: err.flags | MessageFlags.Ephemeral,
-      });
+      await interaction.reply({ components: err.toJSON(), flags: err.flags | MessageFlags.Ephemeral });
       deleteSession(userId);
       return true;
     }
 
-    // Delete the menu message
-    console.log('[team-find] deleting ephemeral menu message');
+    // Hide the ephemeral menu, then send embed to channel
     try {
-      await interaction.deleteReply();
+      await interaction.editReply({ content: '', components: [], flags: MessageFlags.Ephemeral });
     } catch (e) {
-      console.log('[team-find] deleteReply failed:', (e as Error).message);
+      console.log('[team-find] editReply failed:', (e as Error).message);
     }
     deleteSession(userId);
 
-    // Build and send embed
     const embed = buildTeamFindEmbed({
       mapKey: session.map as any,
       difficulty,
@@ -126,14 +152,13 @@ export async function handleTeamFindInteraction(interaction: any): Promise<boole
       rank: session.rank ?? null,
     });
 
-    console.log('[team-find] sending embed to channel:', interaction.channel.id);
     const response = await interaction.channel.send({
       components: embed.toJSON(),
       files: embed.files,
       flags: MessageFlags.IsComponentsV2,
     }) as any;
 
-    console.log('[team-find] embed sent, message id:', response.id);
+    console.log('[team-find] embed sent:', response.id);
     storeMessage(session.guildId, userId, response.id, interaction.channel.id);
     return true;
   }

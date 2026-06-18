@@ -21,14 +21,15 @@ export async function execute(
       return;
     }
 
-    // Team find done button
-    if (interaction.customId.startsWith('team-find-done:')) {
+    // Team find buttons (map/mode/done) — interaction handler returns true/false
+    if (interaction.customId.startsWith('team-find-')) {
       try {
-        await handleTeamFindInteraction(interaction);
+        if (await handleTeamFindInteraction(interaction)) return;
+        // fallthrough to join button below
       } catch (error) {
-        console.error('Error in team-find done handler:', error);
+        console.error('Error in team-find button handler:', error);
+        return;
       }
-      return;
     }
 
     // Team find join button
@@ -38,51 +39,33 @@ export async function execute(
         const channel = await interaction.guild?.channels.fetch(channelId).catch(() => null);
 
         if (!channel || channel.type !== 2) {
-          await interaction.reply({
-            content: 'Phòng thoại không còn tồn tại.',
-            flags: MessageFlags.Ephemeral,
-          });
+          await interaction.reply({ content: 'Phòng thoại không còn tồn tại.', flags: MessageFlags.Ephemeral });
           return;
         }
 
         const memberVoice = (interaction.member as any).voice;
         if (memberVoice?.channel?.id === channelId) {
-          await interaction.reply({
-            content: 'Bạn đã đang trong phòng này.',
-            flags: MessageFlags.Ephemeral,
-          });
+          await interaction.reply({ content: 'Bạn đã đang trong phòng này.', flags: MessageFlags.Ephemeral });
           return;
         }
 
         if (channel.full) {
-          await interaction.reply({
-            content: 'Phòng thoại đã đầy (99 người).',
-            flags: MessageFlags.Ephemeral,
-          });
+          await interaction.reply({ content: 'Phòng thoại đã đầy (99 người).', flags: MessageFlags.Ephemeral });
           return;
         }
 
         const botPerms = channel.permissionsFor(interaction.guild!.members.me);
         if (!botPerms?.has(32768)) {
-          await interaction.reply({
-            content: 'Bot không có quyền tham gia phòng thoại này.',
-            flags: MessageFlags.Ephemeral,
-          });
+          await interaction.reply({ content: 'Bot không có quyền tham gia phòng thoại này.', flags: MessageFlags.Ephemeral });
           return;
         }
 
         await channel.join();
-        await interaction.reply({
-          content: 'Đã join phòng thành công!',
-          flags: MessageFlags.Ephemeral,
-        });
+        await interaction.reply({ content: 'Đã join phòng thành công!', flags: MessageFlags.Ephemeral });
       } catch (error) {
         console.error('Error in team-find join button handler:', error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({
-            content: 'Có lỗi xảy ra khi tham gia phòng thoại.',
-            flags: MessageFlags.Ephemeral,
-          });
+          await interaction.reply({ content: 'Có lỗi xảy ra khi tham gia phòng thoại.', flags: MessageFlags.Ephemeral });
         }
       }
       return;
@@ -93,11 +76,7 @@ export async function execute(
 
   // ── 1b. String Select Menu Interactions ──
   if (interaction.isStringSelectMenu()) {
-    if (
-      interaction.customId.startsWith('team-find-select-map:') ||
-      interaction.customId.startsWith('team-find-select-mode:') ||
-      interaction.customId.startsWith('team-find-select-rank:')
-    ) {
+    if (interaction.customId.startsWith('team-find-rank:')) {
       try {
         await handleTeamFindInteraction(interaction);
       } catch (error) {

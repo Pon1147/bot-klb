@@ -1,4 +1,4 @@
-/** Build select menu UI for /team-find interactive flow */
+/** Build interactive UI for /team-find — buttons for Map/Mode, select menu for Rank */
 
 import {
   ActionRowBuilder,
@@ -6,7 +6,12 @@ import {
   ButtonStyle,
   StringSelectMenuBuilder,
 } from 'discord.js';
-import { MAP_DISPLAY, MAP_MODES, DIFFICULTY_CONFIG, TEAM_FIND_RANKS } from '../../config/team-find.config.js';
+import {
+  MAP_DISPLAY,
+  MAP_MODES,
+  DIFFICULTY_CONFIG,
+  TEAM_FIND_RANKS,
+} from '../../config/team-find.config.js';
 import type { Difficulty, DifficultyConfig } from '../../config/team-find.config.js';
 
 export interface MenuState {
@@ -15,32 +20,23 @@ export interface MenuState {
   rank: string | null;
 }
 
-/** Build Map select menu options */
-function buildMapOptions(): { label: string; value: string }[] {
-  return Object.keys(MAP_DISPLAY).map((k) => ({
-    label: k,
-    value: k,
-  }));
-}
+/** Map button colors for visual distinction */
+const MAP_COLORS: Record<string, ButtonStyle> = {
+  'Đập Nước Zero': ButtonStyle.Primary,
+  'Thung lũng Layali': ButtonStyle.Secondary,
+  'Phố Cổ Brakkesh': ButtonStyle.Secondary,
+  'Trạm Không Gian': ButtonStyle.Secondary,
+  'Ngục Giam Thủy Triều': ButtonStyle.Secondary,
+};
 
-/** Build Mode select menu options — filtered by selected map */
-function buildModeOptions(selectedMap: string | null): { label: string; value: string }[] {
-  if (selectedMap) {
-    const modes = (MAP_MODES as any)[selectedMap];
-    if (modes) {
-      return modes.map((m: Difficulty) => {
-        const cfg = (DIFFICULTY_CONFIG as Record<Difficulty, DifficultyConfig>)[m];
-        return { label: cfg.label, value: cfg.label };
-      });
-    }
-  }
-  return Object.values(DIFFICULTY_CONFIG).map((c) => ({
-    label: c.label,
-    value: c.label,
-  }));
-}
+/** Mode button colors */
+const MODE_COLORS: Record<string, ButtonStyle> = {
+  'Dễ': ButtonStyle.Success,
+  'Thường': ButtonStyle.Primary,
+  'Khó': ButtonStyle.Danger,
+};
 
-/** Build the status text for the menu message */
+/** Build status text that shows current selections */
 function buildStatusContent(username: string, state: MenuState): string {
   const mapLabel = state.map || '— Chưa chọn —';
   const modeLabel = state.mode || '— Chưa chọn —';
@@ -60,10 +56,66 @@ function buildStatusContent(username: string, state: MenuState): string {
   ].join('\n');
 }
 
+/** Build the Map button row */
+function buildMapButtons(userId: string, selectedMap: string | null) {
+  const buttons = Object.keys(MAP_DISPLAY).map((m) => {
+    const isSelected = m === selectedMap;
+    return new ButtonBuilder()
+      .setCustomId(`team-find-map:${m}:${userId}`)
+      .setLabel(m)
+      .setStyle(MAP_COLORS[m] || ButtonStyle.Secondary)
+      .setDisabled(isSelected);
+  });
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(buttons);
+}
+
+/** Build the Mode button row — filtered by map */
+function buildModeButtons(userId: string, selectedMap: string | null, selectedMode: string | null) {
+  const modes = (selectedMap && (MAP_MODES as any)[selectedMap])
+    ? (MAP_MODES as any)[selectedMap] as Difficulty[]
+    : Object.values(DIFFICULTY_CONFIG).map((c) => c.id);
+
+  const buttons = modes.map((m: Difficulty) => {
+    const cfg = (DIFFICULTY_CONFIG as Record<Difficulty, DifficultyConfig>)[m];
+    const isSelected = cfg.label === selectedMode;
+    return new ButtonBuilder()
+      .setCustomId(`team-find-mode:${cfg.label}:${userId}`)
+      .setLabel(cfg.label)
+      .setStyle(MODE_COLORS[cfg.label] || ButtonStyle.Primary)
+      .setDisabled(isSelected);
+  });
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(buttons);
+}
+
+/** Build the Rank select menu row */
+function buildRankMenu(userId: string, selectedRank: string | null) {
+  const rankSelect = new StringSelectMenuBuilder()
+    .setCustomId(`team-find-rank:${userId}`)
+    .setPlaceholder(selectedRank || 'Chọn bậc rank (tùy chọn)...')
+    .setMinValues(1)
+    .setMaxValues(1)
+    .addOptions(
+      TEAM_FIND_RANKS.map((r) => ({
+        label: r.name,
+        value: r.value,
+      })),
+    );
+  return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(rankSelect);
+}
+
+/** Build the Done button row */
+function buildDoneButton(userId: string, enabled: boolean) {
+  const doneButton = new ButtonBuilder()
+    .setCustomId(`team-find-done:${userId}`)
+    .setLabel('Xong')
+    .setStyle(ButtonStyle.Success)
+    .setDisabled(!enabled);
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(doneButton);
+}
+
 /**
  * Build the full interactive menu message.
- * Returns components array compatible with interaction.reply() / update().
- * Uses ActionRows (V1) for select menus — Container V2 only for final embed.
+ * Shows Map buttons, Mode buttons (filtered by map), Rank select, and Done button.
  */
 export function buildSelectMenuMessage(
   userId: string,
@@ -72,45 +124,17 @@ export function buildSelectMenuMessage(
 ) {
   const content = buildStatusContent(username, state);
 
-  // Map select
-  const mapSelect = new StringSelectMenuBuilder()
-    .setCustomId(`team-find-select-map:${userId}`)
-    .setPlaceholder('Chọn bản đồ...')
-    .setMinValues(1)
-    .setMaxValues(1)
-    .addOptions(buildMapOptions());
+  // Map buttons — show only if map not selected yet
+  const mapRow = buildMapButtons(userId, state.map);
 
-  // Mode select — filter by selected map
-  const modeSelect = new StringSelectMenuBuilder()
-    .setCustomId(`team-find-select-mode:${userId}`)
-    .setPlaceholder('Chọn độ khó...')
-    .setMinValues(1)
-    .setMaxValues(1)
-    .addOptions(buildModeOptions(state.map));
+  // Mode buttons — show only if map selected and mode not selected
+  const modeRow = buildModeButtons(userId, state.map, state.mode);
 
-  // Rank select
-  const rankSelect = new StringSelectMenuBuilder()
-    .setCustomId(`team-find-select-rank:${userId}`)
-    .setPlaceholder('Chọn bậc rank (tùy chọn)...')
-    .setMinValues(1)
-    .setMaxValues(1)
-    .addOptions(
-      TEAM_FIND_RANKS.map((r) => ({ label: r.name, value: r.value })),
-    );
+  // Rank select menu — show only after map+mode selected
+  const rankRow = buildRankMenu(userId, state.rank);
 
-  // Done button
-  const isDone = state.map !== null && state.mode !== null;
-  const doneButton = new ButtonBuilder()
-    .setCustomId(`team-find-done:${userId}`)
-    .setLabel('Xong')
-    .setStyle(ButtonStyle.Success)
-    .setDisabled(!isDone);
-
-  // Action rows
-  const mapRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(mapSelect);
-  const modeRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(modeSelect);
-  const rankRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(rankSelect);
-  const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(doneButton);
+  // Done button — enabled when map + mode selected
+  const doneRow = buildDoneButton(userId, state.map !== null && state.mode !== null);
 
   return {
     content,
@@ -118,7 +142,7 @@ export function buildSelectMenuMessage(
       mapRow.toJSON(),
       modeRow.toJSON(),
       rankRow.toJSON(),
-      buttonRow.toJSON(),
+      doneRow.toJSON(),
     ],
   };
 }
