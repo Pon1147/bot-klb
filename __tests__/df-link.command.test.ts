@@ -1,5 +1,5 @@
-﻿/**
- * Unit tests cho df-link.command.ts â€” /df-link slash command.
+/**
+ * Unit tests cho df-link.command.ts — /df-link slash command.
  * Version: simplified command (no subcommands), sends JS script via DM.
  */
 
@@ -22,6 +22,17 @@ jest.mock('path', () => ({
   join: jest.fn(() => '/mock/path/df-webhook.js'),
 }));
 
+jest.mock('better-sqlite3', () => {
+  return jest.fn().mockImplementation(() => ({
+    prepare: jest.fn(() => ({
+      get: jest.fn(),
+      run: jest.fn().mockReturnValue({ changes: 0, lastInsertRowid: 1 }),
+    })),
+    exec: jest.fn(),
+    close: jest.fn(),
+  }));
+});
+
 jest.mock('../src/services/df-claim-store.js', () => ({
   generateCode: jest.fn(),
 }));
@@ -33,10 +44,24 @@ jest.mock('../src/utils/container.utils.js', () => ({
     files: [],
     toJSON() { return this.components; },
   })),
+  buildInfoContainer: jest.fn((msg) => ({
+    components: [{ type: 17, components: [{ type: 10, content: msg }] }],
+    flags: 65536,
+    files: [],
+    toJSON() { return this.components; },
+  })),
+}));
+
+jest.mock('../src/services/webhook-tunnel.js', () => ({
+  setupTunnel: jest.fn().mockResolvedValue('https://test.trycloudflare.com'),
+  getTunnelUrl: jest.fn(() => 'https://test.trycloudflare.com'),
+  isTunnelAlive: jest.fn(() => true),
+  stopTunnel: jest.fn(),
 }));
 
 import { execute } from '../src/commands/df/link.command.js';
 import { generateCode } from '../src/services/df-claim-store.js';
+import { setupTunnel, isTunnelAlive, stopTunnel } from '../src/services/webhook-tunnel.js';
 import { MessageFlags } from 'discord.js';
 
 describe('df-link.command', () => {
@@ -63,9 +88,15 @@ describe('df-link.command', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Simulate tunnel already set up by main() boot sequence
+    process.env.WEBHOOK_URL = 'https://test.trycloudflare.com';
   });
 
-  it('nÃªn tráº£ vá» error khi khÃ´ng cÃ³ guild', async () => {
+  afterEach(() => {
+    delete process.env.WEBHOOK_URL;
+  });
+
+  it('nên trả về error khi không có guild', async () => {
     const interaction = createMockInteraction({ guild: null });
     await execute(interaction, mockDb);
     expect(mockReply).toHaveBeenCalledWith(
@@ -73,7 +104,7 @@ describe('df-link.command', () => {
     );
   });
 
-  it('nÃªn sinh claim code vÃ  gá»­i script qua DM', async () => {
+  it('nên sinh claim code và gửi script qua DM', async () => {
     (generateCode as jest.Mock).mockReturnValue('ABC123');
     const interaction = createMockInteraction();
     await execute(interaction, mockDb);
@@ -84,7 +115,7 @@ describe('df-link.command', () => {
     expect(mockDmSend).toHaveBeenCalled();
   });
 
-  it('nÃªn tráº£ vá» xÃ¡c nháº­n vá»›i claim code', async () => {
+  it('nên trả về xác nhận với claim code', async () => {
     (generateCode as jest.Mock).mockReturnValue('ABC123');
     const interaction = createMockInteraction();
     await execute(interaction, mockDb);
@@ -96,7 +127,7 @@ describe('df-link.command', () => {
     );
   });
 
-  it('nÃªn gá»­i script file cÃ³ Ä‘Ãºng tÃªn vÃ  chá»©a claim code', async () => {
+  it('nên gửi script file có đúng tên và chứa claim code', async () => {
     (generateCode as jest.Mock).mockReturnValue('XYZ789');
     const interaction = createMockInteraction();
     await execute(interaction, mockDb);
@@ -109,7 +140,7 @@ describe('df-link.command', () => {
     expect(content).toContain('XYZ789');
   });
 
-  it('nÃªn gá»­i script cÃ³ thay tháº¿ WEBHOOK_URL', async () => {
+  it('nên gửi script có thay thế WEBHOOK_URL', async () => {
     (generateCode as jest.Mock).mockReturnValue('ABC123');
     const interaction = createMockInteraction();
     await execute(interaction, mockDb);
@@ -120,7 +151,7 @@ describe('df-link.command', () => {
     expect(content).not.toContain('@@CLAIM_CODE@@');
   });
 
-  it('nÃªn handle DM error gracefully', async () => {
+  it('nên handle DM error gracefully', async () => {
     (generateCode as jest.Mock).mockReturnValue('ABC123');
     const mockConsoleError = console.error;
     console.error = jest.fn();
@@ -155,6 +186,57 @@ describe('df-link.command', () => {
       await expect(execute(interaction, mockDb)).resolves.not.toThrow();
       // Should try editReply but catch the error silently
       expect(mockEditReplyThrows).toHaveBeenCalled();
+    } finally {
+      console.error = mockConsoleError;
+    }
+  });
+
+  it('nên restart tunnel khi tunnel chết', async () => {
+    (generateCode as jest.Mock).mockReturnValue('ABC123');
+    (isTunnelAlive as jest.Mock).mockReturnValue(false);
+    // Set a non-localhost URL so the dead-tunnel branch is taken
+    process.env.WEBHOOK_URL = 'https://old-dead.trycloudflare.com';
+
+    const interaction = createMockInteraction();
+    await execute(interaction, mockDb);
+
+    expect(stopTunnel).toHaveBeenCalled();
+    expect(setupTunnel).toHaveBeenCalled();
+    // WEBHOOK_URL is set by setupTunnel mock → script uses it
+    expect(mockDmSend).toHaveBeenCalled();
+  });
+
+  it('nên skip tunnel setup khi dùng localhost', async () => {
+    (generateCode as jest.Mock).mockReturnValue('ABC123');
+    (isTunnelAlive as jest.Mock).mockReturnValue(false);
+    process.env.WEBHOOK_URL = 'http://localhost:3500';
+
+    const interaction = createMockInteraction();
+    await execute(interaction, mockDb);
+
+    expect(setupTunnel).not.toHaveBeenCalled();
+    expect(mockDmSend).toHaveBeenCalled();
+    const content = mockDmSend.mock.calls[0][0].files[0].pathOrBuffer.toString();
+    expect(content).toContain('localhost:3500');
+  });
+
+  it('nên fallback localhost khi setup tunnel thất bại', async () => {
+    (generateCode as jest.Mock).mockReturnValue('ABC123');
+    (isTunnelAlive as jest.Mock).mockReturnValue(false);
+    delete process.env.WEBHOOK_URL;
+    (setupTunnel as jest.Mock).mockRejectedValueOnce(new Error('cloudflared not found'));
+
+    const mockConsoleError = console.error;
+    console.error = jest.fn();
+    try {
+      const interaction = createMockInteraction();
+      await execute(interaction, mockDb);
+
+      expect(setupTunnel).toHaveBeenCalled();
+      // WEBHOOK_URL not set → getWebhookUrl() returns localhost fallback
+      expect(mockDmSend).toHaveBeenCalled();
+      const content = mockDmSend.mock.calls[0][0].files[0].pathOrBuffer.toString();
+      expect(content).toContain('localhost:3500');
     } finally {
       console.error = mockConsoleError;
     }

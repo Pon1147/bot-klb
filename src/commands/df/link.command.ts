@@ -10,7 +10,7 @@ import Database from 'better-sqlite3';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { requireGuild } from '../../utils/df-guards.js';
 import { generateCode } from '../../services/df-claim-store.js';
-import { setupTunnel, getTunnelUrl, stopTunnel } from '../../services/webhook-tunnel.js';
+import { setupTunnel, isTunnelAlive, stopTunnel } from '../../services/webhook-tunnel.js';
 
 /**
  * Read compiled df-webhook.js and strip tsc-injected module boilerplate
@@ -35,15 +35,14 @@ function getWebhookUrl(): string {
 
 /** Ensure tunnel is running before generating script */
 async function ensureTunnel(): Promise<void> {
-  if (process.env.WEBHOOK_URL && !process.env.WEBHOOK_URL.startsWith('http://localhost')) {
-    if (getTunnelUrl()) return; // Tunnel alive
-    // Tunnel process died — stop old and restart with fresh URL
+  if (isTunnelAlive()) return; // Tunnel process alive — reuse
+  if (process.env.WEBHOOK_URL && process.env.WEBHOOK_URL.startsWith('http://localhost')) {
+    return; // localhost — no tunnel needed
+  }
+  if (process.env.WEBHOOK_URL) {
+    // URL set but tunnel dead (or static URL) — restart
     stopTunnel();
     delete process.env.WEBHOOK_URL;
-  } else if (!process.env.WEBHOOK_URL) {
-    // No URL set at all — setup tunnel
-  } else {
-    return; // localhost — no tunnel needed
   }
   try {
     const webhookPort = parseInt(process.env.WEBHOOK_PORT ?? '3500', 10);
