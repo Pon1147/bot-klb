@@ -134,12 +134,8 @@ export async function handleTeamFindInteraction(interaction: any): Promise<boole
       return true;
     }
 
-    // Hide the ephemeral menu, then send embed to channel
-    try {
-      await interaction.editReply({ content: '', components: [], flags: MessageFlags.Ephemeral });
-    } catch (e) {
-      console.log('[team-find] editReply failed:', (e as Error).message);
-    }
+    // Acknowledge interaction to avoid "Tương tác không thành công"
+    await interaction.deferUpdate();
     deleteSession(userId);
 
     const embed = buildTeamFindEmbed({
