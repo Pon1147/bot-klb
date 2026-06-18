@@ -3,20 +3,15 @@ import {
   handleEditorButtonInteraction as handleContainerEditorButtonInteraction,
   handleEditorModalSubmit as handleContainerEditorModalSubmit,
 } from '../commands/container/container-routers.js';
+import { handleTeamFindInteraction } from '../commands/df/team-find.interaction.js';
 
-/**
- * Handle interactionCreate event: xử lý slash commands, button interactions, modal submissions.
- *
- * WHY: Tập trung tất cả interaction routing ở 1 nơi để dễ bảo trì.
- * Mỗi loại interaction được phân phối đến handler tương ứng.
- */
 export async function execute(
   client: Client,
   interaction: any,
 ): Promise<void> {
-  // ── 1. Xử lý Button Interactions ──
+  // ── 1. Button Interactions ──
   if (interaction.isButton()) {
-    // Container editor buttons (customId bắt đầu bằng 'container_')
+    // Container editor buttons
     if (interaction.customId.startsWith('container_')) {
       try {
         await handleContainerEditorButtonInteraction(interaction);
@@ -26,7 +21,17 @@ export async function execute(
       return;
     }
 
-    // Team find join button (customId: team-find-join:{channelId})
+    // Team find done button
+    if (interaction.customId.startsWith('team-find-done:')) {
+      try {
+        await handleTeamFindInteraction(interaction);
+      } catch (error) {
+        console.error('Error in team-find done handler:', error);
+      }
+      return;
+    }
+
+    // Team find join button
     if (interaction.customId.startsWith('team-find-join:')) {
       try {
         const channelId = interaction.customId.split(':')[1];
@@ -40,7 +45,6 @@ export async function execute(
           return;
         }
 
-        // Check if user is already in the channel
         const memberVoice = (interaction.member as any).voice;
         if (memberVoice?.channel?.id === channelId) {
           await interaction.reply({
@@ -50,7 +54,6 @@ export async function execute(
           return;
         }
 
-        // Check if channel is full
         if (channel.full) {
           await interaction.reply({
             content: 'Phòng thoại đã đầy (99 người).',
@@ -59,9 +62,8 @@ export async function execute(
           return;
         }
 
-        // Check bot permissions
         const botPerms = channel.permissionsFor(interaction.guild!.members.me);
-        if (!botPerms?.has(32768)) { // VoiceConnect = 1 << 15
+        if (!botPerms?.has(32768)) {
           await interaction.reply({
             content: 'Bot không có quyền tham gia phòng thoại này.',
             flags: MessageFlags.Ephemeral,
@@ -69,7 +71,6 @@ export async function execute(
           return;
         }
 
-        // Join the voice channel
         await channel.join();
         await interaction.reply({
           content: 'Đã join phòng thành công!',
@@ -90,9 +91,25 @@ export async function execute(
     return;
   }
 
-  // ── 2. Xử lý Modal Submissions ──
+  // ── 1b. String Select Menu Interactions ──
+  if (interaction.isStringSelectMenu()) {
+    if (
+      interaction.customId.startsWith('team-find-select-map:') ||
+      interaction.customId.startsWith('team-find-select-mode:') ||
+      interaction.customId.startsWith('team-find-select-rank:')
+    ) {
+      try {
+        await handleTeamFindInteraction(interaction);
+      } catch (error) {
+        console.error('Error in team-find select handler:', error);
+      }
+      return;
+    }
+    return;
+  }
+
+  // ── 2. Modal Submissions ──
   if (interaction.isModalSubmit()) {
-    // Container editor modals (customId bắt đầu bằng 'container_modal_')
     if (interaction.customId.startsWith('container_modal_')) {
       try {
         await handleContainerEditorModalSubmit(interaction);
@@ -104,15 +121,12 @@ export async function execute(
     return;
   }
 
-  // ── 3. Xử lý Slash Commands ──
+  // ── 3. Slash Commands ──
   if (!interaction.isChatInputCommand()) {
     return;
   }
 
-  // Lấy collection commands từ client
   const commands = (client as any).commands;
-
-  // Guard clause: commands chưa được load
   if (!commands) {
     console.warn('Commands collection not found on client.');
     return;
@@ -121,16 +135,12 @@ export async function execute(
   const commandName = interaction.commandName;
   const commandModule = commands.get(commandName);
 
-  // Guard clause: command không tồn tại
   if (!commandModule) {
     console.warn(`Command not found: ${commandName}`);
     return;
   }
 
-  // Retrieve database from client (attached during bootstrap in index.ts)
   const database = (client as any).database;
-
-  // Guard clause: database chưa được khởi tạo
   if (!database) {
     console.error('Database not attached to client. Cannot execute command.');
     if (!interaction.replied && !interaction.deferred) {
@@ -147,7 +157,6 @@ export async function execute(
   } catch (error) {
     console.error(`Error executing command ${commandName}:`, error);
 
-    // Reply lỗi nếu interaction chưa được phản hồi
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
         content: 'An error occurred while executing this command.',

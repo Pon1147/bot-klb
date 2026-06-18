@@ -1,6 +1,7 @@
 import { GuildMember } from 'discord.js';
 import { getSettingsService } from '../services/settings.service.js';
 import { getMessageRef, deleteMessageRef } from '../services/team-find-message-store.js';
+import { getSession, deleteSession } from '../services/team-find-session.js';
 
 /**
  * Handle guildMemberUpdate event:
@@ -51,34 +52,44 @@ export async function execute(
     }
   }
 
-  // ── 2. Voice channel change → xóa team-find embed cũ ──
+  // ── 2. Voice channel change → cleanup team-find ──
   const oldChannelId = oldMember.voice?.channelId;
   const newChannelId = newMember.voice?.channelId;
 
-  // Helper: xóa embed theo reference
-  async function cleanupOldEmbed(guild: any, userId: string): Promise<void> {
-    const ref = getMessageRef(guild.id, userId);
-    if (!ref) return;
-    try {
-      const channel = await guild.channels.fetch(ref.channelId).catch(() => null);
-      if (channel && channel.isTextBased()) {
-        const msg = await channel.messages.fetch(ref.messageId).catch(() => null);
-        if (msg) await msg.delete();
+  const changed = oldChannelId && (!newChannelId || oldChannelId !== newChannelId);
+  if (changed) {
+    // Delete embed message if exists
+    await cleanupOldEmbed(newMember.guild, newMember.user.id);
+    // Delete active session (select menu flow)
+    const session = getSession(newMember.user.id);
+    if (session) {
+      try {
+        const menuChannel = await newMember.guild.channels.fetch(session.channelId).catch(() => null);
+        if (menuChannel && menuChannel.isTextBased()) {
+          const menuMsg = await menuChannel.messages.fetch(session.messageId).catch(() => null);
+          if (menuMsg) await menuMsg.delete();
+        }
+      } catch {
+        // Menu message already gone
       }
-    } catch {
-      // Message already gone
+      deleteSession(newMember.user.id);
     }
-    deleteMessageRef(guild.id, userId);
   }
+}
 
-  if (oldChannelId && newChannelId && oldChannelId !== newChannelId) {
-    await cleanupOldEmbed(newMember.guild, newMember.user.id);
+async function cleanupOldEmbed(guild: any, userId: string): Promise<void> {
+  const ref = getMessageRef(guild.id, userId);
+  if (!ref) return;
+  try {
+    const channel = await guild.channels.fetch(ref.channelId).catch(() => null);
+    if (channel && channel.isTextBased()) {
+      const msg = await channel.messages.fetch(ref.messageId).catch(() => null);
+      if (msg) await msg.delete();
+    }
+  } catch {
+    // Message already gone
   }
-
-  // User rời phòng thoại → xóa embed
-  if (oldChannelId && !newChannelId) {
-    await cleanupOldEmbed(newMember.guild, newMember.user.id);
-  }
+  deleteMessageRef(guild.id, userId);
 }
 
 async function assignBoosterRole(member: GuildMember, roleId: string): Promise<void> {

@@ -9,6 +9,7 @@ import { loadCommands, CommandModule, deployCommands } from './handlers/command.
 import { loadEvents } from './handlers/event.handler.js';
 import { createLogger } from './utils/logger.js';
 import { startSessionCleanup } from './commands/container/container-session.js';
+import { cleanup as cleanupTeamFindSessions } from './services/team-find-session.js';
 import { startWebhookServer } from './server/webhook-server.js';
 import { startCleanup as startClaimCleanup } from './services/df-claim-store.js';
 import { setupTunnel, stopTunnel } from './services/webhook-tunnel.js';
@@ -93,7 +94,11 @@ async function main(): Promise<void> {
   startSessionCleanup();
   logger.info('Session cleanup started');
 
-  // Step 7b: Start claim code cleanup
+  // Step 7b: Start team-find session cleanup
+  setInterval(cleanupTeamFindSessions, 5 * 60 * 1000);
+  logger.info('Team-find session cleanup started');
+
+  // Step 7c: Start claim code cleanup
   logger.info('Starting claim code cleanup...');
   startClaimCleanup();
   logger.info('Claim code cleanup started');
