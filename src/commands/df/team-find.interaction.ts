@@ -52,6 +52,7 @@ export async function handleTeamFindInteraction(interaction: any): Promise<boole
     await interaction.update({
       content: menu.content,
       components: menu.components,
+      flags: MessageFlags.Ephemeral,
     });
     return true;
   }

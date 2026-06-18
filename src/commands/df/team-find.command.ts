@@ -44,6 +44,7 @@ export async function execute(
   const response = await interaction.reply({
     content: menu.content,
     components: menu.components,
+    flags: MessageFlags.Ephemeral,
   }) as any;
 
   createSession(interaction.user.id, guild.id, response.id, channel.id);
