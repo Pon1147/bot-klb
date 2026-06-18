@@ -12,21 +12,16 @@ import { buildTeamFindEmbed } from './team-find.embed.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { DIFFICULTY_CONFIG, type Difficulty } from '../../config/team-find.config.js';
 
-/** Check if interaction is for a team-find flow, and handle it. */
-export async function handleTeamFindInteraction(
-  interaction: any,
-): Promise<boolean> {
-  // ── Select Menu Interactions ──
+export async function handleTeamFindInteraction(interaction: any): Promise<boolean> {
+  // ── Select Menu ──
   if (interaction.isStringSelectMenu()) {
     const customId = interaction.customId;
     if (!customId.startsWith('team-find-select-')) return false;
 
-    // Parse: team-find-select-{field}:{userId}
     const parts = customId.replace('team-find-select-', '').split(':');
     const field = parts[0] as 'map' | 'mode' | 'rank';
     const userId = parts[1];
 
-    // Only the session owner can interact
     if (userId !== interaction.user.id) {
       await interaction.reply({
         content: 'Đây không phải session của bạn.',
@@ -44,11 +39,9 @@ export async function handleTeamFindInteraction(
       return true;
     }
 
-    // Update selection
     const value = interaction.values[0];
     updateSelection(userId, field, value);
 
-    // Re-fetch session with updated state
     const updated = getSession(userId)!;
     const menu = buildSelectMenuMessage(userId, interaction.user.username, {
       map: updated.map,
@@ -57,6 +50,7 @@ export async function handleTeamFindInteraction(
     });
 
     await interaction.update({
+      content: menu.content,
       components: menu.components,
     });
     return true;
@@ -66,7 +60,6 @@ export async function handleTeamFindInteraction(
   if (interaction.isButton() && interaction.customId.startsWith('team-find-done:')) {
     const userId = interaction.customId.split(':')[1];
 
-    // Only the session owner can click Done
     if (userId !== interaction.user.id) {
       await interaction.reply({
         content: 'Đây không phải session của bạn.',
@@ -77,7 +70,6 @@ export async function handleTeamFindInteraction(
 
     const session = getSession(userId);
     if (!session || !session.map || !session.mode) {
-      // Shouldn't happen (button is disabled), but safety check
       return true;
     }
 
@@ -91,8 +83,7 @@ export async function handleTeamFindInteraction(
     }
 
     // Re-check voice state
-    const member = interaction.member;
-    const voiceChannel = member.voice?.channel;
+    const voiceChannel = (interaction.member as any).voice?.channel;
     if (!voiceChannel) {
       const err = buildErrorContainer('Bạn phải đang trong phòng thoại để sử dụng lệnh này.');
       await interaction.reply({
@@ -124,12 +115,9 @@ export async function handleTeamFindInteraction(
       flags: MessageFlags.IsComponentsV2,
     }) as any;
 
-    // Store embed message reference
     storeMessage(session.guildId, userId, response.id, interaction.channel.id);
     return true;
   }
-
-  // ── Join button is handled in interactionCreate.event.ts ──
 
   return false;
 }

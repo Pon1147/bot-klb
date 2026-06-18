@@ -3,6 +3,7 @@
 import {
   ChatInputCommandInteraction,
   GuildTextBasedChannel,
+  MessageFlags,
   SlashCommandBuilder,
 } from 'discord.js';
 import { requireGuild } from '../../utils/df-guards.js';
@@ -26,7 +27,7 @@ export async function execute(
     const err = buildErrorContainer(voiceResult.errorMessage!);
     await interaction.reply({
       components: err.toJSON(),
-      flags: err.flags | 64, // Ephemeral
+      flags: err.flags | MessageFlags.Ephemeral,
     });
     return;
   }
@@ -41,7 +42,8 @@ export async function execute(
   });
 
   const response = await interaction.reply({
-    components: menu.toJSON() as any,
+    content: menu.content,
+    components: menu.components,
   }) as any;
 
   createSession(interaction.user.id, guild.id, response.id, channel.id);

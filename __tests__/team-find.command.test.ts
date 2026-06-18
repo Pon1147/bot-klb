@@ -27,8 +27,8 @@ jest.mock('../src/utils/df-voice.utils.js', () => ({
 
 jest.mock('../src/commands/df/team-find.menu.js', () => ({
   buildSelectMenuMessage: jest.fn().mockReturnValue({
+    content: 'Select menu content',
     components: [],
-    toJSON() { return this.components; },
   }),
 }));
 
@@ -55,7 +55,6 @@ describe('team-find.command — data', () => {
   });
 
   it('không nên có options (select menu flow)', () => {
-    // SlashCommandBuilder without add*Option calls — no options array
     expect((data as any).options).toBeUndefined();
   });
 });

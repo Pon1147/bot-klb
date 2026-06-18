@@ -4,7 +4,6 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ComponentType,
   StringSelectMenuBuilder,
 } from 'discord.js';
 import { MAP_DISPLAY, MAP_MODES, DIFFICULTY_CONFIG, TEAM_FIND_RANKS } from '../../config/team-find.config.js';
@@ -35,56 +34,43 @@ function buildModeOptions(selectedMap: string | null): { label: string; value: s
       });
     }
   }
-  // All modes by default
   return Object.values(DIFFICULTY_CONFIG).map((c) => ({
     label: c.label,
     value: c.label,
   }));
 }
 
-/** Build the container that shows current selections */
-function buildStatusContainer(
-  username: string,
-  state: MenuState,
-): Record<string, unknown> {
-  const lines: string[] = [`## ${username} — Chọn thông tin tìm đồng đội`];
-  lines.push('');
-
-  const modeLabel = state.mode || '— Chưa chọn —';
+/** Build the status text for the menu message */
+function buildStatusContent(username: string, state: MenuState): string {
   const mapLabel = state.map || '— Chưa chọn —';
+  const modeLabel = state.mode || '— Chưa chọn —';
   const rankLabel = state.rank || '— Chưa chọn —';
 
-  lines.push(`**MAP**`);
-  lines.push(mapLabel);
-  lines.push('');
-  lines.push(`**MODE**`);
-  lines.push(modeLabel);
-  lines.push('');
-  lines.push(`**RANK**`);
-  lines.push(rankLabel);
-
-  const container: Record<string, unknown> = {
-    type: ComponentType.Container,
-    components: [
-      {
-        type: ComponentType.TextDisplay,
-        content: lines.join('\n'),
-      },
-    ],
-  };
-  return container;
+  return [
+    `**${username} — Chọn thông tin tìm đồng đội**`,
+    '',
+    `**MAP**`,
+    mapLabel,
+    '',
+    `**MODE**`,
+    modeLabel,
+    '',
+    `**RANK**`,
+    rankLabel,
+  ].join('\n');
 }
 
 /**
- * Build the full interactive menu message components.
- * Returns a payload compatible with interaction.reply() / interaction.update().
+ * Build the full interactive menu message.
+ * Returns components array compatible with interaction.reply() / update().
+ * Uses ActionRows (V1) for select menus — Container V2 only for final embed.
  */
 export function buildSelectMenuMessage(
   userId: string,
   username: string,
   state: MenuState,
 ) {
-  const container = buildStatusContainer(username, state);
+  const content = buildStatusContent(username, state);
 
   // Map select
   const mapSelect = new StringSelectMenuBuilder()
@@ -127,16 +113,12 @@ export function buildSelectMenuMessage(
   const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(doneButton);
 
   return {
+    content,
     components: [
-      container,
       mapRow.toJSON(),
       modeRow.toJSON(),
       rankRow.toJSON(),
       buttonRow.toJSON(),
     ],
-    flags: 0,
-    toJSON() {
-      return this.components;
-    },
   };
 }
