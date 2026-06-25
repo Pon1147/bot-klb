@@ -52,7 +52,7 @@ export async function execute(
 
   const linkedToken = getDfToken(database, interaction.user.id);
   if (!linkedToken) {
-    const err = buildErrorContainer('Ban chua lien ket tai khoan. Dung `/df-link` de bat dau.');
+    const err = buildErrorContainer('Bạn chưa liên kết tài khoản. Dùng `/df-link start` hoặc `/df-link manual` để bắt đầu.');
     await interaction.reply({
       components: err.toJSON(),
       flags: err.flags | MessageFlags.Ephemeral,

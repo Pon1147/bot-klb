@@ -154,6 +154,87 @@ Bot Discord **độc quyền** được phát triển dành riêng cho server c�
 
 ---
 
+## Quy tắc Commit
+
+### Mục đích
+
+Mỗi commit phải mô tả rõ ràng thay đổi đã thực hiện để dễ dàng theo dõi lịch sử phát triển, review code và truy vết lỗi.
+
+### Tiêu đề Commit
+
+Sử dụng định dạng:
+
+```text
+<loại>(<phạm-vi>): <mô tả ngắn>
+```
+
+Ví dụ:
+
+```text
+feat(auth): thêm middleware xác thực API Key
+fix(redis): xử lý lỗi kết nối lại Redis
+docs(readme): cập nhật hướng dẫn cài đặt
+refactor(kafka): tối ưu đăng ký consumer
+```
+
+### Nội dung Commit
+
+Đối với các thay đổi lớn hoặc ảnh hưởng nhiều thành phần, cần bổ sung phần mô tả chi tiết bên dưới tiêu đề commit.
+
+Ví dụ:
+
+```text
+feat(contracts): thêm bộ nhớ đệm Bundle Cache L1 (task #18)
+
+- Thêm lớp BundleCache hỗ trợ get, set, delete, has và getAll
+- Bổ sung interface CachedBundle để theo dõi thời điểm cập nhật cuối
+- Ghi log tỷ lệ cache hit/miss phục vụ observability
+- Bổ sung 15 test case, đảm bảo không phát sinh lỗi hồi quy
+```
+
+### Loại Commit
+
+| Loại     | Mô tả                                   |
+| -------- | --------------------------------------- |
+| feat     | Thêm tính năng mới                      |
+| fix      | Sửa lỗi                                 |
+| docs     | Cập nhật tài liệu                       |
+| style    | Thay đổi định dạng mã nguồn             |
+| refactor | Tái cấu trúc mã nguồn                   |
+| test     | Thêm hoặc cập nhật kiểm thử             |
+| chore    | Công việc bảo trì, cấu hình             |
+| perf     | Cải thiện hiệu năng                     |
+| ci       | Thay đổi cấu hình CI/CD                 |
+| build    | Thay đổi hệ thống build hoặc dependency |
+| temp     | Commit tạm thời                         |
+
+### Quy tắc mô tả
+
+- Tiêu đề commit phải ngắn gọn và dễ hiểu.
+- Nội dung mô tả nên liệt kê các thay đổi chính bằng bullet point.
+- Nếu commit liên quan đến task hoặc issue, cần ghi rõ mã tham chiếu.
+- Tránh sử dụng các commit chung chung như:
+
+```text
+update code
+fix bug
+update README
+change something
+```
+
+### Ví dụ khuyến nghị
+
+```text
+feat(auth): triển khai dịch vụ Machine Token (task #10)
+
+- Thêm service phát hành Machine Token
+- Thêm middleware xác thực token
+- Bổ sung kiểm thử cho các trường hợp hết hạn token
+- Cập nhật tài liệu sử dụng API
+```
+
+---
+
 ## 🧪 Testing
 
 - **Framework**: Jest

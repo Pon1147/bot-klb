@@ -29,7 +29,7 @@ export async function execute(
 
   const token = getDfToken(database, interaction.user.id);
   if (!token) {
-    const err = buildErrorContainer('Bạn chưa liên kết tài khoản. Dùng `/df-link` để bắt đầu.');
+    const err = buildErrorContainer('Bạn chưa liên kết tài khoản. Dùng `/df-link start` hoặc `/df-link manual` để bắt đầu.');
     await interaction.reply({
       components: err.toJSON(),
       flags: err.flags | MessageFlags.Ephemeral,

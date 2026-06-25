@@ -15,7 +15,10 @@ import { join } from 'path';
 
 let tunnelUrl: string | null = null;
 let tunnelProcess: ChildProcess | null = null;
+let _tunnelStartTime = 0;
 let _isStatic = false; // true when URL is from env, not our tunnel process
+
+const TUNNEL_TTL_MS = 4 * 60 * 60 * 1000; // 4h — cloudflared quick tunnel DNS stale after ~13h
 
 /** Download cloudflared nếu chưa có */
 async function downloadCloudflared(): Promise<string> {
@@ -81,6 +84,7 @@ async function startTunnel(port: number): Promise<string> {
 
     tunnelProcess = cp;
     _isStatic = false;
+    _tunnelStartTime = Date.now();
     let urlFound = false;
 
     cp.stderr!.on('data', (data: Buffer) => {
@@ -122,6 +126,7 @@ function stopTunnel(): void {
       /* already dead */
     }
     tunnelProcess = null;
+    _tunnelStartTime = 0;
   }
   tunnelUrl = null;
   _isStatic = false;
@@ -132,10 +137,12 @@ export function getTunnelUrl(): string | null {
   return tunnelUrl;
 }
 
-/** Check if the tunnel is alive (static URLs are always considered alive) */
+/** Tunnel is considered dead if: process died, no URL, or TTL exceeded */
 export function isTunnelAlive(): boolean {
   if (_isStatic) return tunnelUrl !== null;
-  return Boolean(tunnelUrl && tunnelProcess && tunnelProcess.exitCode === null);
+  if (!tunnelUrl || !tunnelProcess || tunnelProcess.exitCode !== null) return false;
+  if (Date.now() - _tunnelStartTime > TUNNEL_TTL_MS) return false; // stale
+  return true;
 }
 
 /** Setup tunnel (chỉ khi chưa có WEBHOOK_URL static) */

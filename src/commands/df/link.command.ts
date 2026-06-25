@@ -1,4 +1,4 @@
-﻿import {
+import {
   AttachmentBuilder,
   ChatInputCommandInteraction,
   MessageFlags,
@@ -10,12 +10,11 @@ import Database from 'better-sqlite3';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { requireGuild } from '../../utils/df-guards.js';
 import { generateCode } from '../../services/df-claim-store.js';
+import { getMyData } from '../../services/deltaforce.api.js';
+import { saveDfToken } from '../../database/df.token.db.js';
 import { setupTunnel, isTunnelAlive, stopTunnel } from '../../services/webhook-tunnel.js';
 
-/**
- * Read compiled df-webhook.js and strip tsc-injected module boilerplate
- * (Object.defineProperty / "use strict") so the IIFE runs in a browser console.
- */
+/** Strip tsc module boilerplate từ script compiled để chạy được trong browser console */
 function getBrowserScript(src: string): string {
   return src
     .split('\n')
@@ -28,19 +27,19 @@ const WEBHOOK_SCRIPT = getBrowserScript(
   readFileSync(join(process.cwd(), 'dist', 'scraper', 'df-webhook.js'), 'utf8'),
 );
 
-/** Get current webhook URL (reads from env at call time) */
+/** Lấy webhook URL hiện tại (đọc env tại thời điểm gọi) */
 function getWebhookUrl(): string {
   return process.env.WEBHOOK_URL ?? 'http://localhost:3500';
 }
 
-/** Ensure tunnel is running before generating script */
+/** Đảm bảo tunnel chạy trước khi sinh script */
 async function ensureTunnel(): Promise<void> {
-  if (isTunnelAlive()) return; // Tunnel process alive — reuse
+  if (isTunnelAlive()) return;
   if (process.env.WEBHOOK_URL && process.env.WEBHOOK_URL.startsWith('http://localhost')) {
-    return; // localhost — no tunnel needed
+    return; // localhost — không cần tunnel
   }
   if (process.env.WEBHOOK_URL) {
-    // URL set but tunnel dead (or static URL) — restart
+    // URL đã set nhưng tunnel chết — restart
     stopTunnel();
     delete process.env.WEBHOOK_URL;
   }
@@ -54,15 +53,93 @@ async function ensureTunnel(): Promise<void> {
 
 export const data = new SlashCommandBuilder()
   .setName('df-link')
-  .setDescription('Liên kết tài khoản Delta Force HQ.');
+  .setDescription('Liên kết tài khoản Delta Force HQ.')
+  .addSubcommand((sub) =>
+    sub
+      .setName('start')
+      .setDescription('Nhận script liên kết tự động (khuyến nghị)'),
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName('manual')
+      .setDescription('Liên kết bằng cách nhập openid + token')
+      .addStringOption((opt) =>
+        opt.setName('openid').setDescription('OpenID của tài khoản HQ').setRequired(true),
+      )
+      .addStringOption((opt) =>
+        opt.setName('token').setDescription('Token authentication (hex)').setRequired(true),
+      ),
+  );
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
   _database: Database.Database,
 ): Promise<void> {
+  const subcommand = interaction.options.getSubcommand();
+
+  switch (subcommand) {
+    case 'manual':
+      return handleManualLink(interaction, _database);
+    case 'start':
+    default:
+      return handleWebhookFlow(interaction);
+  }
+}
+
+/** Xử lý subcommand `manual` — user nhập openid + token manual */
+async function handleManualLink(
+  interaction: ChatInputCommandInteraction,
+  database: Database.Database,
+): Promise<void> {
   if (await requireGuild(interaction)) return;
 
-  // Ensure tunnel is running with current URL
+  const openid = interaction.options.getString('openid')!;
+  const token = interaction.options.getString('token')!;
+
+  // Validate format token (hex string 40-64 ký tự)
+  if (!/^[0-9a-f]{40,64}$/i.test(token)) {
+    const err = buildErrorContainer(
+      'Format token không hợp lệ. Token phải là chuỗi hex (40-64 ký tự).',
+    );
+    await interaction.reply({
+      components: err.toJSON(),
+      flags: err.flags | MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  try {
+    // Gọi API để validate token
+    await getMyData({ openid, token });
+
+    // Lưu token vào database
+    saveDfToken(database, interaction.user.id, openid, token);
+
+    await interaction.editReply({
+      content: `✅ Đã liên kết tài khoản Delta Force!\n\n` +
+        `OpenID: ${openid}`,
+    });
+  } catch (error: any) {
+    console.error('[df-link] Manual link failed:', error.message ?? error);
+    const err = buildErrorContainer(
+      'Không thể xác thực tài khoản. Kiểm tra openid và token, hoặc token đã hết hạn.',
+    );
+    await interaction.editReply({
+      components: err.toJSON(),
+      flags: err.flags | MessageFlags.Ephemeral,
+    });
+  }
+}
+
+/** Xử lý webhook flow — gửi script cho user chạy trong browser console */
+async function handleWebhookFlow(
+  interaction: ChatInputCommandInteraction,
+): Promise<void> {
+  if (await requireGuild(interaction)) return;
+
+  // Đảm bảo tunnel chạy với URL hiện tại
   await ensureTunnel();
 
   try {
