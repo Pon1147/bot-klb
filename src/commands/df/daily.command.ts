@@ -85,7 +85,7 @@ export async function execute(
 
     await interaction.editReply({
       components: container.toJSON(),
-      flags: container.flags | MessageFlags.Ephemeral,
+      flags: container.flags,
     });
   } catch (error) {
     const err = buildErrorContainer(`Loi khi lay du lieu: ${(error as Error).message}`);

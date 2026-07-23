@@ -136,7 +136,6 @@ export async function handleTeamFindInteraction(interaction: any): Promise<boole
 
     // Acknowledge interaction to avoid "Tương tác không thành công"
     await interaction.deferUpdate();
-    deleteSession(userId);
 
     const embed = buildTeamFindEmbed({
       mapKey: session.map as any,
@@ -156,6 +155,8 @@ export async function handleTeamFindInteraction(interaction: any): Promise<boole
 
     console.log('[team-find] embed sent:', response.id);
     storeMessage(session.guildId, userId, response.id, interaction.channel.id);
+    // Delete session after successful send
+    deleteSession(userId);
     return true;
   }
 

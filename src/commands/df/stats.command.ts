@@ -12,14 +12,11 @@ import { resolveRankFromScore } from '../../utils/df-rank.utils.js';
 import { requireGuild } from '../../utils/df-guards.js';
 import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { touchDfToken, getDfToken } from '../../database/df.token.db.js';
+import { LATEST_SEASON, LATEST_SEASON_NAME } from '../../config/team-find.config.js';
 
 export const data = new SlashCommandBuilder()
   .setName('df-stats')
   .setDescription('Xem thống kê tài khoản Delta Force.');
-
-/** Season ID của mùa mới nhất. Update khi mùa mới ra. */
-const LATEST_SEASON = '10009';
-const LATEST_SEASON_NAME = 'S9';
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
@@ -136,7 +133,7 @@ export async function execute(
 
     await interaction.editReply({
       components: toComponentsV2([containerComponents]),
-      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+      flags: MessageFlags.IsComponentsV2,
     });
   } catch (error) {
     const err = buildErrorContainer(

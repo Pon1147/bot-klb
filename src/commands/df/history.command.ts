@@ -15,23 +15,8 @@ import { DEFAULT_OPERATOR_AVATAR, resolveOperator } from '../../utils/df-operato
 import { requireGuild } from '../../utils/df-guards.js';
 import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
+import { EMOJI_WIN, EMOJI_DEFEAT, EMOJI_MONEY, EMOJI_KILL, MAP_NAMES } from '../../config/team-find.config.js';
 import type { DfMatchEntry } from '../../types/deltaforce.types.js';
-
-const EMOJI_WIN = '<a:HoA:1512368174614446181>';
-const EMOJI_DEFEAT = '<:hom_xac:1514470840312401971>';
-const EMOJI_MONEY = '<:icon9De6T9unB:1514474246779306115>';
-const EMOJI_KILL = '<:kill:1514482180254990407>';
-
-const MAP_NAMES: Record<number, string> = {
-  2201: 'Haven',
-  2202: 'Border',
-  2203: 'Bank',
-  2204: 'Fortress',
-  2205: 'Tomb',
-  2206: 'Substation',
-  2207: 'Goldshore',
-  2208: 'Ridge',
-};
 
 const MAX_MATCHES = 10;
 
@@ -181,7 +166,7 @@ export async function execute(
 
     await interaction.editReply({
       components: toComponentsV2([containerComponent, buttonRow.toJSON()]),
-      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+      flags: MessageFlags.IsComponentsV2,
     });
   } catch (error) {
     const err = buildErrorContainer(

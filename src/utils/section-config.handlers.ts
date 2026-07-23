@@ -109,7 +109,7 @@ export async function handleSectionStatus(
   config: SectionConfig,
 ): Promise<void> {
   const settingsService = getSettingsService();
-  const settings = settingsService.getSettings(guildId)[config.sectionKey];
+  const settings = settingsService.get(guildId)[config.sectionKey];
   const channelName = settings.channelId ? `<#${settings.channelId}>` : 'Not set';
   const roleName = settings.roleId ? `<@&${settings.roleId}>` : 'Not set';
   const statusContent = [

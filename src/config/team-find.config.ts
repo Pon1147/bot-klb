@@ -44,6 +44,28 @@ export const MAP_MODES: Record<MapKey, Difficulty[]> = {
   'Ngục Giam Thủy Triều': ['hard'],
 };
 
+/** DF-history emoji IDs */
+export const EMOJI_WIN = '<a:HoA:1512368174614446181>';
+export const EMOJI_DEFEAT = '<:hom_xac:1514470840312401971>';
+export const EMOJI_MONEY = '<:icon9De6T9unB:1514474246779306115>';
+export const EMOJI_KILL = '<:kill:1514482180254990407>';
+
+/** Map ID → display name (used by /df-history) */
+export const MAP_NAMES: Record<number, string> = {
+  2201: 'Haven',
+  2202: 'Border',
+  2203: 'Bank',
+  2204: 'Fortress',
+  2205: 'Tomb',
+  2206: 'Substation',
+  2207: 'Goldshore',
+  2208: 'Ridge',
+};
+
+/** Season ID của mùa mới nhất — update khi mùa mới ra */
+export const LATEST_SEASON = '10009';
+export const LATEST_SEASON_NAME = 'S9';
+
 /** SOL rank choices for /team-find — matches /df-stats display */
 export const TEAM_FIND_RANKS: { name: string; value: string }[] = [
   { name: 'Đồng III', value: 'Đồng III' },

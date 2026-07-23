@@ -6,6 +6,7 @@ import {
   MessageFlags,
   SlashCommandBuilder,
 } from 'discord.js';
+import Database from 'better-sqlite3';
 import { requireGuild } from '../../utils/df-guards.js';
 import { checkVoiceForTeamFind } from '../../utils/df-voice.utils.js';
 import { buildSelectMenuMessage } from './team-find.menu.js';
@@ -18,7 +19,7 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
-  _database: unknown,
+  _database: Database.Database,
 ): Promise<void> {
   if (await requireGuild(interaction)) return;
 

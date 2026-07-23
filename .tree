@@ -1,5 +1,7 @@
 bot_klb
+├ CLAUDE.md
 ├ README.md
+├ REPORT.md
 ├ __tests__
 │ ├ booster.test.ts
 │ ├ config.test.ts
@@ -10,21 +12,58 @@ bot_klb
 │ ├ container.command.test.ts
 │ ├ container.session.cleanup.test.ts
 │ ├ container.utils.test.ts
+│ ├ coverage-gaps.test.ts
 │ ├ deltaforce.api.test.ts
 │ ├ df-claim-store.test.ts
+│ ├ df-code.command.test.ts
 │ ├ df-daily.command.test.ts
+│ ├ df-guards.test.ts
+│ ├ df-history.command.test.ts
 │ ├ df-link.command.test.ts
-│ ├ df-matches.command.test.ts
+│ ├ df-operator.utils.test.ts
 │ ├ df-rank.utils.test.ts
 │ ├ df-stats.command.test.ts
+│ ├ df-unlink.command.test.ts
+│ ├ df-voice.utils.test.ts
 │ ├ df.token.db.test.ts
+│ ├ e2e
+│ │ ├ config.e2e.test.ts
+│ │ ├ database.e2e.test.ts
+│ │ ├ df.commands.e2e.test.ts
+│ │ ├ events.e2e.test.ts
+│ │ ├ fixtures.ts
+│ │ ├ jest.e2e.config.cjs
+│ │ ├ setup.ts
+│ │ ├ test-commands.e2e.test.ts
+│ │ ├ tsconfig.json
+│ │ └ webhook.server.e2e.test.ts
 │ ├ guild.settings.db.deepMerge.test.ts
 │ ├ logger.test.ts
+│ ├ section-config.test.ts
 │ ├ settings.service.test.ts
+│ ├ team-find.command.test.ts
+│ ├ team-find.embed.test.ts
 │ ├ template.utils.test.ts
 │ ├ tsconfig.json
 │ ├ webhook.routes.test.ts
 │ └ welcome.database.test.ts
+├ backlog
+│ ├ README.md
+│ ├ doing
+│ │ └ README.md
+│ ├ done
+│ │ ├ 2026-06-17-team-find-task-01-extract-config.md
+│ │ ├ 2026-06-17-team-find-task-02-voice-guard.md
+│ │ ├ 2026-06-17-team-find-task-03-embed-builder.md
+│ │ ├ 2026-06-17-team-find-task-04-command-button.md
+│ │ └ README.md
+│ ├ todo
+│ │ ├ 2026-06-17-team-find-command.md
+│ │ ├ 2026-06-17-team-find-overview.md
+│ │ └ README.md
+│ └ version-changes
+│   └ README.md
+├ codes-output.txt
 ├ coverage
 │ ├ clover.xml
 │ ├ coverage-final.json
@@ -39,7 +78,8 @@ bot_klb
 │ │ │ │ ├ booster-test.command.ts.html
 │ │ │ │ ├ booster-toggle.handler.ts.html
 │ │ │ │ ├ booster.command.ts.html
-│ │ │ │ └ index.html
+│ │ │ │ ├ index.html
+│ │ │ │ └ test.command.ts.html
 │ │ │ ├ container
 │ │ │ │ ├ builders
 │ │ │ │ │ ├ index.html
@@ -60,18 +100,30 @@ bot_klb
 │ │ │ │   ├ index.html
 │ │ │ │   └ index.ts.html
 │ │ │ ├ df
+│ │ │ │ ├ code.command.ts.html
+│ │ │ │ ├ daily.command.ts.html
 │ │ │ │ ├ df-daily.command.ts.html
 │ │ │ │ ├ df-link.command.ts.html
 │ │ │ │ ├ df-matches.command.ts.html
 │ │ │ │ ├ df-stats.command.ts.html
-│ │ │ │ └ index.html
+│ │ │ │ ├ history.command.ts.html
+│ │ │ │ ├ index.html
+│ │ │ │ ├ link.command.ts.html
+│ │ │ │ ├ stats.command.ts.html
+│ │ │ │ ├ team-find.command.ts.html
+│ │ │ │ ├ team-find.embed.ts.html
+│ │ │ │ └ unlink.command.ts.html
 │ │ │ ├ embed
 │ │ │ │ ├ embed.command.ts.html
 │ │ │ │ ├ embed.interactive.edit.ts.html
 │ │ │ │ └ index.html
-│ │ │ └ ticket
+│ │ │ ├ ticket
+│ │ │ │ ├ index.html
+│ │ │ │ └ ticket.command.ts.html
+│ │ │ └ welcome
 │ │ │   ├ index.html
-│ │ │   └ ticket.command.ts.html
+│ │ │   ├ test.command.ts.html
+│ │ │   └ welcome-test.command.ts.html
 │ │ ├ config
 │ │ │ ├ bot.config.ts.html
 │ │ │ ├ container.variables.ts.html
@@ -79,6 +131,7 @@ bot_klb
 │ │ │ ├ embed.variables.ts.html
 │ │ │ ├ index.html
 │ │ │ ├ logger.variables.ts.html
+│ │ │ ├ team-find.config.ts.html
 │ │ │ ├ ticket.variables.ts.html
 │ │ │ └ variables.ts.html
 │ │ ├ container.interactive.edit.ts.html
@@ -89,6 +142,7 @@ bot_klb
 │ │ │ ├ ticket.database.ts.html
 │ │ │ └ welcome.database.ts.html
 │ │ ├ events
+│ │ │ ├ guildMemberAdd.event.ts.html
 │ │ │ ├ guildMemberUpdate.event.ts.html
 │ │ │ └ index.html
 │ │ ├ favicon.png
@@ -125,7 +179,10 @@ bot_klb
 │ │ │ ├ deltaforce.api.ts.html
 │ │ │ ├ df-claim-store.ts.html
 │ │ │ ├ index.html
-│ │ │ └ settings.service.ts.html
+│ │ │ ├ settings.service.ts.html
+│ │ │ ├ team-find-message-store.ts.html
+│ │ │ ├ team-find-session.ts.html
+│ │ │ └ webhook-tunnel.ts.html
 │ │ ├ sort-arrow-sprite.png
 │ │ ├ sorter.js
 │ │ ├ types
@@ -133,10 +190,15 @@ bot_klb
 │ │ │ └ ticket.types.ts.html
 │ │ └ utils
 │ │   ├ container.utils.ts.html
+│ │   ├ df-guards.ts.html
+│ │   ├ df-operator.utils.ts.html
 │ │   ├ df-rank.utils.ts.html
+│ │   ├ df-token.utils.ts.html
+│ │   ├ df-voice.utils.ts.html
 │ │   ├ embed.utils.ts.html
 │ │   ├ index.html
 │ │   ├ logger.ts.html
+│ │   ├ section-config.handlers.ts.html
 │ │   └ template.utils.ts.html
 │ └ lcov.info
 ├ data
@@ -147,35 +209,15 @@ bot_klb
 ├ dist
 │ ├ commands
 │ │ ├ booster
-│ │ │ ├ booster-setchannel.handler.d.ts
-│ │ │ ├ booster-setchannel.handler.d.ts.map
-│ │ │ ├ booster-setchannel.handler.js
-│ │ │ ├ booster-setchannel.handler.js.map
-│ │ │ ├ booster-setrole.handler.d.ts
-│ │ │ ├ booster-setrole.handler.d.ts.map
-│ │ │ ├ booster-setrole.handler.js
-│ │ │ ├ booster-setrole.handler.js.map
-│ │ │ ├ booster-status.handler.d.ts
-│ │ │ ├ booster-status.handler.d.ts.map
-│ │ │ ├ booster-status.handler.js
-│ │ │ ├ booster-status.handler.js.map
-│ │ │ ├ booster-test.command.d.ts
-│ │ │ ├ booster-test.command.d.ts.map
-│ │ │ ├ booster-test.command.js
-│ │ │ ├ booster-test.command.js.map
-│ │ │ ├ booster-toggle.handler.d.ts
-│ │ │ ├ booster-toggle.handler.d.ts.map
-│ │ │ ├ booster-toggle.handler.js
-│ │ │ ├ booster-toggle.handler.js.map
 │ │ │ ├ booster.command.d.ts
 │ │ │ ├ booster.command.d.ts.map
 │ │ │ ├ booster.command.js
-│ │ │ └ booster.command.js.map
+│ │ │ ├ booster.command.js.map
+│ │ │ ├ test.command.d.ts
+│ │ │ ├ test.command.d.ts.map
+│ │ │ ├ test.command.js
+│ │ │ └ test.command.js.map
 │ │ ├ container
-│ │ │ ├ container-action.handlers.d.ts
-│ │ │ ├ container-action.handlers.d.ts.map
-│ │ │ ├ container-action.handlers.js
-│ │ │ ├ container-action.handlers.js.map
 │ │ │ ├ container-builders.d.ts
 │ │ │ ├ container-builders.d.ts.map
 │ │ │ ├ container-builders.js
@@ -184,10 +226,6 @@ bot_klb
 │ │ │ ├ container-edit.handler.d.ts.map
 │ │ │ ├ container-edit.handler.js
 │ │ │ ├ container-edit.handler.js.map
-│ │ │ ├ container-property.handlers.d.ts
-│ │ │ ├ container-property.handlers.d.ts.map
-│ │ │ ├ container-property.handlers.js
-│ │ │ ├ container-property.handlers.js.map
 │ │ │ ├ container-reset.handler.d.ts
 │ │ │ ├ container-reset.handler.d.ts.map
 │ │ │ ├ container-reset.handler.js
@@ -203,49 +241,66 @@ bot_klb
 │ │ │ ├ container.command.d.ts
 │ │ │ ├ container.command.d.ts.map
 │ │ │ ├ container.command.js
-│ │ │ └ container.command.js.map
+│ │ │ ├ container.command.js.map
+│ │ │ └ handlers
+│ │ │   ├ action.handler.d.ts
+│ │ │   ├ action.handler.d.ts.map
+│ │ │   ├ action.handler.js
+│ │ │   ├ action.handler.js.map
+│ │ │   ├ property.handler.d.ts
+│ │ │   ├ property.handler.d.ts.map
+│ │ │   ├ property.handler.js
+│ │ │   └ property.handler.js.map
 │ │ ├ df
-│ │ │ ├ df-daily.command.d.ts
-│ │ │ ├ df-daily.command.d.ts.map
-│ │ │ ├ df-daily.command.js
-│ │ │ ├ df-daily.command.js.map
-│ │ │ ├ df-link.command.d.ts
-│ │ │ ├ df-link.command.d.ts.map
-│ │ │ ├ df-link.command.js
-│ │ │ ├ df-link.command.js.map
-│ │ │ ├ df-matches.command.d.ts
-│ │ │ ├ df-matches.command.d.ts.map
-│ │ │ ├ df-matches.command.js
-│ │ │ ├ df-matches.command.js.map
-│ │ │ ├ df-stats.command.d.ts
-│ │ │ ├ df-stats.command.d.ts.map
-│ │ │ ├ df-stats.command.js
-│ │ │ └ df-stats.command.js.map
+│ │ │ ├ code.command.d.ts
+│ │ │ ├ code.command.d.ts.map
+│ │ │ ├ code.command.js
+│ │ │ ├ code.command.js.map
+│ │ │ ├ daily.command.d.ts
+│ │ │ ├ daily.command.d.ts.map
+│ │ │ ├ daily.command.js
+│ │ │ ├ daily.command.js.map
+│ │ │ ├ history.command.d.ts
+│ │ │ ├ history.command.d.ts.map
+│ │ │ ├ history.command.js
+│ │ │ ├ history.command.js.map
+│ │ │ ├ link.command.d.ts
+│ │ │ ├ link.command.d.ts.map
+│ │ │ ├ link.command.js
+│ │ │ ├ link.command.js.map
+│ │ │ ├ stats.command.d.ts
+│ │ │ ├ stats.command.d.ts.map
+│ │ │ ├ stats.command.js
+│ │ │ ├ stats.command.js.map
+│ │ │ ├ team-find.command.d.ts
+│ │ │ ├ team-find.command.d.ts.map
+│ │ │ ├ team-find.command.js
+│ │ │ ├ team-find.command.js.map
+│ │ │ ├ team-find.embed.d.ts
+│ │ │ ├ team-find.embed.d.ts.map
+│ │ │ ├ team-find.embed.js
+│ │ │ ├ team-find.embed.js.map
+│ │ │ ├ team-find.interaction.d.ts
+│ │ │ ├ team-find.interaction.d.ts.map
+│ │ │ ├ team-find.interaction.js
+│ │ │ ├ team-find.interaction.js.map
+│ │ │ ├ team-find.menu.d.ts
+│ │ │ ├ team-find.menu.d.ts.map
+│ │ │ ├ team-find.menu.js
+│ │ │ ├ team-find.menu.js.map
+│ │ │ ├ unlink.command.d.ts
+│ │ │ ├ unlink.command.d.ts.map
+│ │ │ ├ unlink.command.js
+│ │ │ └ unlink.command.js.map
 │ │ └ welcome
-│ │   ├ welcome-setchannel.handler.d.ts
-│ │   ├ welcome-setchannel.handler.d.ts.map
-│ │   ├ welcome-setchannel.handler.js
-│ │   ├ welcome-setchannel.handler.js.map
-│ │   ├ welcome-setrole.handler.d.ts
-│ │   ├ welcome-setrole.handler.d.ts.map
-│ │   ├ welcome-setrole.handler.js
-│ │   ├ welcome-setrole.handler.js.map
-│ │   ├ welcome-setup.command.d.ts
-│ │   ├ welcome-setup.command.d.ts.map
-│ │   ├ welcome-setup.command.js
-│ │   ├ welcome-setup.command.js.map
-│ │   ├ welcome-status.handler.d.ts
-│ │   ├ welcome-status.handler.d.ts.map
-│ │   ├ welcome-status.handler.js
-│ │   ├ welcome-status.handler.js.map
-│ │   ├ welcome-test.command.d.ts
-│ │   ├ welcome-test.command.d.ts.map
-│ │   ├ welcome-test.command.js
-│ │   ├ welcome-test.command.js.map
-│ │   ├ welcome-toggle.handler.d.ts
-│ │   ├ welcome-toggle.handler.d.ts.map
-│ │   ├ welcome-toggle.handler.js
-│ │   └ welcome-toggle.handler.js.map
+│ │   ├ setup.command.d.ts
+│ │   ├ setup.command.d.ts.map
+│ │   ├ setup.command.js
+│ │   ├ setup.command.js.map
+│ │   ├ test.command.d.ts
+│ │   ├ test.command.d.ts.map
+│ │   ├ test.command.js
+│ │   └ test.command.js.map
 │ ├ config
 │ │ ├ bot.config.d.ts
 │ │ ├ bot.config.d.ts.map
@@ -271,6 +326,10 @@ bot_klb
 │ │ ├ logger.variables.d.ts.map
 │ │ ├ logger.variables.js
 │ │ ├ logger.variables.js.map
+│ │ ├ team-find.config.d.ts
+│ │ ├ team-find.config.d.ts.map
+│ │ ├ team-find.config.js
+│ │ ├ team-find.config.js.map
 │ │ ├ variables.d.ts
 │ │ ├ variables.d.ts.map
 │ │ ├ variables.js
@@ -315,11 +374,10 @@ bot_klb
 │ ├ index.js
 │ ├ index.js.map
 │ ├ scraper
+│ │ ├ df-webhook.d.ts
+│ │ ├ df-webhook.d.ts.map
 │ │ ├ df-webhook.js
-│ │ ├ dfStable.js
-│ │ └ getDailyCodes.js
-│ ├ scripts
-│ │ └ tree.mjs
+│ │ └ df-webhook.js.map
 │ ├ server
 │ │ ├ webhook-server.d.ts
 │ │ ├ webhook-server.d.ts.map
@@ -345,12 +403,20 @@ bot_klb
 │ │ ├ settings.service.d.ts
 │ │ ├ settings.service.d.ts.map
 │ │ ├ settings.service.js
-│ │ └ settings.service.js.map
+│ │ ├ settings.service.js.map
+│ │ ├ team-find-message-store.d.ts
+│ │ ├ team-find-message-store.d.ts.map
+│ │ ├ team-find-message-store.js
+│ │ ├ team-find-message-store.js.map
+│ │ ├ team-find-session.d.ts
+│ │ ├ team-find-session.d.ts.map
+│ │ ├ team-find-session.js
+│ │ ├ team-find-session.js.map
+│ │ ├ webhook-tunnel.d.ts
+│ │ ├ webhook-tunnel.d.ts.map
+│ │ ├ webhook-tunnel.js
+│ │ └ webhook-tunnel.js.map
 │ ├ types
-│ │ ├ components-v2.d.ts
-│ │ ├ components-v2.d.ts.map
-│ │ ├ components-v2.js
-│ │ ├ components-v2.js.map
 │ │ ├ deltaforce.types.d.ts
 │ │ ├ deltaforce.types.d.ts.map
 │ │ ├ deltaforce.types.js
@@ -364,14 +430,34 @@ bot_klb
 │   ├ container.utils.d.ts.map
 │   ├ container.utils.js
 │   ├ container.utils.js.map
+│   ├ df-guards.d.ts
+│   ├ df-guards.d.ts.map
+│   ├ df-guards.js
+│   ├ df-guards.js.map
+│   ├ df-operator.utils.d.ts
+│   ├ df-operator.utils.d.ts.map
+│   ├ df-operator.utils.js
+│   ├ df-operator.utils.js.map
 │   ├ df-rank.utils.d.ts
 │   ├ df-rank.utils.d.ts.map
 │   ├ df-rank.utils.js
 │   ├ df-rank.utils.js.map
+│   ├ df-token.utils.d.ts
+│   ├ df-token.utils.d.ts.map
+│   ├ df-token.utils.js
+│   ├ df-token.utils.js.map
+│   ├ df-voice.utils.d.ts
+│   ├ df-voice.utils.d.ts.map
+│   ├ df-voice.utils.js
+│   ├ df-voice.utils.js.map
 │   ├ logger.d.ts
 │   ├ logger.d.ts.map
 │   ├ logger.js
 │   ├ logger.js.map
+│   ├ section-config.handlers.d.ts
+│   ├ section-config.handlers.d.ts.map
+│   ├ section-config.handlers.js
+│   ├ section-config.handlers.js.map
 │   ├ template.utils.d.ts
 │   ├ template.utils.d.ts.map
 │   ├ template.utils.js
@@ -381,73 +467,44 @@ bot_klb
 ├ package-lock.json
 ├ package.json
 ├ plan.md
+├ script.js
 ├ src
 │ ├ assets
 │ │ └ img
-│ │   ├ HoA.webp
-│ │   ├ M_y_ch__c_a_Pon_N_____channels.md
-│ │   ├ collections_9ca7ace87949ee7c15ded192f3af0eff.png
-│ │   ├ d-wolf.webp
-│ │   ├ gizmo.webp
-│ │   ├ hackclaw.webp
-│ │   ├ luna.webp
-│ │   ├ map_brakkesh.png
-│ │   ├ map_layali.png
-│ │   ├ map_spacecity.png
-│ │   ├ map_tideprison.png
-│ │   ├ map_zero.png
-│ │   ├ morse.webp
-│ │   ├ nox.webp
-│ │   ├ raptor.webp
-│ │   ├ saseed.webp
-│ │   ├ shepherd.webp
-│ │   ├ sineva.webp
-│ │   ├ sticker-1.jpg
-│ │   ├ sticker-1.png
-│ │   ├ sticker-2.jpg
-│ │   ├ sticker-2.png
-│ │   ├ sticker-3.jpg
-│ │   ├ sticker-3.png
-│ │   ├ sticker-4.jpg
-│ │   ├ sticker-4.png
-│ │   ├ sticker-5.jpg
-│ │   ├ sticker-5.png
-│ │   ├ stinger.webp
-│ │   ├ tempest.webp
-│ │   ├ toxic.webp
-│ │   ├ uluru.webp
-│ │   ├ vlinder.webp
-│ │   └ vyron.webp
+│ │   └ map
+│ │     ├ map_brakkesh.png
+│ │     ├ map_layali.png
+│ │     ├ map_spacecity.png
+│ │     ├ map_tideprison.png
+│ │     └ map_zero.png
 │ ├ commands
 │ │ ├ booster
-│ │ │ ├ booster-setchannel.handler.ts
-│ │ │ ├ booster-setrole.handler.ts
-│ │ │ ├ booster-status.handler.ts
-│ │ │ ├ booster-test.command.ts
-│ │ │ ├ booster-toggle.handler.ts
-│ │ │ └ booster.command.ts
+│ │ │ ├ booster.command.ts
+│ │ │ └ test.command.ts
 │ │ ├ container
-│ │ │ ├ container-action.handlers.ts
 │ │ │ ├ container-builders.ts
 │ │ │ ├ container-edit.handler.ts
-│ │ │ ├ container-property.handlers.ts
 │ │ │ ├ container-reset.handler.ts
 │ │ │ ├ container-routers.ts
 │ │ │ ├ container-session.ts
-│ │ │ └ container.command.ts
+│ │ │ ├ container.command.ts
+│ │ │ └ handlers
+│ │ │   ├ action.handler.ts
+│ │ │   └ property.handler.ts
 │ │ ├ df
-│ │ │ ├ df-daily.command.ts
-│ │ │ ├ df-link.command.ts
-│ │ │ ├ df-matches.command.ts
-│ │ │ └ df-stats.command.ts
-│ │ ├ tree.md
+│ │ │ ├ code.command.ts
+│ │ │ ├ daily.command.ts
+│ │ │ ├ history.command.ts
+│ │ │ ├ link.command.ts
+│ │ │ ├ stats.command.ts
+│ │ │ ├ team-find.command.ts
+│ │ │ ├ team-find.embed.ts
+│ │ │ ├ team-find.interaction.ts
+│ │ │ ├ team-find.menu.ts
+│ │ │ └ unlink.command.ts
 │ │ └ welcome
-│ │   ├ welcome-setchannel.handler.ts
-│ │   ├ welcome-setrole.handler.ts
-│ │   ├ welcome-setup.command.ts
-│ │   ├ welcome-status.handler.ts
-│ │   ├ welcome-test.command.ts
-│ │   └ welcome-toggle.handler.ts
+│ │   ├ setup.command.ts
+│ │   └ test.command.ts
 │ ├ config
 │ │ ├ bot.config.ts
 │ │ ├ container.variables.ts
@@ -455,6 +512,7 @@ bot_klb
 │ │ ├ index.ts
 │ │ ├ intents.ts
 │ │ ├ logger.variables.ts
+│ │ ├ team-find.config.ts
 │ │ └ variables.ts
 │ ├ database
 │ │ ├ df.token.db.ts
@@ -469,12 +527,7 @@ bot_klb
 │ │ └ event.handler.ts
 │ ├ index.ts
 │ ├ scraper
-│ │ ├ df-webhook.ts
-│ │ ├ dfStable.ts
-│ │ └ getDailyCodes.ts
-│ ├ scripts
-│ │ ├ tree.js
-│ │ └ tree.mts
+│ │ └ df-webhook.ts
 │ ├ server
 │ │ ├ webhook-server.ts
 │ │ └ webhook.routes.ts
@@ -482,16 +535,23 @@ bot_klb
 │ │ ├ deltaforce.api.ts
 │ │ ├ deltaforce.scraper.ts
 │ │ ├ df-claim-store.ts
-│ │ └ settings.service.ts
+│ │ ├ settings.service.ts
+│ │ ├ team-find-message-store.ts
+│ │ ├ team-find-session.ts
+│ │ └ webhook-tunnel.ts
 │ ├ types
-│ │ ├ components-v2.ts
+│ │ ├ client-augmentation.d.ts
 │ │ ├ deltaforce.types.ts
 │ │ └ settings.types.ts
 │ └ utils
 │   ├ container.utils.ts
+│   ├ df-guards.ts
+│   ├ df-operator.utils.ts
 │   ├ df-rank.utils.ts
+│   ├ df-token.utils.ts
+│   ├ df-voice.utils.ts
 │   ├ logger.ts
+│   ├ section-config.handlers.ts
 │   └ template.utils.ts
 ├ tsconfig.json
-├ tsconfig.scripts.json
-└ tsconfig.tree.json
+└ tsconfig.scripts.json

@@ -1,16 +1,11 @@
+/** /df-code — Mật khẩu hằng ngày của các map (Container V2 pattern) */
+
 import {
+  AttachmentBuilder,
   ChatInputCommandInteraction,
   ComponentType,
-  GuildTextBasedChannel,
   MessageFlags,
   SlashCommandBuilder,
-  AttachmentBuilder,
-  ContainerBuilder,
-  TextDisplayBuilder,
-  SeparatorBuilder,
-  Snowflake,
-  MediaGalleryBuilder,
-  MediaGalleryItemBuilder,
 } from 'discord.js';
 
 import { buildErrorContainer, makeResult } from '../../utils/container.utils.js';
@@ -25,8 +20,6 @@ export const data = new SlashCommandBuilder()
 
 const ASSETS_PATH = './src/assets/img/map/';
 
-const LAST_MESSAGE = new Map<string, Snowflake>();
-
 /** Check if DailyCodes object has at least one non-null value */
 export function hasAnyCodes(codes: DailyCodes | null): boolean {
   if (!codes) return false;
@@ -35,7 +28,7 @@ export function hasAnyCodes(codes: DailyCodes | null): boolean {
 
 function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean) {
   const attachments: AttachmentBuilder[] = [];
-  const container = new ContainerBuilder();
+  const containerInner: unknown[] = [];
 
   if (hasCodes && codes) {
     const maps = Object.entries(MAP_DISPLAY) as [MapKey, MapInfo][];
@@ -43,58 +36,41 @@ function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean) {
     maps.forEach(([fullName, mapInfo], index) => {
       const code = codes[fullName] || 'Chưa có';
 
-      const attachment = new AttachmentBuilder(`${ASSETS_PATH}${mapInfo.image}`).setName(
-        `${mapInfo.name.toLowerCase().replace(/\s+/g, '-')}.png`,
-      );
+      const attachment = new AttachmentBuilder(
+        `${ASSETS_PATH}${mapInfo.image}`,
+      ).setName(`${mapInfo.name.toLowerCase().replace(/\s+/g, '-')}.png`);
       attachments.push(attachment);
 
-      // Tên map + code
-      container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(`#\n Mã Code: ${code}\n`),
-      );
+      containerInner.push({
+        type: ComponentType.TextDisplay,
+        content: `#\n Mã Code: ${code}\n`,
+      });
 
-      // Ảnh to, full width bằng MediaGallery
-      container.addMediaGalleryComponents(
-        new MediaGalleryBuilder().addItems(
-          new MediaGalleryItemBuilder({
+      containerInner.push({
+        type: ComponentType.MediaGallery,
+        items: [
+          {
             media: { url: `attachment://${attachment.name}` },
-          }),
-        ),
-      );
+          },
+        ],
+      });
 
       if (index < maps.length - 1) {
-        container.addSeparatorComponents(new SeparatorBuilder());
+        containerInner.push({ type: ComponentType.Separator });
       }
     });
   } else {
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent('_Không tìm thấy mật khẩu hôm nay._'),
-    );
+    containerInner.push({
+      type: ComponentType.TextDisplay,
+      content: '_Không tìm thấy mật khẩu hôm nay._',
+    });
   }
 
   return makeResult(
-    [{ type: ComponentType.Container, components: container.components }],
+    [{ type: ComponentType.Container, components: containerInner }],
     MessageFlags.IsComponentsV2,
     attachments,
   );
-}
-
-/** Delete previous /df-code message in the same channel */
-async function deleteLastMessage(channel: GuildTextBasedChannel): Promise<void> {
-  const oldId = LAST_MESSAGE.get(channel.id);
-  if (!oldId) return;
-  try {
-    const msg = await channel.messages.fetch(oldId);
-    await msg.delete();
-  } catch {
-    // Message already gone or permission denied — swallow
-  }
-  LAST_MESSAGE.delete(channel.id);
-}
-
-/** Save the new message id for future cleanup */
-function saveMessageId(channel: GuildTextBasedChannel, messageId: Snowflake): void {
-  LAST_MESSAGE.set(channel.id, messageId);
 }
 
 export async function execute(
@@ -103,12 +79,7 @@ export async function execute(
 ): Promise<void> {
   if (await requireGuild(interaction)) return;
 
-  const channel = interaction.channel as GuildTextBasedChannel;
-
   await interaction.deferReply({});
-
-  // Delete previous message in this channel
-  await deleteLastMessage(channel);
 
   try {
     const codes = await fetchDailyCodes().catch(() => null);
@@ -117,20 +88,16 @@ export async function execute(
 
     const container = buildCodesContainer(codes, hasCodes);
 
-    const response = await interaction.editReply({
+    await interaction.editReply({
       components: container.toJSON(),
       files: container.files,
-      flags: MessageFlags.IsComponentsV2,
+      flags: container.flags,
     });
-
-    // Save new message id for next run
-    saveMessageId(channel, response.id);
   } catch (error) {
     const err = buildErrorContainer(`Lỗi khi lấy dữ liệu: ${(error as Error).message}`);
-    const errResponse = await interaction.editReply({
+    await interaction.editReply({
       components: err.toJSON(),
-      flags: MessageFlags.IsComponentsV2,
+      flags: err.flags | MessageFlags.Ephemeral,
     });
-    saveMessageId(channel, errResponse.id);
   }
 }
