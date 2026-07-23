@@ -48,10 +48,8 @@ export function loadGuildSettings(
       const parsed = JSON.parse(row.settings_json) as GuildSettings;
       // Merge với defaults để fill missing fields (ví dụ: booster khi DB cũ chưa có)
       const defaults = cloneDefaultSettings();
-      const merged = deepMerge(
-        defaults as unknown as Record<string, unknown>,
-        parsed as unknown as Record<string, unknown>,
-      );
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const merged = deepMerge(defaults as unknown as Record<string, unknown>, parsed as unknown as Record<string, unknown>);
       // Lưu lại version đầy đủ để lần sau không cần merge
       saveGuildSettings(database, guildId, merged as unknown as GuildSettings);
       return merged as unknown as GuildSettings;
@@ -95,12 +93,10 @@ export function updateGuildSettings(
   partial: DeepPartial<GuildSettings>,
 ): GuildSettings {
   const current = loadGuildSettings(database, guildId);
-  const merged = deepMerge(
-    current as unknown as Record<string, unknown>,
-    partial as unknown as Record<string, unknown>,
-  ) as unknown as GuildSettings;
-  saveGuildSettings(database, guildId, merged);
-  return merged;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  const merged = deepMerge(current as unknown as Record<string, unknown>, partial as unknown as Record<string, unknown>);
+  saveGuildSettings(database, guildId, merged as unknown as GuildSettings);
+  return merged as unknown as GuildSettings;
 }
 
 /**
@@ -108,10 +104,7 @@ export function updateGuildSettings(
  * Arrays được thay thế hoàn toàn (không merge element-by-element).
  * Primitive values từ source ghi đè target.
  */
-function deepMerge(
-  target: Record<string, unknown>,
-  source: Record<string, unknown>,
-): Record<string, unknown> {
+function deepMerge(target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> {
   const result = { ...target };
 
   for (const key of Object.keys(source)) {

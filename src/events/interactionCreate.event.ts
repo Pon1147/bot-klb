@@ -1,4 +1,13 @@
-import { Client, Events, MessageFlags } from 'discord.js';
+import {
+  ButtonInteraction,
+  ChatInputCommandInteraction,
+  Client,
+  Events,
+  GuildMember,
+  MessageFlags,
+  ModalSubmitInteraction,
+  StringSelectMenuInteraction,
+} from 'discord.js';
 import {
   handleEditorButtonInteraction as handleContainerEditorButtonInteraction,
   handleEditorModalSubmit as handleContainerEditorModalSubmit,
@@ -7,7 +16,7 @@ import { handleTeamFindInteraction } from '../commands/df/team-find.interaction.
 
 export async function execute(
   client: Client,
-  interaction: any,
+  interaction: ButtonInteraction | StringSelectMenuInteraction | ChatInputCommandInteraction | ModalSubmitInteraction,
 ): Promise<void> {
   // ── 1. Button Interactions ──
   if (interaction.isButton()) {
@@ -43,7 +52,8 @@ export async function execute(
           return;
         }
 
-        const memberVoice = (interaction.member as any).voice;
+        const member = interaction.member;
+        const memberVoice = member instanceof GuildMember ? member.voice : null;
         if (memberVoice?.channel?.id === channelId) {
           await interaction.reply({ content: 'Bạn đã đang trong phòng này.', flags: MessageFlags.Ephemeral });
           return;
@@ -54,13 +64,14 @@ export async function execute(
           return;
         }
 
-        const botPerms = channel.permissionsFor(interaction.guild!.members.me);
-        if (!botPerms?.has(32768)) {
+        const me = interaction.guild!.members.me;
+        const botPerms = me ? channel.permissionsFor(me) : null;
+        if (!botPerms?.has('Connect')) {
           await interaction.reply({ content: 'Bot không có quyền tham gia phòng thoại này.', flags: MessageFlags.Ephemeral });
           return;
         }
 
-        await channel.join();
+        await (channel as any).join();
         await interaction.reply({ content: 'Đã join phòng thành công!', flags: MessageFlags.Ephemeral });
       } catch (error) {
         console.error('Error in team-find join button handler:', error);
@@ -105,7 +116,7 @@ export async function execute(
     return;
   }
 
-  const commands = (client as any).commands;
+  const commands = client.commands;
   if (!commands) {
     console.warn('Commands collection not found on client.');
     return;
@@ -119,7 +130,7 @@ export async function execute(
     return;
   }
 
-  const database = (client as any).database;
+  const database = client.database;
   if (!database) {
     console.error('Database not attached to client. Cannot execute command.');
     if (!interaction.replied && !interaction.deferred) {

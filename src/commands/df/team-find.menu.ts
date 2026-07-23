@@ -12,10 +12,10 @@ import {
   DIFFICULTY_CONFIG,
   TEAM_FIND_RANKS,
 } from '../../config/team-find.config.js';
-import type { Difficulty, DifficultyConfig } from '../../config/team-find.config.js';
+import type { Difficulty, MapKey } from '../../config/team-find.config.js';
 
 export interface MenuState {
-  map: string | null;
+  map: MapKey | null;
   mode: string | null;
   rank: string | null;
 }
@@ -57,7 +57,7 @@ function buildStatusContent(username: string, state: MenuState): string {
 }
 
 /** Build the Map button row */
-function buildMapButtons(userId: string, selectedMap: string | null) {
+function buildMapButtons(userId: string, selectedMap: MapKey | null) {
   const buttons = Object.keys(MAP_DISPLAY).map((m) => {
     const isSelected = m === selectedMap;
     return new ButtonBuilder()
@@ -70,13 +70,13 @@ function buildMapButtons(userId: string, selectedMap: string | null) {
 }
 
 /** Build the Mode button row — filtered by map */
-function buildModeButtons(userId: string, selectedMap: string | null, selectedMode: string | null) {
-  const modes = (selectedMap && (MAP_MODES as any)[selectedMap])
-    ? (MAP_MODES as any)[selectedMap] as Difficulty[]
+function buildModeButtons(userId: string, selectedMap: MapKey | null, selectedMode: string | null) {
+  const modes = selectedMap && MAP_MODES[selectedMap]
+    ? MAP_MODES[selectedMap]
     : Object.values(DIFFICULTY_CONFIG).map((c) => c.id);
 
   const buttons = modes.map((m: Difficulty) => {
-    const cfg = (DIFFICULTY_CONFIG as Record<Difficulty, DifficultyConfig>)[m];
+    const cfg = DIFFICULTY_CONFIG[m];
     const isSelected = cfg.label === selectedMode;
     return new ButtonBuilder()
       .setCustomId(`team-find-mode:${cfg.label}:${userId}`)

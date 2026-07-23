@@ -1,6 +1,11 @@
 /** Handle interactions for /team-find flow — buttons for Map/Mode, select for Rank */
 
-import { MessageFlags } from 'discord.js';
+import {
+  ButtonInteraction,
+  GuildMember,
+  MessageFlags,
+  StringSelectMenuInteraction,
+} from 'discord.js';
 import {
   getSession,
   updateSelection,
@@ -13,7 +18,9 @@ import { buildErrorContainer } from '../../utils/container.utils.js';
 import { DIFFICULTY_CONFIG, type Difficulty } from '../../config/team-find.config.js';
 
 /** Check customId and handle team-find interactions. Returns true if handled. */
-export async function handleTeamFindInteraction(interaction: any): Promise<boolean> {
+export async function handleTeamFindInteraction(
+  interaction: ButtonInteraction | StringSelectMenuInteraction,
+): Promise<boolean> {
   const customId = interaction.customId;
 
   // ── Map Button ──
@@ -36,12 +43,12 @@ export async function handleTeamFindInteraction(interaction: any): Promise<boole
       return true;
     }
 
-    updateSelection(userId, 'map', value);
+    updateSelection(userId, 'map', value as any);
     const updated = getSession(userId)!;
     const menu = buildSelectMenuMessage(userId, interaction.user.username, {
       map: updated.map, mode: updated.mode, rank: updated.rank,
     });
-    await interaction.update({ content: menu.content, components: menu.components, flags: MessageFlags.Ephemeral });
+    await interaction.update({ content: menu.content, components: menu.components, flags: MessageFlags.Ephemeral } as any);
     return true;
   }
 
@@ -70,7 +77,7 @@ export async function handleTeamFindInteraction(interaction: any): Promise<boole
     const menu = buildSelectMenuMessage(userId, interaction.user.username, {
       map: updated.map, mode: updated.mode, rank: updated.rank,
     });
-    await interaction.update({ content: menu.content, components: menu.components, flags: MessageFlags.Ephemeral });
+    await interaction.update({ content: menu.content, components: menu.components, flags: MessageFlags.Ephemeral } as any);
     return true;
   }
 
@@ -98,7 +105,7 @@ export async function handleTeamFindInteraction(interaction: any): Promise<boole
     const menu = buildSelectMenuMessage(userId, interaction.user.username, {
       map: updated.map, mode: updated.mode, rank: updated.rank,
     });
-    await interaction.update({ content: menu.content, components: menu.components, flags: MessageFlags.Ephemeral });
+    await interaction.update({ content: menu.content, components: menu.components, flags: MessageFlags.Ephemeral } as any);
     return true;
   }
 
@@ -126,7 +133,8 @@ export async function handleTeamFindInteraction(interaction: any): Promise<boole
     }
 
     // Re-check voice state
-    const voiceChannel = (interaction.member as any).voice?.channel;
+    const member = interaction.member;
+    const voiceChannel = member instanceof GuildMember ? member.voice?.channel : null;
     if (!voiceChannel) {
       const err = buildErrorContainer('Bạn phải đang trong phòng thoại để sử dụng lệnh này.');
       await interaction.reply({ components: err.toJSON(), flags: err.flags | MessageFlags.Ephemeral });
@@ -138,7 +146,7 @@ export async function handleTeamFindInteraction(interaction: any): Promise<boole
     await interaction.deferUpdate();
 
     const embed = buildTeamFindEmbed({
-      mapKey: session.map as any,
+      mapKey: session.map!,
       difficulty,
       channelName: voiceChannel.name,
       channelId: voiceChannel.id,
@@ -147,14 +155,14 @@ export async function handleTeamFindInteraction(interaction: any): Promise<boole
       rank: session.rank ?? null,
     });
 
-    const response = await interaction.channel.send({
+    const response = await (interaction.channel as any).send({
       components: embed.toJSON(),
       files: embed.files,
       flags: MessageFlags.IsComponentsV2,
-    }) as any;
+    });
 
     console.log('[team-find] embed sent:', response.id);
-    storeMessage(session.guildId, userId, response.id, interaction.channel.id);
+    storeMessage(session.guildId, userId, response.id, interaction.channel!.id);
     // Delete session after successful send
     deleteSession(userId);
     return true;

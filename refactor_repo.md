@@ -38,11 +38,11 @@ export function buildEditTypeOptionCallback(opt: SlashCommandStringOption): Slas
 
 **Vấn đề:** 3 chỗ `as any`
 
-| Line | Code | Fix |
-|------|------|-----|
-| 129 | `(interaction.member as any).voice?.channel` | Dùng `interaction.member instanceof GuildMember` guard |
-| 141 | `session.map as any` | Type `session.map` → `MapKey \| null` trong session interface |
-| 154 | `}) as any` | Type return → `Message` từ discord.js |
+| Line | Code                                         | Fix                                                           |
+| ---- | -------------------------------------------- | ------------------------------------------------------------- |
+| 129  | `(interaction.member as any).voice?.channel` | Dùng `interaction.member instanceof GuildMember` guard        |
+| 141  | `session.map as any`                         | Type `session.map` → `MapKey \| null` trong session interface |
+| 154  | `}) as any`                                  | Type return → `Message` từ discord.js                         |
 
 ### 1.3 `src/commands/df/team-find.menu.ts`
 
@@ -60,11 +60,11 @@ export function buildEditTypeOptionCallback(opt: SlashCommandStringOption): Slas
 
 **Vấn đề:** 3 chỗ `as any`
 
-| Line | Code | Fix |
-|------|------|-----|
-| 46 | `(interaction.member as any).voice` | Dùng `interaction.member instanceof GuildMember` |
-| 108 | `(client as any).commands` | Dùng client augmentation từ `client-augmentation.d.ts` |
-| 122 | `(client as any).database` | Dùng client augmentation từ `client-augmentation.d.ts` |
+| Line | Code                                | Fix                                                    |
+| ---- | ----------------------------------- | ------------------------------------------------------ |
+| 46   | `(interaction.member as any).voice` | Dùng `interaction.member instanceof GuildMember`       |
+| 108  | `(client as any).commands`          | Dùng client augmentation từ `client-augmentation.d.ts` |
+| 122  | `(client as any).database`          | Dùng client augmentation từ `client-augmentation.d.ts` |
 
 ### 1.6 `src/database/guild.settings.db.ts`
 
@@ -96,14 +96,14 @@ export function buildEditTypeOptionCallback(opt: SlashCommandStringOption): Slas
 
 **Vấn đề:** 6 command files dùng `_database: unknown` thay vì `Database.Database`
 
-| File | Line | Hiện tại | Fix |
-|------|------|----------|-----|
-| `container.command.ts` | 85 | `_database: unknown` | `database: Database.Database` |
-| `code.command.ts` | 78 | `_database: unknown` | `database: Database.Database` |
-| `welcome/setup.command.ts` | 18 | `_database: unknown` | `database: Database.Database` |
-| `booster/command.ts` | 18 | `_database: unknown` | `database: Database.Database` |
-| `booster/test.command.ts` | 26 | `_database: unknown` | `database: Database.Database` |
-| `welcome/test.command.ts` | 41 | `_database: unknown` | `database: Database.Database` |
+| File                       | Line | Hiện tại             | Fix                           |
+| -------------------------- | ---- | -------------------- | ----------------------------- |
+| `container.command.ts`     | 85   | `_database: unknown` | `database: Database.Database` |
+| `code.command.ts`          | 78   | `_database: unknown` | `database: Database.Database` |
+| `welcome/setup.command.ts` | 18   | `_database: unknown` | `database: Database.Database` |
+| `booster/command.ts`       | 18   | `_database: unknown` | `database: Database.Database` |
+| `booster/test.command.ts`  | 26   | `_database: unknown` | `database: Database.Database` |
+| `welcome/test.command.ts`  | 41   | `_database: unknown` | `database: Database.Database` |
 
 **Lý do:** `unknown` không ngăn gọi method sai, `Database.Database` cho IDE autocomplete + compile-time check.
 
@@ -214,13 +214,13 @@ if (!BOT_TOKEN) throw new Error('Missing BOT_TOKEN environment variable');
 
 **Vấn đề:** Bilingual comments — booster/welcome dùng English, df/container dùng Vietnamese
 
-| File | Language |
-|------|----------|
-| `booster/command.ts` | English |
-| `welcome/setup.command.ts` | English |
-| `section-config.handlers.ts` | English |
-| `df-daily.command.ts` | Vietnamese |
-| `team-find.command.ts` | Vietnamese |
+| File                         | Language   |
+| ---------------------------- | ---------- |
+| `booster/command.ts`         | English    |
+| `welcome/setup.command.ts`   | English    |
+| `section-config.handlers.ts` | English    |
+| `df-daily.command.ts`        | Vietnamese |
+| `team-find.command.ts`       | Vietnamese |
 
 **Fix:** Đổi tất cả booster/welcome comments sang Vietnamese (ngôn ngữ chính của project)
 
@@ -228,17 +228,17 @@ if (!BOT_TOKEN) throw new Error('Missing BOT_TOKEN environment variable');
 
 ## Timeline Estimate
 
-| Phase | Effort | Priority |
-|-------|--------|----------|
-| 0: Cleanup Artifacts | 5 min | P0 |
-| 1: Eliminate `as any` | 30 min | P0 |
-| 2: Normalize Signatures | 10 min | P1 |
-| 3: Remove Test Commands | 5 min | P1 |
-| 4: Extract Hardcoded Values | 15 min | P1 |
-| 5: Unify Container V2 Pattern | 0 min (đã xong) | — |
-| 6: Reply Flag Consistency | 0 min (đã xong) | — |
-| 7: Security & Robustness | 20 min | P2 |
-| 8: Performance | 15 min | P2 |
-| 9: Comment Language | 15 min | P3 |
+| Phase                         | Effort          | Priority |
+| ----------------------------- | --------------- | -------- |
+| 0: Cleanup Artifacts          | 5 min           | P0       |
+| 1: Eliminate `as any`         | 30 min          | P0       |
+| 2: Normalize Signatures       | 10 min          | P1       |
+| 3: Remove Test Commands       | 5 min           | P1       |
+| 4: Extract Hardcoded Values   | 15 min          | P1       |
+| 5: Unify Container V2 Pattern | 0 min (đã xong) | —        |
+| 6: Reply Flag Consistency     | 0 min (đã xong) | —        |
+| 7: Security & Robustness      | 20 min          | P2       |
+| 8: Performance                | 15 min          | P2       |
+| 9: Comment Language           | 15 min          | P3       |
 
 **Total: ~2h 15min**

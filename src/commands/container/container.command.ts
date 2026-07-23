@@ -3,6 +3,7 @@
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
+  SlashCommandStringOption,
   SlashCommandSubcommandBuilder,
   GuildMember,
 } from 'discord.js';
@@ -38,8 +39,7 @@ export function buildResetSubcommand(
 
 // ─── Option Builder Callbacks ─────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function buildEditTypeOptionCallback(opt: any): any {
+export function buildEditTypeOptionCallback(opt: SlashCommandStringOption): SlashCommandStringOption {
   return opt
     .setName('type')
     .setDescription('Loại container cần chỉnh sửa.')
@@ -51,8 +51,7 @@ export function buildEditTypeOptionCallback(opt: any): any {
     );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function buildResetTypeOptionCallback(opt: any): any {
+export function buildResetTypeOptionCallback(opt: SlashCommandStringOption): SlashCommandStringOption {
   return opt
     .setName('type')
     .setDescription('Loại container cần reset.')

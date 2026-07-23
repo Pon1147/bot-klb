@@ -46,7 +46,8 @@ export async function execute(
     content: menu.content,
     components: menu.components,
     flags: MessageFlags.Ephemeral,
-  }) as any;
+    fetchReply: true,
+  });
 
   createSession(interaction.user.id, guild.id, response.id, channel.id);
 }

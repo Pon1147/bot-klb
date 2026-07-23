@@ -3,12 +3,14 @@
  * Tracks user's Map/Mode/Rank selections until Done is clicked.
  */
 
+import type { MapKey } from '../config/team-find.config.js';
+
 export interface TeamFindSession {
   guildId: string;
   userId: string;
   messageId: string;
   channelId: string;
-  map: string | null;
+  map: MapKey | null;
   mode: string | null;
   rank: string | null;
   lastInteractionAt: number;
@@ -52,12 +54,23 @@ export function getSession(userId: string): TeamFindSession | undefined {
 
 export function updateSelection(
   userId: string,
-  field: 'map' | 'mode' | 'rank',
+  field: 'map',
+  value: MapKey,
+): void;
+export function updateSelection(
+  userId: string,
+  field: 'mode' | 'rank',
   value: string,
+): void;
+export function updateSelection(
+  userId: string,
+  field: 'map' | 'mode' | 'rank',
+  value: string | MapKey,
 ): void {
   const s = sessions.get(key(userId));
   if (s) {
-    s[field] = value;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (s as any)[field] = value;
     s.lastInteractionAt = Date.now();
   }
 }
