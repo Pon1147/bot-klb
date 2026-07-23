@@ -24,7 +24,7 @@ jest.mock('discord.js', () => ({
 }));
 
 jest.mock('fs', () => ({
-  readFileSync: jest.fn(() => 'var WEBHOOK_URL = "@@WEBHOOK_URL@@"; var CODE = "@@CLAIM_CODE@@";'),
+  readFileSync: jest.fn(() => '/* Delta Force HQ — Webhook userscript */ var WEBHOOK_URL = "@@WEBHOOK_URL@@"; var CODE = "@@CLAIM_CODE@@";'),
 }));
 
 jest.mock('path', () => ({

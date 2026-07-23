@@ -7,11 +7,11 @@ import {
 } from '../../utils/section-config.handlers.js';
 
 export const data = buildSectionSubcommands('welcome', {
-  main: 'Configure the welcome system for new members.',
-  setChannel: 'Set the welcome message channel.',
-  setRole: 'Set the role to assign on join.',
-  toggle: 'Enable or disable the welcome system.',
-  status: 'Show current welcome configuration.',
+  main: 'Cấu hình hệ thống chào thành viên mới.',
+  setChannel: 'Chọn kênh gửi tin nhắn chào.',
+  setRole: 'Chọn role cấp khi thành viên join.',
+  toggle: 'Bật hoặc tắt hệ thống welcome.',
+  status: 'Xem cấu hình welcome hiện tại.',
 });
 
 export async function execute(

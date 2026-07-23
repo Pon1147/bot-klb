@@ -59,7 +59,7 @@ export async function handleSectionSetChannel(
     [config.sectionKey]: { channelId: selectedChannel.id },
   });
   const container = buildSuccessContainer(
-    `${config.displayName} channel set to ${selectedChannel}.`,
+    `${config.displayName} channel đã đặt: ${selectedChannel}.`,
   );
   await interaction.reply({
     components: container.toJSON(),
@@ -78,7 +78,7 @@ export async function handleSectionSetRole(
     [config.sectionKey]: { roleId: selectedRole.id },
   });
   const container = buildSuccessContainer(
-    `${config.displayName} role set to ${selectedRole.name}.`,
+    `${config.displayName} role đã đặt: ${selectedRole.name}.`,
   );
   await interaction.reply({
     components: container.toJSON(),
@@ -96,8 +96,8 @@ export async function handleSectionToggle(
   settingsService.update(guildId, {
     [config.sectionKey]: { enabled: shouldBeEnabled },
   });
-  const statusText = shouldBeEnabled ? 'enabled' : 'disabled';
-  const container = buildSuccessContainer(`${config.displayName} system ${statusText}.`);
+  const statusText = shouldBeEnabled ? 'đã bật' : 'đã tắt';
+  const container = buildSuccessContainer(`${config.displayName} hệ thống ${statusText}.`);
   await interaction.reply({
     components: container.toJSON(),
     flags: container.flags | MessageFlags.Ephemeral,
@@ -111,13 +111,13 @@ export async function handleSectionStatus(
 ): Promise<void> {
   const settingsService = getSettingsService();
   const settings = settingsService.get(guildId)[config.sectionKey];
-  const channelName = settings.channelId ? `<#${settings.channelId}>` : 'Not set';
-  const roleName = settings.roleId ? `<@&${settings.roleId}>` : 'Not set';
+  const channelName = settings.channelId ? `<#${settings.channelId}>` : 'Chưa đặt';
+  const roleName = settings.roleId ? `<@&${settings.roleId}>` : 'Chưa đặt';
   const statusContent = [
-    `**${config.statusEmoji} Current ${config.displayName} Configuration:**`,
+    `**${config.statusEmoji} Cấu hình ${config.displayName} hiện tại:**`,
     '',
-    `**Status:** ${settings.enabled ? 'Enabled' : 'Disabled'}`,
-    `**Channel:** ${channelName}`,
+    `**Trạng thái:** ${settings.enabled ? 'Bật' : 'Tắt'}`,
+    `**Kênh:** ${channelName}`,
     `**Role:** ${roleName}`,
   ].join('\n');
   const container = buildTextOnlyContainer(statusContent, config.statusColor);
@@ -134,7 +134,7 @@ export async function executeSectionCommand(
 ): Promise<void> {
   if (!interaction.guild) {
     await interaction.reply({
-      content: 'This command can only be used in a server.',
+      content: 'Lệnh này chỉ dùng được trong server.',
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -142,7 +142,7 @@ export async function executeSectionCommand(
   const member = interaction.member as GuildMember;
   if (!member || !member.permissions.has(PermissionFlagsBits.Administrator)) {
     await interaction.reply({
-      content: 'You need Administrator permission to use this command.',
+      content: 'Bạn cần quyền Administrator để sử dụng lệnh này.',
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -164,7 +164,7 @@ export async function executeSectionCommand(
         await handleSectionStatus(interaction, guildIdentifier, config);
         break;
       default: {
-        const errorContainer = buildErrorContainer('Unknown subcommand.');
+        const errorContainer = buildErrorContainer('Subcommand không hợp lệ.');
         await interaction.reply({
           components: errorContainer.toJSON(),
           flags: errorContainer.flags | MessageFlags.Ephemeral,

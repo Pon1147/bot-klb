@@ -161,3 +161,20 @@ export async function setupTunnel(port: number): Promise<string> {
 }
 
 export { stopTunnel };
+
+/** Graceful shutdown: cleanup tunnel khi bot dừng */
+function registerShutdownHandlers(): void {
+  process.on('SIGTERM', () => {
+    console.log('[Tunnel] Received SIGTERM — stopping tunnel...');
+    stopTunnel();
+    process.exit(0);
+  });
+
+  process.on('SIGINT', () => {
+    console.log('[Tunnel] Received SIGINT — stopping tunnel...');
+    stopTunnel();
+    process.exit(0);
+  });
+}
+
+registerShutdownHandlers();

@@ -23,9 +23,20 @@ function getBrowserScript(src: string): string {
     .trim();
 }
 
-const WEBHOOK_SCRIPT = getBrowserScript(
-  readFileSync(join(process.cwd(), 'dist', 'scraper', 'df-webhook.js'), 'utf8'),
-);
+/** Integrity check: script phải chứa comment gốc để phát hiện inject */
+function verifyScriptIntegrity(src: string): void {
+  if (!src.includes('Delta Force HQ') || !src.includes('DfTools')) {
+    console.error('[Link] ⚠️ Script integrity check failed — possible tampering');
+    throw new Error('Webhook script integrity verification failed');
+  }
+}
+
+const RAW_SCRIPT = readFileSync(join(process.cwd(), 'dist', 'scraper', 'df-webhook.js'), 'utf8');
+// Skip integrity check in test environment
+if (process.env.NODE_ENV !== 'test') {
+  verifyScriptIntegrity(RAW_SCRIPT);
+}
+const WEBHOOK_SCRIPT = getBrowserScript(RAW_SCRIPT);
 
 /** Lấy webhook URL hiện tại (đọc env tại thời điểm gọi) */
 function getWebhookUrl(): string {

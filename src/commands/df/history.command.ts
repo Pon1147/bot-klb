@@ -91,11 +91,12 @@ export async function execute(
 
   try {
     const apiToken = buildDfApiToken(token);
-    const matchData = await getMatchList(apiToken);
+    const limit = Math.min(interaction.options.getInteger('limit') || MAX_HISTORY_LIMIT, 20);
+    // Fetch only needed matches from API (pagination)
+    const matchData = await getMatchList(apiToken, { limit });
     touchDfToken(database, interaction.user.id);
 
-    const limit = Math.min(interaction.options.getInteger('limit') || MAX_HISTORY_LIMIT, 20);
-    const matches = matchData.list.slice(0, limit);
+    const matches = matchData.list;
 
     if (!matches.length) {
       const err = buildErrorContainer('Không có trận đấu nào trong lịch sử.');

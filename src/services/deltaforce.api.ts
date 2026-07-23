@@ -116,8 +116,12 @@ export async function getSeasonData(
 
 /**
  * Call DfTools/GetMatchList to fetch recent match history.
+ * Hỗ trợ pagination với offset và limit.
  */
-export async function getMatchList(token: DfApiToken): Promise<DfMatchListResponse> {
+export async function getMatchList(
+  token: DfApiToken,
+  options?: { offset?: number; limit?: number },
+): Promise<DfMatchListResponse> {
   const instance = buildInstance(token);
   const body = {
     openid: token.openid,
@@ -129,6 +133,8 @@ export async function getMatchList(token: DfApiToken): Promise<DfMatchListRespon
     needLogin: true,
     report_type: 1,
     seasonno: ['10009'],
+    ...(options?.offset !== undefined ? { offset: options.offset } : {}),
+    ...(options?.limit !== undefined ? { limit: options.limit } : {}),
   };
 
   const res = await instance.post<DfApiResponse<DfMatchListResponse>>('/GetMatchList', body);
