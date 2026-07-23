@@ -2,6 +2,12 @@
 
 import type { DailyCodes } from '../services/deltaforce.scraper.js';
 
+/** Path tới ảnh map */
+export const ASSETS_PATH = './src/assets/img/map/';
+
+/** Giới hạn mặc định cho /df-history */
+export const MAX_HISTORY_LIMIT = 10;
+
 /** Map info: display name and image filename */
 export interface MapInfo {
   name: string;

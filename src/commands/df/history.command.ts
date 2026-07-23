@@ -15,10 +15,8 @@ import { DEFAULT_OPERATOR_AVATAR, resolveOperator } from '../../utils/df-operato
 import { requireGuild } from '../../utils/df-guards.js';
 import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
-import { EMOJI_WIN, EMOJI_DEFEAT, EMOJI_MONEY, EMOJI_KILL, MAP_NAMES } from '../../config/team-find.config.js';
+import { EMOJI_WIN, EMOJI_DEFEAT, EMOJI_MONEY, EMOJI_KILL, MAP_NAMES, MAX_HISTORY_LIMIT } from '../../config/team-find.config.js';
 import type { DfMatchEntry } from '../../types/deltaforce.types.js';
-
-const MAX_MATCHES = 10;
 
 export const data = new SlashCommandBuilder()
   .setName('df-history')
@@ -96,7 +94,7 @@ export async function execute(
     const matchData = await getMatchList(apiToken);
     touchDfToken(database, interaction.user.id);
 
-    const limit = Math.min(interaction.options.getInteger('limit') || MAX_MATCHES, 20);
+    const limit = Math.min(interaction.options.getInteger('limit') || MAX_HISTORY_LIMIT, 20);
     const matches = matchData.list.slice(0, limit);
 
     if (!matches.length) {

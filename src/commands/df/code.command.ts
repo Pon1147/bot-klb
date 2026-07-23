@@ -12,14 +12,12 @@ import Database from 'better-sqlite3';
 import { buildErrorContainer, makeResult } from '../../utils/container.utils.js';
 import { fetchDailyCodes, DailyCodes } from '../../services/deltaforce.scraper.js';
 import { requireGuild } from '../../utils/df-guards.js';
-import { MAP_DISPLAY, type MapKey, type MapInfo } from '../../config/team-find.config.js';
+import { MAP_DISPLAY, ASSETS_PATH, type MapKey, type MapInfo } from '../../config/team-find.config.js';
 export { MAP_DISPLAY };
 
 export const data = new SlashCommandBuilder()
   .setName('df-code')
   .setDescription('Mật khẩu hằng ngày của các map.');
-
-const ASSETS_PATH = './src/assets/img/map/';
 
 /** Check if DailyCodes object has at least one non-null value */
 export function hasAnyCodes(codes: DailyCodes | null): boolean {
