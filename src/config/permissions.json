@@ -1,0 +1,39 @@
+{
+  "roles": {
+    "Owner": "OWNER_ROLE_ID",
+    "Admin": "ADMIN_ROLE_ID",
+    "Moderator": "MODERATOR_ROLE_ID"
+  },
+  "commands": {
+    "container": {
+      "requiredRoles": ["Owner", "Admin"]
+    },
+    "df-link": {
+      "requiredRoles": []
+    },
+    "df-unlink": {
+      "requiredRoles": []
+    },
+    "df-daily": {
+      "requiredRoles": []
+    },
+    "df-stats": {
+      "requiredRoles": []
+    },
+    "df-history": {
+      "requiredRoles": []
+    },
+    "df-code": {
+      "requiredRoles": []
+    },
+    "team-find": {
+      "requiredRoles": []
+    },
+    "booster": {
+      "requiredRoles": ["Owner", "Admin"]
+    },
+    "welcome": {
+      "requiredRoles": ["Owner", "Admin"]
+    }
+  }
+}

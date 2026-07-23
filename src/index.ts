@@ -1,6 +1,9 @@
 import { Client, Collection } from 'discord.js';
 import { botConfig } from './config/bot.config.js';
 import { BOT_INTENTS } from './config/intents.js';
+import { loadPermissions, PermissionsConfig } from './config/permissions.js';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { initializeDatabase } from './database/welcome.database.js';
 import { initializeSettingsTable } from './database/guild.settings.db.js';
 import { initializeDfTokensTable } from './database/df.token.db.js';
@@ -43,6 +46,17 @@ async function main(): Promise<void> {
   const settingsService = new SettingsService(database);
   setSettingsService(settingsService);
   logger.info('SettingsService ready');
+
+  // Step 3b: Load RBAC permissions
+  logger.info('Loading RBAC permissions...');
+  try {
+    const permPath = join(__dirname, '..', 'config', 'permissions.json');
+    const permData = JSON.parse(readFileSync(permPath, 'utf8')) as PermissionsConfig;
+    loadPermissions(permData);
+    logger.info(`RBAC permissions loaded: ${Object.keys(permData.commands).length} command(s)`);
+  } catch (err) {
+    logger.warn(`RBAC permissions load failed: ${(err as Error).message}. Commands will have no role restrictions.`);
+  }
 
   // Step 4: Create Discord client
   logger.info('Creating Discord client...');

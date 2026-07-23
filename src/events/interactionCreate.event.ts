@@ -8,6 +8,7 @@ import {
   ModalSubmitInteraction,
   StringSelectMenuInteraction,
 } from 'discord.js';
+import { COMMAND_PERMISSIONS, hasRequiredRole } from '../config/permissions.js';
 import {
   handleEditorButtonInteraction as handleContainerEditorButtonInteraction,
   handleEditorModalSubmit as handleContainerEditorModalSubmit,
@@ -128,6 +129,23 @@ export async function execute(
   if (!commandModule) {
     console.warn(`Command not found: ${commandName}`);
     return;
+  }
+
+  // ── RBAC Guard: kiểm tra quyền trước khi execute ──
+  const commandPerm = COMMAND_PERMISSIONS[commandName];
+  if (commandPerm && commandPerm.requiredRoles.length > 0) {
+    const member = interaction.member;
+    if (member instanceof GuildMember) {
+      const userRoleIds = member.roles.cache.map((r) => r.id);
+      const hasPermission = hasRequiredRole(userRoleIds, commandPerm.requiredRoles);
+      if (!hasPermission) {
+        await interaction.reply({
+          content: '🔒 Lệnh này yêu cầu role: ' + commandPerm.requiredRoles.join(', '),
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+    }
   }
 
   const database = client.database;
