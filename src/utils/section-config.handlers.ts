@@ -6,6 +6,7 @@ import {
   SlashCommandSubcommandsOnlyBuilder,
   GuildMember,
 } from 'discord.js';
+import Database from 'better-sqlite3';
 import { getSettingsService } from '../services/settings.service.js';
 import {
   buildSuccessContainer,
@@ -128,7 +129,7 @@ export async function handleSectionStatus(
 
 export async function executeSectionCommand(
   interaction: ChatInputCommandInteraction,
-  _database: unknown,
+  _database: Database.Database,
   config: SectionConfig,
 ): Promise<void> {
   if (!interaction.guild) {

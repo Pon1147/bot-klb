@@ -7,6 +7,7 @@
   SlashCommandSubcommandBuilder,
   GuildMember,
 } from 'discord.js';
+import Database from 'better-sqlite3';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { startInteractiveEdit } from './container-edit.handler.js';
 import { handleContainerReset } from './container-reset.handler.js';
@@ -81,7 +82,7 @@ export const data = new SlashCommandBuilder()
  */
 export async function execute(
   interaction: ChatInputCommandInteraction,
-  _database: unknown,
+  _database: Database.Database,
 ): Promise<void> {
   // Guard clause: chỉ dùng trong guild
   if (!interaction.guild) {

@@ -241,4 +241,4 @@ if (!BOT_TOKEN) throw new Error('Missing BOT_TOKEN environment variable');
 | 8: Performance                | 15 min          | P2       |
 | 9: Comment Language           | 15 min          | P3       |
 
-**Total: ~2h 15min**
+### **Total: ~2h 15min**

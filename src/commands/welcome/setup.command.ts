@@ -1,4 +1,5 @@
 ﻿import { ChatInputCommandInteraction } from 'discord.js';
+import Database from 'better-sqlite3';
 import {
   buildSectionSubcommands,
   executeSectionCommand,
@@ -15,7 +16,7 @@ export const data = buildSectionSubcommands('welcome', {
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
-  _database: unknown,
+  _database: Database.Database,
 ): Promise<void> {
   await executeSectionCommand(interaction, _database, getWelcomeConfig());
 }

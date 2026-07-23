@@ -5,6 +5,7 @@
   SlashCommandBuilder,
   GuildMember,
 } from 'discord.js';
+import Database from 'better-sqlite3';
 import { getSettingsService } from '../../services/settings.service.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 
@@ -38,7 +39,7 @@ export function resolveTargetMember(
  */
 export async function execute(
   interaction: ChatInputCommandInteraction,
-  _database: unknown,
+  _database: Database.Database,
 ): Promise<void> {
   // Guard clause: chỉ dùng trong guild
   if (!interaction.guild) {

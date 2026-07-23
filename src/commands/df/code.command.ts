@@ -7,6 +7,7 @@ import {
   MessageFlags,
   SlashCommandBuilder,
 } from 'discord.js';
+import Database from 'better-sqlite3';
 
 import { buildErrorContainer, makeResult } from '../../utils/container.utils.js';
 import { fetchDailyCodes, DailyCodes } from '../../services/deltaforce.scraper.js';
@@ -75,7 +76,7 @@ function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean) {
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
-  _database: unknown,
+  _database: Database.Database,
 ): Promise<void> {
   if (await requireGuild(interaction)) return;
 
