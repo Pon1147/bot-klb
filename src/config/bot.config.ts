@@ -24,5 +24,6 @@ export const botConfig = {
   guildId: requireEnvVariable('GUILD_ID'),
   welcomeChannelId: process.env.WELCOME_CHANNEL_ID || null,
   welcomeRoleId: process.env.WELCOME_ROLE_ID || null,
+  dfCodesChannelId: process.env.DF_CODES_CHANNEL_ID || null,
   databasePath: process.env.DATABASE_PATH || './data/bot.db',
 };

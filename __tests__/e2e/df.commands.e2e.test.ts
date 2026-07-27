@@ -24,9 +24,12 @@ jest.mock('axios', () => ({
 jest.mock('discord.js', () => ({
   ComponentType: { TextDisplay: 10, Separator: 14, Container: 17, Section: 9, Thumbnail: 11 },
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
+  PermissionFlagsBits: { Administrator: 0x8 },
   SlashCommandBuilder: class {
     setName() { return this; }
     setDescription() { return this; }
+    addSubcommand() { return this; }
+    addSubcommandGroup() { return this; }
     addIntegerOption = (cb: (opt: any) => any) => { cb({ setName() { return this; }, setDescription() { return this; }, setMinValue() { return this; }, setMaxValue() { return this; } }); return this; };
   },
   AttachmentBuilder: class {
@@ -60,6 +63,14 @@ jest.mock('discord.js', () => ({
     toJSON() { return {}; }
   },
   ButtonStyle: { Secondary: 2 },
+}));
+
+jest.mock('../../src/services/settings.service', () => ({
+  getSettingsService: jest.fn(() => ({
+    get: jest.fn(() => ({
+      dfCodes: { enabled: true, channelId: null },
+    })),
+  })),
 }));
 
 jest.mock('../../src/services/deltaforce.scraper', () => ({

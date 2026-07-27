@@ -16,6 +16,7 @@ import { cleanup as cleanupTeamFindSessions } from './services/team-find-session
 import { startWebhookServer } from './server/webhook-server.js';
 import { startCleanup as startClaimCleanup } from './services/df-claim-store.js';
 import { setupTunnel, stopTunnel } from './services/webhook-tunnel.js';
+import { startDfCodesScheduler } from './services/df-codes-scheduler.js';
 
 const logger = createLogger('Bot');
 
@@ -129,6 +130,11 @@ async function main(): Promise<void> {
   logger.divider();
   logger.info('Logging in to Discord...');
   await client.login(botConfig.token);
+
+  // Start daily df-code scheduler
+  logger.info('Starting daily df-code scheduler (01:00 UTC)...');
+  startDfCodesScheduler(client, database);
+  logger.info('Daily df-code scheduler started');
 }
 
 /**

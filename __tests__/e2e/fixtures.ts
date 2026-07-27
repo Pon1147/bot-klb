@@ -66,7 +66,7 @@ export function createMockInteraction(overrides: MockInteractionOverrides = {}):
     channel: { id: 'channel-e2e-123', messages: { fetch: jest.fn().mockResolvedValue(null) } },
     member,
     options: {
-      getSubcommand: overrides.options?.getSubcommand ?? jest.fn(() => 'status'),
+      getSubcommand: overrides.options?.getSubcommand ?? jest.fn(() => 'show'),
       getMember: overrides.options?.getMember ?? jest.fn(() => null),
       getChannel: overrides.options?.getChannel ?? jest.fn(() => null),
       getRole: overrides.options?.getRole ?? jest.fn(() => null),

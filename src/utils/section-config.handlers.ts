@@ -16,7 +16,7 @@ import {
 import { COLORS } from '../config/container.variables.js';
 
 export interface SectionConfig {
-  sectionKey: 'welcome' | 'booster';
+  sectionKey: 'welcome' | 'booster' | 'dfCodes';
   displayName: string;
   statusEmoji: string;
   statusColor: number;
@@ -53,6 +53,22 @@ export async function handleSectionSetChannel(
   guildId: string,
   config: SectionConfig,
 ): Promise<void> {
+  if (interaction.replied || interaction.deferred) {
+    const selectedChannel = interaction.options.getChannel('channel', true);
+    const settingsService = getSettingsService();
+    settingsService.update(guildId, {
+      [config.sectionKey]: { channelId: selectedChannel.id },
+    });
+    const container = buildSuccessContainer(
+      `${config.displayName} channel đã đặt: ${selectedChannel}.`,
+    );
+    await interaction.editReply({
+      components: container.toJSON(),
+      flags: container.flags | MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
   const selectedChannel = interaction.options.getChannel('channel', true);
   const settingsService = getSettingsService();
   settingsService.update(guildId, {
@@ -72,6 +88,22 @@ export async function handleSectionSetRole(
   guildId: string,
   config: SectionConfig,
 ): Promise<void> {
+  if (interaction.replied || interaction.deferred) {
+    const selectedRole = interaction.options.getRole('role', true);
+    const settingsService = getSettingsService();
+    settingsService.update(guildId, {
+      [config.sectionKey]: { roleId: selectedRole.id },
+    });
+    const container = buildSuccessContainer(
+      `${config.displayName} role đã đặt: ${selectedRole.name}.`,
+    );
+    await interaction.editReply({
+      components: container.toJSON(),
+      flags: container.flags | MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
   const selectedRole = interaction.options.getRole('role', true);
   const settingsService = getSettingsService();
   settingsService.update(guildId, {
@@ -91,6 +123,21 @@ export async function handleSectionToggle(
   guildId: string,
   config: SectionConfig,
 ): Promise<void> {
+  if (interaction.replied || interaction.deferred) {
+    const shouldBeEnabled = interaction.options.getBoolean('enabled', true);
+    const settingsService = getSettingsService();
+    settingsService.update(guildId, {
+      [config.sectionKey]: { enabled: shouldBeEnabled },
+    });
+    const statusText = shouldBeEnabled ? 'đã bật' : 'đã tắt';
+    const container = buildSuccessContainer(`${config.displayName} hệ thống ${statusText}.`);
+    await interaction.editReply({
+      components: container.toJSON(),
+      flags: container.flags | MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
   const shouldBeEnabled = interaction.options.getBoolean('enabled', true);
   const settingsService = getSettingsService();
   settingsService.update(guildId, {
@@ -109,10 +156,32 @@ export async function handleSectionStatus(
   guildId: string,
   config: SectionConfig,
 ): Promise<void> {
+  if (interaction.replied || interaction.deferred) {
+    const settingsService = getSettingsService();
+    const settings = settingsService.get(guildId)[config.sectionKey];
+    const channelName = settings.channelId ? `<#${settings.channelId}>` : 'Chưa đặt';
+    const roleId = 'roleId' in settings ? (settings as { roleId?: string }).roleId : undefined;
+    const roleName = roleId ? `<@&${roleId}>` : 'Chưa đặt';
+    const statusContent = [
+      `**${config.statusEmoji} Cấu hình ${config.displayName} hiện tại:**`,
+      '',
+      `**Trạng thái:** ${settings.enabled ? 'Bật' : 'Tắt'}`,
+      `**Kênh:** ${channelName}`,
+      `**Role:** ${roleName}`,
+    ].join('\n');
+    const container = buildTextOnlyContainer(statusContent, config.statusColor);
+    await interaction.editReply({
+      components: container.toJSON(),
+      flags: container.flags | MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
   const settingsService = getSettingsService();
   const settings = settingsService.get(guildId)[config.sectionKey];
   const channelName = settings.channelId ? `<#${settings.channelId}>` : 'Chưa đặt';
-  const roleName = settings.roleId ? `<@&${settings.roleId}>` : 'Chưa đặt';
+  const roleId = 'roleId' in settings ? (settings as { roleId?: string }).roleId : undefined;
+  const roleName = roleId ? `<@&${roleId}>` : 'Chưa đặt';
   const statusContent = [
     `**${config.statusEmoji} Cấu hình ${config.displayName} hiện tại:**`,
     '',

@@ -16,6 +16,14 @@ type DeepPartial<T> = {
 };
 
 /**
+ * Lấy tất cả guild IDs từ DB.
+ */
+export function getAllGuildIds(database: Database.Database): string[] {
+  const rows = database.prepare('SELECT guild_id FROM guild_settings').all() as { guild_id: string }[];
+  return rows.map((r) => r.guild_id);
+}
+
+/**
  * Khởi tạo bảng guild_settings (JSON-based).
  * Chỉ gọi 1 lần khi bootstrap bot.
  */

@@ -1,33 +1,21 @@
 /**
- * Unit tests cho df-code.command.ts — /df-code slash command (daily codes only).
+ * Unit tests cho df-code.command.ts — /df-code slash command (daily codes + subcommands).
  */
 
 jest.mock('discord.js', () => ({
   ComponentType: { TextDisplay: 10, Separator: 14, Container: 17 },
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
-  SlashCommandBuilder: class { setName() { return this; } setDescription() { return this; } },
+  PermissionFlagsBits: { Administrator: 0x8 },
+  SlashCommandBuilder: class {
+    setName() { return this; }
+    setDescription() { return this; }
+    addSubcommand() { return this; }
+    addSubcommandGroup() { return this; }
+  },
   AttachmentBuilder: class {
     constructor(public pathOrBuffer: any, public opts?: any) {
       this.name = opts?.name ?? 'file.png';
     }
-  },
-  ContainerBuilder: class {
-    components: any[] = [];
-    addTextDisplayComponents(c: any) { this.components.push(c); return this; }
-    addMediaGalleryComponents(c: any) { this.components.push(c); return this; }
-    addSeparatorComponents(c: any) { this.components.push(c); return this; }
-  },
-  TextDisplayBuilder: class {
-    setContent(c: string) { this.content = c; return this; }
-    content: string = '';
-  },
-  SeparatorBuilder: class {},
-  MediaGalleryBuilder: class {
-    items: any[] = [];
-    addItems(...i: any[]) { this.items.push(...i); return this; }
-  },
-  MediaGalleryItemBuilder: class {
-    constructor(public options: any) {}
   },
 }));
 
@@ -36,13 +24,53 @@ jest.mock('../src/services/deltaforce.scraper.js', () => ({
 }));
 
 jest.mock('../src/utils/container.utils.js', () => ({
-  buildErrorContainer: jest.fn((msg) => ({
+  buildErrorContainer: jest.fn((msg: any) => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
     flags: 65536,
     files: [],
     toJSON() { return this.components; },
   })),
-  makeResult: jest.fn((components, flags, files) => ({ components, flags, files, toJSON() { return components; } })),
+  buildSuccessContainer: jest.fn((msg: any) => ({
+    components: [{ type: 17, components: [{ type: 10, content: msg }] }],
+    flags: 65536,
+    files: [],
+    toJSON() { return this.components; },
+  })),
+  buildTextOnlyContainer: jest.fn((content: any, color: any) => ({
+    components: [{ type: 17, components: [{ type: 10, content }] }],
+    flags: 65536,
+    files: [],
+    toJSON() { return this.components; },
+  })),
+  makeResult: jest.fn((components: any, flags: any, files: any) => ({
+    components, flags, files, toJSON() { return components; },
+  })),
+}));
+
+jest.mock('../src/services/settings.service.js', () => ({
+  getSettingsService: jest.fn(() => ({
+    get: jest.fn(() => ({
+      dfCodes: { enabled: true, channelId: null },
+    })),
+  })),
+}));
+
+jest.mock('../src/utils/section-config.handlers.js', () => ({
+  handleSectionSetChannel: jest.fn(async (interaction: any) => {
+    await interaction.reply({
+      components: [{ type: 17, components: [{ type: 10, content: 'success' }] }],
+      flags: 65600,
+    });
+  }),
+  handleSectionStatus: jest.fn(async (interaction: any) => {
+    await interaction.reply({
+      components: [{ type: 17, components: [{ type: 10, content: 'status' }] }],
+      flags: 65600,
+    });
+  }),
+  buildSectionSubcommands: jest.fn(() => ({
+    setName: () => ({ setDescription: () => ({ addSubcommand: () => ({ addSubcommandGroup: () => ({}) }) }) }),
+  })),
 }));
 
 import { execute, hasAnyCodes, MAP_DISPLAY } from '../src/commands/df/code.command.js';
@@ -61,14 +89,14 @@ describe('df-code.command', () => {
     return {
       guild: { id: '111' },
       user: { id: '222' },
-      // Unique channel ID per call to prevent LAST_MESSAGE map pollution
       channel: { id: `ch-${randomUUID()}` },
       reply: mockReply,
       editReply: mockEditReply,
       deferReply: mockDeferReply,
-      options: {},
+      options: { getSubcommand: () => 'show' },
       replied: false,
       deferred: false,
+      member: { permissions: { has: () => true } },
       ...overrides,
     };
   }
@@ -90,6 +118,7 @@ describe('df-code.command', () => {
       'Đập Nước Zero': '1234',
       'Thung lũng Layali': '5678',
       'Phố Cổ Brakkesh': '9012',
+      AZ3: 'AB12',
       'Trạm Không Gian': '3456',
       'Ngục Giam Thủy Triều': '7890',
     });
@@ -103,6 +132,7 @@ describe('df-code.command', () => {
       'Đập Nước Zero': '1234',
       'Thung lũng Layali': null,
       'Phố Cổ Brakkesh': '9012',
+      AZ3: 'AB12',
       'Trạm Không Gian': null,
       'Ngục Giam Thủy Triều': '7890',
     });
@@ -115,6 +145,7 @@ describe('df-code.command', () => {
       'Đập Nước Zero': null,
       'Thung lũng Layali': null,
       'Phố Cổ Brakkesh': null,
+      AZ3: null,
       'Trạm Không Gian': null,
       'Ngục Giam Thủy Triều': null,
     });
@@ -133,6 +164,35 @@ describe('df-code.command', () => {
     await execute(createMockInteraction(), mockDb);
     expect(mockEditReply).toHaveBeenCalled();
   });
+
+  it('nen reject khi khong co admin permission', async () => {
+    const interaction = createMockInteraction({
+      member: { permissions: { has: () => false } },
+    });
+    await execute(interaction, mockDb);
+    expect(mockReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('Administrator'),
+        flags: MessageFlags.Ephemeral,
+      }),
+    );
+  });
+
+  it('nen call setchannel subcommand', async () => {
+    const interaction = createMockInteraction({
+      options: { getSubcommand: () => 'setchannel' },
+    });
+    await execute(interaction, mockDb);
+    expect(mockReply).toHaveBeenCalled();
+  });
+
+  it('nen call status subcommand', async () => {
+    const interaction = createMockInteraction({
+      options: { getSubcommand: () => 'status' },
+    });
+    await execute(interaction, mockDb);
+    expect(mockReply).toHaveBeenCalled();
+  });
 });
 
 describe('df-code.command — hasAnyCodes', () => {
@@ -141,6 +201,7 @@ describe('df-code.command — hasAnyCodes', () => {
       'Đập Nước Zero': '1234',
       'Thung lũng Layali': '5678',
       'Phố Cổ Brakkesh': '9012',
+      AZ3: 'AB12',
       'Trạm Không Gian': '3456',
       'Ngục Giam Thủy Triều': '7890',
     };
@@ -155,6 +216,7 @@ describe('df-code.command — hasAnyCodes', () => {
       'Đập Nước Zero': null,
       'Thung lũng Layali': null,
       'Phố Cổ Brakkesh': '9012',
+      AZ3: null,
       'Trạm Không Gian': null,
       'Ngục Giam Thủy Triều': null,
     };
@@ -166,6 +228,7 @@ describe('df-code.command — hasAnyCodes', () => {
       'Đập Nước Zero': null,
       'Thung lũng Layali': null,
       'Phố Cổ Brakkesh': null,
+      AZ3: null,
       'Trạm Không Gian': null,
       'Ngục Giam Thủy Triều': null,
     };
@@ -178,8 +241,8 @@ describe('df-code.command — hasAnyCodes', () => {
 });
 
 describe('df-code.command — MAP_DISPLAY', () => {
-  it('co 5 map', () => {
-    expect(Object.keys(MAP_DISPLAY)).toHaveLength(5);
+  it('co 6 map', () => {
+    expect(Object.keys(MAP_DISPLAY)).toHaveLength(6);
   });
 
   it('moi map co name va image', () => {

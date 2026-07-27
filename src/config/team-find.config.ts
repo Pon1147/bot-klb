@@ -22,6 +22,7 @@ export const MAP_DISPLAY: Record<MapKey, MapInfo> = {
   'Đập Nước Zero': { name: 'Zero Dam', image: 'map_zero.png' },
   'Thung lũng Layali': { name: 'Layali', image: 'map_layali.png' },
   'Phố Cổ Brakkesh': { name: 'Brakkesh', image: 'map_brakkesh.png' },
+  AZ3: { name: 'AZ3', image: 'map_az3.png' },
   'Trạm Không Gian': { name: 'Space City', image: 'map_spacecity.png' },
   'Ngục Giam Thủy Triều': { name: 'Tide Prison', image: 'map_tideprison.png' },
 };
@@ -46,6 +47,7 @@ export const MAP_MODES: Record<MapKey, Difficulty[]> = {
   'Thung lũng Layali': ['easy'],
   'Đập Nước Zero': ['easy', 'normal'],
   'Phố Cổ Brakkesh': ['normal', 'hard'],
+  AZ3: ['easy', 'normal', 'hard'],
   'Trạm Không Gian': ['normal', 'hard'],
   'Ngục Giam Thủy Triều': ['hard'],
 };

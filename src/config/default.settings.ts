@@ -53,6 +53,10 @@ export const defaultGuildSettings: GuildSettings = {
       files: [...BOOSTER_CONTAINER_DEFAULTS.FILES],
     },
   },
+  dfCodes: {
+    enabled: true,
+    channelId: null,
+  },
 };
 
 /**

@@ -18,6 +18,7 @@ export interface DailyCodes {
   'Phố Cổ Brakkesh': string | null;
   'Trạm Không Gian': string | null;
   'Ngục Giam Thủy Triều': string | null;
+  AZ3: string | null;
 }
 
 export interface DailyOperations {
@@ -74,6 +75,7 @@ export async function fetchDailyAll(): Promise<DailyData> {
         'operations-layali-brakkesh': 'Phố Cổ Brakkesh',
         'operations-layali-space-city': 'Trạm Không Gian',
         'operations-layali-tide-prison': 'Ngục Giam Thủy Triều',
+        'operations-layali-az3': 'AZ3',
       };
 
       const codes: Record<string, string | null> = {};
@@ -81,7 +83,7 @@ export async function fetchDailyAll(): Promise<DailyData> {
         const el = q(`span[data-info="${selector}"]`);
         if (el) {
           const text = el.textContent?.trim();
-          const match = text?.match(/\d{4}/);
+          const match = text?.match(/\S+/);
           codes[name] = match ? match[0] : null;
         } else {
           codes[name] = null;

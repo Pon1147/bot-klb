@@ -51,6 +51,15 @@ export interface BoosterSettings {
 }
 
 /**
+ * DF Codes daily schedule settings.
+ * Per-guild channel configuration for auto-posted daily codes.
+ */
+export interface DfCodesSettings {
+  enabled: boolean;
+  channelId: string | null;
+}
+
+/**
  * Toàn bộ settings của 1 guild.
  * Thêm feature mới chỉ cần add key vào interface này + default.
  */
@@ -58,6 +67,7 @@ export interface GuildSettings {
   welcome: WelcomeSettings;
   leave: LeaveSettings;
   booster: BoosterSettings;
+  dfCodes: DfCodesSettings;
 }
 
 /**
