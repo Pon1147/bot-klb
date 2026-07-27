@@ -1,32 +1,33 @@
 {
   "roles": {
     "Owner": "418779992290492416",
-    "Moderator": "1513800432214872145"
+    "Moderator": "1504374050779303936",
+    "Member": "1513800432214872145"
   },
   "commands": {
     "container": {
       "requiredRoles": ["Owner", "Moderator"]
     },
     "df-link": {
-      "requiredRoles": ["Moderator"]
+      "requiredRoles": ["Member"]
     },
     "df-unlink": {
-      "requiredRoles": ["Moderator"]
+      "requiredRoles": ["Member"]
     },
     "df-daily": {
-      "requiredRoles": ["Moderator"]
+      "requiredRoles": ["Member"]
     },
     "df-stats": {
-      "requiredRoles": ["Moderator"]
+      "requiredRoles": ["Member"]
     },
     "df-history": {
-      "requiredRoles": ["Moderator"]
+      "requiredRoles": ["Member"]
     },
     "df-code": {
-      "requiredRoles": ["Moderator"]
+      "requiredRoles": ["Member"]
     },
     "team-find": {
-      "requiredRoles": ["Moderator"]
+      "requiredRoles": ["Member"]
     },
     "booster": {
       "requiredRoles": ["Owner", "Moderator"]

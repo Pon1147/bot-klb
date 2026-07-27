@@ -1,9 +1,9 @@
 bot_klb
 ├ CLAUDE.md
+├ RBAC.md
 ├ README.md
 ├ REPORT.md
 ├ __tests__
-│ ├ booster.test.ts
 │ ├ config.test.ts
 │ ├ container-booster-edit.test.ts
 │ ├ container-builders.test.ts
@@ -34,7 +34,6 @@ bot_klb
 │ │ ├ fixtures.ts
 │ │ ├ jest.e2e.config.cjs
 │ │ ├ setup.ts
-│ │ ├ test-commands.e2e.test.ts
 │ │ ├ tsconfig.json
 │ │ └ webhook.server.e2e.test.ts
 │ ├ guild.settings.db.deepMerge.test.ts
@@ -208,15 +207,16 @@ bot_klb
 ├ diagrams.md
 ├ dist
 │ ├ commands
+│ │ ├ admin
+│ │ │ ├ set-role.command.d.ts
+│ │ │ ├ set-role.command.d.ts.map
+│ │ │ ├ set-role.command.js
+│ │ │ └ set-role.command.js.map
 │ │ ├ booster
 │ │ │ ├ booster.command.d.ts
 │ │ │ ├ booster.command.d.ts.map
 │ │ │ ├ booster.command.js
-│ │ │ ├ booster.command.js.map
-│ │ │ ├ test.command.d.ts
-│ │ │ ├ test.command.d.ts.map
-│ │ │ ├ test.command.js
-│ │ │ └ test.command.js.map
+│ │ │ └ booster.command.js.map
 │ │ ├ container
 │ │ │ ├ container-builders.d.ts
 │ │ │ ├ container-builders.d.ts.map
@@ -296,11 +296,7 @@ bot_klb
 │ │   ├ setup.command.d.ts
 │ │   ├ setup.command.d.ts.map
 │ │   ├ setup.command.js
-│ │   ├ setup.command.js.map
-│ │   ├ test.command.d.ts
-│ │   ├ test.command.d.ts.map
-│ │   ├ test.command.js
-│ │   └ test.command.js.map
+│ │   └ setup.command.js.map
 │ ├ config
 │ │ ├ bot.config.d.ts
 │ │ ├ bot.config.d.ts.map
@@ -326,6 +322,10 @@ bot_klb
 │ │ ├ logger.variables.d.ts.map
 │ │ ├ logger.variables.js
 │ │ ├ logger.variables.js.map
+│ │ ├ permissions.d.ts
+│ │ ├ permissions.d.ts.map
+│ │ ├ permissions.js
+│ │ ├ permissions.js.map
 │ │ ├ team-find.config.d.ts
 │ │ ├ team-find.config.d.ts.map
 │ │ ├ team-find.config.js
@@ -347,6 +347,11 @@ bot_klb
 │ │ ├ welcome.database.d.ts.map
 │ │ ├ welcome.database.js
 │ │ └ welcome.database.js.map
+│ ├ decorators
+│ │ ├ requireRole.d.ts
+│ │ ├ requireRole.d.ts.map
+│ │ ├ requireRole.js
+│ │ └ requireRole.js.map
 │ ├ events
 │ │ ├ guildMemberAdd.event.d.ts
 │ │ ├ guildMemberAdd.event.d.ts.map
@@ -467,20 +472,23 @@ bot_klb
 ├ package-lock.json
 ├ package.json
 ├ plan.md
+├ refactor_repo.md
 ├ script.js
 ├ src
 │ ├ assets
 │ │ └ img
 │ │   └ map
+│ │     ├ map_az3.png
 │ │     ├ map_brakkesh.png
 │ │     ├ map_layali.png
 │ │     ├ map_spacecity.png
 │ │     ├ map_tideprison.png
 │ │     └ map_zero.png
 │ ├ commands
+│ │ ├ admin
+│ │ │ └ set-role.command.ts
 │ │ ├ booster
-│ │ │ ├ booster.command.ts
-│ │ │ └ test.command.ts
+│ │ │ └ booster.command.ts
 │ │ ├ container
 │ │ │ ├ container-builders.ts
 │ │ │ ├ container-edit.handler.ts
@@ -503,8 +511,7 @@ bot_klb
 │ │ │ ├ team-find.menu.ts
 │ │ │ └ unlink.command.ts
 │ │ └ welcome
-│ │   ├ setup.command.ts
-│ │   └ test.command.ts
+│ │   └ setup.command.ts
 │ ├ config
 │ │ ├ bot.config.ts
 │ │ ├ container.variables.ts
@@ -512,12 +519,16 @@ bot_klb
 │ │ ├ index.ts
 │ │ ├ intents.ts
 │ │ ├ logger.variables.ts
+│ │ ├ permissions.json
+│ │ ├ permissions.ts
 │ │ ├ team-find.config.ts
 │ │ └ variables.ts
 │ ├ database
 │ │ ├ df.token.db.ts
 │ │ ├ guild.settings.db.ts
 │ │ └ welcome.database.ts
+│ ├ decorators
+│ │ └ requireRole.ts
 │ ├ events
 │ │ ├ guildMemberAdd.event.ts
 │ │ ├ guildMemberUpdate.event.ts

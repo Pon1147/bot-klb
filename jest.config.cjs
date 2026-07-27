@@ -59,10 +59,10 @@ module.exports = {
       statements: 96,
     },
     'src/commands/df/code.command.ts': {
-      branches: 36,
-      functions: 83,
-      lines: 61,
-      statements: 61,
+      branches: 81,
+      functions: 100,
+      lines: 85,
+      statements: 86,
     },
     'src/utils/df-guards.ts': {
       branches: 66,
