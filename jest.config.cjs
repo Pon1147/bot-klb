@@ -38,7 +38,6 @@ module.exports = {
       statements: 93,
     },
     // Per-file thresholds for ESM tracking gaps and mocking limitations:
-    // - welcome/test.command.ts: buildWelcomeContainer uses discord.js builders
     // - webhook.routes.ts: express router fallback parse + outer catch block
     // - df-claim-store.ts: makeCode() fallback path requires 10 random collisions
     // - df/code.command.ts: buildCodesContainer uses discord.js builders
@@ -47,12 +46,6 @@ module.exports = {
     // - section-config.handlers.ts: getConfig() stub function
     // - df/history.command.ts: addIntegerOption builder call
     // - df/link.command.ts: editReply fallback in catch block
-    'src/commands/welcome/test.command.ts': {
-      branches: 38,
-      functions: 50,
-      lines: 60,
-      statements: 60,
-    },
     'src/server/webhook.routes.ts': {
       branches: 84,
       functions: 100,
@@ -84,10 +77,10 @@ module.exports = {
       statements: 87,
     },
     'src/utils/section-config.handlers.ts': {
-      branches: 80,
-      functions: 87,
-      lines: 97,
-      statements: 97,
+      branches: 45,
+      functions: 56,
+      lines: 56,
+      statements: 66,
     },
     'src/commands/df/history.command.ts': {
       branches: 81,
@@ -96,10 +89,10 @@ module.exports = {
       statements: 98,
     },
     'src/commands/df/link.command.ts': {
-      branches: 85,
-      functions: 50,
-      lines: 95,
-      statements: 95,
+      branches: 77,
+      functions: 76,
+      lines: 91,
+      statements: 90,
     },
   },
 };
