@@ -1,39 +1,38 @@
 {
   "roles": {
-    "Owner": "OWNER_ROLE_ID",
-    "Admin": "ADMIN_ROLE_ID",
-    "Moderator": "MODERATOR_ROLE_ID"
+    "Owner": "418779992290492416",
+    "Moderator": "1513800432214872145"
   },
   "commands": {
     "container": {
-      "requiredRoles": ["Owner", "Admin"]
+      "requiredRoles": ["Owner", "Moderator"]
     },
     "df-link": {
-      "requiredRoles": []
+      "requiredRoles": ["Moderator"]
     },
     "df-unlink": {
-      "requiredRoles": []
+      "requiredRoles": ["Moderator"]
     },
     "df-daily": {
-      "requiredRoles": []
+      "requiredRoles": ["Moderator"]
     },
     "df-stats": {
-      "requiredRoles": []
+      "requiredRoles": ["Moderator"]
     },
     "df-history": {
-      "requiredRoles": []
+      "requiredRoles": ["Moderator"]
     },
     "df-code": {
-      "requiredRoles": []
+      "requiredRoles": ["Moderator"]
     },
     "team-find": {
-      "requiredRoles": []
+      "requiredRoles": ["Moderator"]
     },
     "booster": {
-      "requiredRoles": ["Owner", "Admin"]
+      "requiredRoles": ["Owner", "Moderator"]
     },
     "welcome": {
-      "requiredRoles": ["Owner", "Admin"]
+      "requiredRoles": ["Owner", "Moderator"]
     }
   }
 }

@@ -5,7 +5,6 @@
 
 export interface RoleConfig {
   Owner: string;
-  Admin: string;
   Moderator: string;
 }
 
@@ -42,10 +41,10 @@ export function loadPermissions(config: PermissionsConfig): void {
 }
 
 /**
- * Lấy tất cả role IDs (Owner + Admin + Moderator).
- * Dùng để check admin permissions chung.
+ * Lấy tất cả role IDs (Owner + Moderator).
+ * Dùng để check permissions chung.
  */
-export function getAllAdminRoleIds(): string[] {
+export function getAllRoleIds(): string[] {
   return Object.values(ROLE_IDS);
 }
 
