@@ -6,7 +6,7 @@
 
     if (/^ok$|thành công|success/.test(t)) return 'SUCCESS';
     if (/error_hint_400067|reached the redemption limit|limit of cdkey group|đạt giới hạn/.test(t))
-      return 'LIMIT_REACHED';
+      return 'INVALID';
     if (/error_hint_400068|error_hint_400070|hết hạn|expired/.test(t)) return 'EXPIRED';
     if (
       /error_hint_400072|error_hint_400073|current cdkey present error|đã.*(nhận|sử dụng)|already|used/.test(

@@ -151,7 +151,7 @@
     // Ẩn panel mặc định — chỉ hiện khi popup yêu cầu
     panel.style.display = 'none';
 
-    // Cache elements
+    // Cache elements — lưu refs để tránh document.getElementById không hoạt động
     els = {
       dot: panel.querySelector('#hud-dot'),
       status: panel.querySelector('#hud-status'),
@@ -163,6 +163,13 @@
       log: panel.querySelector('#hud-log'),
       start: panel.querySelector('#hud-start'),
       stop: panel.querySelector('#hud-stop'),
+      // Stat elements
+      statSuccess: panel.querySelector('#stat-SUCCESS'),
+      statUsed: panel.querySelector('#stat-USED'),
+      statInvalid: panel.querySelector('#stat-INVALID'),
+      statLimit: panel.querySelector('#stat-LIMIT_REACHED'),
+      statExpired: panel.querySelector('#stat-EXPIRED'),
+      statTempError: panel.querySelector('#stat-TEMP_ERROR'),
     };
     console.log('[Panel] buildPanel complete, els.dot:', !!els.dot, 'els.log:', !!els.log);
   }
@@ -205,7 +212,7 @@
    * Được core/app.js gọi sau mỗi lần redeem.
    */
   function setStatus(status, currentCode) {
-    if (!els.dot) return; // Panel chưa build
+    if (!els?.dot) return; // Panel chưa build
     const s = STATUS_MAP[status];
     if (!s) return;
 
@@ -237,15 +244,27 @@
    * Được core/app.js gọi sau mỗi lần redeem.
    */
   function setStats(results) {
-    if (!document.getElementById('stat-SUCCESS')) return; // Panel chưa build
     const counts = results.reduce((a, r) => {
       a[r.status] = (a[r.status] || 0) + 1;
       return a;
     }, {});
 
-    // Update mỗi stat card
+    // Update mỗi stat card — dùng cached els thay vì query DOM
+    if (!els?.statSuccess) return; // Panel chưa build
+
+    // Map status code sang cached element
+    const statMap = {
+      SUCCESS: els.statSuccess,
+      USED: els.statUsed,
+      INVALID: els.statInvalid,
+      LIMIT_REACHED: els.statLimit,
+      EXPIRED: els.statExpired,
+      TEMP_ERROR: els.statTempError,
+    };
+
+    // Update stats có trong results
     for (const [status, count] of Object.entries(counts)) {
-      const el = document.getElementById(`stat-${status}`);
+      const el = statMap[status];
       if (el) {
         el.textContent = count;
         el.className = `hud-stat-value ${STAT_CLASS_MAP[status] || 'other'}`;
@@ -253,9 +272,7 @@
     }
 
     // Reset các stats không có trong results
-    const knownStatuses = Object.keys(STAT_CLASS_MAP);
-    for (const status of knownStatuses) {
-      const el = document.getElementById(`stat-${status}`);
+    for (const [status, el] of Object.entries(statMap)) {
       if (el && !counts[status]) {
         el.textContent = '0';
       }
@@ -267,7 +284,7 @@
    * Được core/app.js gọi sau mỗi lần redeem.
    */
   function addLog(status, code, message) {
-    if (!els.log) return; // Panel chưa build
+    if (!els?.log) return;
     const time = new Date().toLocaleTimeString('vi-VN', { hour12: false });
     const info = LOG_STATUS_MAP[status] || LOG_STATUS_MAP.OTHER;
 
@@ -294,12 +311,18 @@
 
   /**
    * Hiển thị panel (gọi từ popup hoặc core/app.js).
+   * Tự động ẩn Start / hiện Stop nếu mission đang chạy.
    */
   function showPanel() {
     const panel = document.getElementById('garena-redeem-panel');
     if (panel) {
       panel.style.display = '';
       panel.style.zIndex = '2147483646';
+    }
+    // Nếu mission đang chạy, ẩn Start button
+    if (window.Pon1147?.isRunning) {
+      if (els.start) els.start.style.display = 'none';
+      if (els.stop) els.stop.style.display = '';
     }
   }
 
@@ -326,7 +349,8 @@
    * Chỉ cập nhật UI state, delegate logic sang core/app.js.startMission().
    */
   function onMissionStart() {
-    if (els.start.style.display === 'none') return; // Đang chạy rồi
+    if (els.start?.style?.display === 'none') return; // Đang chạy rồi
+    if (window.Pon1147?.isRunning) return; // Mission đang chạy từ popup
 
     els.start.style.display = 'none';
     els.stop.style.display = '';
@@ -351,6 +375,9 @@
     els.stop.disabled = true;
     setStatus('STOPPING');
     window.Pon1147.shouldStop = true;
+    // Hiển thị lại Start button
+    els.start.style.display = '';
+    els.stop.style.display = 'none';
   }
 
   // --- Init ---

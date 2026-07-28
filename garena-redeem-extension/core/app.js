@@ -117,6 +117,8 @@
         // Reset signal dừng
         window.Pon1147.shouldStop = false;
         isMissionRunning = false;
+        isRunning = false;
+        window.Pon1147.isRunning = false;
       }
       // Ẩn badge loop (ngoài try/finally — luôn chạy)
       if (window.Pon1147?.hideLoopBadge) window.Pon1147.hideLoopBadge();
@@ -151,6 +153,8 @@
       }
       console.error('[MessageListener] Calling startMission, shouldStop before:', !!window.Pon1147?.shouldStop);
       isMissionRunning = true;
+      isRunning = true;
+      window.Pon1147.isRunning = true;
       startMission();
       sendResponse({ ok: true });
     } else if (msg.action === 'stopMission') {
@@ -179,6 +183,7 @@
 
   // --- Guard prevent duplicate startMission ---
   let isMissionRunning = false;
+  let isRunning = false;
 
   // --- Expose public API cho ui/panel.js ---
   window.Pon1147 = window.Pon1147 || {};
