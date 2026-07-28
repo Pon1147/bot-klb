@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PON1147 Redeem</title>
+  <link rel="stylesheet" href="ui/panel.css">
+  <style>
+    /* Popup-specific overrides */
+    body {
+      margin: 0;
+      padding: 0;
+      width: 340px;
+      font-family: Inter, 'Segoe UI', sans-serif;
+      font-size: 13px;
+      color: #F5F5F5;
+      background: #111418;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Override panel CSS for popup context */
+    #garena-redeem-panel {
+      position: relative !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      border: none !important;
+      border-radius: 0 !important;
+    }
+
+    /* Status bar */
+    .popup-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid #2C313A;
+      font-size: 12px;
+    }
+    .popup-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #98A2B3;
+    }
+    .popup-status-dot.running { background: #4FC3F7; }
+    .popup-status-dot.finished { background: #58D68D; }
+    .popup-status-text { color: #98A2B3; font-weight: 600; }
+
+    /* Info box */
+    .popup-info {
+      padding: 12px 16px;
+      border-bottom: 1px solid #2C313A;
+      font-size: 11px;
+      color: #98A2B3;
+      line-height: 1.6;
+    }
+    .popup-info strong { color: #F5F5F5; }
+
+    /* Controls */
+    .popup-controls {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+    }
+    .popup-btn {
+      flex: 1;
+      padding: 10px 8px;
+      border: 1px solid #2C313A;
+      border-radius: 3px;
+      font-family: Rajdhani, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      outline: none;
+      transition: background-color 120ms;
+    }
+    .popup-btn--start {
+      background: rgba(88,214,141,0.08);
+      border-color: #58D68D;
+      color: #58D68D;
+    }
+    .popup-btn--start:hover { background: rgba(88,214,141,0.14); }
+    .popup-btn--start:disabled { opacity: 0.25; cursor: not-allowed; }
+    .popup-btn--stop {
+      background: rgba(239,83,80,0.08);
+      border-color: #EF5350;
+      color: #EF5350;
+    }
+    .popup-btn--stop:hover { background: rgba(239,83,80,0.14); }
+    .popup-btn--stop:disabled { opacity: 0.25; cursor: not-allowed; }
+
+    /* Quick stats */
+    .popup-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #2C313A;
+    }
+    .popup-stat {
+      text-align: center;
+      background: #1A1E24;
+      border: 1px solid #2C313A;
+      border-radius: 3px;
+      padding: 6px 2px;
+    }
+    .popup-stat-val {
+      font-family: Rajdhani, sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+    .popup-stat-val.s-success { color: #58D68D; }
+    .popup-stat-val.s-used { color: #F7C948; }
+    .popup-stat-val.s-invalid { color: #EF5350; }
+    .popup-stat-val.s-limit { color: #F7C948; }
+    .popup-stat-lbl {
+      font-size: 8px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #98A2B3;
+      font-weight: 600;
+    }
+
+    /* Footer */
+    .popup-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 16px;
+      font-size: 9px;
+      color: #98A2B3;
+      border-top: 1px solid #2C313A;
+    }
+    .popup-footer a {
+      color: #4FC3F7;
+      text-decoration: none;
+    }
+    .popup-footer a:hover { text-decoration: underline; }
+
+    /* Error state */
+    .popup-error {
+      padding: 20px 16px;
+      text-align: center;
+      color: #EF5350;
+      font-size: 12px;
+    }
+    .popup-error a {
+      color: #4FC3F7;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- Status bar -->
+  <div class="popup-status">
+    <div class="popup-status-dot" id="popup-dot"></div>
+    <span class="popup-status-text" id="popup-status">READY</span>
+  </div>
+
+  <!-- Info -->
+  <div class="popup-info" id="popup-info">
+    <strong>PON1147 Redeem System</strong><br>
+    Đang chạy trên trang redeem Garena.<br>
+    Nhấn <strong>Start Mission</strong> để bắt đầu.
+  </div>
+
+  <!-- Quick stats -->
+  <div class="popup-stats" id="popup-stats">
+    <div class="popup-stat">
+      <div class="popup-stat-val s-success" id="popup-stat-SUCCESS">0</div>
+      <div class="popup-stat-lbl">OK</div>
+    </div>
+    <div class="popup-stat">
+      <div class="popup-stat-val s-used" id="popup-stat-USED">0</div>
+      <div class="popup-stat-lbl">USED</div>
+    </div>
+    <div class="popup-stat">
+      <div class="popup-stat-val s-invalid" id="popup-stat-INVALID">0</div>
+      <div class="popup-stat-lbl">FAIL</div>
+    </div>
+    <div class="popup-stat">
+      <div class="popup-stat-val s-limit" id="popup-stat-LIMIT_REACHED">0</div>
+      <div class="popup-stat-lbl">LIMIT</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="popup-controls">
+    <button class="popup-btn popup-btn--start" id="popup-start">▶ Start</button>
+    <button class="popup-btn popup-btn--stop" id="popup-stop" style="display:none;">■ Stop</button>
+  </div>
+
+  <!-- Footer -->
+  <div class="popup-footer">
+    <span>PON1147 v2.3.0</span>
+    <a href="https://discord.gg/vz6w6c3Xe3" target="_blank">Discord</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

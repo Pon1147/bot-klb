@@ -1,0 +1,543 @@
+/* ============================================
+   PON1147 REDEEM SYSTEM — Tactical HUD
+   Panel: 340px fixed
+   Design: Battlefield / Delta Force / Tarkov
+   ============================================ */
+
+/* --- Panel --- */
+#garena-redeem-panel {
+  width: 340px;
+  font-family: Inter, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  color: #f5f5f5;
+  background: #111418;
+  border: 1px solid #2c313a;
+  border-radius: 4px;
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+#garena-redeem-panel * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* --- Header --- */
+.gp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid #2c313a;
+}
+
+.gp-brand {
+  font-family: Rajdhani, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #f5f5f5;
+  line-height: 1;
+}
+
+.gp-version {
+  font-size: 10px;
+  color: #98a2b3;
+  letter-spacing: 0.5px;
+}
+
+.gp-close {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #2c313a;
+  border-radius: 3px;
+  color: #98a2b3;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+  padding: 0;
+}
+
+.gp-close:hover {
+  border-color: #ef5350;
+  color: #ef5350;
+  background: rgba(239, 83, 80, 0.06);
+}
+
+/* --- Sections --- */
+.gp-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid #2c313a;
+}
+
+.gp-label {
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #98a2b3;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+/* --- Progress (Hero) --- */
+.gp-progress {
+  padding: 14px 16px;
+  border-bottom: 1px solid #2c313a;
+}
+
+.gp-pct {
+  font-family: Rajdhani, sans-serif;
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  color: #58d68d;
+  letter-spacing: -1px;
+}
+
+.gp-bar-track {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  margin: 8px 0 6px;
+  overflow: hidden;
+}
+
+.gp-bar-fill {
+  height: 100%;
+  background: #58d68d;
+  border-radius: 2px;
+  transition: width 200ms ease;
+}
+
+.gp-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #98a2b3;
+}
+
+.gp-eta {
+  font-family: Consolas, monospace;
+  font-size: 10px;
+  color: #98a2b3;
+}
+
+/* --- Status --- */
+.gp-status-text {
+  font-family: Rajdhani, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #98a2b3;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.gp-status-text.running {
+  color: #4fc3f7;
+}
+.gp-status-text.success {
+  color: #58d68d;
+}
+.gp-status-text.error {
+  color: #ef5350;
+}
+
+.gp-status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #98a2b3;
+  vertical-align: middle;
+  margin-right: 6px;
+  transition: background 120ms;
+}
+
+.gp-status-dot.running {
+  background: #4fc3f7;
+}
+.gp-status-dot.success {
+  background: #58d68d;
+}
+.gp-status-dot.error {
+  background: #ef5350;
+}
+
+.gp-status-desc {
+  font-size: 11px;
+  color: #98a2b3;
+  margin-left: 13px;
+}
+
+/* --- Current Code --- */
+.gp-code-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #1a1e24;
+  border: 1px solid #2c313a;
+  border-radius: 3px;
+}
+
+.gp-code-text {
+  flex: 1;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: #58d68d;
+  letter-spacing: 0.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gp-copy-btn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #2c313a;
+  border-radius: 3px;
+  color: #98a2b3;
+  cursor: pointer;
+  transition:
+    background-color 120ms,
+    border-color 120ms,
+    color 120ms;
+  padding: 0;
+}
+
+.gp-copy-btn:hover {
+  border-color: #4fc3f7;
+  color: #4fc3f7;
+  background: rgba(79, 195, 247, 0.06);
+}
+
+.gp-copy-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* --- Statistics --- */
+.gp-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.gp-stat {
+  background: #1a1e24;
+  border: 1px solid #2c313a;
+  border-radius: 3px;
+  padding: 8px 2px;
+  text-align: center;
+  transition: border-color 120ms;
+}
+
+.gp-stat:hover {
+  border-color: #98a2b3;
+}
+
+.gp-stat-val {
+  font-family: Rajdhani, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.gp-stat-val.s-success {
+  color: #58d68d;
+}
+.gp-stat-val.s-used {
+  color: #f7c948;
+}
+.gp-stat-val.s-invalid {
+  color: #ef5350;
+}
+.gp-stat-val.s-limit {
+  color: #f7c948;
+}
+.gp-stat-val.s-error {
+  color: #ef5350;
+}
+
+.gp-stat-lbl {
+  font-size: 8px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #98a2b3;
+  font-weight: 600;
+}
+
+/* --- Controls --- */
+.gp-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.gp-btn {
+  flex: 1;
+  padding: 10px 8px;
+  border: 1px solid #2c313a;
+  border-radius: 3px;
+  font-family: Rajdhani, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 120ms;
+  outline: none;
+}
+
+.gp-btn--start {
+  background: rgba(88, 214, 141, 0.08);
+  border-color: #58d68d;
+  color: #58d68d;
+}
+
+.gp-btn--start:hover {
+  background: rgba(88, 214, 141, 0.14);
+}
+
+.gp-btn--stop {
+  background: rgba(239, 83, 80, 0.08);
+  border-color: #ef5350;
+  color: #ef5350;
+}
+
+.gp-btn--stop:hover {
+  background: rgba(239, 83, 80, 0.14);
+}
+
+.gp-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+/* --- Live Log --- */
+.gp-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid #2c313a;
+}
+
+.gp-log-title {
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #98a2b3;
+  font-weight: 600;
+}
+
+.gp-log-clear {
+  padding: 2px 8px;
+  background: transparent;
+  border: 1px solid #2c313a;
+  border-radius: 3px;
+  color: #98a2b3;
+  cursor: pointer;
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  font-family: Inter, sans-serif;
+  font-weight: 600;
+  transition:
+    background-color 120ms,
+    border-color 120ms,
+    color 120ms;
+}
+
+.gp-log-clear:hover {
+  border-color: #98a2b3;
+  color: #f5f5f5;
+}
+
+.gp-log {
+  max-height: 160px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #2c313a transparent;
+}
+
+.gp-log::-webkit-scrollbar {
+  width: 3px;
+}
+
+.gp-log::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gp-log::-webkit-scrollbar-thumb {
+  background: #2c313a;
+  border-radius: 2px;
+}
+
+.gp-log-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 16px;
+  font-size: 11px;
+  font-family: Consolas, 'Courier New', monospace;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  transition: background-color 80ms;
+}
+
+.gp-log-entry:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.gp-log-time {
+  color: #98a2b3;
+  flex-shrink: 0;
+  font-size: 10px;
+  min-width: 44px;
+}
+
+.gp-log-status {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  min-width: 56px;
+}
+
+.gp-log-code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.gp-log-msg {
+  flex-shrink: 0;
+  color: #98a2b3;
+  font-size: 10px;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Log status colors — single source of truth */
+.le-success .gp-log-status {
+  color: #58d68d;
+}
+.le-used .gp-log-status {
+  color: #f7c948;
+}
+.le-invalid .gp-log-status {
+  color: #ef5350;
+}
+.le-limit .gp-log-status {
+  color: #f7c948;
+}
+.le-expired .gp-log-status {
+  color: #ef5350;
+}
+.le-verify .gp-log-status {
+  color: #4fc3f7;
+}
+.le-error .gp-log-status {
+  color: #ef5350;
+}
+.le-info .gp-log-status {
+  color: #4fc3f7;
+}
+
+/* --- Footer --- */
+.gp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 16px;
+  border-top: 1px solid #2c313a;
+  background: rgba(0, 0, 0, 0.12);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+}
+
+.gp-footer-mode {
+  color: #58d68d;
+  font-weight: 600;
+}
+
+.gp-footer-right {
+  display: flex;
+  gap: 12px;
+  color: #98a2b3;
+}
+
+.gp-footer-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #58d68d;
+  margin-right: 3px;
+  vertical-align: middle;
+}
+
+/* --- Watermark --- */
+#pon1147-watermark {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #1a1e24;
+  border: 1px solid #2c313a;
+  border-radius: 3px;
+  color: #f5f5f5;
+  font-family: Inter, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: auto;
+}
+
+#pon1147-watermark .wm-brand {
+  font-family: Rajdhani, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #4fc3f7;
+}
+
+#pon1147-watermark .wm-sep {
+  color: #2c313a;
+}
+
+#pon1147-watermark .wm-link {
+  color: #98a2b3;
+  text-decoration: none;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
