@@ -3,7 +3,7 @@
   "name": "Pon1147 Redeem Tool",
   "version": "2.3.0",
   "description": "Auto redeem Garena codes - crafted by Pon1147",
-  "permissions": ["scripting"],
+  "permissions": [],
   "action": {
     "default_popup": "popup.html"
   },

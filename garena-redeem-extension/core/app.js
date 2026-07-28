@@ -12,7 +12,8 @@
   const { sleep, log } = window.Pon1147?.utils ?? {};
   const CODES = window.Pon1147?.codes ?? [];
   const { redeemOne } = window.Pon1147?.redeem ?? {};
-  const { state: stateManager } = window.Pon1147?.state ?? {};
+  // KHÔNG destructure — stateManager phải giữ saveState/clearState
+  const stateManager = window.Pon1147?.state ?? {};
   const { RedeemNetwork } = window.Pon1147?.network ?? {};
 
   // ============================================================
@@ -24,32 +25,39 @@
    * Được gọi từ ui/panel.js khi user click button start.
    */
   function startMission() {
-    console.warn('[startMission] Checking deps:', {
+    console.error('[startMission] Checking deps:', {
       hasConfig: !!CONFIG,
       hasSleep: !!sleep,
       hasLog: !!log,
       hasRedeem: !!redeemOne,
       hasState: !!stateManager,
       codesLen: CODES?.length ?? 0,
+      stateObj: !!stateManager?.state,
+      stateKeys: stateManager ? Object.keys(stateManager) : 'N/A',
     });
     if (!CONFIG || !sleep || !log || !redeemOne || !stateManager || !CODES.length) {
       console.error('[PON1147] Thiếu dependencies để start mission');
       return;
     }
 
+    // Đảm bảo results luôn là array
+    if (!Array.isArray(stateManager.state?.results)) {
+      stateManager.state = { ...stateManager.state, results: [] };
+    }
     const startIndex = stateManager.state?.index ?? 0;
-    console.warn('[startMission] Loop bắt đầu — index:', startIndex, 'total:', CODES.length);
+    console.error('[startMission] Loop bắt đầu — index:', startIndex, 'total:', CODES.length);
 
     // Hiển thị badge trên panel để xác nhận loop đang chạy
+    console.error('[startMission] About to show badge and start IIFE');
     if (window.Pon1147?.showLoopBadge) window.Pon1147.showLoopBadge();
 
     (async () => {
       try {
-        console.warn('[startMission] Loop IIFE entered — startIndex:', startIndex);
+        console.error('[startMission] Loop IIFE entered — startIndex:', startIndex);
         for (let i = startIndex; i < CODES.length; i++) {
           // Kiểm tra xem có nên dừng không
           if (window.Pon1147?.shouldStop) {
-            console.warn('[startMission] Breaking due to shouldStop');
+            console.error('[startMission] Breaking due to shouldStop');
             log('INFO', 'Mission bị dừng bởi người dùng');
             if (window.Pon1147?.setStatus) window.Pon1147.setStatus('STOPPING');
             break;
@@ -70,6 +78,7 @@
           }
 
           // Lưu kết quả và tiến trình
+          stateManager.state.results = stateManager.state.results || [];
           stateManager.state.results.push(res);
           stateManager.state.index = i + 1;
           stateManager.saveState();
@@ -90,11 +99,11 @@
         if (window.Pon1147?.setStatus) window.Pon1147.setStatus('FINISHED');
         if (window.Pon1147?.setProgress) window.Pon1147.setProgress(CODES.length, CODES.length);
 
-        const total = stateManager.state.results.length;
+        const total = (stateManager.state?.results || []).length;
         if (window.Pon1147?.addLog) window.Pon1147.addLog('INFO', 'COMPLETE', `${total} codes đã xử lý`);
 
         console.table(
-          stateManager.state.results.reduce((a, r) => {
+          (stateManager.state?.results || []).reduce((a, r) => {
             a[r.status] = (a[r.status] || 0) + 1;
             return a;
           }, {}),
@@ -103,7 +112,7 @@
 
         // Restore hooks và clear state
         if (window.Pon1147?.network?.restoreHooks) window.Pon1147.network.restoreHooks();
-        stateManager.clearState();
+        try { stateManager.clearState(); } catch(e) { console.error('[startMission] clearState failed:', e); }
 
         // Reset signal dừng
         window.Pon1147.shouldStop = false;
@@ -119,7 +128,7 @@
    * Được gọi từ ui/panel.js khi user click button abort.
    */
   function abortMission() {
-    console.warn('[abortMission] Setting shouldStop = true');
+    console.error('[abortMission] Setting shouldStop = true');
     window.Pon1147.shouldStop = true;
     if (window.Pon1147?.setStatus) window.Pon1147.setStatus('STOPPING');
     if (window.Pon1147?.els?.stop) window.Pon1147.els.stop.disabled = true;
@@ -133,23 +142,23 @@
 
   // --- Message listener: giao tiếp với popup ---
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    console.warn('[MessageListener] Received:', msg.action, 'from:', sender?.id);
+    console.error('[MessageListener] Received:', msg.action, 'from:', sender?.id);
     if (msg.action === 'startMission') {
       if (isMissionRunning) {
-        console.warn('[MessageListener] startMission called but already running, skipping');
+        console.error('[MessageListener] startMission called but already running, skipping');
         sendResponse({ ok: true, skipped: true });
         return true;
       }
-      console.warn('[MessageListener] Calling startMission, shouldStop before:', !!window.Pon1147?.shouldStop);
+      console.error('[MessageListener] Calling startMission, shouldStop before:', !!window.Pon1147?.shouldStop);
       isMissionRunning = true;
       startMission();
       sendResponse({ ok: true });
     } else if (msg.action === 'stopMission') {
-      console.warn('[MessageListener] Calling abortMission');
+      console.error('[MessageListener] Calling abortMission');
       abortMission();
       sendResponse({ ok: true });
     } else if (msg.action === 'showPanel') {
-      console.warn('[MessageListener] Calling showPanel');
+      console.error('[MessageListener] Calling showPanel');
       // Gọi showPanel từ ui/panel.js
       if (window.Pon1147?.showPanel) {
         window.Pon1147.showPanel();
@@ -175,7 +184,7 @@
   window.Pon1147 = window.Pon1147 || {};
   window.Pon1147.startMission = function missionWrapper() {
     if (isMissionRunning) {
-      console.warn('[startMission] Already running, skipping duplicate call');
+      console.error('[startMission] Already running, skipping duplicate call');
       return;
     }
     isMissionRunning = true;

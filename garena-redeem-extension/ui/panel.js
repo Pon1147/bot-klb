@@ -164,6 +164,7 @@
       start: panel.querySelector('#hud-start'),
       stop: panel.querySelector('#hud-stop'),
     };
+    console.log('[Panel] buildPanel complete, els.dot:', !!els.dot, 'els.log:', !!els.log);
   }
 
   // --- Watermark ---
@@ -204,6 +205,7 @@
    * Được core/app.js gọi sau mỗi lần redeem.
    */
   function setStatus(status, currentCode) {
+    if (!els.dot) return; // Panel chưa build
     const s = STATUS_MAP[status];
     if (!s) return;
 
@@ -235,6 +237,7 @@
    * Được core/app.js gọi sau mỗi lần redeem.
    */
   function setStats(results) {
+    if (!document.getElementById('stat-SUCCESS')) return; // Panel chưa build
     const counts = results.reduce((a, r) => {
       a[r.status] = (a[r.status] || 0) + 1;
       return a;
@@ -264,6 +267,7 @@
    * Được core/app.js gọi sau mỗi lần redeem.
    */
   function addLog(status, code, message) {
+    if (!els.log) return; // Panel chưa build
     const time = new Date().toLocaleTimeString('vi-VN', { hour12: false });
     const info = LOG_STATUS_MAP[status] || LOG_STATUS_MAP.OTHER;
 
