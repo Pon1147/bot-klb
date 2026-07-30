@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Garena Redeem Code",
+  "version": "1.0.0",
+  "description": "Auto redeem Garena codes — crafted by Pon1147",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["https://redeem.df.garena.sg/*"],
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_title": "Garena Redeem Code — Pon1147"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://redeem.df.garena.sg/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon_16.png",
+    "48": "icons/icon_48.png",
+    "128": "icons/icon_128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*"],
+      "matches": ["https://redeem.df.garena.sg/*"]
+    }
+  ]
+}
