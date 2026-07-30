@@ -25,6 +25,10 @@
     {
       "resources": ["icons/*"],
       "matches": ["https://redeem.df.garena.sg/*"]
+    },
+    {
+      "resources": ["code_redeem.js"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

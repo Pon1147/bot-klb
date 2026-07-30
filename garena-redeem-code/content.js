@@ -1,4 +1,4 @@
-// ===== CONTENT SCRIPT: Garena Redeem Code =====
+﻿// ===== CONTENT SCRIPT: Garena Redeem Code =====
 // Inject dashboard panel lên trang + redeem logic
 
 (() => {
@@ -618,349 +618,13 @@
   let results = [];
 
   // ===== LOAD CODES =====
-  // Tải codes từ chrome.storage hoặc dùng codes mặc định
+  // Luôn load từ DEFAULT_CODES (code_redeem.js) — không lưu codes vào chrome.storage
   function loadCodes() {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['redeem_codes'], (data) => {
-        if (data.redeem_codes && data.redeem_codes.length > 0) {
-          resolve(data.redeem_codes.filter((c) => c.trim()));
-        } else {
-          // Codes mặc định (lấy từ script.js root)
-          resolve(DEFAULT_CODES);
-        }
-      });
-    });
+    return Promise.resolve(DEFAULT_CODES);
   }
 
-  // Codes mặc định (sync từ script.js root)
-  const DEFAULT_CODES = `
-DFSL9304
-DFSL6257
-GARENADFNY2501C158
-PWC260419S65
-PWC260419S21
-PWC260418S84
-PWC260418S79
-PWC260418S72
-PWC260418S11
-PWC260419S67
-DFCRAFT427
-DFFILE274
-DFWEEK237
-DFTRNG469
-MOILOOT92
-DFSIXVIP888
-ACESIXMAJOR
-SOLDFWIN360
-MOILOOT55
-MOILOOT68
-MOILOOT48
-MOILOOT02
-MOILOOT04
-MOILOOT60
-MOILOOT45
-HEDELTAFORCE7563
-HEDELTAFORCE8781
-HEDELTAFORCE8032
-HEDELTAFORCE9026
-HEDELTAFORCE3630
-HEDELTAFORCE4583
-GARENADFNY2501E034
-GARENADFNY2501H258
-C7S2X9J5D4B1V3Q
-GARENADFCBT2503Z6T9
-GARENADFCBT2503X9D1
-GARENADFCBT2503C3F4
-GARENADFID2501V621
-GARENADFID2501L983
-GARENADFID2501R572
-DELTAFORCEVN_8MD718JT4GR
-DELTAFORCEVN_95S092Y9T9D
-DELTAFORCEVN_6AVHJ6MYX6Y
-DELTAFORCEVN_540VN2S550U
-ReturningWarrior3
-DFUTSCARH
-DFUTWEAPON
-DFUTGEARTICKET
-DFUTINTERMEDIATE
-DFUTSUPPYPACK
-DFUTARMAMENT
-DFPACK293
-DFDRAGONBOAT
-DFCL503
-DFCONCORD82
-DFharbor738
-DFpromise643
-DFceleste516
-DFvivid061
-DFSH428
-DFmomentum423
-DFCATALYST87
-GADFZebra
-SsCkDfxY5AkdZqjJLkXq
-yWHtfsxYGRPaZvAfLN82
-DFUTW260412S95
-DFUTW260412S36
-DFUTW260412S99
-DFAWAKEN56
-DFakaonikou
-DFRL1017
-DFjubilee594
-85ewN4xYbJfncPKbADR
-DFclarity152
-DFUT2025FINALS1549
-DFUT2025PLAYOFF5910
-DFUT2025PLAYOFF9163
-DFUT2025PLAYOFF2509
-DFUT2025PLAYOFF4827
-DFUT2025PLAYOFF8051
-DFUT2025PLAYOFF5732
-DFUT2025PLAYOFF1276
-hjRtrKxYLmcTyYcEy64H
-f2X6e3xY3pJDCE5rT7P
-Bd52XmxyYj2DFGCqnq4
-msz7hMxxYyGhip8ay7HpK
-DFOSS260403B33
-DFsolace241
-MOBILE0123
-DFUTS26QL3101C64
-DFUTS26QL3101C38
-DFUTS26QL3001C47
-DFUTS26QL1
-DFUTS26QL6
-DFUTS26QL5
-DFCCOPNOW111
-DFCCOPGIST88
-DFCCOPWOR1D
-DFCCOPTOBE03
-DFCCOPPL4Y3R5
-DFOSS260405B69
-DFOSS260405B58
-DFOSS260405B36
-DFOSS260404B63
-DFOSS260404B57
-DFOSS260404B47
-DFOSS260403B21
-DFOS7K2M9Q
-DFOS4XJ8PL
-DFOSW4D1YP
-MOILOOT65
-MOILOOT79
-TRILLIONRAID1000
-TRILLIONRAID600
-TRILLIONRAID300
-POC3105S95
-POC3105S96
-POC3105S73
-POC3105S64
-POC3105S31
-POC3105S90
-POC3005S19
-POC3005S52
-POC3005S99
-POC3005S59
-POC3005S53
-POC3005S51
-DFWITNESS77
-DFOS3FZ9LK
-DFOS7Q2VXA
-DFOS2ZK8VA
-DFOSL5Q7MN
-DFOSB4N9RD
-DFAXIOM33
-DFINSIGHT48
-ReturningWarrior3
-ReturningWarrior1
-fvzeLrxYajwVviFSTSZ
-ReturningWarrior2
-N4SQWgxYcHw7gUci3bJy
-Top1BXHVN
-aCuQjtxY7vXGjxCTBnQU
-A5Z1NDW8K3PJLU
-10KSUBSYOUTUBEDFRTNK
-daichienboba6228
-daichienboba2719
-daichienboba6167
-DFBrilliant165
-daichienmobile7095
-daichienmobile3325
-daichienmobile7362
-DFOutstanding056
-DF1314754
-DFReliable732
-DFForever395
-DFExcellent659
-DFExceptional305
-DFRemarkable103
-DFessence982
-DFanchor945
-DFDragon504
-DFserene218
-DFSpark119
-DFUltra220
-JGHMCmxYa6PLcFgvD9mg
-DFMagic057
-DFGalaxy250
-DFHorizon503
-TrickOrTreat
-DFNinja874
-DFRainbow356
-DFFlash260
-DFEnergy428
-DFbeacon030
-DFoasis407
-DFeternity717
-DFFantasy742
-DFRocket825
-DFclover812
-DFHeroic668
-DFWizard309
-DFvoyage901
-DFsymphony104
-DFHORIZON91
-DFRESOLVE19
-DFEMBARK63
-DFmoment479
-DFPARAGON41
-DFASCEND72
-DFGENESIS05
-DFVANGUARD76
-DFOSS260403B81
-DFELEVATE16
-DFUTS26GR2702C44
-DFUTS26GR2702C57
-DFUTS26GR2702C92
-DFUTS26GR2802C23
-DFUTS26GR2802C66
-DFUTS26GR2802C78
-DFUTS26GR0103C35
-DFUTS26GR0103C81
-DFUTS26GR0103C49
-DFUTS26GR0703C34
-DFUTS26GR0703C96
-DFUTS26GR1203C72
-DFUTS26GR1203C83
-DFUTS26GR1203C46
-DFUTS26GR1303C65
-DFUTS26GR1303C39
-DFUTS26GR1303C98
-DFUTS26GR1403C24
-DFUTS26GR1403C87
-DFUTS26GR1403C52
-DFCC0001
-DFCCEIEI01
-DFCCHAHA5
-DFUTS26GR1503C33
-DFUTS26GR1503C91
-DFUTS26GR1503C74
-LAISEGAME
-DFUTS26PL2103C32
-DFUTS26PL2103C41
-DFUTS26PL2103C68
-DFUTS26PL2103C54
-DFUTS26PL2103C85
-DFUTS26PL2103C90
-DFUTS26PL2203C28
-DFUTS26PL2203C43
-DFUTS26PL2203C61
-DFUTS26PL2203C77
-DFUTS26PL2203C86
-DFUTS26PL2203C95
-DFVS3S7FR4
-DFVS8T9SZ4
-DFVSH5N4C7
-DFVSU2X6M8
-DFVSW1C5D9
-DFVSE4K7G1
-DFCCOPWINEIEI
-DF425SOL
-DFWIN777
-DFHUNTER666
-DFAIM666
-DFGOGOGO425
-DFGiveMeBrick425
-DFLuckylucky425
-DF425BountyS2
-DF51login51login
-DFVICTORY11
-DFWEAPON91
-SVBesCxYcsAN6LCD47P
-L34m5GxYjnPkXzckgdEB
-XufJgVxYrFCtM5heBT3B
-DFOSB6T3WZ
-DFOS9R2HXC
-DFOS3Y8KLM
-JGHMCmxYa
-6PLcFgvD9mg
-VIP777SIXDF
-DFARMX46
-SIXMAJORMVP
-DFTURING09
-DFAMMO08
-DFSIXMAJOR6
-VIP666SOLDF
-SOLPROMAJOR
-DFIW26ZX3Q
-DFIW265M9A
-DFIW26Y7J3
-DFIW266F2V
-DFIW263T7Z
-DFIW26H9KP
-DFIW26R4W8
-DFIW26C2GX
-DFIW26L2WY
-DFIW26M7Q9
-DFIW26X3NC
-DFIW268B5V
-DFIW26P8X2
-DFIW269V3B
-DFIW264K7M
-DFIW26Z5RT
-DFCOHERENCE35
-DFUTS26GR0803C76
-DFUTS26GR0803C21
-DFUTS26GR0803C67
-DFUTS26GR0603C42
-DFRAMADAN1477H
-DFUTS26QL2901C01
-DFUTS26QL2901C02
-DFUTS26QL3001C29
-DFUTS26QL2901C03
-DFUTS26QL3001C82
-DFUTS26QL3101C91
-DFUTS26QL0102C26
-yU5DpNxYkwx2ck76pcnw
-DFaura371
-DFIWTXD01
-DFIWTXD001
-DFIWTXD913
-DFUT2025FINALS4216
-PzDArbxYuL2f6RcaWE7T
-GARENADF2503K8F3
-GARENADFX9B7Q2
-GARENADFQ1H8SZ
-GARENADFM4Z8YJ
-DFCantWait1114
-GARENADFNY25010E034
-AW88PTR3W9
-AW88PTRP7D
-DFIPPQOCSP
-DFIPPQIASP
-DFIPPQARVO
-DFIPPQWLSP
-DFIPPQTBAF
-DFIPTFGJGFS
-DFIPTFGASLGI
-DFIPTFGZSKG
-DFIZERODAMGS
-DFIBRAKKESHMG
-DFIBRAKKESHLEG
-DFISPACECITYISG
-DFISPACECITYMDB
-DFISPACECITYECMO
-  `
-    .split('\n')
-    .filter((c) => c.trim());
+  // Codes mặc định — load từ code_redeem.js (injected above)
+  // DEFAULT_CODES là global const từ file riêng
 
   // ===== UTILS =====
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -968,28 +632,63 @@ DFISPACECITYECMO
   // ===== CLASSIFIER =====
   // Phân loại kết quả redeem dựa trên response object hoặc message text
   const classify = (input) => {
-    // Ưu tiên check object response {code, msg}
     if (input && typeof input === 'object' && 'code' in input) {
-      if (input.code === 0) return 'SUCCESS';
-      if (input.code === 400067) return 'LIMIT_REACHED';
-      if (input.code === 400070) return 'EXPIRED';
-      if (input.code === 400073) return 'PRESENT_ERROR';
-      if (input.code === 400054) return 'INVALID';
-      if (input.code === 400072) return 'USED';
+      switch (input.code) {
+        case 0:
+          return 'SUCCESS';
+
+        case 400067:
+        case 400068:
+          return 'LIMIT_REACHED';
+
+        case 400070:
+          return 'EXPIRED';
+
+        case 400073:
+          return 'PRESENT_ERROR';
+
+        case 400054:
+          return 'INVALID';
+
+        case 400072:
+          return 'USED';
+
+        default:
+          return 'UNKNOWN';
+      }
     }
 
     const t = String(input || '').toLowerCase();
 
     if (/^ok$|thành công|success/.test(t)) return 'SUCCESS';
-    if (/error_hint_400067|reached the redemption limit|limit of cdkey group|đạt giới hạn/.test(t))
+
+    if (
+      /error_hint_400067|error_hint_400068|reached the redemption limit|limit of cdkey group|đạt giới hạn/.test(
+        t,
+      )
+    ) {
       return 'LIMIT_REACHED';
+    }
+
     if (/error_hint_400070|hết hạn|expired/.test(t)) return 'EXPIRED';
-    if (/error_hint_400073|current cdkey present error/.test(t)) return 'PRESENT_ERROR';
-    if (/error_hint_400054|không hợp lệ|invalid|sai|current cdk does not match/.test(t))
+
+    if (/error_hint_400073|current cdkey present error/.test(t)) {
+      return 'PRESENT_ERROR';
+    }
+
+    if (/error_hint_400054|không hợp lệ|invalid|sai|current cdk does not match/.test(t)) {
       return 'INVALID';
-    if (/error_hint_400072|đã.*(nhận|sử dụng)|already|used/.test(t)) return 'USED';
+    }
+
+    if (/error_hint_400072|đã.*(nhận|sử dụng)|already|used/.test(t)) {
+      return 'USED';
+    }
+
     if (/captcha|xác minh|verification/.test(t)) return 'VERIFY';
-    if (/lỗi mạng|network|rate|quá nhanh|too fast/.test(t)) return 'TEMP_ERROR';
+
+    if (/lỗi mạng|network|rate|quá nhanh|too fast/.test(t)) {
+      return 'TEMP_ERROR';
+    }
 
     return 'UNKNOWN';
   };
@@ -1155,6 +854,7 @@ DFISPACECITYECMO
     }
 
     for (let att = 1; att <= CONFIG.maxRetries + 1; att++) {
+      lastDialogText.value = '';
       // Kiểm tra abort
       if (currentAbort) return null;
 
@@ -1195,10 +895,16 @@ DFISPACECITYECMO
       await sleep(CONFIG.submitConfirmMs);
 
       // Race: network result HOẶC dialog text
-      const result = await Promise.race([
-        currentAttempt.promise,
-        waitForDialog(CONFIG.timeoutMs).then((text) => ({ dialog: text })),
-      ]);
+      let result;
+
+      try {
+        result = await Promise.race([
+          currentAttempt.promise,
+          sleep(CONFIG.timeoutMs).then(() => null),
+        ]);
+      } catch {
+        result = null;
+      }
 
       // Ưu tiên network data (có {code, msg}) thay vì dialog text
       const netData = result?.data ?? null;
@@ -1206,10 +912,12 @@ DFISPACECITYECMO
 
       // Extract message an toàn: ưu tiên netData.msg → netData.code → dialog → fallback
       let message;
+
       if (netData && typeof netData === 'object') {
-        message = netData.msg ?? (netData.code !== undefined ? `code:${netData.code}` : dlg) ?? 'Timeout';
+        message =
+          netData.msg ?? (netData.code !== undefined ? `code:${netData.code}` : 'Unknown response');
       } else {
-        message = dlg || 'Timeout';
+        message = lastDialogText.value || 'Timeout';
       }
 
       const status = classify(netData ?? message);
@@ -1339,6 +1047,15 @@ DFISPACECITYECMO
       // Popup có thể đã đóng — bỏ qua lỗi
     });
   }
+
+  // ===== INJECT CODES SCRIPT =====
+  // Load DEFAULT_CODES từ file riêng (code_redeem.js)
+  (function injectCodesScript() {
+    const s = document.createElement('script');
+    s.src = chrome.runtime.getURL('code_redeem.js');
+    s.onload = () => console.log('[Garena Redeem] code_redeem.js loaded');
+    (document.head || document.documentElement).appendChild(s);
+  })();
 
   // ===== INJECT DASHBOARD =====
   try {
