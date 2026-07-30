@@ -966,9 +966,19 @@ DFISPACECITYECMO
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // ===== CLASSIFIER =====
-  // Phân loại kết quả redeem dựa trên message text
-  const classify = (message) => {
-    const t = String(message || '').toLowerCase();
+  // Phân loại kết quả redeem dựa trên response object hoặc message text
+  const classify = (input) => {
+    // Ưu tiên check object response {code, msg}
+    if (input && typeof input === 'object' && 'code' in input) {
+      if (input.code === 0) return 'SUCCESS';
+      if (input.code === 400067) return 'LIMIT_REACHED';
+      if (input.code === 400070) return 'EXPIRED';
+      if (input.code === 400073) return 'PRESENT_ERROR';
+      if (input.code === 400054) return 'INVALID';
+      if (input.code === 400072) return 'USED';
+    }
+
+    const t = String(input || '').toLowerCase();
 
     if (/^ok$|thành công|success/.test(t)) return 'SUCCESS';
     if (/error_hint_400067|reached the redemption limit|limit of cdkey group|đạt giới hạn/.test(t))
@@ -1190,10 +1200,19 @@ DFISPACECITYECMO
         waitForDialog(CONFIG.timeoutMs).then((text) => ({ dialog: text })),
       ]);
 
-      const netData = result?.data || result;
+      // Ưu tiên network data (có {code, msg}) thay vì dialog text
+      const netData = result?.data ?? null;
       const dlg = result?.dialog || lastDialogText.value || '';
-      const message = String(netData?.msg ?? netData ?? dlg ?? 'Timeout');
-      const status = classify(message);
+
+      // Extract message an toàn: ưu tiên netData.msg → netData.code → dialog → fallback
+      let message;
+      if (netData && typeof netData === 'object') {
+        message = netData.msg ?? (netData.code !== undefined ? `code:${netData.code}` : dlg) ?? 'Timeout';
+      } else {
+        message = dlg || 'Timeout';
+      }
+
+      const status = classify(netData ?? message);
 
       // Retry nếu network error hoặc unknown
       if ((status === 'TEMP_ERROR' || status === 'UNKNOWN') && att <= CONFIG.maxRetries) {
