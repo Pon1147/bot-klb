@@ -781,8 +781,8 @@
     if (!data || typeof data !== 'object' || data.code === undefined) return false;
     const u = url.toLowerCase();
     return (
-      /redeem|exchange|cdkey|gift|exc|code|verify/i.test(u) ||
-      (/\/api\/v[0-9]/.test(u) && /code|redeem/.test(u))
+      /\/redeem|\/exc|\/cdkey|\/gift/i.test(u) ||
+      (/\/api\/v[0-9]\//.test(u) && /\/redeem|\/exc|\/cdkey/.test(u))
     );
   };
 
@@ -908,22 +908,22 @@
 
       // Ưu tiên network data (có {code, msg}) thay vì dialog text
       const netData = result?.data ?? null;
-      const dlg = result?.dialog || lastDialogText.value || '';
 
-      // Extract message an toàn: ưu tiên netData.msg → netData.code → dialog → fallback
+      let status;
       let message;
 
       if (netData && typeof netData === 'object') {
-        message =
-          netData.msg ?? (netData.code !== undefined ? `code:${netData.code}` : 'Unknown response');
+        // API response là source of truth
+        status = classify(netData);
+        message = netData.msg ?? `code:${netData.code}`;
       } else {
+        // Chỉ dùng dialog khi KHÔNG có network response
         message = lastDialogText.value || 'Timeout';
+        status = classify(message);
       }
 
-      const status = classify(netData ?? message);
-
-      // Retry nếu network error hoặc unknown
-      if ((status === 'TEMP_ERROR' || status === 'UNKNOWN') && att <= CONFIG.maxRetries) {
+      // Retry chỉ khi TEMP_ERROR (network transient)
+      if (status === 'TEMP_ERROR' && att <= CONFIG.maxRetries) {
         await sleep(1600);
         continue;
       }
