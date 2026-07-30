@@ -414,6 +414,7 @@
       </div>
     `;
     document.body.appendChild(panel);
+    console.log('[Garena Redeem] Dashboard panel appended to DOM');
 
     // ===== Set icon background-image từ chrome.runtime.getURL =====
     panel.querySelectorAll('[data-src]').forEach((el) => {
@@ -520,22 +521,36 @@
 
     // ===== DASHBOARD EVENT LISTENERS =====
     // Gọi trực tiếp module-level functions (cùng closure scope)
-    $('dashBtnStart').addEventListener('click', () => {
-      if (isRunning) return;
-      if (!window.location.hostname.includes('redeem.df.garena.sg')) {
-        setDashStatus('idle', 'Sai trang');
-        addDashLog(0, '-', 'ERROR', 'Mở redeem.df.garena.sg');
-        return;
-      }
-      runRedeem();
-      setDashStatus('running', 'Đang chạy...');
-    });
+    const btnStart = $('dashBtnStart');
+    const btnStop = $('dashBtnStop');
+    const btnClear = $('dashBtnClearLogs');
 
-    $('dashBtnStop').addEventListener('click', () => {
-      currentAbort = true;
-    });
+    if (btnStart) {
+      btnStart.addEventListener('click', () => {
+        console.log('[Garena Redeem] Start button clicked, isRunning:', isRunning);
+        if (isRunning) return;
+        if (!window.location.hostname.includes('redeem.df.garena.sg')) {
+          setDashStatus('idle', 'Sai trang');
+          addDashLog(0, '-', 'ERROR', 'Mở redeem.df.garena.sg');
+          return;
+        }
+        runRedeem();
+        setDashStatus('running', 'Đang chạy...');
+      });
+    } else {
+      console.error('[Garena Redeem] dashBtnStart not found!');
+    }
 
-    $('dashBtnClearLogs').addEventListener('click', clearDashLogs);
+    if (btnStop) {
+      btnStop.addEventListener('click', () => {
+        console.log('[Garena Redeem] Stop button clicked');
+        currentAbort = true;
+      });
+    }
+
+    if (btnClear) {
+      btnClear.addEventListener('click', clearDashLogs);
+    }
 
     // ===== HELPER: UPDATE FROM REDEEM RESULTS =====
     function handleRedeemMessage(message) {
@@ -581,9 +596,9 @@
     }
 
     // ===== LISTEN FOR MESSAGES FROM SERVICE WORKER =====
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // Chỉ update dashboard, KHÔNG sendResponse để không chặn listener MESSAGE HANDLER
+    chrome.runtime.onMessage.addListener((message) => {
       handleRedeemMessage(message);
-      sendResponse({ ok: true });
     });
 
     // ===== INIT =====
@@ -620,6 +635,12 @@
   // ===== LOAD CODES =====
   // Luôn load từ DEFAULT_CODES (code_redeem.js) — không lưu codes vào chrome.storage
   function loadCodes() {
+    if (typeof DEFAULT_CODES === 'undefined' || !Array.isArray(DEFAULT_CODES)) {
+      console.error('[Garena Redeem] DEFAULT_CODES not found or invalid! code_redeem.js may have failed to load.');
+      // Fallback: codes rỗng để tránh crash
+      return Promise.resolve([]);
+    }
+    console.log('[Garena Redeem] Loaded', DEFAULT_CODES.length, 'codes from DEFAULT_CODES');
     return Promise.resolve(DEFAULT_CODES);
   }
 
@@ -1054,6 +1075,7 @@
     const s = document.createElement('script');
     s.src = chrome.runtime.getURL('code_redeem.js');
     s.onload = () => console.log('[Garena Redeem] code_redeem.js loaded');
+    s.onerror = () => console.error('[Garena Redeem] Failed to load code_redeem.js');
     (document.head || document.documentElement).appendChild(s);
   })();
 
