@@ -1,3 +1,4 @@
+// @deprecated — NOT loaded by manifest. Use content/content.js (monolithic) instead.
 import { getCentralState, setCentralState } from '../core/storage.js';
 import { transition, computeRemaining } from '../core/state.js';
 

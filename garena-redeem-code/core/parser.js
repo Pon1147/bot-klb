@@ -1,3 +1,4 @@
+// @deprecated — NOT loaded by manifest. Use content/content.js (monolithic) instead.
 import { RESPONSE_CODE_MAP } from './constants.js';
 
 export function parseRedeemResponse(rawResponse) {

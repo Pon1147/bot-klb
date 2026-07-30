@@ -1,3 +1,4 @@
+// @deprecated — NOT loaded by manifest. Use content/content.js (monolithic) instead.
 import { CONFIG } from '../core/constants.js';
 import { getCentralState, setCentralState } from '../core/storage.js';
 import {
@@ -74,7 +75,10 @@ class RedeemController {
 
   async processQueue(state) {
     while (!this.abortFlag) {
-      // Find next pending/processing code
+      // Always read fresh state each iteration
+      state = await getCentralState();
+      if (!state) return;
+
       const nextIndex = this.findNextPending(state);
 
       if (nextIndex === -1) {
@@ -98,10 +102,7 @@ class RedeemController {
 
         if (this.abortFlag) return;
 
-        state = await getCentralState();
-        if (!state) return;
-
-        this.handleResponse(state, result, nextIndex);
+        await this.handleResponse(state, result, nextIndex);
       }
       // If PROCESSING, skip (response may still be pending)
 
@@ -149,7 +150,7 @@ class RedeemController {
 
   async redeemSingle(code) {
     // Reset capture before each attempt
-    capture.reset();
+    capture.reset(code);
 
     // Wait for UI to be ready
     const input = await waitForUI('input');
@@ -164,12 +165,8 @@ class RedeemController {
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
 
-    // Click button
-    await sleep(CONFIG.submitConfirmMs);
-    btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-    btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-    btn.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
-    btn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+    // Click button — dispatchEvent avoids javascript: href navigation (CSP violation)
+    await sleep(200);
     btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     // Wait for captured response
@@ -203,7 +200,11 @@ class RedeemController {
     });
   }
 
-  handleResponse(state, parsed, index) {
+  async handleResponse(state, parsed, index) {
+    // Always read latest state from storage before updating to avoid stale data race
+    state = await getCentralState();
+    if (!state) return;
+
     const isSuccess = parsed.result === 'SUCCESS';
     const isFailed = parsed.result === 'FAILED';
 
@@ -239,7 +240,7 @@ class RedeemController {
     // Clear current code
     state = setCurrentCode(state, null);
 
-    setCentralState(state);
+    await setCentralState(state);
   }
 }
 

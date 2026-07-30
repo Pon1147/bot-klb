@@ -1,3 +1,4 @@
+// @deprecated — NOT loaded by manifest. Use content/content.js (monolithic) instead.
 /**
  * Generate a unique ID for logs and sessions.
  */

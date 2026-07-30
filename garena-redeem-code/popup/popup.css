@@ -1,4 +1,6 @@
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -18,7 +20,8 @@
 
 body {
   width: 320px;
-  height: 420px;
+  height: auto;
+  border: 2px solid white;
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
@@ -49,7 +52,10 @@ body {
   border-radius: 50%;
   object-fit: contain;
 }
-.header h1 { font-size: 15px; font-weight: 700; }
+.header h1 {
+  font-size: 15px;
+  font-weight: 700;
+}
 
 /* Info card */
 .info-card {
@@ -127,14 +133,18 @@ body {
   font-family: inherit;
 }
 
-.btn:active { transform: scale(0.97); }
+.btn:active {
+  transform: scale(0.97);
+}
 
 .btn-save {
   background: var(--blue);
   color: #fff;
 }
 
-.btn-save:hover { background: #2563eb; }
+.btn-save:hover {
+  background: #2563eb;
+}
 
 .btn-reset {
   background: var(--card);
@@ -166,4 +176,6 @@ body {
   margin-left: 4px;
 }
 
-.footer a:hover { text-decoration: underline; }
+.footer a:hover {
+  text-decoration: underline;
+}

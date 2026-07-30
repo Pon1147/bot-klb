@@ -1,0 +1,26 @@
+garena-redeem-code
+├ README.md
+├ assets
+│ ├ icon_128.png
+│ ├ icon_16.png
+│ └ icon_48.png
+├ background
+│ └ service-worker.js
+├ content
+│ ├ bootstrap.js
+│ ├ content.js
+│ ├ dashboard.css
+│ ├ dashboard.js
+│ └ redeem-controller.js
+├ core
+│ ├ capture.js
+│ ├ constants.js
+│ ├ parser.js
+│ ├ state.js
+│ ├ storage.js
+│ └ utils.js
+├ manifest.json
+└ popup
+  ├ popup.css
+  ├ popup.html
+  └ popup.js

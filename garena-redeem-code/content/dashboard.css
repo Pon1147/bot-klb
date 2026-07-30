@@ -154,11 +154,16 @@
   opacity: 0.35;
   cursor: not-allowed;
   transform: none;
+  pointer-events: none;
 }
 
 .grd-btn-start {
   background: #3b82f6;
   color: #fff;
+}
+.grd-btn-start:disabled {
+  background: #3b82f6 !important;
+  opacity: 0.35;
 }
 .grd-btn-start:hover:not(:disabled) { background: #2563eb; }
 

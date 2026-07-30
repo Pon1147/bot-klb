@@ -1,3 +1,4 @@
+// @deprecated — NOT loaded by manifest. Use content/content.js (monolithic) instead.
 import { initDashboard } from './dashboard.js';
 import { initRedeemController } from './redeem-controller.js';
 

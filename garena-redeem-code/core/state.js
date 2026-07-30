@@ -1,3 +1,4 @@
+// @deprecated — NOT loaded by manifest. Use content/content.js (monolithic) instead.
 import { STATUSES, CODE_STATUSES } from './constants.js';
 
 const VALID_TRANSITIONS = {

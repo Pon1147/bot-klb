@@ -1,3 +1,4 @@
+// @deprecated — NOT loaded by manifest. Use content/content.js (monolithic) instead.
 import { DEFAULT_CODES } from './constants.js';
 import { createInitialState } from './state.js';
 

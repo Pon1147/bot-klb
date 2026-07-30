@@ -23,7 +23,7 @@ Discord bot built with TypeScript and discord.js v14, using Container V2 compone
 
 ## File Structure
 
-```
+```bash
 src/
   index.ts                  - Entry point, 13-step boot
   config/                   - Bot config, intents, defaults, colors
