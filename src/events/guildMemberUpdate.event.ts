@@ -64,7 +64,9 @@ export async function execute(
     const session = getSession(newMember.user.id);
     if (session) {
       try {
-        const menuChannel = await newMember.guild.channels.fetch(session.channelId).catch(() => null);
+        const menuChannel = await newMember.guild.channels
+          .fetch(session.channelId)
+          .catch(() => null);
         if (menuChannel && menuChannel.isTextBased()) {
           const menuMsg = await menuChannel.messages.fetch(session.messageId).catch(() => null);
           if (menuMsg) await menuMsg.delete();

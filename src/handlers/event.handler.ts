@@ -71,7 +71,10 @@ export function loadEvents(botClient: Client): void {
 
     try {
       // Support both `export default { name, once, execute }` and named exports
+      // Dynamic import for plugin architecture — require() is intentional here
+      /* eslint-disable @typescript-eslint/no-require-imports */
       const rawModule = require(filePath);
+      /* eslint-enable @typescript-eslint/no-require-imports */
       const eventModule = (rawModule.default || rawModule) as EventModule;
 
       // Strict contract validation

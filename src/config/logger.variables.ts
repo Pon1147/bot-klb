@@ -55,4 +55,3 @@ export const LEVEL_ICONS = {
   error: '✗',
   fatal: '✖',
 } as const;
-

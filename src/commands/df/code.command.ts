@@ -40,7 +40,9 @@ export const data = new SlashCommandBuilder()
         option.setName('channel').setDescription('Kênh để gửi codes.').setRequired(true),
       ),
   )
-  .addSubcommand((subcommand) => subcommand.setName('status').setDescription('Xem channel cấu hình.'));
+  .addSubcommand((subcommand) =>
+    subcommand.setName('status').setDescription('Xem channel cấu hình.'),
+  );
 
 /** Check if DailyCodes object has at least one non-null value */
 export function hasAnyCodes(codes: DailyCodes | null): boolean {

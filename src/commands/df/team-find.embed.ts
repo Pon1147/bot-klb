@@ -35,7 +35,9 @@ export function buildTeamFindEmbed(params: TeamFindParams) {
   const diff = DIFFICULTY_CONFIG[params.difficulty];
 
   const attachmentName = mapInfo.name.toLowerCase().replace(/\s+/g, '-') + '.png';
-  const mapAttachment = new AttachmentBuilder(`${ASSETS_PATH}${mapInfo.image}`).setName(attachmentName);
+  const mapAttachment = new AttachmentBuilder(`${ASSETS_PATH}${mapInfo.image}`).setName(
+    attachmentName,
+  );
 
   // ── Header: username + avatar thumbnail ──
   const headerSection: Record<string, unknown> = {

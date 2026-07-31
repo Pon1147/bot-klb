@@ -40,7 +40,9 @@ export function buildResetSubcommand(
 
 // ─── Option Builder Callbacks ─────────────────────────────────
 
-export function buildEditTypeOptionCallback(opt: SlashCommandStringOption): SlashCommandStringOption {
+export function buildEditTypeOptionCallback(
+  opt: SlashCommandStringOption,
+): SlashCommandStringOption {
   return opt
     .setName('type')
     .setDescription('Loại container cần chỉnh sửa.')
@@ -52,7 +54,9 @@ export function buildEditTypeOptionCallback(opt: SlashCommandStringOption): Slas
     );
 }
 
-export function buildResetTypeOptionCallback(opt: SlashCommandStringOption): SlashCommandStringOption {
+export function buildResetTypeOptionCallback(
+  opt: SlashCommandStringOption,
+): SlashCommandStringOption {
   return opt
     .setName('type')
     .setDescription('Loại container cần reset.')

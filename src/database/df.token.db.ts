@@ -43,13 +43,9 @@ export function initializeDfTokensTable(database: Database.Database): void {
   }
 }
 
-export function getDfToken(
-  database: Database.Database,
-  discordId: string,
-): DfTokenRow | undefined {
-  return database
-    .prepare('SELECT * FROM df_tokens WHERE discord_id = ?')
-    .get(discordId) as DfTokenRow | undefined;
+export function getDfToken(database: Database.Database, discordId: string): DfTokenRow | undefined {
+  return database.prepare('SELECT * FROM df_tokens WHERE discord_id = ?').get(discordId) as
+    DfTokenRow | undefined;
 }
 
 export function saveDfToken(

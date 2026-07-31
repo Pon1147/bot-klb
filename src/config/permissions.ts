@@ -51,9 +51,6 @@ export function getAllRoleIds(): string[] {
 /**
  * Check xem user có ít nhất 1 role được yêu cầu không.
  */
-export function hasRequiredRole(
-  userRoleIds: string[],
-  requiredRoleIds: string[],
-): boolean {
+export function hasRequiredRole(userRoleIds: string[], requiredRoleIds: string[]): boolean {
   return requiredRoleIds.some((roleId) => userRoleIds.includes(roleId));
 }

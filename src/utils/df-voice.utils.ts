@@ -1,9 +1,4 @@
-import {
-  ChatInputCommandInteraction,
-  Guild,
-  GuildMember,
-  PermissionsBitField,
-} from 'discord.js';
+import { ChatInputCommandInteraction, Guild, GuildMember, PermissionsBitField } from 'discord.js';
 
 export interface VoiceStateResult {
   success: boolean;
@@ -19,9 +14,7 @@ export interface VoiceStateResult {
 }
 
 /** Narrow `interaction.member` to `GuildMember` (has `roles`, which APIInteractionGuildMember lacks). */
-function getGuildMember(
-  interaction: ChatInputCommandInteraction,
-): GuildMember | null {
+function getGuildMember(interaction: ChatInputCommandInteraction): GuildMember | null {
   const member = interaction.member;
   if (!member || !('roles' in member)) return null;
   return member as GuildMember;

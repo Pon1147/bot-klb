@@ -29,18 +29,16 @@ function buildOwnerSubcommand(sub: SlashCommandSubcommandBuilder): SlashCommandS
   return sub
     .setName('owner')
     .setDescription('Set Owner role cho RBAC.')
-    .addRoleOption((opt) =>
-      opt.setName('role').setDescription('Role Owner').setRequired(true),
-    );
+    .addRoleOption((opt) => opt.setName('role').setDescription('Role Owner').setRequired(true));
 }
 
-function buildModeratorSubcommand(sub: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder {
+function buildModeratorSubcommand(
+  sub: SlashCommandSubcommandBuilder,
+): SlashCommandSubcommandBuilder {
   return sub
     .setName('moderator')
     .setDescription('Set Moderator role cho RBAC.')
-    .addRoleOption((opt) =>
-      opt.setName('role').setDescription('Role Moderator').setRequired(true),
-    );
+    .addRoleOption((opt) => opt.setName('role').setDescription('Role Moderator').setRequired(true));
 }
 
 export const data = new SlashCommandBuilder()

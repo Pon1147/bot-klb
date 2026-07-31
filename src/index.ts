@@ -56,7 +56,9 @@ async function main(): Promise<void> {
     loadPermissions(permData);
     logger.info(`RBAC permissions loaded: ${Object.keys(permData.commands).length} command(s)`);
   } catch (err) {
-    logger.warn(`RBAC permissions load failed: ${(err as Error).message}. Commands will have no role restrictions.`);
+    logger.warn(
+      `RBAC permissions load failed: ${(err as Error).message}. Commands will have no role restrictions.`,
+    );
   }
 
   // Step 4: Create Discord client
@@ -77,7 +79,9 @@ async function main(): Promise<void> {
     const url = await setupTunnel(webhook.port);
     process.env.WEBHOOK_URL = url;
   } catch (err) {
-    logger.warn(`Cloudflared tunnel setup failed: ${(err as Error).message}. Using localhost fallback.`);
+    logger.warn(
+      `Cloudflared tunnel setup failed: ${(err as Error).message}. Using localhost fallback.`,
+    );
   }
 
   // Graceful shutdown: stop webhook server + tunnel

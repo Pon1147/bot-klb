@@ -1,8 +1,24 @@
-﻿import { ButtonInteraction, GuildMember, MessageFlags, ModalSubmitInteraction, PermissionFlagsBits } from 'discord.js';
+﻿import {
+  ButtonInteraction,
+  GuildMember,
+  MessageFlags,
+  ModalSubmitInteraction,
+  PermissionFlagsBits,
+} from 'discord.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { getSettingsService } from '../../services/settings.service.js';
-import { editSessions, isSessionValid, touchSession, cloneContainerSettings, createSession } from './container-session.js';
-import { buildLivePreviewContainer, buildAllEditorRows, updateEditorMessage } from './container-builders.js';
+import {
+  editSessions,
+  isSessionValid,
+  touchSession,
+  cloneContainerSettings,
+  createSession,
+} from './container-session.js';
+import {
+  buildLivePreviewContainer,
+  buildAllEditorRows,
+  updateEditorMessage,
+} from './container-builders.js';
 import {
   handleLinesSubmenu,
   handleAddLine,
@@ -20,9 +36,7 @@ import { handleSave, handleReset, handleCancel } from './handlers/action.handler
 /**
  * Main handler cho tất cả button interactions trong container editor.
  */
-export async function handleEditorButtonInteraction(
-  interaction: ButtonInteraction,
-): Promise<void> {
+export async function handleEditorButtonInteraction(interaction: ButtonInteraction): Promise<void> {
   // Pencil button: start editor from a live container message
   if (interaction.customId.startsWith('container_edit_pencil_')) {
     await handlePencilButtonClick(interaction);
@@ -120,9 +134,7 @@ export async function handleEditorButtonInteraction(
 /**
  * Handler cho modal submissions trong container editor.
  */
-export async function handleEditorModalSubmit(
-  interaction: ModalSubmitInteraction,
-): Promise<void> {
+export async function handleEditorModalSubmit(interaction: ModalSubmitInteraction): Promise<void> {
   const session = editSessions.get(interaction.user.id);
 
   if (!isSessionValid(session)) {
@@ -243,9 +255,7 @@ async function updateModalEditorPreview(
  * Handle pencil button click from a live container message.
  * Starts an interactive edit session without needing /container edit.
  */
-async function handlePencilButtonClick(
-  interaction: ButtonInteraction,
-): Promise<void> {
+async function handlePencilButtonClick(interaction: ButtonInteraction): Promise<void> {
   const member = interaction.member as GuildMember;
   const guild = interaction.guild;
 

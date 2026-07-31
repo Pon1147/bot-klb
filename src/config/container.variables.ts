@@ -107,9 +107,7 @@ export const BOOSTER_CONTAINER_DEFAULTS = {
   HEADER_TEMPLATE: '**🚀 Cảm ơn {user} đã Server Boost {guild}!**',
 
   /** Content lines cho booster thank-you message */
-  CONTENT_LINES: [
-    `Server của chúng ta đang được hỗ trợ bởi bạn!`,
-  ],
+  CONTENT_LINES: [`Server của chúng ta đang được hỗ trợ bởi bạn!`],
 
   /** Media URL (mặc định không có) */
   MEDIA_URL: null,

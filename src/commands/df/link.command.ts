@@ -66,9 +66,7 @@ export const data = new SlashCommandBuilder()
   .setName('df-link')
   .setDescription('Liên kết tài khoản Delta Force HQ.')
   .addSubcommand((sub) =>
-    sub
-      .setName('start')
-      .setDescription('Nhận script liên kết tự động (khuyến nghị)'),
+    sub.setName('start').setDescription('Nhận script liên kết tự động (khuyến nghị)'),
   )
   .addSubcommand((sub) =>
     sub
@@ -129,8 +127,7 @@ async function handleManualLink(
     saveDfToken(database, interaction.user.id, openid, token);
 
     await interaction.editReply({
-      content: `✅ Đã liên kết tài khoản Delta Force!\n\n` +
-        `OpenID: ${openid}`,
+      content: `✅ Đã liên kết tài khoản Delta Force!\n\n` + `OpenID: ${openid}`,
     });
   } catch (error: any) {
     console.error('[df-link] Manual link failed:', error.message ?? error);
@@ -145,9 +142,7 @@ async function handleManualLink(
 }
 
 /** Xử lý webhook flow — gửi script cho user chạy trong browser console */
-async function handleWebhookFlow(
-  interaction: ChatInputCommandInteraction,
-): Promise<void> {
+async function handleWebhookFlow(interaction: ChatInputCommandInteraction): Promise<void> {
   if (await requireGuild(interaction)) return;
 
   // Đảm bảo tunnel chạy với URL hiện tại

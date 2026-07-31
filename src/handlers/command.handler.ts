@@ -92,7 +92,10 @@ export function loadCommands(collection: Collection<string, CommandModule>): voi
     const filePath = path.join(commandsPath, file);
 
     try {
+      // Dynamic import for plugin architecture — require() is intentional here
+      /* eslint-disable @typescript-eslint/no-require-imports */
       const commandModule = require(filePath);
+      /* eslint-enable @typescript-eslint/no-require-imports */
 
       // Kiểm tra xem module có phải command hợp lệ không
       if (!isValidCommandModule(commandModule)) {
@@ -283,9 +286,10 @@ export async function deployCommands(
   const localCommands = [];
   for (const [_name, command] of commandCollection) {
     // data can be a SlashCommandBuilder (has toJSON) or a plain JSON object
-    const json = 'toJSON' in command.data && typeof command.data.toJSON === 'function'
-      ? command.data.toJSON()
-      : command.data;
+    const json =
+      'toJSON' in command.data && typeof command.data.toJSON === 'function'
+        ? command.data.toJSON()
+        : command.data;
     localCommands.push(json);
   }
 

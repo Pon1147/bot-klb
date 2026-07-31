@@ -1,11 +1,6 @@
 /** Build interactive UI for /team-find — buttons for Map/Mode, select menu for Rank */
 
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  StringSelectMenuBuilder,
-} from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } from 'discord.js';
 import {
   MAP_DISPLAY,
   MAP_MODES,
@@ -31,9 +26,9 @@ const MAP_COLORS: Record<string, ButtonStyle> = {
 
 /** Mode button colors */
 const MODE_COLORS: Record<string, ButtonStyle> = {
-  'Dễ': ButtonStyle.Success,
-  'Thường': ButtonStyle.Primary,
-  'Khó': ButtonStyle.Danger,
+  Dễ: ButtonStyle.Success,
+  Thường: ButtonStyle.Primary,
+  Khó: ButtonStyle.Danger,
 };
 
 /** Build status text that shows current selections */
@@ -71,9 +66,10 @@ function buildMapButtons(userId: string, selectedMap: MapKey | null) {
 
 /** Build the Mode button row — filtered by map */
 function buildModeButtons(userId: string, selectedMap: MapKey | null, selectedMode: string | null) {
-  const modes = selectedMap && MAP_MODES[selectedMap]
-    ? MAP_MODES[selectedMap]
-    : Object.values(DIFFICULTY_CONFIG).map((c) => c.id);
+  const modes =
+    selectedMap && MAP_MODES[selectedMap]
+      ? MAP_MODES[selectedMap]
+      : Object.values(DIFFICULTY_CONFIG).map((c) => c.id);
 
   const buttons = modes.map((m: Difficulty) => {
     const cfg = DIFFICULTY_CONFIG[m];
@@ -117,11 +113,7 @@ function buildDoneButton(userId: string, enabled: boolean) {
  * Build the full interactive menu message.
  * Shows Map buttons, Mode buttons (filtered by map), Rank select, and Done button.
  */
-export function buildSelectMenuMessage(
-  userId: string,
-  username: string,
-  state: MenuState,
-) {
+export function buildSelectMenuMessage(userId: string, username: string, state: MenuState) {
   const content = buildStatusContent(username, state);
 
   // Map buttons — show only if map not selected yet
@@ -138,11 +130,6 @@ export function buildSelectMenuMessage(
 
   return {
     content,
-    components: [
-      mapRow.toJSON(),
-      modeRow.toJSON(),
-      rankRow.toJSON(),
-      doneRow.toJSON(),
-    ],
+    components: [mapRow.toJSON(), modeRow.toJSON(), rankRow.toJSON(), doneRow.toJSON()],
   };
 }

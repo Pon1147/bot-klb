@@ -7,4 +7,3 @@ declare module 'discord.js' {
     database: Database.Database;
   }
 }
-

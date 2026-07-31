@@ -17,7 +17,11 @@ import { handleTeamFindInteraction } from '../commands/df/team-find.interaction.
 
 export async function execute(
   client: Client,
-  interaction: ButtonInteraction | StringSelectMenuInteraction | ChatInputCommandInteraction | ModalSubmitInteraction,
+  interaction:
+    | ButtonInteraction
+    | StringSelectMenuInteraction
+    | ChatInputCommandInteraction
+    | ModalSubmitInteraction,
 ): Promise<void> {
   // ── 1. Button Interactions ──
   if (interaction.isButton()) {
@@ -49,35 +53,53 @@ export async function execute(
         const channel = await interaction.guild?.channels.fetch(channelId).catch(() => null);
 
         if (!channel || channel.type !== 2) {
-          await interaction.reply({ content: 'Phòng thoại không còn tồn tại.', flags: MessageFlags.Ephemeral });
+          await interaction.reply({
+            content: 'Phòng thoại không còn tồn tại.',
+            flags: MessageFlags.Ephemeral,
+          });
           return;
         }
 
         const member = interaction.member;
         const memberVoice = member instanceof GuildMember ? member.voice : null;
         if (memberVoice?.channel?.id === channelId) {
-          await interaction.reply({ content: 'Bạn đã đang trong phòng này.', flags: MessageFlags.Ephemeral });
+          await interaction.reply({
+            content: 'Bạn đã đang trong phòng này.',
+            flags: MessageFlags.Ephemeral,
+          });
           return;
         }
 
         if (channel.full) {
-          await interaction.reply({ content: 'Phòng thoại đã đầy (99 người).', flags: MessageFlags.Ephemeral });
+          await interaction.reply({
+            content: 'Phòng thoại đã đầy (99 người).',
+            flags: MessageFlags.Ephemeral,
+          });
           return;
         }
 
         const me = interaction.guild!.members.me;
         const botPerms = me ? channel.permissionsFor(me) : null;
         if (!botPerms?.has('Connect')) {
-          await interaction.reply({ content: 'Bot không có quyền tham gia phòng thoại này.', flags: MessageFlags.Ephemeral });
+          await interaction.reply({
+            content: 'Bot không có quyền tham gia phòng thoại này.',
+            flags: MessageFlags.Ephemeral,
+          });
           return;
         }
 
         await (channel as any).join();
-        await interaction.reply({ content: 'Đã join phòng thành công!', flags: MessageFlags.Ephemeral });
+        await interaction.reply({
+          content: 'Đã join phòng thành công!',
+          flags: MessageFlags.Ephemeral,
+        });
       } catch (error) {
         console.error('Error in team-find join button handler:', error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: 'Có lỗi xảy ra khi tham gia phòng thoại.', flags: MessageFlags.Ephemeral });
+          await interaction.reply({
+            content: 'Có lỗi xảy ra khi tham gia phòng thoại.',
+            flags: MessageFlags.Ephemeral,
+          });
         }
       }
       return;

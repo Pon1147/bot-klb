@@ -15,7 +15,14 @@ import { DEFAULT_OPERATOR_AVATAR, resolveOperator } from '../../utils/df-operato
 import { requireGuild } from '../../utils/df-guards.js';
 import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
-import { EMOJI_WIN, EMOJI_DEFEAT, EMOJI_MONEY, EMOJI_KILL, MAP_NAMES, MAX_HISTORY_LIMIT } from '../../config/team-find.config.js';
+import {
+  EMOJI_WIN,
+  EMOJI_DEFEAT,
+  EMOJI_MONEY,
+  EMOJI_KILL,
+  MAP_NAMES,
+  MAX_HISTORY_LIMIT,
+} from '../../config/team-find.config.js';
 import type { DfMatchEntry } from '../../types/deltaforce.types.js';
 
 export const data = new SlashCommandBuilder()
@@ -79,7 +86,9 @@ export async function execute(
 
   const token = getDfToken(database, interaction.user.id);
   if (!token) {
-    const err = buildErrorContainer('Bạn chưa liên kết tài khoản. Dùng `/df-link start` hoặc `/df-link manual` để bắt đầu.');
+    const err = buildErrorContainer(
+      'Bạn chưa liên kết tài khoản. Dùng `/df-link start` hoặc `/df-link manual` để bắt đầu.',
+    );
     await interaction.reply({
       components: err.toJSON(),
       flags: err.flags | MessageFlags.Ephemeral,

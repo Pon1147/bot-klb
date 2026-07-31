@@ -10,7 +10,12 @@
  *   [16:20:02] [ERROR] [EventHandler] Failed to load event
  */
 
-import { LOG_COLORS, LEVEL_BADGES, LEVEL_COLOR_MAP, LEVEL_ICONS } from '../config/logger.variables.js';
+import {
+  LOG_COLORS,
+  LEVEL_BADGES,
+  LEVEL_COLOR_MAP,
+  LEVEL_ICONS,
+} from '../config/logger.variables.js';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
@@ -65,7 +70,12 @@ function formatLine(
 /**
  * Core logger function.
  */
-function log(level: LogLevel, module: string, message: string, metadata?: Record<string, unknown>): void {
+function log(
+  level: LogLevel,
+  module: string,
+  message: string,
+  metadata?: Record<string, unknown>,
+): void {
   console.log(formatLine(level, module, message, metadata));
 }
 
@@ -88,13 +98,31 @@ function formatHeader(title: string): string {
   const pad = width - 2;
   const content = ' ' + title + ' '.repeat(pad - title.length);
   return (
-    LOG_COLORS.BOLD + LOG_COLORS.CYAN +
-    '╔' + '═'.repeat(width - 2) + '╗' + LOG_COLORS.RESET + '\n' +
-    LOG_COLORS.BOLD + LOG_COLORS.CYAN + '║' + LOG_COLORS.RESET +
-    LOG_COLORS.WHITE + content + LOG_COLORS.RESET +
-    LOG_COLORS.BOLD + LOG_COLORS.CYAN + '║' + LOG_COLORS.RESET + '\n' +
-    LOG_COLORS.BOLD + LOG_COLORS.CYAN +
-    '╚' + '═'.repeat(width - 2) + '╝' + LOG_COLORS.RESET
+    LOG_COLORS.BOLD +
+    LOG_COLORS.CYAN +
+    '╔' +
+    '═'.repeat(width - 2) +
+    '╗' +
+    LOG_COLORS.RESET +
+    '\n' +
+    LOG_COLORS.BOLD +
+    LOG_COLORS.CYAN +
+    '║' +
+    LOG_COLORS.RESET +
+    LOG_COLORS.WHITE +
+    content +
+    LOG_COLORS.RESET +
+    LOG_COLORS.BOLD +
+    LOG_COLORS.CYAN +
+    '║' +
+    LOG_COLORS.RESET +
+    '\n' +
+    LOG_COLORS.BOLD +
+    LOG_COLORS.CYAN +
+    '╚' +
+    '═'.repeat(width - 2) +
+    '╝' +
+    LOG_COLORS.RESET
   );
 }
 
@@ -103,11 +131,16 @@ function formatHeader(title: string): string {
  */
 export function createLogger(moduleName: string) {
   return {
-    debug: (message: string, metadata?: Record<string, unknown>) => log('debug', moduleName, message, metadata),
-    info: (message: string, metadata?: Record<string, unknown>) => log('info', moduleName, message, metadata),
-    warn: (message: string, metadata?: Record<string, unknown>) => log('warn', moduleName, message, metadata),
-    error: (message: string, metadata?: Record<string, unknown>) => log('error', moduleName, message, metadata),
-    fatal: (message: string, metadata?: Record<string, unknown>) => log('fatal', moduleName, message, metadata),
+    debug: (message: string, metadata?: Record<string, unknown>) =>
+      log('debug', moduleName, message, metadata),
+    info: (message: string, metadata?: Record<string, unknown>) =>
+      log('info', moduleName, message, metadata),
+    warn: (message: string, metadata?: Record<string, unknown>) =>
+      log('warn', moduleName, message, metadata),
+    error: (message: string, metadata?: Record<string, unknown>) =>
+      log('error', moduleName, message, metadata),
+    fatal: (message: string, metadata?: Record<string, unknown>) =>
+      log('fatal', moduleName, message, metadata),
 
     /** Print a divider line */
     divider: (char?: string) => console.log(formatDivider(char || '-')),

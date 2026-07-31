@@ -139,12 +139,7 @@ export async function handleColorPresetSelect(
  * Xử lý khi user nhấn custom color button.
  */
 export async function handleCustomColorModal(interaction: ButtonInteraction): Promise<void> {
-  const modal = buildTextModal(
-    'custom_color',
-    'Nhập mã màu Hex',
-    'Ví dụ: #5865F2 hoặc 5865F2',
-    '',
-  );
+  const modal = buildTextModal('custom_color', 'Nhập mã màu Hex', 'Ví dụ: #5865F2 hoặc 5865F2', '');
   await interaction.showModal(modal);
 }
 

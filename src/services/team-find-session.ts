@@ -52,16 +52,8 @@ export function getSession(userId: string): TeamFindSession | undefined {
   return s;
 }
 
-export function updateSelection(
-  userId: string,
-  field: 'map',
-  value: MapKey,
-): void;
-export function updateSelection(
-  userId: string,
-  field: 'mode' | 'rank',
-  value: string,
-): void;
+export function updateSelection(userId: string, field: 'map', value: MapKey): void;
+export function updateSelection(userId: string, field: 'mode' | 'rank', value: string): void;
 export function updateSelection(
   userId: string,
   field: 'map' | 'mode' | 'rank',

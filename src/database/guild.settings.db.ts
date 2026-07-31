@@ -11,15 +11,17 @@ type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends Array<infer U>
     ? Array<DeepPartial<U>>
     : T[P] extends object
-    ? DeepPartial<T[P]>
-    : T[P];
+      ? DeepPartial<T[P]>
+      : T[P];
 };
 
 /**
  * Lấy tất cả guild IDs từ DB.
  */
 export function getAllGuildIds(database: Database.Database): string[] {
-  const rows = database.prepare('SELECT guild_id FROM guild_settings').all() as { guild_id: string }[];
+  const rows = database.prepare('SELECT guild_id FROM guild_settings').all() as {
+    guild_id: string;
+  }[];
   return rows.map((r) => r.guild_id);
 }
 
@@ -43,21 +45,19 @@ export function initializeSettingsTable(database: Database.Database): void {
  * Đọc settings từ DB cho guild.
  * Nếu chưa có → lưu default vào DB và trả về default.
  */
-export function loadGuildSettings(
-  database: Database.Database,
-  guildId: string,
-): GuildSettings {
-  const row = database
-    .prepare('SELECT * FROM guild_settings WHERE guild_id = ?')
-    .get(guildId) as RawGuildSettingsRow | undefined;
+export function loadGuildSettings(database: Database.Database, guildId: string): GuildSettings {
+  const row = database.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId) as
+    RawGuildSettingsRow | undefined;
 
   if (row) {
     try {
       const parsed = JSON.parse(row.settings_json) as GuildSettings;
       // Merge với defaults để fill missing fields (ví dụ: booster khi DB cũ chưa có)
       const defaults = cloneDefaultSettings();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      const merged = deepMerge(defaults as unknown as Record<string, unknown>, parsed as unknown as Record<string, unknown>);
+      const merged = deepMerge(
+        defaults as unknown as Record<string, unknown>,
+        parsed as unknown as Record<string, unknown>,
+      );
       // Lưu lại version đầy đủ để lần sau không cần merge
       saveGuildSettings(database, guildId, merged as unknown as GuildSettings);
       return merged as unknown as GuildSettings;
@@ -84,10 +84,12 @@ export function saveGuildSettings(
   settings: GuildSettings,
 ): void {
   database
-    .prepare(`
+    .prepare(
+      `
       INSERT OR REPLACE INTO guild_settings (guild_id, settings_json, updated_at)
       VALUES (?, ?, CURRENT_TIMESTAMP)
-    `)
+    `,
+    )
     .run(guildId, JSON.stringify(settings));
 }
 
@@ -101,8 +103,10 @@ export function updateGuildSettings(
   partial: DeepPartial<GuildSettings>,
 ): GuildSettings {
   const current = loadGuildSettings(database, guildId);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  const merged = deepMerge(current as unknown as Record<string, unknown>, partial as unknown as Record<string, unknown>);
+  const merged = deepMerge(
+    current as unknown as Record<string, unknown>,
+    partial as unknown as Record<string, unknown>,
+  );
   saveGuildSettings(database, guildId, merged as unknown as GuildSettings);
   return merged as unknown as GuildSettings;
 }
@@ -112,7 +116,10 @@ export function updateGuildSettings(
  * Arrays được thay thế hoàn toàn (không merge element-by-element).
  * Primitive values từ source ghi đè target.
  */
-function deepMerge(target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> {
+function deepMerge(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>,
+): Record<string, unknown> {
   const result = { ...target };
 
   for (const key of Object.keys(source)) {
@@ -128,7 +135,10 @@ function deepMerge(target: Record<string, unknown>, source: Record<string, unkno
       targetVal !== null &&
       !Array.isArray(targetVal)
     ) {
-      result[key] = deepMerge(targetVal as Record<string, unknown>, sourceVal as Record<string, unknown>);
+      result[key] = deepMerge(
+        targetVal as Record<string, unknown>,
+        sourceVal as Record<string, unknown>,
+      );
     } else if (sourceVal !== undefined) {
       result[key] = sourceVal;
     }

@@ -55,7 +55,8 @@ export function requireRole(...requiredRoleNames: string[]) {
 
       if (!hasPermission) {
         await interaction.reply({
-          content: '🔒 Lệnh này yêu cầu ít nhất một trong các vai trò: ' + requiredRoleNames.join(', '),
+          content:
+            '🔒 Lệnh này yêu cầu ít nhất một trong các vai trò: ' + requiredRoleNames.join(', '),
           flags: MessageFlags.Ephemeral,
         });
         return null;

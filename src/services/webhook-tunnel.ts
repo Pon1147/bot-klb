@@ -35,19 +35,21 @@ async function downloadCloudflared(): Promise<string> {
 
   function fetchWithRedirect(url: string): Promise<IncomingMessage> {
     return new Promise((resolve, reject) => {
-      https.get(url, { headers: { 'User-Agent': 'node' } }, (res) => {
-        if (res.statusCode && [301, 302, 303, 307, 308].includes(res.statusCode)) {
-          res.resume();
-          const loc = res.headers.location;
-          if (!loc) {
-            reject(new Error(`Redirect without location`));
-            return;
+      https
+        .get(url, { headers: { 'User-Agent': 'node' } }, (res) => {
+          if (res.statusCode && [301, 302, 303, 307, 308].includes(res.statusCode)) {
+            res.resume();
+            const loc = res.headers.location;
+            if (!loc) {
+              reject(new Error(`Redirect without location`));
+              return;
+            }
+            fetchWithRedirect(loc).then(resolve, reject);
+          } else {
+            resolve(res);
           }
-          fetchWithRedirect(loc).then(resolve, reject);
-        } else {
-          resolve(res);
-        }
-      }).on('error', reject);
+        })
+        .on('error', reject);
     });
   }
 
