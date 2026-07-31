@@ -1,5 +1,7 @@
 import { ChatInputCommandInteraction, Guild, GuildMember, PermissionsBitField } from 'discord.js';
 
+import { VOICE_CHANNEL_FULL_MESSAGE } from '../config/app.constants.js';
+
 export interface VoiceStateResult {
   success: boolean;
   channelId?: string;
@@ -72,7 +74,7 @@ export function checkVoiceForTeamFind(interaction: ChatInputCommandInteraction):
   if (channel.full) {
     return {
       success: false,
-      errorMessage: 'Phòng thoại đã đầy (99 người).',
+      errorMessage: VOICE_CHANNEL_FULL_MESSAGE,
     };
   }
 

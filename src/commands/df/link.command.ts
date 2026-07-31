@@ -13,6 +13,12 @@ import { generateCode } from '../../services/df-claim-store.js';
 import { getMyData } from '../../services/deltaforce.api.js';
 import { saveDfToken } from '../../database/df.token.db.js';
 import { setupTunnel, isTunnelAlive, stopTunnel } from '../../services/webhook-tunnel.js';
+import {
+  LOCALHOST_WEBHOOK_URL,
+  DEFAULT_WEBHOOK_PORT,
+  TOKEN_REGEX,
+  INVALID_TOKEN_MESSAGE,
+} from '../../config/app.constants.js';
 
 /** Strip tsc module boilerplate từ script compiled để chạy được trong browser console */
 function getBrowserScript(src: string): string {
@@ -40,7 +46,7 @@ const WEBHOOK_SCRIPT = getBrowserScript(RAW_SCRIPT);
 
 /** Lấy webhook URL hiện tại (đọc env tại thời điểm gọi) */
 function getWebhookUrl(): string {
-  return process.env.WEBHOOK_URL ?? 'http://localhost:3500';
+  return process.env.WEBHOOK_URL ?? LOCALHOST_WEBHOOK_URL;
 }
 
 /** Đảm bảo tunnel chạy trước khi sinh script */
@@ -55,7 +61,7 @@ async function ensureTunnel(): Promise<void> {
     delete process.env.WEBHOOK_URL;
   }
   try {
-    const webhookPort = parseInt(process.env.WEBHOOK_PORT ?? '3500', 10);
+    const webhookPort = parseInt(process.env.WEBHOOK_PORT ?? String(DEFAULT_WEBHOOK_PORT), 10);
     await setupTunnel(webhookPort);
   } catch (e) {
     console.error('[Tunnel] Failed to restart:', e);
@@ -106,10 +112,8 @@ async function handleManualLink(
   const token = interaction.options.getString('token')!;
 
   // Validate format token (hex string 40-64 ký tự)
-  if (!/^[0-9a-f]{40,64}$/i.test(token)) {
-    const err = buildErrorContainer(
-      'Format token không hợp lệ. Token phải là chuỗi hex (40-64 ký tự).',
-    );
+  if (!TOKEN_REGEX.test(token)) {
+    const err = buildErrorContainer(INVALID_TOKEN_MESSAGE);
     await interaction.reply({
       components: err.toJSON(),
       flags: err.flags | MessageFlags.Ephemeral,
@@ -129,8 +133,8 @@ async function handleManualLink(
     await interaction.editReply({
       content: `✅ Đã liên kết tài khoản Delta Force!\n\n` + `OpenID: ${openid}`,
     });
-  } catch (error: any) {
-    console.error('[df-link] Manual link failed:', error.message ?? error);
+  } catch (error: unknown) {
+    console.error('[df-link] Manual link failed:', error instanceof Error ? error.message : error);
     const err = buildErrorContainer(
       'Không thể xác thực tài khoản. Kiểm tra openid và token, hoặc token đã hết hạn.',
     );

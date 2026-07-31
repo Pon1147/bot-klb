@@ -1,5 +1,9 @@
 import { ContainerSettings } from '../../types/settings.types.js';
 import { CONTAINER_COLORS } from '../../config/container.variables.js';
+import {
+  CONTAINER_SESSION_TIMEOUT_MS,
+  CONTAINER_SESSION_CLEANUP_INTERVAL_MS,
+} from '../../config/app.constants.js';
 
 /**
  * Color presets cho container accent color picker.
@@ -35,17 +39,7 @@ export interface ContainerEditSession {
  */
 export const editSessions = new Map<string, ContainerEditSession>();
 
-/**
- * Thời gian sống tối đa của 1 session (15 phút = 900000ms).
- * Discord giới hạn interaction timeout là 15 phút.
- */
-const SESSION_TIMEOUT_MS = 15 * 60 * 1000;
-
-/**
- * Khoảng thời gian giữa các lần cleanup (5 phút = 300000ms).
- * WHY: Chạy thường xuyên hơn SESSION_TIMEOUT để tránh Map tích lũy sessions cũ.
- */
-const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+// Timeout và cleanup interval được định nghĩa tại app.constants.js
 
 /**
  * Deep clone ContainerSettings để tránh mutate object gốc.
@@ -62,7 +56,7 @@ export function isSessionValid(
 ): session is ContainerEditSession {
   if (!session) return false;
   const lastActive = session.lastInteractionAt;
-  return Date.now() - lastActive < SESSION_TIMEOUT_MS;
+  return Date.now() - lastActive < CONTAINER_SESSION_TIMEOUT_MS;
 }
 
 /**
@@ -122,7 +116,7 @@ export function startSessionCleanup(): void {
   cleanupInterval = setInterval(() => {
     let cleaned = 0;
     for (const [userId, session] of editSessions.entries()) {
-      const expired = Date.now() - session.lastInteractionAt >= SESSION_TIMEOUT_MS;
+      const expired = Date.now() - session.lastInteractionAt >= CONTAINER_SESSION_TIMEOUT_MS;
       if (expired) {
         editSessions.delete(userId);
         cleaned++;
@@ -131,7 +125,7 @@ export function startSessionCleanup(): void {
     if (cleaned > 0) {
       console.log(`[SessionCleanup] Đã xóa ${cleaned} session(s) hết hạn.`);
     }
-  }, CLEANUP_INTERVAL_MS);
+  }, CONTAINER_SESSION_CLEANUP_INTERVAL_MS);
   console.log('[SessionCleanup] Đã khởi tạo periodic cleanup (5 phút/lần).');
 }
 

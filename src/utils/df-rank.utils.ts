@@ -3,6 +3,8 @@
  * Source: https://www.playdeltaforce.com/basic_info/ranks_vi.js
  */
 
+import { SOL_MODE_THRESHOLD } from '../config/deltaforce.config.js';
+
 export interface DfRank {
   rankId: number;
   mode: 'MP' | 'SOL';
@@ -417,10 +419,10 @@ const RANKS: DfRank[] = [
 
 /**
  * Resolve rank info from a score.
- * HQ uses SOL mode (score >= 1000), MP mode (score < 1000).
+ * HQ uses SOL mode (score >= SOL_MODE_THRESHOLD), MP mode (score < SOL_MODE_THRESHOLD).
  */
 export function resolveRankFromScore(score: number): DfRank | null {
-  const mode = score >= 1000 ? 'SOL' : 'MP';
+  const mode = score >= SOL_MODE_THRESHOLD ? 'SOL' : 'MP';
   const modeRanks = RANKS.filter((r) => r.mode === mode);
   for (const rank of modeRanks) {
     if (score >= rank.minScore && (rank.maxScore === null || score <= rank.maxScore)) {

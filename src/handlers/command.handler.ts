@@ -133,7 +133,9 @@ export function loadCommands(collection: Collection<string, CommandModule>): voi
  * Tạo fingerprint (string so sánh) cho một command.
  * Dùng để phát hiện thay đổi giữa local và Discord.
  */
-function commandFingerprint(commandData: any): string {
+function commandFingerprint(
+  commandData: SlashCommandBuilder | APIApplicationCommand | Record<string, unknown>,
+): string {
   if ('toJSON' in commandData && typeof commandData.toJSON === 'function') {
     return JSON.stringify(commandData.toJSON());
   }

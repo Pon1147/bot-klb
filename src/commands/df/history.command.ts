@@ -23,6 +23,7 @@ import {
   MAP_NAMES,
   MAX_HISTORY_LIMIT,
 } from '../../config/team-find.config.js';
+import { MAX_HISTORY_PAGE } from '../../config/app.constants.js';
 import type { DfMatchEntry } from '../../types/deltaforce.types.js';
 
 export const data = new SlashCommandBuilder()
@@ -100,7 +101,10 @@ export async function execute(
 
   try {
     const apiToken = buildDfApiToken(token);
-    const limit = Math.min(interaction.options.getInteger('limit') || MAX_HISTORY_LIMIT, 20);
+    const limit = Math.min(
+      interaction.options.getInteger('limit') || MAX_HISTORY_LIMIT,
+      MAX_HISTORY_PAGE,
+    );
     // Fetch only needed matches from API (pagination)
     const matchData = await getMatchList(apiToken, { limit });
     touchDfToken(database, interaction.user.id);

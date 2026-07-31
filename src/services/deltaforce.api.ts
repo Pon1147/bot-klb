@@ -7,21 +7,32 @@ import type {
   DfDailyReportResponse,
   DfApiToken,
 } from '../types/deltaforce.types.js';
-
-const BASE = 'https://sg-act.playerinfinite.com/api/proxy/logicial/DfTools';
+import {
+  BASE_API_URL,
+  GAME_ID,
+  DF_CHANNEL,
+  ACCOUNT_TYPE,
+  ACCOUNT_A_PARAM,
+  LANG_TYPE,
+  DF_ORIGIN,
+  DF_REFERER,
+  API_TIMEOUT_MS,
+  SEASONS_MY_DATA,
+  SEASON_LATEST,
+} from '../config/deltaforce.config.js';
 
 const FIXED_PARAMS = new URLSearchParams({
-  game_id: '30150',
-  channel: '10',
-  account_type: '1',
-  lang_type: 'vi',
-  a: '10005',
+  game_id: GAME_ID,
+  channel: DF_CHANNEL,
+  account_type: ACCOUNT_TYPE,
+  lang_type: LANG_TYPE,
+  a: ACCOUNT_A_PARAM,
 });
 
 const HEADERS = {
   'content-type': 'application/json',
-  origin: 'https://www.playdeltaforce.com',
-  referer: 'https://www.playdeltaforce.com/',
+  origin: DF_ORIGIN,
+  referer: DF_REFERER,
 };
 
 function buildInstance(token: DfApiToken): AxiosInstance {
@@ -38,7 +49,7 @@ function buildInstance(token: DfApiToken): AxiosInstance {
       (token.u || crypto.randomUUID()),
   );
   return axios.create({
-    baseURL: BASE,
+    baseURL: BASE_API_URL,
     params: {
       openid: token.openid,
       token: token.token,
@@ -48,7 +59,7 @@ function buildInstance(token: DfApiToken): AxiosInstance {
       ...Object.fromEntries(FIXED_PARAMS),
     },
     headers: HEADERS,
-    timeout: 15000,
+    timeout: API_TIMEOUT_MS,
   });
 }
 
@@ -60,13 +71,13 @@ export async function getMyData(token: DfApiToken): Promise<DfMyDataResponse> {
   const body = {
     openid: token.openid,
     token: token.token,
-    game_id: '30150',
-    channel: '10',
-    account_type: 1,
-    lang_type: 'vi',
+    game_id: GAME_ID,
+    channel: DF_CHANNEL,
+    account_type: Number(ACCOUNT_TYPE),
+    lang_type: LANG_TYPE,
     needLogin: true,
     report_type: 1,
-    seasonno: ['10001', '10003', '10004', '10005', '10006', '10007', '10008', '10009'],
+    seasonno: SEASONS_MY_DATA,
   };
 
   const res = await instance.post<DfApiResponse<DfMyDataResponse>>('/GetMyData', body);
@@ -88,10 +99,10 @@ export async function getSeasonData(
   const body = {
     openid: token.openid,
     token: token.token,
-    game_id: '30150',
-    channel: '10',
-    account_type: 1,
-    lang_type: 'vi',
+    game_id: GAME_ID,
+    channel: DF_CHANNEL,
+    account_type: Number(ACCOUNT_TYPE),
+    lang_type: LANG_TYPE,
     needLogin: true,
     report_type: 1,
     seasonno: [seasonNo],
@@ -126,13 +137,13 @@ export async function getMatchList(
   const body = {
     openid: token.openid,
     token: token.token,
-    game_id: '30150',
-    channel: '10',
-    account_type: 1,
-    lang_type: 'vi',
+    game_id: GAME_ID,
+    channel: DF_CHANNEL,
+    account_type: Number(ACCOUNT_TYPE),
+    lang_type: LANG_TYPE,
     needLogin: true,
     report_type: 1,
-    seasonno: ['10009'],
+    seasonno: [SEASON_LATEST],
     ...(options?.offset !== undefined ? { offset: options.offset } : {}),
     ...(options?.limit !== undefined ? { limit: options.limit } : {}),
   };
@@ -170,10 +181,10 @@ export async function getDailyReport(token: DfApiToken): Promise<DfDailyReportRe
   const body = {
     openid: token.openid,
     token: token.token,
-    game_id: '30150',
-    channel: '10',
-    account_type: 1,
-    lang_type: 'vi',
+    game_id: GAME_ID,
+    channel: DF_CHANNEL,
+    account_type: Number(ACCOUNT_TYPE),
+    lang_type: LANG_TYPE,
     needLogin: true,
     report_type: 1,
   };

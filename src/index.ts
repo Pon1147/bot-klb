@@ -17,6 +17,7 @@ import { startWebhookServer } from './server/webhook-server.js';
 import { startCleanup as startClaimCleanup } from './services/df-claim-store.js';
 import { setupTunnel, stopTunnel } from './services/webhook-tunnel.js';
 import { startDfCodesScheduler } from './services/df-codes-scheduler.js';
+import { DEFAULT_WEBHOOK_PORT, TEAM_FIND_CLEANUP_INTERVAL_MS } from './config/app.constants.js';
 
 const logger = createLogger('Bot');
 
@@ -69,7 +70,7 @@ async function main(): Promise<void> {
   logger.info('Discord client created');
 
   // Step 4b: Start webhook server (needed before tunnel)
-  const webhookPort = parseInt(process.env.WEBHOOK_PORT ?? '3500', 10);
+  const webhookPort = parseInt(process.env.WEBHOOK_PORT ?? String(DEFAULT_WEBHOOK_PORT), 10);
   logger.info(`Starting webhook server on port ${webhookPort}...`);
   const webhook = startWebhookServer(database, client, webhookPort);
   logger.info(`Webhook server ready on port ${webhook.port}`);
@@ -114,7 +115,7 @@ async function main(): Promise<void> {
   logger.info('Session cleanup started');
 
   // Step 7b: Start team-find session cleanup
-  setInterval(cleanupTeamFindSessions, 5 * 60 * 1000);
+  setInterval(cleanupTeamFindSessions, TEAM_FIND_CLEANUP_INTERVAL_MS);
   logger.info('Team-find session cleanup started');
 
   // Step 7c: Start claim code cleanup

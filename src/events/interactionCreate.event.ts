@@ -8,6 +8,7 @@ import {
   ModalSubmitInteraction,
   StringSelectMenuInteraction,
 } from 'discord.js';
+import { VOICE_CHANNEL_FULL_MESSAGE } from '../config/app.constants.js';
 import { COMMAND_PERMISSIONS, hasRequiredRole } from '../config/permissions.js';
 import {
   handleEditorButtonInteraction as handleContainerEditorButtonInteraction,
@@ -72,7 +73,7 @@ export async function execute(
 
         if (channel.full) {
           await interaction.reply({
-            content: 'Phòng thoại đã đầy (99 người).',
+            content: VOICE_CHANNEL_FULL_MESSAGE,
             flags: MessageFlags.Ephemeral,
           });
           return;

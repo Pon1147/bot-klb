@@ -7,6 +7,7 @@ import { Client } from 'discord.js';
 import Database from 'better-sqlite3';
 import { consumeCode } from '../services/df-claim-store.js';
 import { saveDfToken } from '../database/df.token.db.js';
+import { INVALID_CLAIM_MESSAGE } from '../config/app.constants.js';
 
 /**
  * Handler business logic
@@ -63,7 +64,7 @@ export async function handleClaimRequest(
       status: 400,
       body: {
         status: 'error',
-        message: 'Mã claim không hợp lệ hoặc đã hết hạn. Hãy dùng /df-link start để nhận mã mới.',
+        message: INVALID_CLAIM_MESSAGE,
       },
     };
   }

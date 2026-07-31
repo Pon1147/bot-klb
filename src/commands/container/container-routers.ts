@@ -32,6 +32,7 @@ import {
   handleMediaEdit,
 } from './handlers/property.handler.js';
 import { handleSave, handleReset, handleCancel } from './handlers/action.handler.js';
+import { CONTAINER_SESSION_EXPIRED_MESSAGE } from '../../config/app.constants.js';
 
 /**
  * Main handler cho tất cả button interactions trong container editor.
@@ -46,9 +47,7 @@ export async function handleEditorButtonInteraction(interaction: ButtonInteracti
   const session = editSessions.get(interaction.user.id);
 
   if (!isSessionValid(session)) {
-    const errorContainer = buildErrorContainer(
-      'Session edit đã hết hạn. Vui lòng bắt đầu lại với /container edit.',
-    );
+    const errorContainer = buildErrorContainer(CONTAINER_SESSION_EXPIRED_MESSAGE);
     await interaction.reply({
       components: errorContainer.toJSON(),
       flags: errorContainer.flags | MessageFlags.Ephemeral,

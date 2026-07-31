@@ -11,6 +11,13 @@
 import { ContainerSettings } from '../../types/settings.types.js';
 import { buildContainer, buildTextOnlyContainer } from '../../utils/container.utils.js';
 import { CONTAINER_COLOR_PRESETS, ContainerEditSession } from './container-session.js';
+import {
+  MAX_CONTAINER_TEXT_LENGTH,
+  MEDIA_URL_PLACEHOLDER,
+  MOCK_USER_TAG,
+  MOCK_USER_NAME,
+  DEFAULT_DISCORD_AVATAR,
+} from '../../config/app.constants.js';
 
 // ─── Button Row Builders ───────────────────────────────────────
 
@@ -175,7 +182,7 @@ export function buildLongTextModal(
     .setLabel(label)
     .setStyle(TextInputStyle.Paragraph)
     .setPlaceholder(placeholder)
-    .setMaxLength(4000)
+    .setMaxLength(MAX_CONTAINER_TEXT_LENGTH)
     .setValue(value);
 
   return new ModalBuilder()
@@ -195,7 +202,7 @@ export function buildMediaModal(
     .setCustomId('media_url')
     .setLabel('URL ảnh/GIF')
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder('https://example.com/image.gif hoặc attachment://file.gif')
+    .setPlaceholder(MEDIA_URL_PLACEHOLDER)
     .setValue(currentUrl || '');
 
   const descInput = new TextInputBuilder()
@@ -230,7 +237,7 @@ export function buildEditLineModal(lineCount: number): ModalBuilder {
     .setLabel('Nội dung mới')
     .setStyle(TextInputStyle.Paragraph)
     .setPlaceholder('Nhập nội dung mới cho dòng')
-    .setMaxLength(4000)
+    .setMaxLength(MAX_CONTAINER_TEXT_LENGTH)
     .setRequired(true);
 
   return new ModalBuilder()
@@ -255,11 +262,11 @@ export function buildLivePreviewContainer(
   const mockContext = {
     member: {
       user: {
-        tag: 'MockUser#0000',
-        username: 'MockUser',
+        tag: MOCK_USER_TAG,
+        username: MOCK_USER_NAME,
         createdTimestamp: Date.now(),
         // WHY: buildContainer cần displayAvatarURL để render avatar member vào MediaGallery.
-        displayAvatarURL: () => 'https://cdn.discordapp.com/embed/avatars/0.png',
+        displayAvatarURL: () => DEFAULT_DISCORD_AVATAR,
       },
       joinedAt: new Date(),
     } as GuildMember,

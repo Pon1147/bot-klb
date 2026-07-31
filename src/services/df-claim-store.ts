@@ -4,10 +4,16 @@
 
 import { randomBytes } from 'crypto';
 
+import {
+  CLAIM_CODE_TTL_MS,
+  CLAIM_CODE_CLEANUP_INTERVAL_MS,
+  MAX_CODE_GENERATION_ATTEMPTS,
+} from '../config/app.constants.js';
+
 const CODE_LENGTH = 6;
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // loại trừ ký tự dễ nhầm (I/1, O/0)
-const TTL_MS = 10 * 60 * 1000; // 10 phút
-const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 phút
+const TTL_MS = CLAIM_CODE_TTL_MS;
+const CLEANUP_INTERVAL_MS = CLAIM_CODE_CLEANUP_INTERVAL_MS;
 
 const store = new Map<string, { discordId: string; expiresAt: number }>();
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
@@ -17,7 +23,7 @@ let cleanupTimer: ReturnType<typeof setInterval> | null = null;
  */
 function makeCode(): string {
   let attempts = 0;
-  while (attempts < 10) {
+  while (attempts < MAX_CODE_GENERATION_ATTEMPTS) {
     const chars = [];
     const buf = randomBytes(CODE_LENGTH);
     for (let i = 0; i < CODE_LENGTH; i++) {

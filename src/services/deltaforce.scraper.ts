@@ -1,3 +1,5 @@
+import { HQ_URL_BASE, HQ_PAGE_TIMEOUT, HQ_SELECTOR_TIMEOUT } from '../config/deltaforce.config.js';
+
 interface PuppeteerPage {
   setUserAgent(ua: string): Promise<void>;
   goto(url: string, opts: { waitUntil: string; timeout: number }): Promise<string | null>;
@@ -29,7 +31,8 @@ export interface DailyOperations {
   kd: string | null;
 }
 
-const HQ_URL = 'https://www.playdeltaforce.com/events/hq/vi/index.html?laugue=vi&info=';
+// URL đã được fix typo: laugue → language
+const HQ_URL = HQ_URL_BASE;
 
 async function loadPuppeteer() {
   const mod = await import('puppeteer');
@@ -62,8 +65,8 @@ export async function fetchDailyAll(): Promise<DailyData> {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     );
 
-    await page.goto(HQ_URL, { waitUntil: 'networkidle2', timeout: 30000 });
-    await page.waitForSelector('span[data-info^="operations-"]', { timeout: 15000 });
+    await page.goto(HQ_URL, { waitUntil: 'networkidle2', timeout: HQ_PAGE_TIMEOUT });
+    await page.waitForSelector('span[data-info^="operations-"]', { timeout: HQ_SELECTOR_TIMEOUT });
 
     const result = await page.evaluate(() => {
       const q = (globalThis as any).document.querySelector.bind((globalThis as any).document);
@@ -168,7 +171,7 @@ export async function extractToken(
       });
     });
 
-    await page.goto(hqUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+    await page.goto(hqUrl, { waitUntil: 'networkidle2', timeout: HQ_PAGE_TIMEOUT });
 
     try {
       const token = await tokenPromise;

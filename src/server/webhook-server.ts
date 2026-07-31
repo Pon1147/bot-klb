@@ -6,8 +6,9 @@ import express, { Request, Response, NextFunction } from 'express';
 import { Client } from 'discord.js';
 import Database from 'better-sqlite3';
 import { createWebhookRoutes } from './webhook.routes.js';
+import { DEFAULT_WEBHOOK_PORT } from '../config/app.constants.js';
 
-const DEFAULT_PORT = 3500;
+const DEFAULT_PORT = DEFAULT_WEBHOOK_PORT;
 const ALLOWED_ORIGINS = [
   'https://www.playdeltaforce.com',
   'https://playdeltaforce.com',

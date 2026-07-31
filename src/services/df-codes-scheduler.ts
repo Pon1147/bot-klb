@@ -6,6 +6,7 @@ import { buildCodesContainer, hasAnyCodes } from '../commands/df/code.command.js
 import { getSettingsService } from './settings.service.js';
 import { getAllGuildIds } from '../database/guild.settings.db.js';
 import { createLogger } from '../utils/logger.js';
+import { TEAM_FIND_CLEANUP_INTERVAL_MS } from '../config/app.constants.js';
 
 const logger = createLogger('DfCodesScheduler');
 
@@ -14,7 +15,7 @@ let isRunning = false;
 
 /** Start daily df-code scheduler — fires at 01:00 UTC every day */
 export function startDfCodesScheduler(client: Client, database: Database.Database): void {
-  const interval = setInterval(() => checkAndSend(client, database), 60_000);
+  const interval = setInterval(() => checkAndSend(client, database), TEAM_FIND_CLEANUP_INTERVAL_MS);
 
   // Clear interval on shutdown
   client.once('disconnect', () => clearInterval(interval));

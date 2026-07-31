@@ -12,6 +12,7 @@ import { buildSelectMenuMessage } from './team-find.menu.js';
 import { buildTeamFindEmbed } from './team-find.embed.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { DIFFICULTY_CONFIG, type Difficulty } from '../../config/team-find.config.js';
+import { SESSION_EXPIRED_MESSAGE, EMBED_AVATAR_SIZE } from '../../config/app.constants.js';
 
 /** Check customId and handle team-find interactions. Returns true if handled. */
 export async function handleTeamFindInteraction(
@@ -36,7 +37,7 @@ export async function handleTeamFindInteraction(
     const session = getSession(userId);
     if (!session) {
       await interaction.reply({
-        content: 'Session đã hết hạn. Dùng `/team-find` để bắt đầu lại.',
+        content: SESSION_EXPIRED_MESSAGE,
         flags: MessageFlags.Ephemeral,
       });
       return true;
@@ -74,7 +75,7 @@ export async function handleTeamFindInteraction(
     const session = getSession(userId);
     if (!session) {
       await interaction.reply({
-        content: 'Session đã hết hạn. Dùng `/team-find` để bắt đầu lại.',
+        content: SESSION_EXPIRED_MESSAGE,
         flags: MessageFlags.Ephemeral,
       });
       return true;
@@ -110,7 +111,7 @@ export async function handleTeamFindInteraction(
     const session = getSession(userId);
     if (!session) {
       await interaction.reply({
-        content: 'Session đã hết hạn. Dùng `/team-find` để bắt đầu lại.',
+        content: SESSION_EXPIRED_MESSAGE,
         flags: MessageFlags.Ephemeral,
       });
       return true;
@@ -180,7 +181,7 @@ export async function handleTeamFindInteraction(
       channelName: voiceChannel.name,
       channelId: voiceChannel.id,
       username: interaction.user.username,
-      avatarUrl: interaction.user.displayAvatarURL({ extension: 'png', size: 256 }),
+      avatarUrl: interaction.user.displayAvatarURL({ extension: 'png', size: EMBED_AVATAR_SIZE }),
       rank: session.rank ?? null,
     });
 

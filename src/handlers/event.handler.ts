@@ -8,7 +8,7 @@ const logger = createLogger('EventHandler');
 export interface EventModule {
   name: string;
   once: boolean;
-  execute: (..._args: any[]) => Promise<void>;
+  execute: (...args: unknown[]) => Promise<void>;
 }
 
 /**

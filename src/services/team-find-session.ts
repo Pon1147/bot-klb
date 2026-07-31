@@ -5,6 +5,8 @@
 
 import type { MapKey } from '../config/team-find.config.js';
 
+import { TEAM_FIND_SESSION_TIMEOUT_MS } from '../config/app.constants.js';
+
 export interface TeamFindSession {
   guildId: string;
   userId: string;
@@ -17,7 +19,7 @@ export interface TeamFindSession {
 }
 
 const sessions = new Map<string, TeamFindSession>();
-const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
+const SESSION_TIMEOUT_MS = TEAM_FIND_SESSION_TIMEOUT_MS;
 
 function key(userId: string): string {
   return userId;

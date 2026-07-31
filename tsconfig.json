@@ -2,6 +2,9 @@
   "ts-node": {
     "experimentalSpecifierResolution": "node"
   },
+  "typeAcquisition": {
+    "enable": false
+  },
   "compilerOptions": {
     "target": "ES2022",
     "module": "node16",

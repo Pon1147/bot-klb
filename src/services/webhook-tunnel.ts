@@ -13,6 +13,8 @@ import https from 'https';
 import { homedir } from 'os';
 import { join } from 'path';
 
+import { CLOUDFLARED_BIN_NAME, CLOUDFLARED_DOWNLOAD_URL } from '../config/app.constants.js';
+
 let tunnelUrl: string | null = null;
 let tunnelProcess: ChildProcess | null = null;
 let _tunnelStartTime = 0;
@@ -25,11 +27,10 @@ async function downloadCloudflared(): Promise<string> {
   const binDir = join(homedir(), '.kl-bot');
   if (!existsSync(binDir)) mkdirSync(binDir, { recursive: true });
 
-  const binPath = join(binDir, 'cloudflared.exe');
+  const binPath = join(binDir, CLOUDFLARED_BIN_NAME);
   if (existsSync(binPath)) return binPath;
 
-  const downloadUrl =
-    'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe';
+  const downloadUrl = CLOUDFLARED_DOWNLOAD_URL;
 
   console.log(`[Tunnel] Downloading cloudflared...`);
 

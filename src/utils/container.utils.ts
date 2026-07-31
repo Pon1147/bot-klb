@@ -10,11 +10,12 @@ import {
 import { ContainerSettings, TemplateContext } from '../types/settings.types.js';
 import { resolveTemplate } from './template.utils.js';
 import { COLORS } from '../config/container.variables.js';
+import { MAX_CONTAINER_TEXT_LENGTH, DEFAULT_AVATAR_SIZE } from '../config/app.constants.js';
 
 /**
  * Giới hạn ký tự tối đa cho TextDisplay.
  */
-const MAX_TEXT_DISPLAY_LENGTH = 4000;
+const MAX_TEXT_DISPLAY_LENGTH = MAX_CONTAINER_TEXT_LENGTH;
 
 /**
  * Tùy chọn bổ sung cho buildContainer.
@@ -162,7 +163,7 @@ export function buildContainer(
   // ==================== 1. SECTION + THUMBNAIL (Header + Avatar top-right) ====================
   // Chỉ render header section khi headerTemplate có giá trị (không null/empty/undefined)
   if (headerTemplate && headerTemplate.trim().length > 0) {
-    const avatarUrl = member.user.displayAvatarURL({ extension: 'png', size: 128 });
+    const avatarUrl = member.user.displayAvatarURL({ extension: 'png', size: DEFAULT_AVATAR_SIZE });
 
     const thumbnailAccessory: Record<string, unknown> = {
       type: ComponentType.Thumbnail,
