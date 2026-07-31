@@ -37,3 +37,16 @@ diagrams.md
 # Scripts & outputs
 script.js
 codes-output.txt
+
+# Husky
+.husky/_
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
