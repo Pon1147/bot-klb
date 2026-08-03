@@ -18,6 +18,7 @@ import {
   MOCK_USER_NAME,
   DEFAULT_DISCORD_AVATAR,
 } from '../../config/app.constants.js';
+import { ContainerIds, ContainerModalPrefix } from './container-ids.js';
 
 // ─── Button Row Builders ───────────────────────────────────────
 
@@ -27,19 +28,19 @@ import {
 export function buildEditRow1(): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId('container_edit_lines')
+      .setCustomId(ContainerIds.LINES)
       .setLabel('📝 Text Lines')
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
-      .setCustomId('container_edit_color')
+      .setCustomId(ContainerIds.COLOR)
       .setLabel('🎨 Accent Color')
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
-      .setCustomId('container_edit_media')
+      .setCustomId(ContainerIds.MEDIA)
       .setLabel('🖼️ Media/GIF')
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
-      .setCustomId('container_edit_separator')
+      .setCustomId(ContainerIds.SEPARATOR)
       .setLabel('➖ Separator')
       .setStyle(ButtonStyle.Secondary),
   );
@@ -51,19 +52,19 @@ export function buildEditRow1(): ActionRowBuilder<ButtonBuilder> {
 export function buildLinesRow(): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId('container_lines_add')
+      .setCustomId(ContainerIds.LINES_ADD)
       .setLabel('➕ Add Line')
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
-      .setCustomId('container_lines_edit')
+      .setCustomId(ContainerIds.LINES_EDIT)
       .setLabel('✏️ Edit Line')
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
-      .setCustomId('container_lines_remove')
+      .setCustomId(ContainerIds.LINES_REMOVE)
       .setLabel('➖ Remove Line')
       .setStyle(ButtonStyle.Danger),
     new ButtonBuilder()
-      .setCustomId('container_lines_clear')
+      .setCustomId(ContainerIds.LINES_CLEAR)
       .setLabel('🗑️ Clear All')
       .setStyle(ButtonStyle.Danger),
   );
@@ -75,15 +76,15 @@ export function buildLinesRow(): ActionRowBuilder<ButtonBuilder> {
 export function buildActionRow(): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId('container_edit_save')
+      .setCustomId(ContainerIds.SAVE)
       .setLabel('💾 Save')
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
-      .setCustomId('container_edit_reset')
+      .setCustomId(ContainerIds.RESET)
       .setLabel('🔄 Reset')
       .setStyle(ButtonStyle.Danger),
     new ButtonBuilder()
-      .setCustomId('container_edit_cancel')
+      .setCustomId(ContainerIds.CANCEL)
       .setLabel('❌ Cancel')
       .setStyle(ButtonStyle.Primary),
   );
@@ -103,14 +104,14 @@ export function buildColorPresetRow(): ActionRowBuilder<ButtonBuilder> {
   const buttons: ButtonBuilder[] = CONTAINER_COLOR_PRESETS.map(
     (preset: { label: string; value: number }, index: number) =>
       new ButtonBuilder()
-        .setCustomId(`container_color_preset_${index}`)
+        .setCustomId(`${ContainerIds.COLOR_PRESET}${index}`)
         .setLabel(preset.label)
         .setStyle(ButtonStyle.Secondary),
   );
 
   buttons.push(
     new ButtonBuilder()
-      .setCustomId('container_color_custom')
+      .setCustomId(ContainerIds.COLOR_CUSTOM)
       .setLabel('🎯 Custom')
       .setStyle(ButtonStyle.Secondary),
   );
@@ -124,7 +125,7 @@ export function buildColorPresetRow(): ActionRowBuilder<ButtonBuilder> {
 export function buildBackRow(): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId('container_back')
+      .setCustomId(ContainerIds.BACK)
       .setLabel('⬅️ Quay lại')
       .setStyle(ButtonStyle.Primary),
   );
@@ -163,7 +164,7 @@ export function buildTextModal(
     .setValue(value);
 
   return new ModalBuilder()
-    .setCustomId(`container_modal_${customId}`)
+    .setCustomId(`${ContainerModalPrefix}${customId}`)
     .setTitle(`Chỉnh sửa ${label}`)
     .addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(textInput));
 }
@@ -186,7 +187,7 @@ export function buildLongTextModal(
     .setValue(value);
 
   return new ModalBuilder()
-    .setCustomId(`container_modal_${customId}`)
+    .setCustomId(`${ContainerModalPrefix}${customId}`)
     .setTitle(`Chỉnh sửa ${label}`)
     .addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(textInput));
 }
@@ -213,7 +214,7 @@ export function buildMediaModal(
     .setValue(currentDesc || '');
 
   return new ModalBuilder()
-    .setCustomId('container_modal_media')
+    .setCustomId(`${ContainerModalPrefix}media`)
     .setTitle('Chỉnh sửa Media/GIF')
     .addComponents(
       new ActionRowBuilder<TextInputBuilder>().addComponents(urlInput),
@@ -241,7 +242,7 @@ export function buildEditLineModal(lineCount: number): ModalBuilder {
     .setRequired(true);
 
   return new ModalBuilder()
-    .setCustomId('container_modal_edit_line')
+    .setCustomId(`${ContainerModalPrefix}edit_line`)
     .setTitle('Chỉnh sửa dòng text')
     .addComponents(
       new ActionRowBuilder<TextInputBuilder>().addComponents(indexInput),
