@@ -225,48 +225,23 @@ Tổng effort còn lại: ~6.5 giờ
 
 ---
 
-## ⏳ Phase 5: Fix Known Bugs
+## ✅ Phase 5: Fix Known Bugs (ĐÃ HOÀN THÀNH)
 
 **Risk:** Low | **Impact:** High | **Thời lượng:** ~30p
 
-### 5a. Voice channel cleanup bug
+### Files đã sửa
 
-**File:** `src/events/guildMemberUpdate.event.ts:59`
-
-**Vấn đề:**
-
-```ts
-const changed = oldChannelId && (!newChannelId || oldChannelId !== newChannelId);
-```
-
-Điều kiện này có thể trigger sai khi user join voice channel đầu tiên (oldChannelId = null).
-
-**Cần fix:**
-
-- Thêm guard `oldChannelId !== null` để chỉ cleanup khi user thực sự rời voice channel
-- Hoặc đổi logic: chỉ cleanup khi `oldChannelId !== null && (!newChannelId || oldChannelId !== newChannelId)`
-
-### 5b. Team-find Done silent failure
-
-**File:** `src/commands/df/team-find.interaction.ts:122`
-
-**Vấn đề:**
-
-```ts
-if (!session || !session.map || !session.mode) {
-  return true; // Silent fail — user không biết gì
-}
-```
-
-**Cần fix:**
-
-- Show error message: "Bạn cần chọn map và mode trước khi hoàn thành."
-- Hoặc xóa session và báo user dùng lại `/team-find`
+| File | Fix |
+|------|-----|
+| `src/events/guildMemberUpdate.event.ts` | Thêm guard `oldChannelId !== null` |
+| `src/commands/df/team-find.interaction.ts` | Show error message thay vì silent fail |
 
 ### Acceptance
 
 - Voice cleanup chỉ trigger khi user rời voice channel (không phải join)
 - Done button show error message khi thiếu map/mode
+- `npm run check`: 0 errors
+- `npm run lint`: 0 errors, 0 warnings
 
 ---
 
@@ -313,9 +288,9 @@ descriptor.value = async function (this: ChatInputCommandInteraction, ...args: u
 | 2     | Console → Logger migration | Low    | Medium         | 3h        | ✅ DONE |
 | 3     | Eliminate `any` types      | Medium | High           | 4h        | ✅ DONE |
 | 4     | Centralize custom IDs      | Medium | Low            | 1h        | ✅ DONE |
-| 5     | Bug fixes                  | Low    | High           | 30p       | ⏳ TODO |
-| 6     | Decorator typing           | Low    | Low            | 15p       | ⏳ TODO |
+| 5     | Bug fixes                  | Low    | High           | 30p       | ✅ DONE |
+| 6     | Decorator typing           | Low    | Low            | 15p       | ✅ DONE |
 
-**Total remaining effort: ~1 giờ**
+**Total remaining effort: 0 giờ**
 
-**Execution order:** Phase 4 → Phase 5 → Phase 6
+**Tất cả phases đã hoàn thành!**
