@@ -1,13 +1,14 @@
 /**
  * In-memory session store for team-find select menu flow.
  * Tracks user's Map/Mode/Rank selections until Done is clicked.
+ * Dùng TTLStore generic abstraction cho Map + TTL + cleanup.
  */
 
 import type { MapKey } from '../config/team-find.config.js';
-
+import { TTLStore, type TouchEntry } from '../utils/ttl-store.js';
 import { TEAM_FIND_SESSION_TIMEOUT_MS } from '../config/app.constants.js';
 
-export interface TeamFindSession {
+export interface TeamFindSession extends TouchEntry {
   guildId: string;
   userId: string;
   messageId: string;
@@ -15,15 +16,13 @@ export interface TeamFindSession {
   map: MapKey | null;
   mode: string | null;
   rank: string | null;
-  lastInteractionAt: number;
 }
 
-const sessions = new Map<string, TeamFindSession>();
-const SESSION_TIMEOUT_MS = TEAM_FIND_SESSION_TIMEOUT_MS;
-
-function key(userId: string): string {
-  return userId;
-}
+const sessions = new TTLStore<string, TeamFindSession>({
+  ttlMs: TEAM_FIND_SESSION_TIMEOUT_MS,
+  cleanupIntervalMs: TEAM_FIND_SESSION_TIMEOUT_MS,
+  name: 'TeamFindSessions',
+});
 
 export function createSession(
   userId: string,
@@ -41,17 +40,12 @@ export function createSession(
     rank: null,
     lastInteractionAt: Date.now(),
   };
-  sessions.set(key(userId), session);
+  sessions.set(userId, session);
   return session;
 }
 
 export function getSession(userId: string): TeamFindSession | undefined {
-  const s = sessions.get(key(userId));
-  if (s && Date.now() - s.lastInteractionAt > SESSION_TIMEOUT_MS) {
-    sessions.delete(key(userId));
-    return undefined;
-  }
-  return s;
+  return sessions.get(userId);
 }
 
 export function updateSelection(userId: string, field: 'map', value: MapKey): void;
@@ -61,27 +55,24 @@ export function updateSelection(
   field: 'map' | 'mode' | 'rank',
   value: string | MapKey,
 ): void {
-  const s = sessions.get(key(userId));
+  const s = sessions.get(userId);
   if (s) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (s as any)[field] = value;
     s.lastInteractionAt = Date.now();
+    sessions.touch(userId);
   }
 }
 
 export function deleteSession(userId: string): void {
-  sessions.delete(key(userId));
+  sessions.delete(userId);
 }
 
 export function isDone(session: TeamFindSession): boolean {
   return session.map !== null && session.mode !== null;
 }
 
-/** Cleanup expired sessions */
+/** Cleanup expired sessions (deprecated — TTLStore handles this automatically) */
 export function cleanup(): void {
-  for (const [k, s] of sessions.entries()) {
-    if (Date.now() - s.lastInteractionAt > SESSION_TIMEOUT_MS) {
-      sessions.delete(k);
-    }
-  }
+  sessions.cleanupExpired();
 }
