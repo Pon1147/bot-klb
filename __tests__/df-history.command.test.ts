@@ -142,4 +142,30 @@ describe('df-history.command', () => {
     expect(mockEditReply).toHaveBeenCalled();
     expect(touchDfToken).not.toHaveBeenCalled();
   });
+
+  it('nÃªn hiá»ƒn thá»‹ fallback cho map_id khÃ´ng cÃ³ trong MAP_NAMES', async () => {
+    const mockToken = { openid: '123', token: 'abc', linked_at: '2026-06-09', last_used_at: null };
+    (getDfToken as jest.Mock).mockReturnValue(mockToken);
+    (getMatchList as jest.Mock).mockResolvedValue({
+      commonly_used_operators_id: '1',
+      list: [
+        { carry_out_value: '50000', is_leave: 0, kill_count: 5, map_id: 9999, match_time: '1609459200', net_income: '10000', operator_icon: '', operator_id: '1', result: 1, room_id: '1', score: 1000 },
+      ],
+    });
+    await execute(createMockInteraction(), mockDb);
+    expect(mockEditReply).toHaveBeenCalled();
+  });
+
+  it('nÃªn hiá»ƒn thá»‹ Defeat khi result !== 1', async () => {
+    const mockToken = { openid: '123', token: 'abc', linked_at: '2026-06-09', last_used_at: null };
+    (getDfToken as jest.Mock).mockReturnValue(mockToken);
+    (getMatchList as jest.Mock).mockResolvedValue({
+      commonly_used_operators_id: '1',
+      list: [
+        { carry_out_value: '50000', is_leave: 0, kill_count: 5, map_id: 2201, match_time: '1609459200', net_income: '10000', operator_icon: '', operator_id: '1', result: 0, room_id: '1', score: 1000 },
+      ],
+    });
+    await execute(createMockInteraction(), mockDb);
+    expect(mockEditReply).toHaveBeenCalled();
+  });
 });
