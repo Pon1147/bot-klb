@@ -7,10 +7,29 @@ jest.mock('discord.js', () => ({
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
   PermissionFlagsBits: { Administrator: 0x8 },
   SlashCommandBuilder: class {
+    constructor() { this._subcommands = []; }
     setName() { return this; }
     setDescription() { return this; }
-    addSubcommand() { return this; }
+    addSubcommand(cmd: any) {
+      const mockSub: any = {
+        setName() { return this; },
+        setDescription() { return this; },
+        addChannelOption(cb: any) {
+          const mockOpt: any = {
+            setName() { return this; },
+            setDescription() { return this; },
+            setRequired() { return this; },
+          };
+          cb(mockOpt);
+          return this;
+        },
+      };
+      cmd(mockSub);
+      this._subcommands.push(mockSub);
+      return this;
+    }
     addSubcommandGroup() { return this; }
+    toJSON() { return { subcommands: this._subcommands }; }
   },
   AttachmentBuilder: class {
     constructor(public pathOrBuffer: any, public opts?: any) {
@@ -57,15 +76,15 @@ jest.mock('../src/services/settings.service.js', () => ({
 
 jest.mock('../src/utils/section-config.handlers.js', () => ({
   handleSectionSetChannel: jest.fn(async (interaction: any) => {
-    await interaction.reply({
+    // Interaction đã defer → dùng editReply
+    await interaction.editReply({
       components: [{ type: 17, components: [{ type: 10, content: 'success' }] }],
-      flags: 65600,
     });
   }),
   handleSectionStatus: jest.fn(async (interaction: any) => {
-    await interaction.reply({
+    // Interaction đã defer → dùng editReply
+    await interaction.editReply({
       components: [{ type: 17, components: [{ type: 10, content: 'status' }] }],
-      flags: 65600,
     });
   }),
   buildSectionSubcommands: jest.fn(() => ({
@@ -123,7 +142,7 @@ describe('df-code.command', () => {
       'Ngục Giam Thủy Triều': '7890',
     });
     await execute(createMockInteraction(), mockDb);
-    expect(mockDeferReply).toHaveBeenCalledWith({});
+    expect(mockDeferReply).toHaveBeenCalledWith({ flags: MessageFlags.Ephemeral });
     expect(mockEditReply).toHaveBeenCalled();
   });
 
@@ -165,6 +184,43 @@ describe('df-code.command', () => {
     expect(mockEditReply).toHaveBeenCalled();
   });
 
+  it('nen hien thi error container khi editReply throw', async () => {
+    (fetchDailyCodes as jest.Mock).mockResolvedValue({
+      'Đập Nước Zero': '1234',
+      'Thung lũng Layali': '5678',
+      'Phố Cổ Brakkesh': '9012',
+      AZ3: 'AB12',
+      'Trạm Không Gian': '3456',
+      'Ngục Giam Thủy Triều': '7890',
+    });
+    let callCount = 0;
+    const interaction = createMockInteraction({
+      editReply: jest.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return Promise.reject(new Error('Edit failed'));
+        return Promise.resolve({ id: 'replied' });
+      }),
+    });
+    await execute(interaction, mockDb);
+    // editReply throw → catch block → buildErrorContainer + editReply lại
+    expect(callCount).toBe(2);
+  });
+
+  it('data co subcommand setchannel va status', () => {
+    const { data } = require('../src/commands/df/code.command.js');
+    expect(data).toBeDefined();
+    // Data được xây dựng với 2 subcommands: setchannel và status
+    expect(data.toJSON).toBeDefined();
+  });
+
+  it('data co du 2 subcommand (setchannel + status)', () => {
+    const { data } = require('../src/commands/df/code.command.js');
+    const json = data.toJSON();
+    // SlashCommandBuilder.toJSON() trả về array có 2 subcommands
+    expect(json).toHaveProperty('subcommands');
+    expect(json.subcommands).toHaveLength(2);
+  });
+
   it('nen reject khi khong co admin permission', async () => {
     const interaction = createMockInteraction({
       member: { permissions: { has: () => false } },
@@ -183,7 +239,8 @@ describe('df-code.command', () => {
       options: { getSubcommand: () => 'setchannel' },
     });
     await execute(interaction, mockDb);
-    expect(mockReply).toHaveBeenCalled();
+    // Interaction đã defer → handler gọi editReply
+    expect(mockEditReply).toHaveBeenCalled();
   });
 
   it('nen call status subcommand', async () => {
@@ -191,7 +248,8 @@ describe('df-code.command', () => {
       options: { getSubcommand: () => 'status' },
     });
     await execute(interaction, mockDb);
-    expect(mockReply).toHaveBeenCalled();
+    // Interaction đã defer → handler gọi editReply
+    expect(mockEditReply).toHaveBeenCalled();
   });
 });
 

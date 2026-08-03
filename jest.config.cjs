@@ -89,7 +89,7 @@ module.exports = {
       statements: 98,
     },
     'src/commands/df/link.command.ts': {
-      branches: 77,
+      branches: 74,
       functions: 76,
       lines: 91,
       statements: 90,

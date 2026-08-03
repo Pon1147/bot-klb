@@ -17,6 +17,12 @@ describe('Logger (createLogger)', () => {
     jest.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
       loggedMessages.push({ method: 'log', args });
     });
+    jest.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+      loggedMessages.push({ method: 'warn', args });
+    });
+    jest.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      loggedMessages.push({ method: 'error', args });
+    });
   });
 
   afterEach(() => {
@@ -62,22 +68,24 @@ describe('Logger (createLogger)', () => {
   });
 
   describe('warn()', () => {
-    it('phải gọi console.log với WARN level', () => {
+    it('phải gọi console.warn với WARN level', () => {
       const logger = createLogger('TestModule');
       logger.warn('Warning message');
 
       const lastCall = loggedMessages[loggedMessages.length - 1];
+      expect(lastCall.method).toBe('warn');
       const output = stripAnsi(lastCall.args.join(' '));
       expect(output).toContain('WARN');
     });
   });
 
   describe('error()', () => {
-    it('phải gọi console.log với ERROR level', () => {
+    it('phải gọi console.error với ERROR level', () => {
       const logger = createLogger('TestModule');
       logger.error('Error message');
 
       const lastCall = loggedMessages[loggedMessages.length - 1];
+      expect(lastCall.method).toBe('error');
       const output = stripAnsi(lastCall.args.join(' '));
       expect(output).toContain('ERROR');
     });

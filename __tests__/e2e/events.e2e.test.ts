@@ -256,7 +256,6 @@ describe('Events E2E — guildMemberAdd', () => {
     expect(channel.send).toHaveBeenCalled();
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('Failed to assign role'),
-      expect.any(Error),
     );
   });
 });

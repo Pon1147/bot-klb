@@ -28,7 +28,19 @@ jest.mock('discord.js', () => {
     constructor() { this._name = ''; this._desc = ''; this._options = []; }
     setName(n) { this._name = n; return this; }
     setDescription(d) { this._desc = d; return this; }
-    addSubcommand(fn) { fn({ setName() { return this; }, setDescription() { return this; }, addStringOption() { return this; }, addChannelOption() { return this; }, addRoleOption() { return this; }, addBooleanOption() { return this; } }); this._options.push({ type: 1 }); return this; }
+    addSubcommand(fn) {
+      const mockSub: any = {
+        setName() { return this; },
+        setDescription() { return this; },
+        addStringOption(cb: any) { cb({ setName() { return this; }, setDescription() { return this; }, setRequired() { return this; } }); return this; },
+        addChannelOption(cb: any) { cb({ setName() { return this; }, setDescription() { return this; }, setRequired() { return this; } }); return this; },
+        addRoleOption(cb: any) { cb({ setName() { return this; }, setDescription() { return this; }, setRequired() { return this; } }); return this; },
+        addBooleanOption(cb: any) { cb({ setName() { return this; }, setDescription() { return this; }, setRequired() { return this; } }); return this; },
+      };
+      fn(mockSub);
+      this._options.push({ type: 1 });
+      return this;
+    }
     toJSON() { return { name: this._name, description: this._desc, options: this._options }; }
   }
   return {
@@ -98,6 +110,17 @@ describe('section-config — handleSectionSetChannel', () => {
       welcome: { channelId: 'channel-123' },
     });
     expect(mockReply).toHaveBeenCalled();
+  });
+
+  it('nên gọi editReply khi interaction đã replied', async () => {
+    const { handleSectionSetChannel, getWelcomeConfig } = require('../src/utils/section-config.handlers.js');
+    const repliedInteraction = { ...mockInteraction, replied: true };
+    const editReply = jest.fn().mockResolvedValue(undefined);
+    await handleSectionSetChannel({ ...repliedInteraction, editReply }, 'guild-1', getWelcomeConfig());
+    expect(mockSettingsService.update).toHaveBeenCalledWith('guild-1', {
+      welcome: { channelId: 'channel-123' },
+    });
+    expect(editReply).toHaveBeenCalled();
   });
 });
 
@@ -176,6 +199,104 @@ describe('section-config — executeSectionCommand', () => {
     expect(mockReply).toHaveBeenCalledWith(
       expect.objectContaining({ content: expect.stringContaining('Administrator'), flags: 64 }),
     );
+  });
+
+  it('nên gọi setchannel subcommand', async () => {
+    const { executeSectionCommand, getWelcomeConfig } = require('../src/utils/section-config.handlers.js');
+    const interaction = {
+      ...mockInteraction,
+      member: { permissions: { has: () => true } },
+      options: { ...mockInteraction.options, getSubcommand: () => 'setchannel' },
+      replied: false,
+    };
+    interaction.options.getChannel.mockReturnValue({ id: 'ch-1', name: 'test' });
+    await executeSectionCommand(interaction, null, getWelcomeConfig());
+    expect(mockSettingsService.update).toHaveBeenCalledWith('guild-1', {
+      welcome: { channelId: 'ch-1' },
+    });
+  });
+
+  it('nên gọi setrole subcommand', async () => {
+    const { executeSectionCommand, getWelcomeConfig } = require('../src/utils/section-config.handlers.js');
+    const interaction = {
+      ...mockInteraction,
+      member: { permissions: { has: () => true } },
+      options: { ...mockInteraction.options, getSubcommand: () => 'setrole', getRole: () => ({ id: 'role-1', name: 'TestRole' }) },
+      replied: false,
+    };
+    await executeSectionCommand(interaction, null, getWelcomeConfig());
+    expect(mockSettingsService.update).toHaveBeenCalledWith('guild-1', {
+      welcome: { roleId: 'role-1' },
+    });
+  });
+
+  it('nên gọi toggle subcommand với enabled=true', async () => {
+    const { executeSectionCommand, getWelcomeConfig } = require('../src/utils/section-config.handlers.js');
+    const interaction = {
+      ...mockInteraction,
+      member: { permissions: { has: () => true } },
+      options: { ...mockInteraction.options, getSubcommand: () => 'toggle', getBoolean: () => true },
+      replied: false,
+    };
+    await executeSectionCommand(interaction, null, getWelcomeConfig());
+    expect(mockSettingsService.update).toHaveBeenCalledWith('guild-1', {
+      welcome: { enabled: true },
+    });
+  });
+
+  it('nên gọi toggle subcommand với enabled=false', async () => {
+    const { executeSectionCommand, getWelcomeConfig } = require('../src/utils/section-config.handlers.js');
+    const interaction = {
+      ...mockInteraction,
+      member: { permissions: { has: () => true } },
+      options: { ...mockInteraction.options, getSubcommand: () => 'toggle', getBoolean: () => false },
+      replied: false,
+    };
+    await executeSectionCommand(interaction, null, getWelcomeConfig());
+    expect(mockSettingsService.update).toHaveBeenCalledWith('guild-1', {
+      welcome: { enabled: false },
+    });
+  });
+
+  it('nên gọi status subcommand', async () => {
+    const { executeSectionCommand, getWelcomeConfig } = require('../src/utils/section-config.handlers.js');
+    const interaction = {
+      ...mockInteraction,
+      member: { permissions: { has: () => true } },
+      options: { ...mockInteraction.options, getSubcommand: () => 'status' },
+      replied: false,
+    };
+    await executeSectionCommand(interaction, null, getWelcomeConfig());
+    expect(mockReply).toHaveBeenCalled();
+  });
+
+  it('nên reply error khi subcommand không hợp lệ', async () => {
+    const { executeSectionCommand, getWelcomeConfig } = require('../src/utils/section-config.handlers.js');
+    const interaction = {
+      ...mockInteraction,
+      options: { ...mockInteraction.options, getSubcommand: () => 'invalid' },
+      replied: false,
+    };
+    await executeSectionCommand(interaction, null, getWelcomeConfig());
+    expect(mockReply).toHaveBeenCalled();
+    const replyArgs = mockReply.mock.calls[0][0];
+    expect(replyArgs.components).toBeDefined();
+  });
+
+  it('nên catch lỗi và log error khi handler throw', async () => {
+    const { executeSectionCommand, getWelcomeConfig } = require('../src/utils/section-config.handlers.js');
+    const interaction = {
+      ...mockInteraction,
+      options: { ...mockInteraction.options, getSubcommand: () => 'status' },
+      replied: false,
+      guild: { id: 'guild-1' },
+      member: { permissions: { has: () => true } },
+    };
+    mockSettingsService.get.mockImplementation(() => {
+      throw new Error('DB Error');
+    });
+    await executeSectionCommand(interaction, null, getWelcomeConfig());
+    expect(mockReply).toHaveBeenCalled();
   });
 });
 

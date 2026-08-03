@@ -83,16 +83,27 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   _database: Database.Database,
 ): Promise<void> {
+  // Guard: chỉ dùng trong guild
   if (!interaction.guild) {
-    await interaction.editReply({ content: 'Lệnh này chỉ dùng được trong server.' });
+    await interaction.reply({
+      content: 'Lệnh này chỉ dùng được trong server.',
+      flags: MessageFlags.Ephemeral,
+    });
     return;
   }
 
   const member = interaction.member as GuildMember;
+  // Guard: yêu cầu Administrator permission
   if (!member || !member.permissions.has(PermissionFlagsBits.Administrator)) {
-    await interaction.editReply({ content: 'Bạn cần quyền Administrator để sử dụng lệnh này.' });
+    await interaction.reply({
+      content: 'Bạn cần quyền Administrator để sử dụng lệnh này.',
+      flags: MessageFlags.Ephemeral,
+    });
     return;
   }
+
+  // Defer trước API call để tránh "Unknown interaction"
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const subcommand = interaction.options.getSubcommand();
   const guildId = interaction.guild.id;

@@ -209,16 +209,6 @@ export async function execute(
     return;
   }
 
-  // Defer reply to prevent "Unknown interaction" on slow commands
-  if (!interaction.replied && !interaction.deferred) {
-    try {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-    } catch {
-      // Defer failed — interaction likely expired, skip
-      return;
-    }
-  }
-
   try {
     await commandModule.execute(interaction, database);
   } catch (error) {

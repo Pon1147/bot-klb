@@ -76,7 +76,10 @@ function log(
   message: string,
   metadata?: Record<string, unknown>,
 ): void {
-  console.log(formatLine(level, module, message, metadata));
+  const line = formatLine(level, module, message, metadata);
+  if (level === 'error') console.error(line);
+  else if (level === 'warn') console.warn(line);
+  else console.log(line);
 }
 
 /**

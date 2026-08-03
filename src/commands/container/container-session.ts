@@ -109,11 +109,11 @@ export function touchSession(userId: string): void {
  * WHY: Prevent memory leak - Map tích lũy sessions cũ mãi mãi nếu không cleanup.
  * Chạy mỗi 5 phút, xóa sessions quá 15 phút không tương tác.
  */
-let cleanupInterval: NodeJS.Timeout | null = null;
+export let cleanupInterval: NodeJS.Timeout | null = null;
 
 export function startSessionCleanup(): void {
   if (cleanupInterval) {
-    logger.warn('Session cleanup already running, skipping start.');
+    logger.warn('Session cleanup đã đang chạy, bỏ qua start.');
     return;
   }
   cleanupInterval = setInterval(() => {
@@ -126,10 +126,10 @@ export function startSessionCleanup(): void {
       }
     }
     if (cleaned > 0) {
-      logger.info('Cleaned up ' + cleaned + ' expired session(s).');
+      logger.info('Đã xóa ' + cleaned + ' session(s) hết hạn.');
     }
   }, CONTAINER_SESSION_CLEANUP_INTERVAL_MS);
-  logger.info('Started periodic cleanup (every 5 minutes).');
+  logger.info('Đã khởi tạo periodic cleanup (5 phút/lần).');
 }
 
 /**
@@ -140,6 +140,6 @@ export function stopSessionCleanup(): void {
   if (cleanupInterval) {
     clearInterval(cleanupInterval);
     cleanupInterval = null;
-    logger.info('Stopped periodic cleanup.');
+    logger.info('Đã dừng periodic cleanup.');
   }
 }

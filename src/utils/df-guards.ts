@@ -5,7 +5,13 @@ import { getDfToken } from '../database/df.token.db.js';
 
 export async function requireGuild(interaction: ChatInputCommandInteraction): Promise<boolean> {
   if (!interaction.guild) {
-    await interaction.reply({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral });
+    // Đã defer/reply rồi → dùng editReply, ngược lại dùng reply
+    if (interaction.replied || interaction.deferred) {
+      // editReply không nhận flags — message đã ephemeral từ defer
+      await interaction.editReply({ content: 'Chỉ dùng trong server.' });
+    } else {
+      await interaction.reply({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral });
+    }
     return true;
   }
   return false;
@@ -20,10 +26,18 @@ export async function requireDfToken(
     const err = buildErrorContainer(
       'Bạn chưa liên kết tài khoản. Dùng `/df-link start` hoặc `/df-link manual` để bắt đầu.',
     );
-    await interaction.reply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
-    });
+    // Đã defer/reply rồi → dùng editReply, ngược lại dùng reply
+    if (interaction.replied || interaction.deferred) {
+      // editReply không nhận flags — message đã ephemeral từ defer
+      await interaction.editReply({
+        components: err.toJSON(),
+      });
+    } else {
+      await interaction.reply({
+        components: err.toJSON(),
+        flags: err.flags | MessageFlags.Ephemeral,
+      });
+    }
     return true;
   }
   return false;
@@ -36,10 +50,18 @@ export async function requireDfTokenOrInfo(
   const existing = getDfToken(database, interaction.user.id);
   if (!existing) {
     const info = buildInfoContainer('Bạn chưa liên kết tài khoản Delta Force nào.');
-    await interaction.reply({
-      components: info.toJSON(),
-      flags: info.flags | MessageFlags.Ephemeral,
-    });
+    // Đã defer/reply rồi → dùng editReply, ngược lại dùng reply
+    if (interaction.replied || interaction.deferred) {
+      // editReply không nhận flags — message đã ephemeral từ defer
+      await interaction.editReply({
+        components: info.toJSON(),
+      });
+    } else {
+      await interaction.reply({
+        components: info.toJSON(),
+        flags: info.flags | MessageFlags.Ephemeral,
+      });
+    }
     return true;
   }
   return false;
