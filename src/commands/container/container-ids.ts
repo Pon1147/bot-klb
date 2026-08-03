@@ -1,6 +1,8 @@
 /** Tập hợp tất cả custom IDs cho container editor buttons/modals */
 
 export const ContainerIds = {
+  /** Prefix cho tất cả container-related custom IDs */
+  PREFIX: 'container_',
   /** Pencil button prefix — bắt đầu editor từ live container message */
   EDIT_PENCIL: 'container_edit_pencil_',
   /** Navigation: quay lại editor chính */

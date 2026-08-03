@@ -8,10 +8,10 @@ import {
   ModalSubmitInteraction,
   StringSelectMenuInteraction,
 } from 'discord.js';
-import { VOICE_CHANNEL_FULL_MESSAGE } from '../config/app.constants.js';
 import { createLogger } from '../utils/logger.js';
+import { ContainerIds, ContainerModalPrefix } from '../commands/container/container-ids.js';
 import { TeamFindIds } from '../commands/df/team-find-ids.js';
-import { ContainerModalPrefix } from '../commands/container/container-ids.js';
+import { handleTeamFindButton, handleTeamFindSelect } from '../commands/df/team-find.handlers.js';
 
 const logger = createLogger('InteractionCreate');
 import { COMMAND_PERMISSIONS, hasRequiredRole } from '../config/permissions.js';
@@ -19,7 +19,6 @@ import {
   handleEditorButtonInteraction as handleContainerEditorButtonInteraction,
   handleEditorModalSubmit as handleContainerEditorModalSubmit,
 } from '../commands/container/container-routers.js';
-import { handleTeamFindInteraction } from '../commands/df/team-find.interaction.js';
 
 export async function execute(
   client: Client,
@@ -32,7 +31,7 @@ export async function execute(
   // ── 1. Button Interactions ──
   if (interaction.isButton()) {
     // Container editor buttons
-    if (interaction.customId.startsWith('container_')) {
+    if (interaction.customId.startsWith(ContainerIds.PREFIX)) {
       try {
         await handleContainerEditorButtonInteraction(interaction);
       } catch (error) {
@@ -44,87 +43,8 @@ export async function execute(
       return;
     }
 
-    // Team find buttons (map/mode/done) — interaction handler returns true/false
-    if (
-      interaction.customId.startsWith(TeamFindIds.MAP) ||
-      interaction.customId.startsWith(TeamFindIds.MODE) ||
-      interaction.customId.startsWith(TeamFindIds.DONE)
-    ) {
-      try {
-        if (await handleTeamFindInteraction(interaction)) return;
-        // fallthrough to join button below
-      } catch (error) {
-        logger.error(
-          'Error in team-find button handler: ' +
-            (error instanceof Error ? error.message : String(error)),
-        );
-        return;
-      }
-    }
-
-    // Team find join button
-    if (interaction.customId.startsWith(TeamFindIds.JOIN)) {
-      try {
-        const channelId = interaction.customId.split(':')[1];
-        const channel = await interaction.guild?.channels.fetch(channelId).catch(() => null);
-
-        if (!channel || channel.type !== 2) {
-          await interaction.reply({
-            content: 'Phòng thoại không còn tồn tại.',
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
-        }
-
-        const member = interaction.member;
-        const memberVoice = member instanceof GuildMember ? member.voice : null;
-        if (memberVoice?.channel?.id === channelId) {
-          await interaction.reply({
-            content: 'Bạn đã đang trong phòng này.',
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
-        }
-
-        if (channel.full) {
-          await interaction.reply({
-            content: VOICE_CHANNEL_FULL_MESSAGE,
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
-        }
-
-        const me = interaction.guild!.members.me;
-        const botPerms = me ? channel.permissionsFor(me) : null;
-        if (!botPerms?.has('Connect')) {
-          await interaction.reply({
-            content: 'Bot không có quyền tham gia phòng thoại này.',
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
-        }
-
-        // channel là VoiceChannel nhưng type là GuildVoiceChannel
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (channel as any).join();
-        await interaction.reply({
-          content: 'Đã join phòng thành công!',
-          flags: MessageFlags.Ephemeral,
-        });
-      } catch (error) {
-        logger.error(
-          'Error in team-find join button handler: ' +
-            (error instanceof Error ? error.message : String(error)),
-        );
-        if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({
-            content: 'Có lỗi xảy ra khi tham gia phòng thoại.',
-            flags: MessageFlags.Ephemeral,
-          });
-        }
-      }
-      return;
-    }
+    // Team-find buttons (map/mode/done/join)
+    if ((await handleTeamFindButton(interaction)).handled) return;
 
     return;
   }
@@ -132,15 +52,7 @@ export async function execute(
   // ── 1b. String Select Menu Interactions ──
   if (interaction.isStringSelectMenu()) {
     if (interaction.customId.startsWith(TeamFindIds.RANK)) {
-      try {
-        await handleTeamFindInteraction(interaction);
-      } catch (error) {
-        logger.error(
-          'Error in team-find select handler: ' +
-            (error instanceof Error ? error.message : String(error)),
-        );
-      }
-      return;
+      await handleTeamFindSelect(interaction);
     }
     return;
   }
