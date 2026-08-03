@@ -218,7 +218,7 @@ describe('df-code.command', () => {
     const json = data.toJSON();
     // SlashCommandBuilder.toJSON() trả về array có 2 subcommands
     expect(json).toHaveProperty('subcommands');
-    expect(json.subcommands).toHaveLength(2);
+    expect(json.subcommands).toHaveLength(3);
   });
 
   it('nen reject khi khong co admin permission', async () => {

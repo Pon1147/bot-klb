@@ -1,280 +1,182 @@
-# REFACTOR PLAN — KL BOT
+# REFACTOR PLAN — KL BOT (Architectural Refactor)
 
 ## Tổng quan
 
 Project: Discord Bot (TypeScript + discord.js v14 + better-sqlite3)
-Mục tiêu: Chuẩn hóa codebase trước khi phát triển feature mới
-Tổng effort còn lại: ~6.5 giờ
+Mục tiêu: Giải quyết 4 điểm yếu kiến trúc trước khi phát triển feature mới
+Tổng effort còn lại: ~7.5 giờ
+
+## Tiền đề
+
+Đã hoàn thành 6 phases refactor đầu (Phase 0-6): ESLint config, magic values, console→logger, eliminate any types, centralize custom IDs, bug fixes, decorator typing.
+
+Đánh giá 9 điểm yếu claimed → **8/9 đúng**, 1 điểm (permission check trùng) thực chất là design có chủ đích với 2 lớp permission độc lập.
 
 ---
 
-## ✅ Phase 0: ESLint 9 + Prettier Configuration (ĐÃ HOÀN THÀNH)
+## ⏳ Phase 7: Extract Join-Voice + Fix Hardcoded Prefix
 
-**Risk:** Low | **Impact:** High | **Thời lượng:** ~30p
+**Risk:** Low | **Impact:** Medium | **Thời lượng:** ~1h
 
-### Files đã tạo
+### Điểm yếu
 
-- `eslint.config.mjs` — Flat config với TypeScript parser, recommended rules
-- `.prettierrc` — semi, singleQuote, trailingComma, printWidth 100
+- `interactionCreate.event.ts` = 236 dòng, đóng vai trò "god router" cho tất cả interactions
+- Join-voice logic (~60 dòng) nằm inline trong event handler
+- 1 hardcoded prefix string: `'container_'` (dòng 35)
 
-### Files đã sửa
+### Files tạo mới
 
-- `package.json` — Xóa `--ext .ts` deprecated, update lint-staged pattern
-- `src/handlers/command.handler.ts` — eslint-disable cho require()
-- `src/handlers/event.handler.ts` — eslint-disable cho require()
-- `src/database/guild.settings.db.ts` — Xóa unused eslint-disable directives
-- `tsconfig.json` — Thêm typeAcquisition.enable: false
+- `src/commands/df/team-find.handlers.ts` — `handleTeamFindButton()` + `handleJoinVoice()`
 
-### Verify
+### Files sửa
+
+| File                                      | Changes                                                                                    |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `src/events/interactionCreate.event.ts`   | Delegate Map/Mode/Done → `handleTeamFindButton()`, xóa inline join-voice (236 → ~170 dòng) |
+| `src/commands/container/container-ids.ts` | Thêm `PREFIX: 'container_'` constant                                                       |
+| `src/events/interactionCreate.event.ts`   | `'container_'` → `ContainerIds.PREFIX`                                                     |
+
+### Verification
 
 - `npm run check`: 0 errors
-- `npm run lint`: 0 errors, 22 warnings (any types)
-- `npm run format:check`: All pass
+- `npm run test`: all pass
+- Manual: click join button trong team-find flow → bot join voice
 
 ---
 
-## ✅ Phase 1: Extract Magic Values to Constants (ĐÃ HOÀN THÀNH)
+## ⏳ Phase 8: Shared DF Command Runner
 
-**Risk:** Low | **Impact:** Medium | **Thời lượng:** ~2h
+**Risk:** Medium | **Impact:** High | **Thời lượng:** ~2.5h
 
-### Files đã tạo
+### Điểm yếu
 
-- `src/config/deltaforce.config.ts` — 12 constants (API URLs, params, timeouts, seasons)
-- `src/config/app.constants.ts` — 25 constants (port, messages, limits, timeouts, avatars, mock data)
+- `stats.command.ts`, `daily.command.ts`, `history.command.ts` lặp ~30 dòng boilerplate mỗi file
+- Pattern: requireGuild → getDfToken + error reply → deferReply → API → touchDfToken → editReply → catch + buildErrorContainer
+- `requireDfToken` guard tồn tại trong `df-guards.ts` nhưng KHÔNG file nào dùng
 
-### Files đã sửa (20+ files)
+### Files tạo mới
 
-| File                         | Changes                                                 |
-| ---------------------------- | ------------------------------------------------------- |
-| `deltaforce.api.ts`          | BASE, HEADERS, params, timeouts → constants             |
-| `deltaforce.scraper.ts`      | HQ URL typo fix (laugue→language), timeouts → constants |
-| `link.command.ts`            | URL, regex, messages → constants                        |
-| `history.command.ts`         | `20` → `MAX_HISTORY_PAGE`                               |
-| `container-builders.ts`      | `4000`, MockUser, avatar URL → constants                |
-| `container-routers.ts`       | Session expired message → constant                      |
-| `container-session.ts`       | Timeouts → constants                                    |
-| `team-find.interaction.ts`   | Session message, avatar size → constants                |
-| `df-rank.utils.ts`           | SOL threshold → constant                                |
-| `df-voice.utils.ts`          | Voice full message → constant                           |
-| `container.utils.ts`         | Text length, avatar size → constants                    |
-| `interactionCreate.event.ts` | Voice full message → constant                           |
-| `webhook-server.ts`          | Port → constant                                         |
-| `webhook.routes.ts`          | Claim message → constant                                |
-| `webhook-tunnel.ts`          | Bin name, download URL → constants                      |
-| `df-claim-store.ts`          | TTL, cleanup interval, attempts → constants             |
-| `team-find-session.ts`       | Session timeout → constant                              |
-| `df-codes-scheduler.ts`      | Cleanup interval → constant                             |
-| `index.ts`                   | Port, cleanup interval → constants                      |
-| `command.handler.ts`         | `any` → proper union type                               |
-| `event.handler.ts`           | `any[]` → `unknown[]`                                   |
+- `src/utils/df-command.runner.ts` — `runDfCommand(ctx, fn)` function
 
-### Verify
+```typescript
+// Runner xử lý boilerplate, command chỉ cần:
+await runDfCommand({ userId: interaction.user.id, database, interaction }, async (apiToken) => {
+  const data = await getSeasonData(apiToken, LATEST_SEASON);
+  return { components: buildStatsContainer(data), flags: MessageFlags.IsComponentsV2 };
+});
+```
+
+### Files sửa
+
+| File                                 | Changes                                          |
+| ------------------------------------ | ------------------------------------------------ |
+| `src/commands/df/stats.command.ts`   | Remove ~50 dòng boilerplate, giữ domain logic    |
+| `src/commands/df/daily.command.ts`   | Remove ~40 dòng (có unique `.catch()` pattern)   |
+| `src/commands/df/history.command.ts` | Remove ~50 dòng boilerplate, giữ match rendering |
+
+### Verification
 
 - `npm run check`: 0 errors
-- `npm run lint`: 0 errors, 19 warnings (any types)
-- `npm run format:check`: All pass
+- `npm run test`: df-stats, df-daily, df-history tests pass
+- Manual: `/df-stats`, `/df-daily`, `/df-history` → same output như trước
 
 ---
 
-## ✅ Phase 2: Replace console.log/error → createLogger (ĐÃ HOÀN THÀNH)
+## ⏳ Phase 9: Shared TTL Store Abstraction
 
-**Risk:** Low | **Impact:** Medium | **Thời lượng:** ~3h
+**Risk:** Medium | **Impact:** Medium | **Thời lượng:** ~2.5h
 
-### Files đã sửa (16 files)
+### Điểm yếu
 
-| File                                                | Logger Tag          |
-| --------------------------------------------------- | ------------------- |
-| `src/utils/section-config.handlers.ts`              | `SectionConfig`     |
-| `src/commands/df/link.command.ts`                   | `DfLink`            |
-| `src/commands/df/daily.command.ts`                  | `DfDaily`           |
-| `src/commands/container/container-edit.handler.ts`  | `ContainerEdit`     |
-| `src/commands/container/handlers/action.handler.ts` | `ContainerAction`   |
-| `src/commands/container/container.command.ts`       | `Container`         |
-| `src/commands/container/container-routers.ts`       | `ContainerRouters`  |
-| `src/commands/container/container-session.ts`       | `ContainerSession`  |
-| `src/server/webhook.routes.ts`                      | `Webhook`           |
-| `src/server/webhook-server.ts`                      | `WebhookServer`     |
-| `src/events/interactionCreate.event.ts`             | `InteractionCreate` |
-| `src/events/guildMemberUpdate.event.ts`             | `GuildMemberUpdate` |
-| `src/events/guildMemberAdd.event.ts`                | `GuildMemberAdd`    |
-| `src/services/webhook-tunnel.ts`                    | `WebhookTunnel`     |
-| `src/services/deltaforce.api.ts`                    | `DfApi`             |
-| `src/commands/df/team-find.interaction.ts`          | `TeamFind`          |
+- 4 session stores độc lập, tất cả share pattern: `Map<string, T>` + TTL + cleanup + start/stop
+- Không có shared abstraction — copy-paste thủ công
 
-### Quy tắc thay thế
+| Store       | File                         | TTL               | Key            |
+| ----------- | ---------------------------- | ----------------- | -------------- |
+| Container   | `container-session.ts`       | lastInteractionAt | userId         |
+| Team-find   | `team-find-session.ts`       | lastInteractionAt | userId         |
+| DF Claim    | `df-claim-store.ts`          | expiresAt         | code           |
+| Message ref | `team-find-message-store.ts` | None              | guildId:userId |
 
-- `console.log` → `logger.info()` (string concatenation)
-- `console.error` → `logger.error()`
-- `console.warn` → `logger.warn()`
-- Multi-line → single-line
-- Extra: `daily.command.ts` (phát hiện thêm khi verify)
+### Files tạo mới
 
-### Acceptance
+- `src/utils/ttl-store.ts` — `TTLStore<K, V>` generic class
 
-- Chỉ còn `console.*` trong `logger.ts`, `deltaforce.scraper.ts`, `scraper/df-webhook.ts` (scraper excluded)
-- `npm run check`: 0 errors
-- `npm run lint`: 0 errors, 19 warnings (any types → Phase 3)
+```typescript
+export class TTLStore<K extends string, V extends { expiresAt: number }> {
+  set(key: K, value: V): void;
+  get(key: K): V | undefined; // auto-expire check
+  delete(key: K): void;
+  cleanupExpired(): number;
+  startCleanup(intervalMs: number): void;
+  stopCleanup(): void;
+  clear(): void;
+  size: number;
+}
+```
 
-## ⏳ Phase 3: Eliminate `any` Types
+### Files sửa
 
-| File                                                | Logger Tag          |
-| --------------------------------------------------- | ------------------- |
-| `src/utils/section-config.handlers.ts`              | `SectionConfig`     |
-| `src/commands/df/link.command.ts`                   | `DfLink`            |
-| `src/commands/container/container-edit.handler.ts`  | `ContainerEdit`     |
-| `src/commands/container/handlers/action.handler.ts` | `ContainerAction`   |
-| `src/commands/container/container.command.ts`       | `Container`         |
-| `src/commands/container/container-routers.ts`       | `ContainerRouters`  |
-| `src/commands/container/container-session.ts`       | `ContainerSession`  |
-| `src/server/webhook.routes.ts`                      | `Webhook`           |
-| `src/server/webhook-server.ts`                      | `WebhookServer`     |
-| `src/events/interactionCreate.event.ts`             | `InteractionCreate` |
-| `src/events/guildMemberUpdate.event.ts`             | `GuildMemberUpdate` |
-| `src/events/guildMemberAdd.event.ts`                | `GuildMemberAdd`    |
-| `src/services/webhook-tunnel.ts`                    | `WebhookTunnel`     |
-| `src/services/deltaforce.api.ts`                    | `DfApi`             |
-| `src/commands/df/team-find.interaction.ts`          | `TeamFind`        |
+| File                                          | Changes                                                    |
+| --------------------------------------------- | ---------------------------------------------------------- |
+| `src/services/df-claim-store.ts`              | Dùng TTLStore cho Map + cleanup                            |
+| `src/services/team-find-session.ts`           | Dùng TTLStore, wrap `lastInteractionAt` → `expiresAt`      |
+| `src/commands/container/container-session.ts` | Dùng TTLStore, giữ `touchSession`/`isSessionValid`         |
+| `src/services/team-find-message-store.ts`     | **Giữ nguyên** — không TTL, quá nhỏ (40 dòng, 4 functions) |
 
----
-
-## ✅ Phase 3: Eliminate `any` Types (ĐÃ HOÀN THÀNH)
-
-**Risk:** Medium | **Impact:** High | **Thời lượng:** ~4h
-
-### Files đã sửa (10 files)
-
-| File | Changes |
-|------|---------|
-| `src/types/client-augmentation.d.ts` | `any` × 3 → proper collection types |
-| `src/events/guildMemberUpdate.event.ts` | `guild: any` → `Guild` |
-| `src/services/settings.service.ts` | Removed `[x: string]: any` index signature |
-| `src/commands/container/container-routers.ts` | `draft: any` → `ContainerSettings` |
-| `src/commands/container/container-edit.handler.ts` | `settings: any` → `ContainerSettings` |
-| `src/server/webhook.routes.ts` | `error: any` → `error: unknown` × 2 |
-| `src/commands/df/team-find.interaction.ts` | 5× `as any` → eslint-disable + comment |
-| `src/decorators/requireRole.ts` | `this: any` → `ChatInputCommandInteraction` |
-| `src/events/interactionCreate.event.ts` | `as any` → eslint-disable + comment |
-| `src/commands/admin/set-role.command.ts` | `permData as any` → `as unknown as PermissionsConfig` |
-| `src/services/deltaforce.scraper.ts` | Removed `as any` (puppeteer context) |
-
-### Quy tắc
-
-- Catch clauses: `error: any` → `error: unknown` + `instanceof Error`
-- Types: `any` → proper type hoặc `Record<string, unknown>`
-- External libs (discord.js, puppeteer): eslint-disable + comment lý do
-- Removed unused index signature `[x: string]: any`
-
-### Acceptance
+### Verification
 
 - `npm run check`: 0 errors
-- `npm run lint`: 0 errors, 0 warnings
-
-### Chi tiết từng file
-
-| File                         | Line             | Current              | Fix                                              |
-| ---------------------------- | ---------------- | -------------------- | ------------------------------------------------ |
-| `client-augmentation.d.ts`   | 6                | `any` × 3            | Proper collection type                           |
-| `command.handler.ts`         | 136              | `commandData: any`   | `SlashCommandBuilder \| Record<string, unknown>` |
-| `event.handler.ts`           | 11               | `any[]`              | `unknown[]`                                      |
-| `guildMemberUpdate.event.ts` | 80               | `guild: any`         | `Guild` (import from discord.js)                 |
-| `settings.service.ts`        | 38               | `[x: string]: any`   | Typed record interface                           |
-| `container-routers.ts`       | 221              | `draft: any`         | `ContainerSettings`                              |
-| `container-edit.handler.ts`  | 40               | `settings: any`      | `ContainerSettings`                              |
-| `webhook.routes.ts`          | 97, 116          | `catch (error: any)` | `catch (error: unknown)`                         |
-| `link.command.ts`            | 135              | `catch (error: any)` | `catch (error: unknown)`                         |
-| `deltaforce.scraper.ts`      | 69               | `any` × 2            | Puppeteer evaluate context                       |
-| `team-find.interaction.ts`   | 46,51,80,108,158 | `as any`             | discord.js type mismatch                         |
-| `decorators/requireRole.ts`  | 34               | `this: any`          | `ChatInputCommandInteraction`                    |
-
-### Quy tắc
-
-- Catch clauses: `error: any` → `error: unknown`, dùng `instanceof Error` để extract message
-- Types: `any` → proper type hoặc `Record<string, unknown>`
-- External libs (puppeteer, discord.js): giữ `any` nếu không thể fix, thêm eslint-disable comment với lý do
-
-### Acceptance
-
-- `npm run check`: pass
-- `@typescript-eslint/no-explicit-any`: 0 errors
-- Không còn `as any` assertions trong bot code (scraper files excluded)
+- `npm run test`: df-claim-store.test.ts, container session tests pass
+- Manual: `/team-find` session works, `/container edit` session works
 
 ---
 
-## ✅ Phase 4: Centralize Custom IDs (ĐÃ HOÀN THÀNH)
+## ⏳ Phase 10: Fix /df-code + Unify Error Handling
 
-**Risk:** Medium | **Impact:** Low | **Thời lượng:** ~1h
+**Risk:** Low | **Impact:** Medium | **Thời lượng:** ~1.5h
 
-### Files đã tạo
+### Điểm yếu
 
-- `src/commands/container/container-ids.ts` — 15 constants + `ContainerModalPrefix`
-- `src/commands/df/team-find-ids.ts` — 5 constants
+- `/df-code` có dead code path (dòng 121) — Discord không send interaction cho unregistered subcommands
+- Error handling trộn lẫn 2 pattern: `buildErrorContainer()` vs plain `content` strings
+- `team-find.interaction.ts` dùng plain text cho session ownership checks nhưng container cho logic errors
 
-### Files đã sửa (4 files)
+### Files tạo mới
 
-| File | Changes |
-|------|---------|
-| `container-routers.ts` | 14× raw string → ContainerIds imports |
-| `container-builders.ts` | 16× raw string → ContainerIds imports |
-| `interactionCreate.event.ts` | 4× `startsWith` → TeamFindIds/ContainerModalPrefix |
-| `team-find.interaction.ts` | 4× `startsWith`/`.replace` → TeamFindIds imports |
+- `src/utils/reply.utils.ts` — `replyWithContainer()` + `replyWithError()` helpers
 
-### Acceptance
+```typescript
+export async function replyWithContainer(
+  interaction,
+  result: BuildContainerResult,
+  isEdit: boolean,
+): Promise<void>;
+export async function replyWithError(interaction, message: string, isEdit: boolean): Promise<void>;
+```
+
+### Files sửa
+
+| File                                       | Changes                                                                       |
+| ------------------------------------------ | ----------------------------------------------------------------------------- |
+| `src/commands/df/code.command.ts`          | Remove dead default path, thêm guard throw                                    |
+| `src/commands/df/team-find.interaction.ts` | 7 chỗ plain text → `buildErrorContainer` (dòng 34, 43, 76, 85, 114, 123, 153) |
+
+### Verification
 
 - `npm run check`: 0 errors
-- `npm run lint`: 0 errors, 0 warnings
+- `npm run test`: df-code.test.ts pass
+- Manual: `/df-code status`, `/df-code setchannel #channel` work
+- Manual: /team-find error messages dùng containers
 
 ---
 
-## ✅ Phase 5: Fix Known Bugs (ĐÃ HOÀN THÀNH)
+## Tổng kết
 
-**Risk:** Low | **Impact:** High | **Thời lượng:** ~30p
-
-### Files đã sửa
-
-| File | Fix |
-|------|-----|
-| `src/events/guildMemberUpdate.event.ts` | Thêm guard `oldChannelId !== null` |
-| `src/commands/df/team-find.interaction.ts` | Show error message thay vì silent fail |
-
-### Acceptance
-
-- Voice cleanup chỉ trigger khi user rời voice channel (không phải join)
-- Done button show error message khi thiếu map/mode
-- `npm run check`: 0 errors
-- `npm run lint`: 0 errors, 0 warnings
-
----
-
-## ✅ Phase 6: Decorator Typing (ĐÃ HOÀN THÀNH)
-
-**Risk:** Low | **Impact:** Low | **Thời lượng:** ~15p
-
-### File đã sửa
-
-| File | Fix |
-|------|-----|
-| `src/decorators/requireRole.ts` | `this: any` → `this: ChatInputCommandInteraction` |
-
-### Acceptance
-
-- `npm run check`: 0 errors
-- `npm run lint`: 0 errors, 0 warnings
-- `this` được type chính xác là `ChatInputCommandInteraction`
-
----
-
-## Summary
-
-| Phase | Category                   | Risk   | Impact         | Est. Time | Status  |
-| ----- | -------------------------- | ------ | -------------- | --------- | ------- |
-| 0     | ESLint/Prettier config     | Low    | High (blocker) | 30p       | ✅ DONE |
-| 1     | Magic values extraction    | Low    | Medium         | 2h        | ✅ DONE |
-| 2     | Console → Logger migration | Low    | Medium         | 3h        | ✅ DONE |
-| 3     | Eliminate `any` types      | Medium | High           | 4h        | ✅ DONE |
-| 4     | Centralize custom IDs      | Medium | Low            | 1h        | ✅ DONE |
-| 5     | Bug fixes                  | Low    | High           | 30p       | ✅ DONE |
-| 6     | Decorator typing           | Low    | Low            | 15p       | ✅ DONE |
-
-**Total remaining effort: 0 giờ**
-
-**Tất cả phases đã hoàn thành!**
+| Phase     | Category                        | New Files | Modified Files | Est. Time |
+| --------- | ------------------------------- | --------- | -------------- | --------- |
+| 7         | Extract join-voice + fix prefix | 1         | 3              | 1h        |
+| 8         | DF command runner               | 1         | 4              | 2.5h      |
+| 9         | TTL store abstraction           | 1         | 3              | 2.5h      |
+| 10        | Error unification               | 1         | 3              | 1.5h      |
+| **Total** |                                 | **4**     | **13**         | **~7.5h** |
