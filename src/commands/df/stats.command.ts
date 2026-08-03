@@ -1,47 +1,29 @@
-﻿import {
+import {
   ChatInputCommandInteraction,
   ComponentType,
   MessageFlags,
   SlashCommandBuilder,
 } from 'discord.js';
 import Database from 'better-sqlite3';
-import { buildErrorContainer, toComponentsV2 } from '../../utils/container.utils.js';
+import { toComponentsV2 } from '../../utils/container.utils.js';
 import { COLORS } from '../../config/container.variables.js';
 import { getSeasonData } from '../../services/deltaforce.api.js';
 import { resolveRankFromScore } from '../../utils/df-rank.utils.js';
-import { requireGuild } from '../../utils/df-guards.js';
 import { buildDfApiToken } from '../../utils/df-token.utils.js';
-import { touchDfToken, getDfToken } from '../../database/df.token.db.js';
+import { runDfCommand } from '../../utils/df-command.runner.js';
 import { LATEST_SEASON, LATEST_SEASON_NAME } from '../../config/team-find.config.js';
 
 export const data = new SlashCommandBuilder()
   .setName('df-stats')
-  .setDescription('Xem thống kê tài khoản Delta Force.');
+  .setDescription('Xem thong ke tai khoan Delta Force.');
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
-  if (await requireGuild(interaction)) return;
-
-  const token = getDfToken(database, interaction.user.id);
-  if (!token) {
-    const err = buildErrorContainer(
-      'Bạn chưa liên kết tài khoản. Dùng `/df-link start` hoặc `/df-link manual` để bắt đầu.',
-    );
-    await interaction.reply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
-  try {
-    const apiToken = buildDfApiToken(token);
+  await runDfCommand({ userId: interaction.user.id, database, interaction }, async (tokenRow) => {
+    const apiToken = buildDfApiToken(tokenRow);
     const data = await getSeasonData(apiToken, LATEST_SEASON);
-    touchDfToken(database, interaction.user.id);
 
     const playHours = Math.floor(Number(data.player_info.play_duration));
     const playMinutes = Math.round((Number(data.player_info.play_duration) - playHours) * 60);
@@ -133,17 +115,9 @@ export async function execute(
       components: containerInner,
     };
 
-    await interaction.editReply({
+    return {
       components: toComponentsV2([containerComponents]),
       flags: MessageFlags.IsComponentsV2,
-    });
-  } catch (error) {
-    const err = buildErrorContainer(
-      `Lỗi khi lấy dữ liệu: ${(error as Error).message}\nNếu lỗi tiếp tục, hãy unlink và link lại tài khoản.`,
-    );
-    await interaction.editReply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
-    });
-  }
+    };
+  });
 }

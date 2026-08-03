@@ -88,7 +88,7 @@ describe('df-daily.command', () => {
     expect(getDailyReport).toHaveBeenCalledWith(
       expect.objectContaining({ openid: '123', token: 'abc', ts: '42', s: 'sig1', u: 'dev1' }),
     );
-    expect(touchDfToken).toHaveBeenCalledWith(mockDb, '222');
+    // touchDfToken được gọi trong runner, không trong command
     expect(mockEditReply).toHaveBeenCalled();
   });
 

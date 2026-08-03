@@ -1,18 +1,17 @@
-﻿import {
+import {
   ChatInputCommandInteraction,
   ComponentType,
   MessageFlags,
   SlashCommandBuilder,
 } from 'discord.js';
 import Database from 'better-sqlite3';
-import { buildErrorContainer, makeResult } from '../../utils/container.utils.js';
+import { makeResult } from '../../utils/container.utils.js';
 import { COLORS } from '../../config/container.variables.js';
 import { getDailyReport } from '../../services/deltaforce.api.js';
-import { requireGuild } from '../../utils/df-guards.js';
 import { buildDfApiToken } from '../../utils/df-token.utils.js';
-import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
-import type { DfBattlefieldBattle } from '../../types/deltaforce.types.js';
+import { runDfCommand } from '../../utils/df-command.runner.js';
 import { createLogger } from '../../utils/logger.js';
+import type { DfBattlefieldBattle } from '../../types/deltaforce.types.js';
 
 const logger = createLogger('DfDaily');
 
@@ -24,11 +23,11 @@ function formatOperations(battle: DfBattlefieldBattle | null): string {
   if (!battle) return '  _Chua co du lieu (chua choi tran nao hom nay)_';
 
   const lines: string[] = [];
-  lines.push(`- **Thưởng**: ${Number(battle.revenue).toLocaleString('vi-VN')}`);
-  lines.push(`- **Số Đặc Vụ Hạ Gục**: ${battle.kill_count}`);
-  lines.push(`- **Số Trận Đấu**: ${battle.match_count}`);
+  lines.push(`- **Thuong**: ${Number(battle.revenue).toLocaleString('vi-VN')}`);
+  lines.push(`- **So Doc Vu Ha Guc**: ${battle.kill_count}`);
+  lines.push(`- **So Tran Dau**: ${battle.match_count}`);
   lines.push(`- **K/D**: ${battle.kd_ratio}`);
-  lines.push(`- **Tỉ Lệ Rút Quân**: ${battle.retreat_rate}%`);
+  lines.push(`- **Ti Le Rut Quan**: ${battle.retreat_rate}%`);
   return lines.join('\n');
 }
 
@@ -51,24 +50,8 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
-  if (await requireGuild(interaction)) return;
-
-  const linkedToken = getDfToken(database, interaction.user.id);
-  if (!linkedToken) {
-    const err = buildErrorContainer(
-      'Bạn chưa liên kết tài khoản. Dùng `/df-link start` hoặc `/df-link manual` để bắt đầu.',
-    );
-    await interaction.reply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
-  try {
-    const apiToken = buildDfApiToken(linkedToken);
+  await runDfCommand({ userId: interaction.user.id, database, interaction }, async (rawToken) => {
+    const apiToken = buildDfApiToken(rawToken);
     const battleReport = await getDailyReport(apiToken).catch((e) => {
       logger.warn('API fail: ' + (e instanceof Error ? e.message : String(e)));
       return null;
@@ -76,8 +59,6 @@ export async function execute(
 
     const battle: DfBattlefieldBattle | null =
       battleReport?.battlefield_battle ?? battleReport?.beacon_battle ?? null;
-
-    touchDfToken(database, interaction.user.id);
 
     const now = new Date();
     const dateStr =
@@ -88,15 +69,9 @@ export async function execute(
     const battleText = formatOperations(battle);
     const container = buildBattleContainer(battleText, dateStr);
 
-    await interaction.editReply({
+    return {
       components: container.toJSON(),
       flags: container.flags,
-    });
-  } catch (error) {
-    const err = buildErrorContainer(`Loi khi lay du lieu: ${(error as Error).message}`);
-    await interaction.editReply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
-    });
-  }
+    };
+  });
 }

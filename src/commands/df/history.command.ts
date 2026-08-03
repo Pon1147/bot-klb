@@ -1,4 +1,4 @@
-﻿import {
+import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -12,9 +12,8 @@ import { buildErrorContainer, toComponentsV2 } from '../../utils/container.utils
 import { COLORS } from '../../config/container.variables.js';
 import { getMatchList } from '../../services/deltaforce.api.js';
 import { DEFAULT_OPERATOR_AVATAR, resolveOperator } from '../../utils/df-operator.utils.js';
-import { requireGuild } from '../../utils/df-guards.js';
 import { buildDfApiToken } from '../../utils/df-token.utils.js';
-import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
+import { runDfCommand } from '../../utils/df-command.runner.js';
 import {
   EMOJI_WIN,
   EMOJI_DEFEAT,
@@ -28,9 +27,9 @@ import type { DfMatchEntry } from '../../types/deltaforce.types.js';
 
 export const data = new SlashCommandBuilder()
   .setName('df-history')
-  .setDescription('Xem lịch sử trận đấu Delta Force.')
+  .setDescription('Xem lich su tran dau Delta Force.')
   .addIntegerOption((opt) =>
-    opt.setName('limit').setDescription('Số trận hiển thị (1-20)').setMinValue(1).setMaxValue(20),
+    opt.setName('limit').setDescription('So tran hien thi (1-20)').setMinValue(1).setMaxValue(20),
   );
 
 function buildMatchItemSection(match: DfMatchEntry): Record<string, unknown> {
@@ -83,41 +82,23 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
-  if (await requireGuild(interaction)) return;
-
-  const token = getDfToken(database, interaction.user.id);
-  if (!token) {
-    const err = buildErrorContainer(
-      'Bạn chưa liên kết tài khoản. Dùng `/df-link start` hoặc `/df-link manual` để bắt đầu.',
-    );
-    await interaction.reply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
-  try {
-    const apiToken = buildDfApiToken(token);
+  await runDfCommand({ userId: interaction.user.id, database, interaction }, async (rawToken) => {
+    const apiToken = buildDfApiToken(rawToken);
     const limit = Math.min(
       interaction.options.getInteger('limit') || MAX_HISTORY_LIMIT,
       MAX_HISTORY_PAGE,
     );
     // Fetch only needed matches from API (pagination)
     const matchData = await getMatchList(apiToken, { limit });
-    touchDfToken(database, interaction.user.id);
 
     const matches = matchData.list;
 
     if (!matches.length) {
       const err = buildErrorContainer('Không có trận đấu nào trong lịch sử.');
-      await interaction.editReply({
+      return {
         components: err.toJSON(),
         flags: err.flags | MessageFlags.Ephemeral,
-      });
-      return;
+      };
     }
 
     // ── 1. HEADER SECTION ──
@@ -176,17 +157,9 @@ export async function execute(
     // ── BUTTON ROW (outside container) ──
     const buttonRow = buildViewAllButtonRow();
 
-    await interaction.editReply({
+    return {
       components: toComponentsV2([containerComponent, buttonRow.toJSON()]),
       flags: MessageFlags.IsComponentsV2,
-    });
-  } catch (error) {
-    const err = buildErrorContainer(
-      `Lỗi khi lấy dữ liệu: ${(error as Error).message}\nNếu lỗi tiếp tục, hãy unlink và link lại tài khoản.`,
-    );
-    await interaction.editReply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
-    });
-  }
+    };
+  });
 }
