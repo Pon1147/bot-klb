@@ -26,4 +26,8 @@ export const botConfig = {
   welcomeRoleId: process.env.WELCOME_ROLE_ID || null,
   dfCodesChannelId: process.env.DF_CODES_CHANNEL_ID || null,
   databasePath: process.env.DATABASE_PATH || './data/bot.db',
+  // DF Link crypto key (32 bytes, Base64-encoded)
+  dfCredKeyV1: process.env.DF_CRED_KEY_V1 || null,
+  // Public HTTPS URL for claim API (multi-machine support)
+  publicBaseUrl: process.env.PUBLIC_BASE_URL || null,
 };

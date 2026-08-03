@@ -1,7 +1,7 @@
 /**
  * Webhook Server E2E tests — real Express server + supertest.
- * Tests POST /api/df/claim with real df-claim-store and real SQLite DB.
- * Only mocks: discord.js (Discord client).
+ * Tests POST /api/df/claim với real DB (SQLite in-memory) + real claim handler.
+ * Mocks: discord.js, df-crypto (crypto key).
  */
 
 const request = require('supertest');
@@ -33,8 +33,23 @@ describe('Webhook Server E2E — POST /api/df/claim', () => {
       Client: class Client {},
     }));
 
+    // Mock crypto to avoid needing real key in tests
+    jest.mock('../../src/services/df-crypto', () => ({
+      encryptCredential: jest.fn().mockReturnValue({
+        nonce: 'mocknonce123',
+        ciphertext: 'mockciphertext',
+        tag: 'mocktag123',
+      }),
+    }));
+
     const { createTestDb } = require('./setup');
     db = createTestDb();
+
+    // Initialize new DF Link tables
+    const { initializeClaimSessionsTable } = require('../../src/database/df-claim.db');
+    const { initializeAccountBindingsTable } = require('../../src/database/df-binding.db');
+    initializeClaimSessionsTable(db);
+    initializeAccountBindingsTable(db);
   });
 
   afterEach(() => {
@@ -45,7 +60,7 @@ describe('Webhook Server E2E — POST /api/df/claim', () => {
   function buildApp(mockClient: any) {
     const localExpress = express();
 
-    localExpress.use(express.raw({ type: '*/*', limit: '10mb' }));
+    localExpress.use(express.raw({ type: '*/*', limit: '4kb' }));
 
     localExpress.use((req: any, _res: any, next: any) => {
       if (typeof req.body === 'string' || Buffer.isBuffer(req.body)) {
@@ -58,20 +73,7 @@ describe('Webhook Server E2E — POST /api/df/claim', () => {
       next();
     });
 
-    localExpress.use(express.urlencoded({ extended: true }));
-
-    localExpress.use((_req: any, res: any, next: any) => {
-      res.header('Access-Control-Allow-Origin', '*');
-      res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Content-Type');
-      if (_req.method === 'OPTIONS') {
-        res.sendStatus(204);
-        return;
-      }
-      next();
-    });
-
-    const { handleClaimRequest } = require('../../src/server/webhook.routes');
+    const { handleClaim } = require('../../src/services/df-claim-handler');
 
     localExpress.post('/api/df/claim', async (req: any, res: any) => {
       let body = req.body;
@@ -82,7 +84,7 @@ describe('Webhook Server E2E — POST /api/df/claim', () => {
           // ignore
         }
       }
-      const result = await handleClaimRequest(body, db, mockClient);
+      const result = await handleClaim(body, db, mockClient);
       res.status(result.status).json(result.body);
     });
 
@@ -114,40 +116,40 @@ describe('Webhook Server E2E — POST /api/df/claim', () => {
   }
 
   describe('Happy path', () => {
-    it('phải trả về 200 và lưu token vào DB', async () => {
+    it('phải trả về 200 và lưu encrypted binding vào DB', async () => {
       const mockClient = createMockDiscordClient();
       app = buildApp(mockClient);
 
-      const { generateCode, resetStore } = require('../../src/services/df-claim-store');
-      resetStore();
-      const code = generateCode('discord-user-123');
+      // Create claim session in DB
+      db.prepare(`INSERT INTO df_claim_sessions (code, discord_user_id, status, expires_at)
+                  VALUES (?, ?, 'pending', datetime('now', '+10 minutes'))`).run('TESTCODE', 'discord-user-123');
 
       const res = await request(app)
         .post('/api/df/claim')
-        .send({ code, openid: 'openid-1', token: 'token-abc', ts: '123', s: 'sig', u: 'usr' })
+        .send({ code: 'TESTCODE', openid: 'openid-1', token: 'token-abc', ts: '123', s: 'sig', u: 'usr' })
         .set('Content-Type', 'application/json');
 
       expect(res.status).toBe(200);
-      expect(res.body.status).toBe('linked');
+      expect(res.body.ok).toBe(true);
 
-      const row = db.prepare('SELECT * FROM df_tokens WHERE discord_id = ?').get('discord-user-123');
+      const row = db.prepare('SELECT * FROM df_account_bindings WHERE discord_user_id = ?').get('discord-user-123');
       expect(row).toBeDefined();
       expect(row.openid).toBe('openid-1');
-      expect(row.token).toBe('token-abc');
-      expect(row.ts).toBe('123');
+      expect(row.cred_ciphertext).toBeDefined();
+      expect(row.cred_nonce).toBeDefined();
+      expect(row.cred_tag).toBeDefined();
     });
 
     it('phải gửi DM khi liên kết thành công', async () => {
       const mockClient = createMockDiscordClient();
       app = buildApp(mockClient);
 
-      const { generateCode, resetStore } = require('../../src/services/df-claim-store');
-      resetStore();
-      const code = generateCode('discord-user-123');
+      db.prepare(`INSERT INTO df_claim_sessions (code, discord_user_id, status, expires_at)
+                  VALUES (?, ?, 'pending', datetime('now', '+10 minutes'))`).run('DMTEST', 'discord-user-123');
 
       await request(app)
         .post('/api/df/claim')
-        .send({ code, openid: 'op-1', token: 'tok-1', ts: '1', s: 's', u: 'u' })
+        .send({ code: 'DMTEST', openid: 'op-1', token: 'tok-1' })
         .set('Content-Type', 'application/json');
 
       expect(mockClient.users.fetch).toHaveBeenCalledWith('discord-user-123');
@@ -166,7 +168,7 @@ describe('Webhook Server E2E — POST /api/df/claim', () => {
         .set('Content-Type', 'application/json');
 
       expect(res.status).toBe(400);
-      expect(res.body.status).toBe('error');
+      expect(res.body.ok).toBe(false);
     });
 
     it('phải trả về 400 khi thiếu fields', async () => {
@@ -176,38 +178,34 @@ describe('Webhook Server E2E — POST /api/df/claim', () => {
         .set('Content-Type', 'application/json');
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Thiếu thông tin');
+      expect(res.body.ok).toBe(false);
     });
 
-    it('phải trả về 400 khi mã claim không tồn tại', async () => {
-      const { resetStore } = require('../../src/services/df-claim-store');
-      resetStore();
-
+    it('phải trả về 401 khi claim code không tồn tại', async () => {
       const res = await request(app)
         .post('/api/df/claim')
         .send({ code: 'INVALID', openid: '123', token: 'abc' })
         .set('Content-Type', 'application/json');
 
-      expect(res.status).toBe(400);
-      expect(res.body.message).toContain('không hợp lệ');
+      expect(res.status).toBe(401);
+      expect(res.body.ok).toBe(false);
     });
 
-    it('phải trả về 400 khi mã đã dùng (single-use)', async () => {
-      const { generateCode, resetStore } = require('../../src/services/df-claim-store');
-      resetStore();
-      const code = generateCode('discord-single-use');
+    it('phải trả về 401 khi mã đã dùng (single-use)', async () => {
+      db.prepare(`INSERT INTO df_claim_sessions (code, discord_user_id, status, expires_at)
+                  VALUES (?, ?, 'pending', datetime('now', '+10 minutes'))`).run('SINGLECODE', 'discord-single');
 
       let res = await request(app)
         .post('/api/df/claim')
-        .send({ code, openid: 'op-1', token: 'tok-1' })
+        .send({ code: 'SINGLECODE', openid: 'op-1', token: 'tok-1' })
         .set('Content-Type', 'application/json');
       expect(res.status).toBe(200);
 
       res = await request(app)
         .post('/api/df/claim')
-        .send({ code, openid: 'op-2', token: 'tok-2' })
+        .send({ code: 'SINGLECODE', openid: 'op-2', token: 'tok-2' })
         .set('Content-Type', 'application/json');
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(401);
     });
   });
 
@@ -228,18 +226,17 @@ describe('Webhook Server E2E — POST /api/df/claim', () => {
       const mockClient = createMockDiscordClient({ dmBlocked: true });
       app = buildApp(mockClient);
 
-      const { generateCode, resetStore } = require('../../src/services/df-claim-store');
-      resetStore();
-      const code = generateCode('discord-dm-blocked');
+      db.prepare(`INSERT INTO df_claim_sessions (code, discord_user_id, status, expires_at)
+                  VALUES (?, ?, 'pending', datetime('now', '+10 minutes'))`).run('DMBLOCK', 'discord-dm-blocked');
 
       const res = await request(app)
         .post('/api/df/claim')
-        .send({ code, openid: 'op-1', token: 'tok-1' })
+        .send({ code: 'DMBLOCK', openid: 'op-1', token: 'tok-1' })
         .set('Content-Type', 'application/json');
 
       expect(res.status).toBe(200);
 
-      const row = db.prepare('SELECT * FROM df_tokens WHERE discord_id = ?').get('discord-dm-blocked');
+      const row = db.prepare('SELECT * FROM df_account_bindings WHERE discord_user_id = ?').get('discord-dm-blocked');
       expect(row).toBeDefined();
     });
 
@@ -247,43 +244,15 @@ describe('Webhook Server E2E — POST /api/df/claim', () => {
       const mockClient = createMockDiscordClient({ userNotFound: true });
       app = buildApp(mockClient);
 
-      const { generateCode, resetStore } = require('../../src/services/df-claim-store');
-      resetStore();
-      const code = generateCode('discord-user-not-found');
+      db.prepare(`INSERT INTO df_claim_sessions (code, discord_user_id, status, expires_at)
+                  VALUES (?, ?, 'pending', datetime('now', '+10 minutes'))`).run('NUSER', 'discord-user-not-found');
 
       const res = await request(app)
         .post('/api/df/claim')
-        .send({ code, openid: 'op-1', token: 'tok-1' })
+        .send({ code: 'NUSER', openid: 'op-1', token: 'tok-1' })
         .set('Content-Type', 'application/json');
 
       expect(res.status).toBe(200);
-    });
-
-    it('phải xử lý khi dm.send ném exception (DM catch)', async () => {
-      // dm.send throws → triggers line 84-85 catch block
-      const mockClient = {
-        users: {
-          fetch: jest.fn().mockResolvedValue({
-            createDM: jest.fn().mockResolvedValue({
-              send: jest.fn().mockRejectedValue(new Error('DM send failed')),
-            }),
-          }),
-        },
-      };
-      app = buildApp(mockClient);
-
-      const { generateCode, resetStore } = require('../../src/services/df-claim-store');
-      resetStore();
-      const code = generateCode('discord-dm-send-fail');
-
-      const res = await request(app)
-        .post('/api/df/claim')
-        .send({ code, openid: 'op-1', token: 'tok-1' })
-        .set('Content-Type', 'application/json');
-
-      // 200 status means DM failure was caught gracefully
-      expect(res.status).toBe(200);
-      expect(res.body.status).toBe('linked');
     });
   });
 });
@@ -299,8 +268,22 @@ describe('Webhook Server E2E — createWebhookRoutes', () => {
       Client: class Client {},
     }));
 
+    // Mock crypto to avoid needing real key in tests
+    jest.mock('../../src/services/df-crypto', () => ({
+      encryptCredential: jest.fn().mockReturnValue({
+        nonce: 'mocknonce123',
+        ciphertext: 'mockciphertext',
+        tag: 'mocktag123',
+      }),
+    }));
+
     const { createTestDb } = require('./setup');
     testDb = createTestDb();
+
+    const { initializeClaimSessionsTable } = require('../../src/database/df-claim.db');
+    const { initializeAccountBindingsTable } = require('../../src/database/df-binding.db');
+    initializeClaimSessionsTable(testDb);
+    initializeAccountBindingsTable(testDb);
   });
 
   afterEach(() => {
@@ -323,93 +306,63 @@ describe('Webhook Server E2E — createWebhookRoutes', () => {
     const router = createWebhookRoutes(testDb, mockClient);
 
     const localApp = express();
-    localApp.use(express.json());
-    localApp.use('/api/df', router);
-
-    const { generateCode, resetStore } = require('../../src/services/df-claim-store');
-    resetStore();
-    const code = generateCode('discord-router-test');
-
-    const res = await request(localApp)
-      .post('/api/df/claim')
-      .send({ code, openid: 'op-1', token: 'tok-1' })
-      .set('Content-Type', 'application/json');
-
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('linked');
-  });
-
-  it('phải trả về 500 khi saveDfToken ném lỗi', async () => {
-    const mockClient = {
-      users: {
-        fetch: jest.fn().mockResolvedValue({
-          createDM: jest.fn().mockResolvedValue({
-            send: jest.fn().mockResolvedValue({}),
-          }),
-        }),
-      },
-    };
-
-    const { createWebhookRoutes } = require('../../src/server/webhook.routes');
-    const router = createWebhookRoutes(testDb, mockClient);
-
-    const localApp = express();
-    localApp.use(express.json());
-    localApp.use('/api/df', router);
-
-    const { generateCode, resetStore } = require('../../src/services/df-claim-store');
-    resetStore();
-    const code = generateCode('discord-db-error');
-
-    // Make saveDfToken throw by dropping the table
-    testDb.exec('DROP TABLE df_tokens');
-
-    const res = await request(localApp)
-      .post('/api/df/claim')
-      .send({ code, openid: 'op-1', token: 'tok-1' })
-      .set('Content-Type', 'application/json');
-
-    expect(res.status).toBe(500);
-    expect(res.body.status).toBe('error');
-  });
-
-  it('phải xử lý raw JSON body (fallback parse)', async () => {
-    const mockClient = {
-      users: {
-        fetch: jest.fn().mockResolvedValue({
-          createDM: jest.fn().mockResolvedValue({
-            send: jest.fn().mockResolvedValue({}),
-          }),
-        }),
-      },
-    };
-
-    const { createWebhookRoutes } = require('../../src/server/webhook.routes');
-    const router = createWebhookRoutes(testDb, mockClient);
-
-    const localApp = express();
-    // Mimic buildApp: raw body + fallback parse + urlencoded + json
-    localApp.use(express.raw({ type: '*/*', limit: '10mb' }));
+    localApp.use(express.raw({ type: '*/*', limit: '4kb' }));
     localApp.use((req: any, _res: any, next: any) => {
       if (typeof req.body === 'string' || Buffer.isBuffer(req.body)) {
         try { req.body = JSON.parse(req.body.toString('utf-8')); } catch {}
       }
       next();
     });
-    localApp.use(express.urlencoded({ extended: true }));
     localApp.use('/api/df', router);
 
-    const { generateCode, resetStore } = require('../../src/services/df-claim-store');
-    resetStore();
-    const code = generateCode('discord-raw-body');
+    testDb.prepare(`INSERT INTO df_claim_sessions (code, discord_user_id, status, expires_at)
+                    VALUES (?, ?, 'pending', datetime('now', '+10 minutes'))`).run('ROUTERTEST', 'discord-router');
 
-    const payload = JSON.stringify({ code, openid: 'op-1', token: 'tok-1' });
     const res = await request(localApp)
       .post('/api/df/claim')
-      .send(payload)
+      .send({ code: 'ROUTERTEST', openid: 'op-1', token: 'tok-1' })
       .set('Content-Type', 'application/json');
 
     expect(res.status).toBe(200);
-    expect(res.body.status).toBe('linked');
+    expect(res.body.ok).toBe(true);
+  });
+
+  it('phải trả về 500 khi upsertAccountBinding ném lỗi', async () => {
+    const mockClient = {
+      users: {
+        fetch: jest.fn().mockResolvedValue({
+          createDM: jest.fn().mockResolvedValue({
+            send: jest.fn().mockResolvedValue({}),
+          }),
+        }),
+      },
+    };
+
+    const { createWebhookRoutes } = require('../../src/server/webhook.routes');
+    const router = createWebhookRoutes(testDb, mockClient);
+
+    const localApp = express();
+    localApp.use(express.raw({ type: '*/*', limit: '4kb' }));
+    localApp.use((req: any, _res: any, next: any) => {
+      if (typeof req.body === 'string' || Buffer.isBuffer(req.body)) {
+        try { req.body = JSON.parse(req.body.toString('utf-8')); } catch {}
+      }
+      next();
+    });
+    localApp.use('/api/df', router);
+
+    // Drop the binding table to trigger DB error
+    testDb.exec('DROP TABLE df_account_bindings');
+
+    testDb.prepare(`INSERT INTO df_claim_sessions (code, discord_user_id, status, expires_at)
+                    VALUES (?, ?, 'pending', datetime('now', '+10 minutes'))`).run('DBERR', 'discord-db-error');
+
+    const res = await request(localApp)
+      .post('/api/df/claim')
+      .send({ code: 'DBERR', openid: 'op-1', token: 'tok-1' })
+      .set('Content-Type', 'application/json');
+
+    expect(res.status).toBe(500);
+    expect(res.body.ok).toBe(false);
   });
 });

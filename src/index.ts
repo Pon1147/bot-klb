@@ -1,5 +1,6 @@
 import { Client, Collection } from 'discord.js';
 import { botConfig } from './config/bot.config.js';
+import { initCryptoKey } from './services/df-crypto.js';
 import { BOT_INTENTS } from './config/intents.js';
 import { loadPermissions, PermissionsConfig } from './config/permissions.js';
 import { readFileSync } from 'fs';
@@ -7,6 +8,9 @@ import { join } from 'path';
 import { initializeDatabase } from './database/welcome.database.js';
 import { initializeSettingsTable } from './database/guild.settings.db.js';
 import { initializeDfTokensTable } from './database/df.token.db.js';
+import { initializeClaimSessionsTable } from './database/df-claim.db.js';
+import { initializeAccountBindingsTable } from './database/df-binding.db.js';
+import { initializeCaptureEventsTable } from './database/df-telemetry.db.js';
 import { SettingsService, setSettingsService } from './services/settings.service.js';
 import { loadCommands, CommandModule, deployCommands } from './handlers/command.handler.js';
 import { loadEvents } from './handlers/event.handler.js';
@@ -38,10 +42,29 @@ async function main(): Promise<void> {
   initializeSettingsTable(database);
   logger.info('Guild settings table ready');
 
-  // Step 2b: Initialize DeltaForce tokens table
+  // Step 2b: Initialize DeltaForce tokens table (legacy, keep for migration)
   logger.info('Initializing DeltaForce tokens table...');
   initializeDfTokensTable(database);
   logger.info('DeltaForce tokens table ready');
+
+  // Step 2c: Initialize DF Link tables (claim sessions + account bindings + telemetry)
+  logger.info('Initializing DF Link tables...');
+  initializeClaimSessionsTable(database);
+  initializeAccountBindingsTable(database);
+  initializeCaptureEventsTable(database);
+  logger.info('DF Link tables ready');
+
+  // Step 2d: Initialize crypto key (AES-256-GCM)
+  if (botConfig.dfCredKeyV1) {
+    try {
+      initCryptoKey('v1');
+      logger.info('Crypto key initialized (v1)');
+    } catch (err) {
+      logger.warn('Crypto key init failed: ' + (err as Error).message);
+    }
+  } else {
+    logger.warn('DF_CRED_KEY_V1 not configured — encryption disabled');
+  }
 
   // Step 3: Initialize SettingsService
   logger.info('Initializing SettingsService...');

@@ -84,7 +84,8 @@ export function startWebhookServer(
   // Body parser — catch all content types as raw buffer, then parse JSON.
   // Why: no-cors fetch from browser sends application/json but Express's json()
   // middleware may skip depending on CORS preflight state. Raw parser always captures.
-  app.use(express.raw({ type: '*/*', limit: '10mb' }));
+  // Max body: 4KB (claim body chỉ cần code + openid + token + metadata nhỏ).
+  app.use(express.raw({ type: '*/*', limit: '4kb' }));
 
   app.use((req: Request, _res: Response, next: NextFunction) => {
     if (typeof req.body === 'string' || Buffer.isBuffer(req.body)) {
