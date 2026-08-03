@@ -21,6 +21,7 @@ import Database from 'better-sqlite3';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { buildErrorContainer } from '../../utils/container.utils.js';
+import type { PermissionsConfig } from '../../config/permissions.js';
 import { loadPermissions } from '../../config/permissions.js';
 
 // ─── Subcommand Builder ───────────────────────────────────────────
@@ -107,7 +108,7 @@ export async function execute(
     writeFileSync(permPath, JSON.stringify(permData, null, 2), 'utf8');
 
     // 4. Reload runtime cache
-    loadPermissions(permData as any);
+    loadPermissions(permData as unknown as PermissionsConfig);
 
     await interaction.editReply({
       content: `✅ Đã set **${roleKey}** role: ${role} (${role.id})`,

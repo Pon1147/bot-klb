@@ -1,9 +1,15 @@
 import Database from 'better-sqlite3';
-import type { Collection } from 'discord.js';
+import type { ChatInputCommandInteraction, Collection, SlashCommandBuilder } from 'discord.js';
 
 declare module 'discord.js' {
   interface Client {
-    commands: Collection<string, { data: any; execute: (...args: any[]) => Promise<any> }>;
+    commands: Collection<
+      string,
+      {
+        data: SlashCommandBuilder | Record<string, unknown>;
+        execute: (interaction: ChatInputCommandInteraction, ...args: unknown[]) => Promise<unknown>;
+      }
+    >;
     database: Database.Database;
   }
 }

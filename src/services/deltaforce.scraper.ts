@@ -69,7 +69,8 @@ export async function fetchDailyAll(): Promise<DailyData> {
     await page.waitForSelector('span[data-info^="operations-"]', { timeout: HQ_SELECTOR_TIMEOUT });
 
     const result = await page.evaluate(() => {
-      const q = (globalThis as any).document.querySelector.bind((globalThis as any).document);
+      // puppeteer evaluate chạy trong browser context, globalThis là Document
+      const q = globalThis.document.querySelector.bind(globalThis.document);
 
       // Daily codes (expect 4-digit numbers)
       const codeMap: Record<string, string> = {

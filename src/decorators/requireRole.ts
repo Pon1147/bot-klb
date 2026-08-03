@@ -31,7 +31,7 @@ export function requireRole(...requiredRoleNames: string[]) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (
-      this: any,
+      this: ChatInputCommandInteraction,
       interaction: ChatInputCommandInteraction,
       ...args: unknown[]
     ): Promise<unknown> {
