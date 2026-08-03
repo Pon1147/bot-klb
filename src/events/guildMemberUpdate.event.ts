@@ -64,7 +64,9 @@ export async function execute(
   const oldChannelId = oldMember.voice?.channelId;
   const newChannelId = newMember.voice?.channelId;
 
-  const changed = oldChannelId && (!newChannelId || oldChannelId !== newChannelId);
+  // Chỉ cleanup khi user thực sự rời voice channel (oldChannelId !== null)
+  // Tránh trigger sai khi user join voice channel đầu tiên
+  const changed = oldChannelId !== null && (!newChannelId || oldChannelId !== newChannelId);
   if (changed) {
     // Delete embed message if exists
     await cleanupOldEmbed(newMember.guild, newMember.user.id);

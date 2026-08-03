@@ -159,6 +159,13 @@ export async function handleTeamFindInteraction(
 
     const session = getSession(userId);
     if (!session || !session.map || !session.mode) {
+      // Show error message thay vì silent fail
+      const err = buildErrorContainer('Bạn cần chọn map và mode trước khi hoàn thành.');
+      await interaction.reply({
+        components: err.toJSON(),
+        flags: err.flags | MessageFlags.Ephemeral,
+      });
+      deleteSession(userId);
       return true;
     }
 
