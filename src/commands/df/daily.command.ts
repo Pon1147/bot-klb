@@ -12,6 +12,9 @@ import { requireGuild } from '../../utils/df-guards.js';
 import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { getDfToken, touchDfToken } from '../../database/df.token.db.js';
 import type { DfBattlefieldBattle } from '../../types/deltaforce.types.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('DfDaily');
 
 export const data = new SlashCommandBuilder()
   .setName('df-daily')
@@ -67,7 +70,7 @@ export async function execute(
   try {
     const apiToken = buildDfApiToken(linkedToken);
     const battleReport = await getDailyReport(apiToken).catch((e) => {
-      console.warn('[df-daily] API fail:', (e as Error).message);
+      logger.warn('API fail: ' + (e instanceof Error ? e.message : String(e)));
       return null;
     });
 

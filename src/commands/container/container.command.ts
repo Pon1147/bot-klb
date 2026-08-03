@@ -9,6 +9,9 @@
 } from 'discord.js';
 import Database from 'better-sqlite3';
 import { buildErrorContainer } from '../../utils/container.utils.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('Container');
 import { startInteractiveEdit } from './container-edit.handler.js';
 import { handleContainerReset } from './container-reset.handler.js';
 
@@ -132,7 +135,12 @@ export async function execute(
       }
     }
   } catch (error) {
-    console.error(`Error in /container ${subcommandName}:`, error);
+    logger.error(
+      'Error in /container ' +
+        subcommandName +
+        ': ' +
+        (error instanceof Error ? error.message : String(error)),
+    );
     // Guard: interaction có thể đã replied ở trong handler
     if (!interaction.replied) {
       const errorContainer = buildErrorContainer('Xảy ra lỗi. Kiểm tra console logs.');

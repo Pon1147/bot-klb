@@ -8,6 +8,9 @@ import Database from 'better-sqlite3';
 import { consumeCode } from '../services/df-claim-store.js';
 import { saveDfToken } from '../database/df.token.db.js';
 import { INVALID_CLAIM_MESSAGE } from '../config/app.constants.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('Webhook');
 
 /**
  * Handler business logic
@@ -28,8 +31,8 @@ export async function handleClaimRequest(
   const { code, openid, token, ts, s, u } = obj;
 
   if (!code || !openid || !token) {
-    console.log(
-      '[Webhook] ❌ Thiếu fields — code=' +
+    logger.warn(
+      'Missing fields — code=' +
         (code ?? '<empty>') +
         ', openid=' +
         (openid ?? '<empty>') +
@@ -49,13 +52,8 @@ export async function handleClaimRequest(
   const sStr = s ? String(s) : undefined;
   const uStr = u ? String(u) : undefined;
 
-  console.log(
-    '[Webhook] Nhận claim: code=' +
-      codeStr +
-      ', openid=' +
-      openidStr +
-      ', token_len=' +
-      tokenStr.length,
+  logger.info(
+    'Received claim: code=' + codeStr + ', openid=' + openidStr + ', token_len=' + tokenStr.length,
   );
 
   const discordId = consumeCode(codeStr);
@@ -72,7 +70,7 @@ export async function handleClaimRequest(
   try {
     // Lưu token cùng params (ts, s, u) từ browser
     const isNew = saveDfToken(database, discordId, openidStr, tokenStr, tsStr, sStr, uStr);
-    console.log('[Webhook] ✅ Lưu token: openid=' + openidStr + ', new=' + isNew);
+    logger.info('Token saved: openid=' + openidStr + ', new=' + isNew);
 
     // Gửi DM thông báo
     try {
@@ -88,15 +86,17 @@ export async function handleClaimRequest(
         }
       }
     } catch (dmError) {
-      console.warn('[Webhook] Không gửi được DM:', dmError);
+      logger.warn(
+        'Could not send DM: ' + (dmError instanceof Error ? dmError.message : String(dmError)),
+      );
     }
 
     return {
       status: 200,
       body: { status: 'linked' },
     };
-  } catch (error: any) {
-    console.error('[Webhook] Claim error:', error.message ?? error);
+  } catch (error: unknown) {
+    logger.error('Claim error: ' + (error instanceof Error ? error.message : String(error)));
     return {
       status: 500,
       body: { status: 'error', message: 'Lỗi server. Vui lòng thử lại.' },
@@ -114,8 +114,8 @@ export function createWebhookRoutes(database: Database.Database, client: Client)
     try {
       const result = await handleClaimRequest(req.body, database, client);
       res.status(result.status).json(result.body);
-    } catch (err: any) {
-      console.error('[Webhook] Unexpected error:', err.message ?? err);
+    } catch (err: unknown) {
+      logger.error('Unexpected error: ' + (err instanceof Error ? err.message : String(err)));
       res.status(500).json({
         status: 'error',
         message: 'Lỗi server nội bộ. Vui lòng thử lại.',

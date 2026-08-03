@@ -8,6 +8,9 @@ import {
 } from 'discord.js';
 import Database from 'better-sqlite3';
 import { getSettingsService } from '../services/settings.service.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('SectionConfig');
 import {
   buildSuccessContainer,
   buildTextOnlyContainer,
@@ -241,7 +244,14 @@ export async function executeSectionCommand(
       }
     }
   } catch (error) {
-    console.error(`Error in /${config.sectionKey} ${subcommandName}:`, error);
+    logger.error(
+      'Error in /' +
+        config.sectionKey +
+        ' ' +
+        subcommandName +
+        ': ' +
+        (error instanceof Error ? error.message : String(error)),
+    );
     if (!interaction.replied && !interaction.deferred) {
       const errorContainer = buildErrorContainer('An error occurred. Check console logs.');
       await interaction.reply({

@@ -4,6 +4,9 @@ import {
   CONTAINER_SESSION_TIMEOUT_MS,
   CONTAINER_SESSION_CLEANUP_INTERVAL_MS,
 } from '../../config/app.constants.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('ContainerSession');
 
 /**
  * Color presets cho container accent color picker.
@@ -110,7 +113,7 @@ let cleanupInterval: NodeJS.Timeout | null = null;
 
 export function startSessionCleanup(): void {
   if (cleanupInterval) {
-    console.warn('Session cleanup đã đang chạy, bỏ qua start.');
+    logger.warn('Session cleanup already running, skipping start.');
     return;
   }
   cleanupInterval = setInterval(() => {
@@ -123,10 +126,10 @@ export function startSessionCleanup(): void {
       }
     }
     if (cleaned > 0) {
-      console.log(`[SessionCleanup] Đã xóa ${cleaned} session(s) hết hạn.`);
+      logger.info('Cleaned up ' + cleaned + ' expired session(s).');
     }
   }, CONTAINER_SESSION_CLEANUP_INTERVAL_MS);
-  console.log('[SessionCleanup] Đã khởi tạo periodic cleanup (5 phút/lần).');
+  logger.info('Started periodic cleanup (every 5 minutes).');
 }
 
 /**
@@ -137,6 +140,6 @@ export function stopSessionCleanup(): void {
   if (cleanupInterval) {
     clearInterval(cleanupInterval);
     cleanupInterval = null;
-    console.log('[SessionCleanup] Đã dừng periodic cleanup.');
+    logger.info('Stopped periodic cleanup.');
   }
 }

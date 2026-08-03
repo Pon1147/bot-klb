@@ -19,6 +19,9 @@ import {
   TOKEN_REGEX,
   INVALID_TOKEN_MESSAGE,
 } from '../../config/app.constants.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('DfLink');
 
 /** Strip tsc module boilerplate từ script compiled để chạy được trong browser console */
 function getBrowserScript(src: string): string {
@@ -32,7 +35,7 @@ function getBrowserScript(src: string): string {
 /** Integrity check: script phải chứa comment gốc để phát hiện inject */
 function verifyScriptIntegrity(src: string): void {
   if (!src.includes('Delta Force HQ') || !src.includes('DfTools')) {
-    console.error('[Link] ⚠️ Script integrity check failed — possible tampering');
+    logger.error('Script integrity check failed — possible tampering');
     throw new Error('Webhook script integrity verification failed');
   }
 }
@@ -64,7 +67,7 @@ async function ensureTunnel(): Promise<void> {
     const webhookPort = parseInt(process.env.WEBHOOK_PORT ?? String(DEFAULT_WEBHOOK_PORT), 10);
     await setupTunnel(webhookPort);
   } catch (e) {
-    console.error('[Tunnel] Failed to restart:', e);
+    logger.error('Failed to restart tunnel: ' + (e instanceof Error ? e.message : String(e)));
   }
 }
 
@@ -134,7 +137,7 @@ async function handleManualLink(
       content: `✅ Đã liên kết tài khoản Delta Force!\n\n` + `OpenID: ${openid}`,
     });
   } catch (error: unknown) {
-    console.error('[df-link] Manual link failed:', error instanceof Error ? error.message : error);
+    logger.error('Manual link failed: ' + (error instanceof Error ? error.message : String(error)));
     const err = buildErrorContainer(
       'Không thể xác thực tài khoản. Kiểm tra openid và token, hoặc token đã hết hạn.',
     );
@@ -183,7 +186,7 @@ async function handleWebhookFlow(interaction: ChatInputCommandInteraction): Prom
       content: `Script đã gửi qua DM. Mã claim: \`${code}\` — hết hạn sau 10 phút.`,
     });
   } catch (error) {
-    console.error('Error in /df-link:', error);
+    logger.error('Error in /df-link: ' + (error instanceof Error ? error.message : String(error)));
     if (!interaction.replied && !interaction.deferred) {
       const err = buildErrorContainer('Không thể gửi DM. Hãy mở tin nhắn trong Server Settings.');
       await interaction.reply({

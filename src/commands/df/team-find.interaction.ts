@@ -13,6 +13,10 @@ import { buildTeamFindEmbed } from './team-find.embed.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { DIFFICULTY_CONFIG, type Difficulty } from '../../config/team-find.config.js';
 import { SESSION_EXPIRED_MESSAGE, EMBED_AVATAR_SIZE } from '../../config/app.constants.js';
+import { createLogger } from '../../utils/logger.js';
+import { TeamFindIds } from './team-find-ids.js';
+
+const logger = createLogger('TeamFind');
 
 /** Check customId and handle team-find interactions. Returns true if handled. */
 export async function handleTeamFindInteraction(
@@ -21,8 +25,8 @@ export async function handleTeamFindInteraction(
   const customId = interaction.customId;
 
   // ── Map Button ──
-  if (interaction.isButton() && customId.startsWith('team-find-map:')) {
-    const parts = customId.replace('team-find-map:', '').split(':');
+  if (interaction.isButton() && customId.startsWith(TeamFindIds.MAP)) {
+    const parts = customId.replace(TeamFindIds.MAP, '').split(':');
     const value = parts[0];
     const userId = parts[1];
 
@@ -43,6 +47,8 @@ export async function handleTeamFindInteraction(
       return true;
     }
 
+    // value là string từ customId, cast sang MapKey
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updateSelection(userId, 'map', value as any);
     const updated = getSession(userId)!;
     const menu = buildSelectMenuMessage(userId, interaction.user.username, {
@@ -50,17 +56,19 @@ export async function handleTeamFindInteraction(
       mode: updated.mode,
       rank: updated.rank,
     });
+    // discord.js v14 type mismatch
     await interaction.update({
       content: menu.content,
       components: menu.components,
       flags: MessageFlags.Ephemeral,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
     return true;
   }
 
   // ── Mode Button ──
-  if (interaction.isButton() && customId.startsWith('team-find-mode:')) {
-    const parts = customId.replace('team-find-mode:', '').split(':');
+  if (interaction.isButton() && customId.startsWith(TeamFindIds.MODE)) {
+    const parts = customId.replace(TeamFindIds.MODE, '').split(':');
     const value = parts[0];
     const userId = parts[1];
 
@@ -88,16 +96,18 @@ export async function handleTeamFindInteraction(
       mode: updated.mode,
       rank: updated.rank,
     });
+    // discord.js v14 type mismatch
     await interaction.update({
       content: menu.content,
       components: menu.components,
       flags: MessageFlags.Ephemeral,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
     return true;
   }
 
   // ── Rank Select Menu ──
-  if (interaction.isStringSelectMenu() && customId.startsWith('team-find-rank:')) {
+  if (interaction.isStringSelectMenu() && customId.startsWith(TeamFindIds.RANK)) {
     const userId = customId.split(':')[1];
 
     if (userId !== interaction.user.id) {
@@ -125,16 +135,18 @@ export async function handleTeamFindInteraction(
       mode: updated.mode,
       rank: updated.rank,
     });
+    // discord.js v14 type mismatch
     await interaction.update({
       content: menu.content,
       components: menu.components,
       flags: MessageFlags.Ephemeral,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
     return true;
   }
 
   // ── Done Button ──
-  if (interaction.isButton() && customId.startsWith('team-find-done:')) {
+  if (interaction.isButton() && customId.startsWith(TeamFindIds.DONE)) {
     const userId = customId.split(':')[1];
 
     if (userId !== interaction.user.id) {
@@ -185,13 +197,15 @@ export async function handleTeamFindInteraction(
       rank: session.rank ?? null,
     });
 
+    // interaction.channel là TextChannel nhưng type là GuildTextBasedChannel
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await (interaction.channel as any).send({
       components: embed.toJSON(),
       files: embed.files,
       flags: MessageFlags.IsComponentsV2,
     });
 
-    console.log('[team-find] embed sent:', response.id);
+    logger.info('Embed sent: ' + response.id);
     storeMessage(session.guildId, userId, response.id, interaction.channel!.id);
     // Delete session after successful send
     deleteSession(userId);

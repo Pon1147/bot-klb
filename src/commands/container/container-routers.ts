@@ -5,6 +5,7 @@
   ModalSubmitInteraction,
   PermissionFlagsBits,
 } from 'discord.js';
+import { ContainerSettings } from '../../types/settings.types.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { getSettingsService } from '../../services/settings.service.js';
 import {
@@ -33,13 +34,17 @@ import {
 } from './handlers/property.handler.js';
 import { handleSave, handleReset, handleCancel } from './handlers/action.handler.js';
 import { CONTAINER_SESSION_EXPIRED_MESSAGE } from '../../config/app.constants.js';
+import { createLogger } from '../../utils/logger.js';
+import { ContainerIds, ContainerModalPrefix } from './container-ids.js';
+
+const logger = createLogger('ContainerRouters');
 
 /**
  * Main handler cho tất cả button interactions trong container editor.
  */
 export async function handleEditorButtonInteraction(interaction: ButtonInteraction): Promise<void> {
   // Pencil button: start editor from a live container message
-  if (interaction.customId.startsWith('container_edit_pencil_')) {
+  if (interaction.customId.startsWith(ContainerIds.EDIT_PENCIL)) {
     await handlePencilButtonClick(interaction);
     return;
   }
@@ -60,74 +65,74 @@ export async function handleEditorButtonInteraction(interaction: ButtonInteracti
   const customId = interaction.customId;
 
   // Navigation: quay lại từ submenu
-  if (customId === 'container_back') {
+  if (customId === ContainerIds.BACK) {
     await updateEditorMessage(interaction, session);
     return;
   }
 
   // Actions: Save, Reset, Cancel
-  if (customId === 'container_edit_save') {
+  if (customId === ContainerIds.SAVE) {
     await handleSave(interaction, session);
     return;
   }
-  if (customId === 'container_edit_reset') {
+  if (customId === ContainerIds.RESET) {
     await handleReset(interaction, session);
     return;
   }
-  if (customId === 'container_edit_cancel') {
+  if (customId === ContainerIds.CANCEL) {
     await handleCancel(interaction);
     return;
   }
 
   // Property Editors: Lines, Color, Separator, Media
-  if (customId === 'container_edit_lines') {
+  if (customId === ContainerIds.LINES) {
     await handleLinesSubmenu(interaction, session);
     return;
   }
-  if (customId === 'container_edit_color') {
+  if (customId === ContainerIds.COLOR) {
     await handleColorPicker(interaction, session);
     return;
   }
-  if (customId === 'container_edit_separator') {
+  if (customId === ContainerIds.SEPARATOR) {
     await handleSeparatorToggle(interaction, session);
     return;
   }
-  if (customId === 'container_edit_media') {
+  if (customId === ContainerIds.MEDIA) {
     await handleMediaEdit(interaction, session);
     return;
   }
 
   // Lines Submenu: Add, Edit, Remove, Clear
-  if (customId === 'container_lines_add') {
+  if (customId === ContainerIds.LINES_ADD) {
     await handleAddLine(interaction);
     return;
   }
-  if (customId === 'container_lines_edit') {
+  if (customId === ContainerIds.LINES_EDIT) {
     await handleEditLine(interaction, session);
     return;
   }
-  if (customId === 'container_lines_remove') {
+  if (customId === ContainerIds.LINES_REMOVE) {
     await handleRemoveLine(interaction, session);
     return;
   }
-  if (customId === 'container_lines_clear') {
+  if (customId === ContainerIds.LINES_CLEAR) {
     await handleClearLines(interaction, session);
     return;
   }
 
   // Color Picker
-  if (customId.startsWith('container_color_preset_')) {
-    const index = parseInt(customId.replace('container_color_preset_', ''), 10);
+  if (customId.startsWith(ContainerIds.COLOR_PRESET)) {
+    const index = parseInt(customId.replace(ContainerIds.COLOR_PRESET, ''), 10);
     await handleColorPresetSelect(interaction, session, index);
     return;
   }
 
-  if (customId === 'container_color_custom') {
+  if (customId === ContainerIds.COLOR_CUSTOM) {
     await handleCustomColorModal(interaction);
     return;
   }
 
-  console.warn(`Unknown container editor button: ${customId}`);
+  logger.warn('Unknown container editor button: ' + customId);
 }
 
 /**
@@ -146,7 +151,7 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
   }
 
   touchSession(interaction.user.id);
-  const modalId = interaction.customId.replace('container_modal_', '');
+  const modalId = interaction.customId.replace(ContainerModalPrefix, '');
 
   if (modalId === 'new_line') {
     const value = interaction.fields.getTextInputValue('new_line');
@@ -209,7 +214,7 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
     session.draft.mediaUrl = urlValue.trim() || null;
     session.draft.mediaDescription = descValue.trim() || null;
   } else {
-    console.warn(`Unknown container modal submission: ${modalId}`);
+    logger.warn('Unknown container modal submission: ' + modalId);
     const errorContainer = buildErrorContainer('Modal không hợp lệ.');
     await interaction.reply({
       components: errorContainer.toJSON(),
@@ -229,7 +234,7 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
  */
 async function updateModalEditorPreview(
   interaction: ModalSubmitInteraction,
-  session: { channelId: string; messageId: string; draft: any },
+  session: { channelId: string; messageId: string; draft: ContainerSettings },
 ): Promise<void> {
   try {
     await interaction.deferUpdate();
@@ -246,7 +251,10 @@ async function updateModalEditorPreview(
       files: preview.files,
     });
   } catch (error) {
-    console.error('Error updating editor preview after modal:', error);
+    logger.error(
+      'Error updating editor preview after modal: ' +
+        (error instanceof Error ? error.message : String(error)),
+    );
   }
 }
 
@@ -274,11 +282,11 @@ async function handlePencilButtonClick(interaction: ButtonInteraction): Promise<
     return;
   }
 
-  const parts = interaction.customId.replace('container_edit_pencil_', '').split('_');
+  const parts = interaction.customId.replace(ContainerIds.EDIT_PENCIL, '').split('_');
   const editType = parts[parts.length - 1] as 'welcome' | 'leave' | 'booster';
 
   if (!editType || !['welcome', 'leave', 'booster'].includes(editType)) {
-    console.warn(`Invalid pencil button customId: ${interaction.customId}`);
+    logger.warn('Invalid pencil button customId: ' + interaction.customId);
     return;
   }
 
@@ -305,7 +313,10 @@ async function handlePencilButtonClick(interaction: ButtonInteraction): Promise<
       interaction.channel!.id,
     );
   } catch (error) {
-    console.error('Error starting container editor from pencil button:', error);
+    logger.error(
+      'Error starting container editor from pencil button: ' +
+        (error instanceof Error ? error.message : String(error)),
+    );
     if (!interaction.replied) {
       const errorContainer = buildErrorContainer(`Lỗi khi mở editor: ${(error as Error).message}`);
       await interaction.reply({

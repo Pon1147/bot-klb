@@ -1,6 +1,9 @@
 ﻿import { ButtonInteraction, MessageFlags } from 'discord.js';
 import { getSettingsService } from '../../../services/settings.service.js';
 import { buildErrorContainer, buildSuccessContainer } from '../../../utils/container.utils.js';
+import { createLogger } from '../../../utils/logger.js';
+
+const logger = createLogger('ContainerAction');
 import { cloneDefaultSettings } from '../../../config/default.settings.js';
 import {
   ContainerEditSession,
@@ -35,7 +38,10 @@ export async function handleSave(
       flags: successContainer.flags,
     });
   } catch (error) {
-    console.error('Error saving container settings:', error);
+    logger.error(
+      'Error saving container settings: ' +
+        (error instanceof Error ? error.message : String(error)),
+    );
     const errorContainer = buildErrorContainer(`Lỗi khi lưu: ${(error as Error).message}`);
     await interaction.reply({
       components: errorContainer.toJSON(),

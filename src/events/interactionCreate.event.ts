@@ -9,6 +9,11 @@ import {
   StringSelectMenuInteraction,
 } from 'discord.js';
 import { VOICE_CHANNEL_FULL_MESSAGE } from '../config/app.constants.js';
+import { createLogger } from '../utils/logger.js';
+import { TeamFindIds } from '../commands/df/team-find-ids.js';
+import { ContainerModalPrefix } from '../commands/container/container-ids.js';
+
+const logger = createLogger('InteractionCreate');
 import { COMMAND_PERMISSIONS, hasRequiredRole } from '../config/permissions.js';
 import {
   handleEditorButtonInteraction as handleContainerEditorButtonInteraction,
@@ -31,24 +36,34 @@ export async function execute(
       try {
         await handleContainerEditorButtonInteraction(interaction);
       } catch (error) {
-        console.error('Error in container editor button handler:', error);
+        logger.error(
+          'Error in container editor button handler: ' +
+            (error instanceof Error ? error.message : String(error)),
+        );
       }
       return;
     }
 
     // Team find buttons (map/mode/done) — interaction handler returns true/false
-    if (interaction.customId.startsWith('team-find-')) {
+    if (
+      interaction.customId.startsWith(TeamFindIds.MAP) ||
+      interaction.customId.startsWith(TeamFindIds.MODE) ||
+      interaction.customId.startsWith(TeamFindIds.DONE)
+    ) {
       try {
         if (await handleTeamFindInteraction(interaction)) return;
         // fallthrough to join button below
       } catch (error) {
-        console.error('Error in team-find button handler:', error);
+        logger.error(
+          'Error in team-find button handler: ' +
+            (error instanceof Error ? error.message : String(error)),
+        );
         return;
       }
     }
 
     // Team find join button
-    if (interaction.customId.startsWith('team-find-join:')) {
+    if (interaction.customId.startsWith(TeamFindIds.JOIN)) {
       try {
         const channelId = interaction.customId.split(':')[1];
         const channel = await interaction.guild?.channels.fetch(channelId).catch(() => null);
@@ -89,13 +104,18 @@ export async function execute(
           return;
         }
 
+        // channel là VoiceChannel nhưng type là GuildVoiceChannel
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (channel as any).join();
         await interaction.reply({
           content: 'Đã join phòng thành công!',
           flags: MessageFlags.Ephemeral,
         });
       } catch (error) {
-        console.error('Error in team-find join button handler:', error);
+        logger.error(
+          'Error in team-find join button handler: ' +
+            (error instanceof Error ? error.message : String(error)),
+        );
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({
             content: 'Có lỗi xảy ra khi tham gia phòng thoại.',
@@ -111,11 +131,14 @@ export async function execute(
 
   // ── 1b. String Select Menu Interactions ──
   if (interaction.isStringSelectMenu()) {
-    if (interaction.customId.startsWith('team-find-rank:')) {
+    if (interaction.customId.startsWith(TeamFindIds.RANK)) {
       try {
         await handleTeamFindInteraction(interaction);
       } catch (error) {
-        console.error('Error in team-find select handler:', error);
+        logger.error(
+          'Error in team-find select handler: ' +
+            (error instanceof Error ? error.message : String(error)),
+        );
       }
       return;
     }
@@ -124,11 +147,14 @@ export async function execute(
 
   // ── 2. Modal Submissions ──
   if (interaction.isModalSubmit()) {
-    if (interaction.customId.startsWith('container_modal_')) {
+    if (interaction.customId.startsWith(ContainerModalPrefix)) {
       try {
         await handleContainerEditorModalSubmit(interaction);
       } catch (error) {
-        console.error('Error in container editor modal handler:', error);
+        logger.error(
+          'Error in container editor modal handler: ' +
+            (error instanceof Error ? error.message : String(error)),
+        );
       }
       return;
     }
@@ -142,7 +168,7 @@ export async function execute(
 
   const commands = client.commands;
   if (!commands) {
-    console.warn('Commands collection not found on client.');
+    logger.warn('Commands collection not found on client.');
     return;
   }
 
@@ -150,7 +176,7 @@ export async function execute(
   const commandModule = commands.get(commandName);
 
   if (!commandModule) {
-    console.warn(`Command not found: ${commandName}`);
+    logger.warn('Command not found: ' + commandName);
     return;
   }
 
@@ -173,7 +199,7 @@ export async function execute(
 
   const database = client.database;
   if (!database) {
-    console.error('Database not attached to client. Cannot execute command.');
+    logger.error('Database not attached to client. Cannot execute command.');
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
         content: 'Database is not available. Please contact an administrator.',
@@ -196,7 +222,12 @@ export async function execute(
   try {
     await commandModule.execute(interaction, database);
   } catch (error) {
-    console.error(`Error executing command ${commandName}:`, error);
+    logger.error(
+      'Error executing command ' +
+        commandName +
+        ': ' +
+        (error instanceof Error ? error.message : String(error)),
+    );
 
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({

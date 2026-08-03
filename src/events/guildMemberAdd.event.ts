@@ -1,5 +1,8 @@
 ﻿import { Client, GuildMember } from 'discord.js';
 import { getSettingsService } from '../services/settings.service.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('GuildMemberAdd');
 
 /**
  * Handle guildMemberAdd event: gửi welcome message khi member mới join.
@@ -53,7 +56,12 @@ export async function execute(_client: Client, member: GuildMember): Promise<voi
       await assignWelcomeRole(member, welcome.roleId);
     }
   } catch (error) {
-    console.error(`Error sending welcome message for ${member.user.tag}:`, error);
+    logger.error(
+      'Error sending welcome message for ' +
+        member.user.tag +
+        ': ' +
+        (error instanceof Error ? error.message : String(error)),
+    );
   }
 }
 
@@ -65,14 +73,21 @@ async function assignWelcomeRole(member: GuildMember, roleId: string): Promise<v
   const role = member.guild.roles.cache.get(roleId);
 
   if (!role) {
-    console.warn(`Welcome role ${roleId} not found in guild ${member.guild.id}.`);
+    logger.warn('Welcome role ' + roleId + ' not found in guild ' + member.guild.id + '.');
     return;
   }
 
   try {
     await member.roles.add(role);
   } catch (error) {
-    console.error(`Failed to assign role ${role.name} to ${member.user.tag}:`, error);
+    logger.error(
+      'Failed to assign role ' +
+        role.name +
+        ' to ' +
+        member.user.tag +
+        ': ' +
+        (error instanceof Error ? error.message : String(error)),
+    );
   }
 }
 

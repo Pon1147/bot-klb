@@ -7,6 +7,9 @@ import { Client } from 'discord.js';
 import Database from 'better-sqlite3';
 import { createWebhookRoutes } from './webhook.routes.js';
 import { DEFAULT_WEBHOOK_PORT } from '../config/app.constants.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('WebhookServer');
 
 const DEFAULT_PORT = DEFAULT_WEBHOOK_PORT;
 const ALLOWED_ORIGINS = [
@@ -130,7 +133,7 @@ export function startWebhookServer(
 
   // Error handler
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-    console.error('[Webhook] Unhandled error:', err.message);
+    logger.error('Unhandled error: ' + err.message);
     res.status(500).json({
       status: 'error',
       message: 'Lỗi server nội bộ.',
@@ -138,8 +141,8 @@ export function startWebhookServer(
   });
 
   const server = app.listen(port, () => {
-    console.log(`[Webhook] ✅ Server đang chạy tại http://localhost:${port}`);
-    console.log(`[Webhook] Endpoint: http://localhost:${port}/api/df/claim`);
+    logger.info('Server running at http://localhost:' + port);
+    logger.info('Endpoint: http://localhost:' + port + '/api/df/claim');
   });
 
   return {
@@ -149,7 +152,7 @@ export function startWebhookServer(
       return new Promise<void>((resolve) => {
         server.close(() => {
           app = null;
-          console.log('[Webhook] Server đã dừng.');
+          logger.info('Server stopped.');
           resolve();
         });
       });

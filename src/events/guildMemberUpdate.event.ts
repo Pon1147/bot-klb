@@ -1,5 +1,8 @@
-import { GuildMember } from 'discord.js';
+import { Guild, GuildMember } from 'discord.js';
 import { getSettingsService } from '../services/settings.service.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('GuildMemberUpdate');
 import { getMessageRef, deleteMessageRef } from '../services/team-find-message-store.js';
 import { getSession, deleteSession } from '../services/team-find-session.js';
 
@@ -48,7 +51,12 @@ export async function execute(
         await assignBoosterRole(newMember, booster.roleId);
       }
     } catch (error) {
-      console.error(`Error sending booster message for ${newMember.user.tag}:`, error);
+      logger.error(
+        'Error sending booster message for ' +
+          newMember.user.tag +
+          ': ' +
+          (error instanceof Error ? error.message : String(error)),
+      );
     }
   }
 
@@ -79,7 +87,7 @@ export async function execute(
   }
 }
 
-async function cleanupOldEmbed(guild: any, userId: string): Promise<void> {
+async function cleanupOldEmbed(guild: Guild, userId: string): Promise<void> {
   const ref = getMessageRef(guild.id, userId);
   if (!ref) return;
   try {
@@ -101,7 +109,14 @@ async function assignBoosterRole(member: GuildMember, roleId: string): Promise<v
   try {
     await member.roles.add(role);
   } catch (error) {
-    console.error(`Failed to assign booster role ${role.name} to ${member.user.tag}:`, error);
+    logger.error(
+      'Failed to assign booster role ' +
+        role.name +
+        ' to ' +
+        member.user.tag +
+        ': ' +
+        (error instanceof Error ? error.message : String(error)),
+    );
   }
 }
 

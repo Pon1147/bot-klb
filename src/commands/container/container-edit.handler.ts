@@ -1,8 +1,12 @@
 ﻿import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+import { ContainerSettings } from '../../types/settings.types.js';
 import { getSettingsService } from '../../services/settings.service.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { cloneContainerSettings, createSession } from './container-session.js';
 import { buildLivePreviewContainer, buildAllEditorRows } from './container-builders.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('ContainerEdit');
 
 /**
  * Entry point: bắt đầu session edit container mới.
@@ -18,7 +22,10 @@ export async function startInteractiveEdit(
 
     await sendEditorMessage(interaction, type, containerSettings);
   } catch (error) {
-    console.error('Error starting container interactive edit:', error);
+    logger.error(
+      'Error starting container interactive edit: ' +
+        (error instanceof Error ? error.message : String(error)),
+    );
     if (!interaction.replied) {
       const errorContainer = buildErrorContainer(
         `Lỗi khi khởi tạo editor: ${(error as Error).message}`,
@@ -37,7 +44,7 @@ export async function startInteractiveEdit(
 async function sendEditorMessage(
   interaction: ChatInputCommandInteraction,
   type: 'welcome' | 'leave' | 'booster',
-  settings: any,
+  settings: ContainerSettings,
 ): Promise<void> {
   const draft = cloneContainerSettings(settings);
   const preview = buildLivePreviewContainer(draft);
@@ -58,7 +65,9 @@ async function sendEditorMessage(
     const message = await interaction.fetchReply();
     messageId = message.id;
   } catch (error) {
-    console.error('Error fetching reply message:', error);
+    logger.error(
+      'Error fetching reply message: ' + (error instanceof Error ? error.message : String(error)),
+    );
     // Fallback: dùng placeholder ID nếu fetchReply fail
     // Session vẫn hoạt động nhưng live preview update có thể không chính xác
     messageId = 'fetch_failed';

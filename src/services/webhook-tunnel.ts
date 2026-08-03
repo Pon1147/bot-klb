@@ -14,6 +14,9 @@ import { homedir } from 'os';
 import { join } from 'path';
 
 import { CLOUDFLARED_BIN_NAME, CLOUDFLARED_DOWNLOAD_URL } from '../config/app.constants.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('WebhookTunnel');
 
 let tunnelUrl: string | null = null;
 let tunnelProcess: ChildProcess | null = null;
@@ -32,7 +35,7 @@ async function downloadCloudflared(): Promise<string> {
 
   const downloadUrl = CLOUDFLARED_DOWNLOAD_URL;
 
-  console.log(`[Tunnel] Downloading cloudflared...`);
+  logger.info('Downloading cloudflared...');
 
   function fetchWithRedirect(url: string): Promise<IncomingMessage> {
     return new Promise((resolve, reject) => {
@@ -70,14 +73,14 @@ async function downloadCloudflared(): Promise<string> {
   });
 
   chmodSync(binPath, 0o755);
-  console.log(`[Tunnel] Downloaded cloudflared to ${binPath}`);
+  logger.info('Downloaded cloudflared to ' + binPath);
   return binPath;
 }
 
 /** Start cloudflared quick tunnel */
 async function startTunnel(port: number): Promise<string> {
   const binPath = await downloadCloudflared();
-  console.log(`[Tunnel] Starting cloudflared quick tunnel → http://localhost:${port}`);
+  logger.info('Starting cloudflared quick tunnel → http://localhost:' + port);
 
   return new Promise<string>((resolve, reject) => {
     const cp = spawn(binPath, ['tunnel', '--url', `http://localhost:${port}`], {
@@ -92,7 +95,7 @@ async function startTunnel(port: number): Promise<string> {
 
     cp.stderr!.on('data', (data: Buffer) => {
       const text = data.toString();
-      console.log(`[Tunnel] ${text.trim()}`);
+      logger.info(text.trim());
 
       const match = text.match(/https:\/\/[^\s"']+\.trycloudflare\.com/);
       if (match && !urlFound) {
@@ -103,7 +106,7 @@ async function startTunnel(port: number): Promise<string> {
     });
 
     cp.on('exit', (code, signal) => {
-      console.log(`[Tunnel] Process exited: code=${code}, signal=${signal}`);
+      logger.info('Process exited: code=' + code + ', signal=' + signal);
       // Clear state only if we never got a URL (startup failure)
       // or if this process is the one we're tracking
       if (!urlFound) {
@@ -122,7 +125,7 @@ async function startTunnel(port: number): Promise<string> {
 /** Stop cloudflared tunnel */
 function stopTunnel(): void {
   if (tunnelProcess) {
-    console.log('[Tunnel] Stopping cloudflared...');
+    logger.info('Stopping cloudflared...');
     try {
       tunnelProcess.kill('SIGTERM');
     } catch {
@@ -153,13 +156,13 @@ export async function setupTunnel(port: number): Promise<string> {
   if (process.env.WEBHOOK_URL) {
     tunnelUrl = process.env.WEBHOOK_URL;
     _isStatic = true;
-    console.log(`[Tunnel] WEBHOOK_URL đã được set: ${tunnelUrl}`);
+    logger.info('WEBHOOK_URL already set: ' + tunnelUrl);
     return tunnelUrl;
   }
 
   const url = await startTunnel(port);
   process.env.WEBHOOK_URL = url;
-  console.log(`[Tunnel] URL: ${url}`);
+  logger.info('URL: ' + url);
   return url;
 }
 
@@ -168,13 +171,13 @@ export { stopTunnel };
 /** Graceful shutdown: cleanup tunnel khi bot dừng */
 function registerShutdownHandlers(): void {
   process.on('SIGTERM', () => {
-    console.log('[Tunnel] Received SIGTERM — stopping tunnel...');
+    logger.info('Received SIGTERM — stopping tunnel...');
     stopTunnel();
     process.exit(0);
   });
 
   process.on('SIGINT', () => {
-    console.log('[Tunnel] Received SIGINT — stopping tunnel...');
+    logger.info('Received SIGINT — stopping tunnel...');
     stopTunnel();
     process.exit(0);
   });
