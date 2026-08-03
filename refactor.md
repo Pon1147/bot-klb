@@ -245,36 +245,20 @@ Tổng effort còn lại: ~6.5 giờ
 
 ---
 
-## ⏳ Phase 6: Decorator Typing
+## ✅ Phase 6: Decorator Typing (ĐÃ HOÀN THÀNH)
 
 **Risk:** Low | **Impact:** Low | **Thời lượng:** ~15p
 
-### File: `src/decorators/requireRole.ts:34`
+### File đã sửa
 
-**Current:**
-
-```ts
-function requireRole(roleId: string) {
-  return function (
-    target: any,
-    propertyKey: string,
-    descriptor: PropertyDescriptor,
-  ) { ... };
-  descriptor.value = async function (this: any, ...args: unknown[]) { ... };
-}
-```
-
-**Fix:**
-
-```ts
-import type { ChatInputCommandInteraction } from 'discord.js';
-
-descriptor.value = async function (this: ChatInputCommandInteraction, ...args: unknown[]) { ... };
-```
+| File | Fix |
+|------|-----|
+| `src/decorators/requireRole.ts` | `this: any` → `this: ChatInputCommandInteraction` |
 
 ### Acceptance
 
-- `npm run check`: pass
+- `npm run check`: 0 errors
+- `npm run lint`: 0 errors, 0 warnings
 - `this` được type chính xác là `ChatInputCommandInteraction`
 
 ---
