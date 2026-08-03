@@ -1,86 +1,47 @@
-import {
-  AttachmentBuilder,
-  ChatInputCommandInteraction,
-  MessageFlags,
-  SlashCommandBuilder,
-} from 'discord.js';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+/**
+ * Slash command /df-link — link tài khoản Delta Force HQ.
+ *
+ * Subcommands:
+ * - start: Tạo claim code, gửi script qua DM, hướng dẫn user
+ * - status: Kiểm tra trạng thái link (mask identifier, last_ok_at)
+ * - unlink: Hủy liên kết (revoked binding)
+ * - manual: Fallback tech — user paste openid + token
+ */
+
+import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import Database from 'better-sqlite3';
-import { buildErrorContainer } from '../../utils/container.utils.js';
+import {
+  buildErrorContainer,
+  buildInfoContainer,
+  buildSuccessContainer,
+} from '../../utils/container.utils.js';
 import { requireGuild } from '../../utils/df-guards.js';
 import { generateCode } from '../../services/df-claim-store.js';
-import { getMyData } from '../../services/deltaforce.api.js';
+import { getActiveBinding } from '../../database/df-binding.db.js';
+import { getDfToken } from '../../database/df.token.db.js';
 import { saveDfToken } from '../../database/df.token.db.js';
-import { setupTunnel, isTunnelAlive, stopTunnel } from '../../services/webhook-tunnel.js';
-import {
-  LOCALHOST_WEBHOOK_URL,
-  DEFAULT_WEBHOOK_PORT,
-  TOKEN_REGEX,
-  INVALID_TOKEN_MESSAGE,
-} from '../../config/app.constants.js';
+import { revokeBinding } from '../../database/df-binding.db.js';
+import { TOKEN_REGEX, INVALID_TOKEN_MESSAGE } from '../../config/app.constants.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('DfLink');
 
-/** Strip tsc module boilerplate từ script compiled để chạy được trong browser console */
-function getBrowserScript(src: string): string {
-  return src
-    .split('\n')
-    .filter((line) => !line.includes('Object.defineProperty') && line.trim() !== '"use strict";')
-    .join('\n')
-    .trim();
-}
-
-/** Integrity check: script phải chứa comment gốc để phát hiện inject */
-function verifyScriptIntegrity(src: string): void {
-  if (!src.includes('Delta Force HQ') || !src.includes('DfTools')) {
-    logger.error('Script integrity check failed — possible tampering');
-    throw new Error('Webhook script integrity verification failed');
-  }
-}
-
-const RAW_SCRIPT = readFileSync(join(process.cwd(), 'dist', 'scraper', 'df-webhook.js'), 'utf8');
-// Skip integrity check in test environment
-if (process.env.NODE_ENV !== 'test') {
-  verifyScriptIntegrity(RAW_SCRIPT);
-}
-const WEBHOOK_SCRIPT = getBrowserScript(RAW_SCRIPT);
-
-/** Lấy webhook URL hiện tại (đọc env tại thời điểm gọi) */
-function getWebhookUrl(): string {
-  return process.env.WEBHOOK_URL ?? LOCALHOST_WEBHOOK_URL;
-}
-
-/** Đảm bảo tunnel chạy trước khi sinh script */
-async function ensureTunnel(): Promise<void> {
-  if (isTunnelAlive()) return;
-  if (process.env.WEBHOOK_URL && process.env.WEBHOOK_URL.startsWith('http://localhost')) {
-    return; // localhost — không cần tunnel
-  }
-  if (process.env.WEBHOOK_URL) {
-    // URL đã set nhưng tunnel chết — restart
-    stopTunnel();
-    delete process.env.WEBHOOK_URL;
-  }
-  try {
-    const webhookPort = parseInt(process.env.WEBHOOK_PORT ?? String(DEFAULT_WEBHOOK_PORT), 10);
-    await setupTunnel(webhookPort);
-  } catch (e) {
-    logger.error('Failed to restart tunnel: ' + (e instanceof Error ? e.message : String(e)));
-  }
-}
-
 export const data = new SlashCommandBuilder()
   .setName('df-link')
-  .setDescription('Liên kết tài khoản Delta Force HQ.')
+  .setDescription('Liên kết / kiểm tra / hủy tài khoản Delta Force HQ.')
   .addSubcommand((sub) =>
-    sub.setName('start').setDescription('Nhận script liên kết tự động (khuyến nghị)'),
+    sub.setName('start').setDescription('Tạo mã claim và gửi hướng dẫn qua DM.'),
+  )
+  .addSubcommand((sub) =>
+    sub.setName('status').setDescription('Kiểm tra trạng thái liên kết hiện tại.'),
+  )
+  .addSubcommand((sub) =>
+    sub.setName('unlink').setDescription('Hủy liên kết tài khoản Delta Force.'),
   )
   .addSubcommand((sub) =>
     sub
       .setName('manual')
-      .setDescription('Liên kết bằng cách nhập openid + token')
+      .setDescription('Liên kết bằng cách nhập openid + token (fallback).')
       .addStringOption((opt) =>
         opt.setName('openid').setDescription('OpenID của tài khoản HQ').setRequired(true),
       )
@@ -91,21 +52,163 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
-  _database: Database.Database,
+  database: Database.Database,
 ): Promise<void> {
   const subcommand = interaction.options.getSubcommand();
 
   switch (subcommand) {
-    case 'manual':
-      return handleManualLink(interaction, _database);
     case 'start':
-    default:
-      return handleWebhookFlow(interaction);
+      return handleStart(interaction);
+    case 'status':
+      return handleStatus(interaction, database);
+    case 'unlink':
+      return handleUnlink(interaction, database);
+    case 'manual':
+      return handleManual(interaction, database);
   }
 }
 
-/** Xử lý subcommand `manual` — user nhập openid + token manual */
-async function handleManualLink(
+/** Subcommand `start` — tạo claim code, gửi script qua DM */
+async function handleStart(interaction: ChatInputCommandInteraction): Promise<void> {
+  if (await requireGuild(interaction)) return;
+
+  // Invalidate claim code cũ của user (tạo mới sẽ overwrite)
+
+  const code = generateCode(interaction.user.id);
+
+  const dmChannel = await interaction.user.createDM().catch(() => null);
+  if (!dmChannel) {
+    const err = buildErrorContainer('Không thể mở DM. Hãy bật DM trong Server Settings.');
+    await interaction.reply({
+      components: err.toJSON(),
+      flags: err.flags | MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  await dmChannel.send({
+    content:
+      `**Liên kết tài khoản Delta Force**\n\n` +
+      `**Mã claim: \`${code}\`** (hết hạn sau 10 phút)\n\n` +
+      '1. Truy cập [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html)\n' +
+      '2. Đăng nhập tài khoản → chờ trang load xong\n' +
+      '3. Bấm **F12** → tab **Console** → paste script bên dưới → Enter\n' +
+      '4. Script tự capture token và gửi về bot — chờ DM xác nhận!\n' +
+      '5. Nếu Console hiện "chưa tìm thấy" → nhấn vài nút trên trang → script sẽ capture khi có API call',
+    files: [
+      {
+        attachment: process.env.WEBHOOK_URL
+          ? `${process.env.WEBHOOK_URL}/api/df/webhook-script?code=${code}`
+          : 'data:text/javascript;base64,' +
+            Buffer.from('// Script đang chờ cấu hình WEBHOOK_URL').toString('base64'),
+        name: 'df-link-script.js',
+      },
+    ],
+  });
+
+  await interaction.reply({
+    content: `Script đã gửi qua DM. Mã claim: \`${code}\` — hết hạn sau 10 phút.`,
+    flags: MessageFlags.Ephemeral,
+  });
+}
+
+/** Subcommand `status` — kiểm tra trạng thái liên kết */
+async function handleStatus(
+  interaction: ChatInputCommandInteraction,
+  database: Database.Database,
+): Promise<void> {
+  if (await requireGuild(interaction)) return;
+
+  // Kiểm tra binding mới (encrypted)
+  const binding = getActiveBinding(database, interaction.user.id);
+  if (binding) {
+    const masked =
+      binding.openid.length > 8
+        ? `${binding.openid.slice(0, 4)}****${binding.openid.slice(-4)}`
+        : '****';
+    const lastOk = binding.last_ok_at
+      ? `Last OK: ${binding.last_ok_at}`
+      : 'Chưa có request thành công';
+    const info = buildInfoContainer(
+      `**Đã liên kết tài khoản Delta Force!**\n\n` +
+        `OpenID: ${masked}\n` +
+        `Trạng thái: ${binding.status}\n` +
+        lastOk,
+    );
+    await interaction.reply({
+      components: info.toJSON(),
+      flags: info.flags | MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  // Fallback: kiểm tra legacy df_tokens
+  const legacyToken = getDfToken(database, interaction.user.id);
+  if (legacyToken) {
+    const masked =
+      legacyToken.openid.length > 8
+        ? `${legacyToken.openid.slice(0, 4)}****${legacyToken.openid.slice(-4)}`
+        : '****';
+    const info = buildInfoContainer(
+      `**Đã liên kết (legacy)**\n\n` +
+        `OpenID: ${masked}\n` +
+        `Liên kết lúc: ${legacyToken.linked_at}\n\n` +
+        `> ⚠️ Bạn nên dùng \`/df-link start\` để cập nhật lên hệ thống mới.`,
+    );
+    await interaction.reply({
+      components: info.toJSON(),
+      flags: info.flags | MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  // Chưa link
+  const info = buildInfoContainer('Bạn chưa liên kết tài khoản Delta Force.');
+  await interaction.reply({
+    components: info.toJSON(),
+    flags: info.flags | MessageFlags.Ephemeral,
+  });
+}
+
+/** Subcommand `unlink` — hủy liên kết */
+async function handleUnlink(
+  interaction: ChatInputCommandInteraction,
+  database: Database.Database,
+): Promise<void> {
+  if (await requireGuild(interaction)) return;
+
+  // Kiểm tra xem có binding nào không
+  const binding = getActiveBinding(database, interaction.user.id);
+  const legacyToken = getDfToken(database, interaction.user.id);
+
+  if (!binding && !legacyToken) {
+    const info = buildInfoContainer('Bạn chưa liên kết tài khoản Delta Force.');
+    await interaction.reply({
+      components: info.toJSON(),
+      flags: info.flags | MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  // Revoke binding mới
+  if (binding) {
+    revokeBinding(database, interaction.user.id);
+  }
+
+  // Xóa legacy token
+  if (legacyToken) {
+    database.prepare('DELETE FROM df_tokens WHERE discord_id = ?').run(interaction.user.id);
+  }
+
+  const result = buildSuccessContainer('Đã hủy liên kết tài khoản Delta Force.');
+  await interaction.reply({
+    components: result.toJSON(),
+    flags: result.flags | MessageFlags.Ephemeral,
+  });
+}
+
+/** Subcommand `manual` — fallback user paste openid + token */
+async function handleManual(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
@@ -114,7 +217,7 @@ async function handleManualLink(
   const openid = interaction.options.getString('openid')!;
   const token = interaction.options.getString('token')!;
 
-  // Validate format token (hex string 40-64 ký tự)
+  // Validate format token
   if (!TOKEN_REGEX.test(token)) {
     const err = buildErrorContainer(INVALID_TOKEN_MESSAGE);
     await interaction.reply({
@@ -127,76 +230,24 @@ async function handleManualLink(
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
-    // Gọi API để validate token
-    await getMyData({ openid, token });
-
-    // Lưu token vào database
+    // Lưu token vào legacy DB (mới sẽ dùng claim API)
     saveDfToken(database, interaction.user.id, openid, token);
 
+    const successResult = buildSuccessContainer(
+      `Đã lưu thông tin liên kết!\n\n` +
+        `OpenID: ${openid}\n\n` +
+        `> ⚠️ Đây là fallback manual. Nên dùng \`/df-link start\` để link tự động qua extension.`,
+    );
     await interaction.editReply({
-      content: `✅ Đã liên kết tài khoản Delta Force!\n\n` + `OpenID: ${openid}`,
+      components: successResult.toJSON(),
+      flags: successResult.flags | MessageFlags.Ephemeral,
     });
   } catch (error: unknown) {
     logger.error('Manual link failed: ' + (error instanceof Error ? error.message : String(error)));
-    const err = buildErrorContainer(
-      'Không thể xác thực tài khoản. Kiểm tra openid và token, hoặc token đã hết hạn.',
-    );
+    const err = buildErrorContainer('Không thể lưu thông tin liên kết. Kiểm tra openid và token.');
     await interaction.editReply({
       components: err.toJSON(),
       flags: err.flags | MessageFlags.Ephemeral,
     });
-  }
-}
-
-/** Xử lý webhook flow — gửi script cho user chạy trong browser console */
-async function handleWebhookFlow(interaction: ChatInputCommandInteraction): Promise<void> {
-  if (await requireGuild(interaction)) return;
-
-  // Đảm bảo tunnel chạy với URL hiện tại
-  await ensureTunnel();
-
-  try {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-    const code = generateCode(interaction.user.id);
-
-    const scriptContent = WEBHOOK_SCRIPT.replace(/@@WEBHOOK_URL@@/g, getWebhookUrl()).replace(
-      /@@CLAIM_CODE@@/g,
-      code,
-    );
-
-    const dmChannel = await interaction.user.createDM();
-    await dmChannel.send({
-      content:
-        '**Liên kết tài khoản Delta Force**\n\n' +
-        `**Mã claim: \`${code}\`** (hết hạn sau 10 phút)\n\n` +
-        '1. Truy cập [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html)\n' +
-        '2. Đăng nhập tài khoản → chờ trang load xong\n' +
-        '3. Copy toàn bộ nội dung file `df-link-script.js` bên dưới\n' +
-        '4. Bấm **F12** → tab **Console** → paste → Enter\n' +
-        '5. Script tự tìm token & gửi về bot — chờ DM xác nhận!\n' +
-        '6. Nếu Console hiện "chưa tìm thấy" → nhấn vài nút trên trang → script sẽ capture khi có API call',
-      files: [
-        new AttachmentBuilder(Buffer.from(scriptContent, 'utf8'), {
-          name: 'df-link-script.js',
-        }),
-      ],
-    });
-
-    await interaction.editReply({
-      content: `Script đã gửi qua DM. Mã claim: \`${code}\` — hết hạn sau 10 phút.`,
-    });
-  } catch (error) {
-    logger.error('Error in /df-link: ' + (error instanceof Error ? error.message : String(error)));
-    if (!interaction.replied && !interaction.deferred) {
-      const err = buildErrorContainer('Không thể gửi DM. Hãy mở tin nhắn trong Server Settings.');
-      await interaction.reply({
-        components: err.toJSON(),
-        flags: err.flags | MessageFlags.Ephemeral,
-      });
-    } else {
-      await interaction
-        .editReply({ content: 'Lỗi khi gửi script. Xem console log.' })
-        .catch(() => {});
-    }
   }
 }

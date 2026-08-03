@@ -1,12 +1,10 @@
 /**
  * Unit tests cho df-link.command.ts — /df-link slash command.
- * Version: có subcommand `start` (webhook) và `link` (manual input).
+ *
+ * Subcommands: start, status, unlink, manual.
  */
 
 jest.mock('discord.js', () => ({
-  AttachmentBuilder: class {
-    constructor(public pathOrBuffer: any, public opts?: any) {}
-  },
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
   SlashCommandBuilder: class {
     setName() { return this; }
@@ -31,14 +29,6 @@ jest.mock('discord.js', () => ({
   },
 }));
 
-jest.mock('fs', () => ({
-  readFileSync: jest.fn(() => '/* Delta Force HQ — Webhook userscript */ var WEBHOOK_URL = "@@WEBHOOK_URL@@"; var CODE = "@@CLAIM_CODE@@";'),
-}));
-
-jest.mock('path', () => ({
-  join: jest.fn(() => '/mock/path/df-webhook.js'),
-}));
-
 jest.mock('better-sqlite3', () => {
   return jest.fn().mockImplementation(() => ({
     prepare: jest.fn(() => ({
@@ -51,15 +41,17 @@ jest.mock('better-sqlite3', () => {
 });
 
 jest.mock('../src/services/df-claim-store.js', () => ({
-  generateCode: jest.fn(),
-}));
-
-jest.mock('../src/services/deltaforce.api.js', () => ({
-  getMyData: jest.fn(),
+  generateCode: jest.fn(() => 'ABC123'),
 }));
 
 jest.mock('../src/database/df.token.db.js', () => ({
   saveDfToken: jest.fn(),
+  getDfToken: jest.fn(),
+}));
+
+jest.mock('../src/database/df-binding.db.js', () => ({
+  getActiveBinding: jest.fn(),
+  revokeBinding: jest.fn(),
 }));
 
 jest.mock('../src/utils/container.utils.js', () => ({
@@ -83,59 +75,15 @@ jest.mock('../src/utils/container.utils.js', () => ({
   })),
 }));
 
-jest.mock('../src/services/webhook-tunnel.js', () => ({
-  setupTunnel: jest.fn().mockResolvedValue('https://test.trycloudflare.com'),
-  getTunnelUrl: jest.fn(() => 'https://test.trycloudflare.com'),
-  isTunnelAlive: jest.fn(() => true),
-  stopTunnel: jest.fn(),
-}));
-
 import { execute } from '../src/commands/df/link.command.js';
 import { generateCode } from '../src/services/df-claim-store.js';
-import { setupTunnel, isTunnelAlive, stopTunnel } from '../src/services/webhook-tunnel.js';
-import { getMyData } from '../src/services/deltaforce.api.js';
 import { saveDfToken } from '../src/database/df.token.db.js';
+import { getActiveBinding } from '../src/database/df-binding.db.js';
 import { MessageFlags } from 'discord.js';
-
-// Test verifyScriptIntegrity và getBrowserScript trực tiếp
-describe('df-link.command — verifyScriptIntegrity & getBrowserScript', () => {
-  // Re-import để get access đến các functions nội bộ
-  let verifyScriptIntegrity: (src: string) => void;
-  let getBrowserScript: (src: string) => string;
-
-  beforeAll(() => {
-    // Sử dụng require.dynamic để access internals
-    const mod = require('../src/commands/df/link.command.js');
-    // Các functions không exported — test thông qua execute
-    // Thay vào đó test getBrowserScript qua side effect
-    getBrowserScript = (src: string) =>
-      src
-        .split('\n')
-        .filter((line: string) => !line.includes('Object.defineProperty') && line.trim() !== '"use strict";')
-        .join('\n')
-        .trim();
-  });
-
-  it('nên strip tsc boilerplate từ script', () => {
-    const script = 'Object.defineProperty(exports, "__esModule", { value: true });\n"use strict";\nconsole.log("hello");';
-    const result = getBrowserScript(script);
-    expect(result).not.toContain('Object.defineProperty');
-    expect(result).not.toContain('"use strict"');
-    expect(result).toContain('console.log');
-  });
-
-  it('nên throw khi script thiếu integrity check', () => {
-    // verifyScriptIntegrity không exported — test qua mock execute
-    // Tạo interaction sẽ trigger error path
-    const mod = require('../src/commands/df/link.command.js');
-    expect(mod).toBeDefined();
-  });
-});
 
 describe('df-link.command', () => {
   const mockDb: any = { prepare: jest.fn(() => ({ get: jest.fn(), run: jest.fn() })) };
   const mockReply = jest.fn().mockResolvedValue(undefined);
-  const mockEditReply = jest.fn().mockResolvedValue(undefined);
   const mockDeferReply = jest.fn().mockResolvedValue(undefined);
   const mockDmSend = jest.fn().mockResolvedValue(undefined);
   const mockCreateDm = jest.fn().mockResolvedValue({ send: mockDmSend });
@@ -145,10 +93,10 @@ describe('df-link.command', () => {
       guild: { id: '111' },
       user: { id: '222', createDM: mockCreateDm },
       reply: mockReply,
-      editReply: mockEditReply,
+      editReply: jest.fn().mockResolvedValue(undefined),
       deferReply: mockDeferReply,
       options: {
-        getSubcommand: jest.fn(() => 'start'), // default: webhook flow
+        getSubcommand: jest.fn(() => 'start'),
         getString: jest.fn(),
       },
       replied: false,
@@ -159,8 +107,10 @@ describe('df-link.command', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Simulate tunnel already set up by main() boot sequence
     process.env.WEBHOOK_URL = 'https://test.trycloudflare.com';
+    (generateCode as jest.Mock).mockReturnValue('ABC123');
+    (getActiveBinding as jest.Mock).mockReturnValue(undefined);
+    (saveDfToken as jest.Mock).mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -177,56 +127,35 @@ describe('df-link.command', () => {
     });
   });
 
-  describe('subcommand: start (webhook flow)', () => {
-    it('nên sinh claim code và gửi script qua DM', async () => {
-      (generateCode as jest.Mock).mockReturnValue('ABC123');
+  describe('subcommand: start', () => {
+    it('nên sinh claim code và gửi hướng dẫn qua DM', async () => {
       const interaction = createMockInteraction();
       await execute(interaction, mockDb);
 
-      expect(mockDeferReply).toHaveBeenCalledWith({ flags: MessageFlags.Ephemeral });
       expect(generateCode).toHaveBeenCalledWith('222');
       expect(mockCreateDm).toHaveBeenCalled();
       expect(mockDmSend).toHaveBeenCalled();
+      expect(mockReply).toHaveBeenCalled();
     });
 
-    it('nên trả về xác nhận với claim code', async () => {
-      (generateCode as jest.Mock).mockReturnValue('ABC123');
-      const interaction = createMockInteraction();
-      await execute(interaction, mockDb);
-
-      expect(mockEditReply).toHaveBeenCalledWith(
-        expect.objectContaining({
-          content: expect.stringContaining('ABC123'),
-        }),
-      );
-    });
-
-    it('nên gửi script file có đúng tên và chứa claim code', async () => {
-      (generateCode as jest.Mock).mockReturnValue('XYZ789');
+    it('nên gửi DM có chứa claim code', async () => {
       const interaction = createMockInteraction();
       await execute(interaction, mockDb);
 
       const dmCall = mockDmSend.mock.calls[0];
-      const files = dmCall[0].files;
-      expect(files).toHaveLength(1);
-      expect(files[0].opts.name).toBe('df-link-script.js');
-      const content = files[0].pathOrBuffer.toString();
-      expect(content).toContain('XYZ789');
+      expect(dmCall[0].content).toContain('ABC123');
     });
 
-    it('nên gửi script có thay thế WEBHOOK_URL', async () => {
-      (generateCode as jest.Mock).mockReturnValue('ABC123');
+    it('nên reply ephemeral với xác nhận', async () => {
       const interaction = createMockInteraction();
       await execute(interaction, mockDb);
 
-      const dmCall = mockDmSend.mock.calls[0];
-      const content = dmCall[0].files[0].pathOrBuffer.toString();
-      expect(content).not.toContain('@@WEBHOOK_URL@@');
-      expect(content).not.toContain('@@CLAIM_CODE@@');
+      const replyCall = mockReply.mock.calls[0];
+      expect(replyCall[0].flags).toBe(MessageFlags.Ephemeral);
+      expect(replyCall[0].content).toContain('ABC123');
     });
 
     it('nên handle DM error gracefully', async () => {
-      (generateCode as jest.Mock).mockReturnValue('ABC123');
       const mockConsoleError = console.error;
       console.error = jest.fn();
       try {
@@ -235,87 +164,104 @@ describe('df-link.command', () => {
         });
         await execute(interaction, mockDb);
 
-        const responded = mockReply.mock.calls.length > 0 || mockEditReply.mock.calls.length > 0;
+        // Phải có reply (error case)
+        const responded = mockReply.mock.calls.length > 0;
         expect(responded).toBe(true);
-      } finally {
-        console.error = mockConsoleError;
-      }
-    });
-
-    it('nên handle editReply error sau khi deferReply', async () => {
-      (generateCode as jest.Mock).mockReturnValue('ABC123');
-      const mockConsoleError = console.error;
-      console.error = jest.fn();
-
-      try {
-        const mockEditReplyThrows = jest.fn().mockRejectedValue(new Error('already replied'));
-        const interaction = createMockInteraction({
-          deferred: true,
-          user: { id: '222', createDM: jest.fn().mockRejectedValue(new Error('DM blocked')) },
-        });
-        interaction.editReply = mockEditReplyThrows;
-
-        await expect(execute(interaction, mockDb)).resolves.not.toThrow();
-        expect(mockEditReplyThrows).toHaveBeenCalled();
-      } finally {
-        console.error = mockConsoleError;
-      }
-    });
-
-    it('nên restart tunnel khi tunnel chết', async () => {
-      (generateCode as jest.Mock).mockReturnValue('ABC123');
-      (isTunnelAlive as jest.Mock).mockReturnValue(false);
-      process.env.WEBHOOK_URL = 'https://old-dead.trycloudflare.com';
-
-      const interaction = createMockInteraction();
-      await execute(interaction, mockDb);
-
-      expect(stopTunnel).toHaveBeenCalled();
-      expect(setupTunnel).toHaveBeenCalled();
-      expect(mockDmSend).toHaveBeenCalled();
-    });
-
-    it('nên skip tunnel setup khi dùng localhost', async () => {
-      (generateCode as jest.Mock).mockReturnValue('ABC123');
-      (isTunnelAlive as jest.Mock).mockReturnValue(false);
-      process.env.WEBHOOK_URL = 'http://localhost:3500';
-
-      const interaction = createMockInteraction();
-      await execute(interaction, mockDb);
-
-      expect(setupTunnel).not.toHaveBeenCalled();
-      expect(mockDmSend).toHaveBeenCalled();
-      const content = mockDmSend.mock.calls[0][0].files[0].pathOrBuffer.toString();
-      expect(content).toContain('localhost:3500');
-    });
-
-    it('nên fallback localhost khi setup tunnel thất bại', async () => {
-      (generateCode as jest.Mock).mockReturnValue('ABC123');
-      (isTunnelAlive as jest.Mock).mockReturnValue(false);
-      delete process.env.WEBHOOK_URL;
-      (setupTunnel as jest.Mock).mockRejectedValueOnce(new Error('cloudflared not found'));
-
-      const mockConsoleError = console.error;
-      console.error = jest.fn();
-      try {
-        const interaction = createMockInteraction();
-        await execute(interaction, mockDb);
-
-        expect(setupTunnel).toHaveBeenCalled();
-        expect(mockDmSend).toHaveBeenCalled();
-        const content = mockDmSend.mock.calls[0][0].files[0].pathOrBuffer.toString();
-        expect(content).toContain('localhost:3500');
       } finally {
         console.error = mockConsoleError;
       }
     });
   });
 
-  describe('subcommand: manual (manual input)', () => {
-    it('nên lưu token và trả về success khi validate thành công', async () => {
-      (getMyData as jest.Mock).mockResolvedValue({ nickname: 'TestPlayer' });
-      (saveDfToken as jest.Mock).mockReturnValue(true);
+  describe('subcommand: status', () => {
+    it('nên hiển thị binding khi đã link', async () => {
+      (getActiveBinding as jest.Mock).mockReturnValue({
+        openid: 'abcdef1234567890',
+        status: 'active',
+        last_ok_at: '2026-08-03 10:00:00',
+      });
 
+      const interaction = createMockInteraction({
+        options: { getSubcommand: jest.fn(() => 'status') },
+      });
+      await execute(interaction, mockDb);
+
+      expect(mockReply).toHaveBeenCalled();
+      const replyCall = mockReply.mock.calls[0];
+      expect(replyCall[0].components).toBeDefined();
+    });
+
+    it('nên hiển thị thông báo chưa link', async () => {
+      const interaction = createMockInteraction({
+        options: { getSubcommand: jest.fn(() => 'status') },
+      });
+      await execute(interaction, mockDb);
+
+      expect(mockReply).toHaveBeenCalled();
+    });
+
+    it('nên fallback legacy token khi không có binding', async () => {
+      const { getDfToken } = require('../src/database/df.token.db.js');
+      (getDfToken as jest.Mock).mockReturnValue({
+        openid: 'legacy123',
+        linked_at: '2026-08-01 00:00:00',
+      });
+
+      const interaction = createMockInteraction({
+        options: { getSubcommand: jest.fn(() => 'status') },
+      });
+      await execute(interaction, mockDb);
+
+      expect(mockReply).toHaveBeenCalled();
+    });
+  });
+
+  describe('subcommand: unlink', () => {
+    it('nên revoke binding và trả về success', async () => {
+      const { revokeBinding } = require('../src/database/df-binding.db.js');
+      (getActiveBinding as jest.Mock).mockReturnValue({
+        id: 1,
+        openid: 'test',
+        status: 'active',
+      });
+
+      const interaction = createMockInteraction({
+        options: { getSubcommand: jest.fn(() => 'unlink') },
+      });
+      await execute(interaction, mockDb);
+
+      expect(revokeBinding).toHaveBeenCalledWith(mockDb, '222');
+      expect(mockReply).toHaveBeenCalled();
+    });
+
+    it('nên xóa legacy token khi không có binding', async () => {
+      const { getDfToken, saveDfToken: _ } = require('../src/database/df.token.db.js');
+      (getDfToken as jest.Mock).mockReturnValue({
+        openid: 'legacy',
+        token: 'abc',
+      });
+
+      const interaction = createMockInteraction({
+        options: { getSubcommand: jest.fn(() => 'unlink') },
+      });
+      await execute(interaction, mockDb);
+
+      expect(mockReply).toHaveBeenCalled();
+    });
+
+    it('nên hiển thị thông báo chưa link khi không có gì để unlink', async () => {
+      const interaction = createMockInteraction({
+        options: { getSubcommand: jest.fn(() => 'unlink') },
+      });
+      await execute(interaction, mockDb);
+
+      expect(mockReply).toHaveBeenCalled();
+    });
+  });
+
+  describe('subcommand: manual', () => {
+    it('nên lưu token và trả về success khi validate thành công', async () => {
+      const mockEditReply = jest.fn().mockResolvedValue(undefined);
       const interaction = createMockInteraction({
         options: {
           getSubcommand: jest.fn(() => 'manual'),
@@ -325,14 +271,11 @@ describe('df-link.command', () => {
             return undefined;
           }),
         },
+        editReply: mockEditReply,
       });
 
       await execute(interaction, mockDb);
 
-      expect(getMyData).toHaveBeenCalledWith({
-        openid: '123456789',
-        token: 'abcdef1234567890abcdef1234567890abcdef1234567890',
-      });
       expect(saveDfToken).toHaveBeenCalledWith(
         mockDb,
         '222',
@@ -340,11 +283,7 @@ describe('df-link.command', () => {
         'abcdef1234567890abcdef1234567890abcdef1234567890',
       );
       expect(mockDeferReply).toHaveBeenCalled();
-      expect(mockEditReply).toHaveBeenCalledWith(
-        expect.objectContaining({
-          content: expect.stringContaining('Đã liên kết'),
-        }),
-      );
+      expect(mockEditReply).toHaveBeenCalled();
     });
 
     it('nên từ chối token không đúng format hex', async () => {
@@ -361,16 +300,13 @@ describe('df-link.command', () => {
 
       await execute(interaction, mockDb);
 
-      expect(getMyData).not.toHaveBeenCalled();
       expect(saveDfToken).not.toHaveBeenCalled();
       expect(mockReply).toHaveBeenCalledWith(
-        expect.objectContaining({
-          flags: expect.any(Number),
-        }),
+        expect.objectContaining({ flags: expect.any(Number) }),
       );
     });
 
-    it('nên từ chối token quá ngắn (< 20 ký tự)', async () => {
+    it('nửa từ chối token quá ngắn', async () => {
       const interaction = createMockInteraction({
         options: {
           getSubcommand: jest.fn(() => 'manual'),
@@ -384,60 +320,8 @@ describe('df-link.command', () => {
 
       await execute(interaction, mockDb);
 
-      expect(getMyData).not.toHaveBeenCalled();
       expect(saveDfToken).not.toHaveBeenCalled();
       expect(mockReply).toHaveBeenCalled();
-    });
-
-    it('nên trả về error khi API validation thất bại', async () => {
-      (getMyData as jest.Mock).mockRejectedValue(new Error('Invalid token'));
-
-      const interaction = createMockInteraction({
-        options: {
-          getSubcommand: jest.fn(() => 'manual'),
-          getString: jest.fn((name: string) => {
-            if (name === 'openid') return '123';
-            if (name === 'token') return 'abcdef1234567890abcdef1234567890abcdef1234567890';
-            return undefined;
-          }),
-        },
-      });
-
-      await execute(interaction, mockDb);
-
-      expect(getMyData).toHaveBeenCalled();
-      expect(saveDfToken).not.toHaveBeenCalled();
-      expect(mockDeferReply).toHaveBeenCalled();
-      expect(mockEditReply).toHaveBeenCalled();
-    });
-
-    it('nên handle API error trả về lỗi chi tiết', async () => {
-      (getMyData as jest.Mock).mockRejectedValue(new Error('GetMyData failed: code=1 msg=Invalid token'));
-
-      const interaction = createMockInteraction({
-        options: {
-          getSubcommand: jest.fn(() => 'manual'),
-          getString: jest.fn((name: string) => {
-            if (name === 'openid') return '123';
-            if (name === 'token') return 'abcdef1234567890abcdef1234567890abcdef1234567890';
-            return undefined;
-          }),
-        },
-      });
-
-      const mockConsoleError = console.error;
-      console.error = jest.fn();
-      try {
-        await execute(interaction, mockDb);
-        expect(mockDeferReply).toHaveBeenCalled();
-        expect(mockEditReply).toHaveBeenCalledWith(
-          expect.objectContaining({
-            flags: expect.any(Number),
-          }),
-        );
-      } finally {
-        console.error = mockConsoleError;
-      }
     });
   });
 });

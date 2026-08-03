@@ -2,6 +2,7 @@ import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import Database from 'better-sqlite3';
 import { buildErrorContainer, buildInfoContainer } from './container.utils.js';
 import { getDfToken } from '../database/df.token.db.js';
+import { getActiveBinding } from '../database/df-binding.db.js';
 
 export async function requireGuild(interaction: ChatInputCommandInteraction): Promise<boolean> {
   if (!interaction.guild) {
@@ -60,6 +61,34 @@ export async function requireDfTokenOrInfo(
       await interaction.reply({
         components: info.toJSON(),
         flags: info.flags | MessageFlags.Ephemeral,
+      });
+    }
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Guard: yêu cầu user đã có account binding active.
+ * Kiểm tra df_account_bindings trước, fallback df_tokens.
+ */
+export async function requireDfBinding(
+  interaction: ChatInputCommandInteraction,
+  database: Database.Database,
+): Promise<boolean> {
+  const binding = getActiveBinding(database, interaction.user.id);
+  const legacyToken = getDfToken(database, interaction.user.id);
+
+  if (!binding && !legacyToken) {
+    const err = buildErrorContainer(
+      'Bạn chưa liên kết tài khoản. Dùng `/df-link start` hoặc `/df-link manual` để bắt đầu.',
+    );
+    if (interaction.replied || interaction.deferred) {
+      await interaction.editReply({ components: err.toJSON() });
+    } else {
+      await interaction.reply({
+        components: err.toJSON(),
+        flags: err.flags | MessageFlags.Ephemeral,
       });
     }
     return true;
