@@ -25,8 +25,13 @@ jest.mock('../src/database/df.token.db.js', () => ({
   getDfToken: jest.fn(),
 }));
 
-import { requireGuild, requireDfToken, requireDfTokenOrInfo } from '../src/utils/df-guards.js';
+jest.mock('../src/database/df-binding.db.js', () => ({
+  getActiveBinding: jest.fn(),
+}));
+
+import { requireGuild, requireDfToken, requireDfTokenOrInfo, requireDfBinding } from '../src/utils/df-guards.js';
 import { getDfToken } from '../src/database/df.token.db.js';
+import { getActiveBinding } from '../src/database/df-binding.db.js';
 import { MessageFlags } from 'discord.js';
 
 describe('df-guards — requireGuild', () => {
@@ -126,6 +131,62 @@ describe('df-guards — requireDfTokenOrInfo', () => {
     };
 
     const result = await requireDfTokenOrInfo(interaction, mockDb);
+    expect(result).toBe(false);
+    expect(interaction.reply).not.toHaveBeenCalled();
+  });
+});
+
+describe('df-guards — requireDfBinding', () => {
+  const mockDb: any = { prepare: jest.fn(() => ({ get: jest.fn(), run: jest.fn() })) };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('nên trả về true và reply error khi không có binding và không có legacy token', async () => {
+    (getActiveBinding as jest.Mock).mockReturnValue(undefined);
+    (getDfToken as jest.Mock).mockReturnValue(undefined);
+
+    const interaction: any = {
+      user: { id: 'user-123' },
+      reply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const result = await requireDfBinding(interaction, mockDb);
+    expect(result).toBe(true);
+    expect(interaction.reply).toHaveBeenCalled();
+  });
+
+  it('nên trả về false khi có binding active', async () => {
+    (getActiveBinding as jest.Mock).mockReturnValue({
+      id: 1,
+      openid: 'test',
+      status: 'active',
+    });
+
+    const interaction: any = {
+      user: { id: 'user-123' },
+      reply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const result = await requireDfBinding(interaction, mockDb);
+    expect(result).toBe(false);
+    expect(interaction.reply).not.toHaveBeenCalled();
+  });
+
+  it('nên trả về false khi có legacy token (fallback)', async () => {
+    (getActiveBinding as jest.Mock).mockReturnValue(undefined);
+    (getDfToken as jest.Mock).mockReturnValue({
+      openid: 'legacy',
+      token: 'abc',
+    });
+
+    const interaction: any = {
+      user: { id: 'user-123' },
+      reply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const result = await requireDfBinding(interaction, mockDb);
     expect(result).toBe(false);
     expect(interaction.reply).not.toHaveBeenCalled();
   });

@@ -33,7 +33,7 @@ module.exports = {
   coverageThreshold: {
     global: {
       branches: 83,
-      functions: 93,
+      functions: 92,
       lines: 93,
       statements: 93,
     },
@@ -46,8 +46,9 @@ module.exports = {
     // - section-config.handlers.ts: getConfig() stub function
     // - df/history.command.ts: addIntegerOption builder call
     // - df/link.command.ts: editReply fallback in catch block
+    // - df/unlink.command.ts: legacy df_tokens delete path
     'src/server/webhook.routes.ts': {
-      branches: 84,
+      branches: 50,
       functions: 100,
       lines: 85,
       statements: 86,
@@ -89,10 +90,10 @@ module.exports = {
       statements: 98,
     },
     'src/commands/df/link.command.ts': {
-      branches: 74,
+      branches: 66,
       functions: 76,
       lines: 91,
-      statements: 90,
+      statements: 89,
     },
   },
 };

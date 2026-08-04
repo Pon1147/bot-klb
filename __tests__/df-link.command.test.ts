@@ -250,6 +250,9 @@ describe('df-link.command', () => {
     });
 
     it('nên hiển thị thông báo chưa link khi không có gì để unlink', async () => {
+      const { getDfToken } = require('../src/database/df.token.db.js');
+      (getDfToken as jest.Mock).mockReturnValue(undefined);
+
       const interaction = createMockInteraction({
         options: { getSubcommand: jest.fn(() => 'unlink') },
       });
@@ -322,6 +325,32 @@ describe('df-link.command', () => {
 
       expect(saveDfToken).not.toHaveBeenCalled();
       expect(mockReply).toHaveBeenCalled();
+    });
+
+    it('nên trả về error khi saveDfToken throw', async () => {
+      const mockEditReply = jest.fn().mockResolvedValue(undefined);
+      (saveDfToken as jest.Mock).mockImplementation(() => {
+        throw new Error('DB write failed');
+      });
+
+      const interaction = createMockInteraction({
+        options: {
+          getSubcommand: jest.fn(() => 'manual'),
+          getString: jest.fn((name: string) => {
+            if (name === 'openid') return '123456789';
+            if (name === 'token') return 'abcdef1234567890abcdef1234567890abcdef1234567890';
+            return undefined;
+          }),
+        },
+        editReply: mockEditReply,
+        deferred: true,
+      });
+
+      await execute(interaction, mockDb);
+
+      expect(mockEditReply).toHaveBeenCalled();
+      const editCall = mockEditReply.mock.calls[0][0];
+      expect(editCall.components).toBeDefined();
     });
   });
 });
