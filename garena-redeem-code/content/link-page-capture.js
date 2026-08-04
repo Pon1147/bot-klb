@@ -8,6 +8,8 @@
 (function () {
   'use strict';
 
+  console.log('[DF Toolbox] link-page-capture injected (MAIN world)');
+
   const SOURCE = 'df-link-capture';
   const DF_TOOLS_HOST = 'sg-act.playerinfinite.com';
   const DF_TOOLS_PATH = '/DfTools/';

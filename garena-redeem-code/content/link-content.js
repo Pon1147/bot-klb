@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  console.log('[DF Toolbox] Link content script loaded');
+  console.log('[DF Toolbox] link-content.js loaded (isolated world)');
 
   // ===== STATE =====
   let state = {
