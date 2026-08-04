@@ -32,6 +32,9 @@
     renderPanel();
   });
 
+  // ===== Render panel ngay khi load (trước khi có credential) =====
+  renderPanel();
+
   // ===== B. Inject panel UI =====
   function renderPanel() {
     // Xóa panel cũ nếu có
