@@ -24,7 +24,7 @@
     },
     {
       "matches": ["https://www.playdeltaforce.com/*"],
-      "js": ["content/link-content.js"],
+      "js": ["content/link-page-capture.js", "content/link-content.js"],
       "run_at": "document_idle"
     }
   ],
