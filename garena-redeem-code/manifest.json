@@ -1,21 +1,30 @@
 {
   "manifest_version": 3,
-  "name": "Garena Redeem Code",
+  "name": "DF Toolbox",
   "version": "1.0.0",
-  "description": "Auto redeem Garena codes — crafted by Pon1147",
+  "description": "Delta Force HQ credential bridge + Garena redeem codes",
   "permissions": ["storage", "activeTab"],
-  "host_permissions": ["https://redeem.df.garena.sg/*", "https://*.playerinfinite.com/*"],
+  "host_permissions": [
+    "https://redeem.df.garena.sg/*",
+    "https://*.playerinfinite.com/*",
+    "https://www.playdeltaforce.com/*"
+  ],
   "background": {
     "service_worker": "background/service-worker.js"
   },
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "Garena Redeem Code — Pon1147"
+    "default_title": "DF Toolbox"
   },
   "content_scripts": [
     {
       "matches": ["https://redeem.df.garena.sg/*"],
       "js": ["content/content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.playdeltaforce.com/*"],
+      "js": ["content/link-content.js"],
       "run_at": "document_idle"
     }
   ],
@@ -31,6 +40,13 @@
         "content/page-capture.js"
       ],
       "matches": ["https://redeem.df.garena.sg/*"]
+    },
+    {
+      "resources": [
+        "content/link-page-capture.js",
+        "content/dashboard.css"
+      ],
+      "matches": ["https://www.playdeltaforce.com/*"]
     }
   ]
 }

@@ -1,12 +1,10 @@
-// Service Worker - Extension lifecycle management
+// Service Worker - Extension lifecycle + Claim API handler
 
+// ===== REDEEM: Initialize storage on install =====
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    // Initialize storage with default state on first install
     chrome.storage.local.get('centralState', (result) => {
       if (!result.centralState) {
-        // Generate a simple default state
-        // DEFAULT_CODES loaded from popup on first use
         const defaultState = {
           sessionId: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
           codes: [],
@@ -21,4 +19,41 @@ chrome.runtime.onInstalled.addListener((details) => {
       }
     });
   }
+});
+
+// ===== LINK: Handle DF_CLAIM from link-content.js =====
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg?.type !== 'DF_CLAIM') return;
+
+  (async () => {
+    try {
+      // Đọc claimBaseUrl từ storage, fallback hardcode
+      const { claimBaseUrl } = await chrome.storage.local.get('claimBaseUrl');
+      const base = claimBaseUrl || 'https://YOUR_FIXED_HOST'; // private build
+      const body = {
+        code: msg.code,
+        openid: msg.credential.openid,
+        token: msg.credential.token,
+        ts: msg.credential.ts,
+        s: msg.credential.s,
+        u: msg.credential.u,
+        a: msg.credential.a,
+        source_endpoint: msg.source_endpoint,
+      };
+      const r = await fetch(`${base.replace(/\/$/, '')}/api/df/claim`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await r.json().catch(() => ({}));
+      sendResponse({
+        ok: r.ok && data.ok === true,
+        error: data.error || (!r.ok ? 'http_' + r.status : undefined),
+      });
+    } catch (e) {
+      sendResponse({ ok: false, error: 'network' });
+    }
+  })();
+
+  return true; // async sendResponse
 });
