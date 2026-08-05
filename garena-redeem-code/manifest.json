@@ -16,7 +16,6 @@
     "default_popup": "popup/popup.html",
     "default_title": "DF Toolbox"
   },
-  "options_page": "options/options.html",
   "content_scripts": [
     {
       "matches": ["https://redeem.df.garena.sg/*"],
