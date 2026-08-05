@@ -29,7 +29,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     try {
       // Đọc claimBaseUrl từ storage, fallback hardcode
       const { claimBaseUrl } = await chrome.storage.local.get('claimBaseUrl');
-      const base = claimBaseUrl || 'https://YOUR_FIXED_HOST'; // private build
+      const base = claimBaseUrl || 'https://moves-reproduction-accept-carl.trycloudflare.com'; // private build
       const body = {
         code: msg.code,
         openid: msg.credential.openid,
