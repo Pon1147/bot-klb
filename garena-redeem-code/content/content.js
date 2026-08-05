@@ -15,12 +15,20 @@
   (function injectPageCapture() {
     const script = document.createElement('script');
     script.src = chrome.runtime.getURL('content/page-capture.js');
-    script.onload = () => { script.remove(); };
+    script.onload = () => {
+      script.remove();
+    };
     (document.head || document.documentElement).appendChild(script);
   })();
 
   // ===== CONSTANTS =====
   const DEFAULT_CODES = [
+    'DFSL5029',
+    '30KSUBSYOUTUBEDFESPNP',
+    'wTr3cyxY6QZBRf779Xpa',
+    'eHjNfTxYKV5GAFxMD5MA',
+    '8rjGXBxYBrNS4ennshJP',
+    'Tf7aVcxYfAV97gAHQTP6',
     'DFSL9304',
     'DFSL6257',
     'GARENADFNY2501C158',
@@ -65,6 +73,7 @@
     'DELTAFORCEVN_95S092Y9T9D',
     'DELTAFORCEVN_6AVHJ6MYX6Y',
     'DELTAFORCEVN_540VN2S550U',
+    'DFUTSUPPYPACK',
     'ReturningWarrior3',
     'DFUTSCARH',
     'DFUTWEAPON',
@@ -156,10 +165,15 @@
     'DFOSB4N9RD',
     'DFAXIOM33',
     'DFINSIGHT48',
+    'DFSL502SOL',
+    'SOLMAJORGG9',
+    'DFSIXTOPACE',
+    'MVPSOLDFSIX',
     'ReturningWarrior1',
     'fvzeLrxYajwVviFSTSZ',
     'ReturningWarrior2',
     'N4SQWgxYcHw7gUci3bJy',
+    'A5Z1NDW8K3PJLJ',
     'Top1BXHVN',
     'aCuQjtxY7vXGjxCTBnQU',
     'A5Z1NDW8K3PJLU',
@@ -185,6 +199,8 @@
     'DFSpark119',
     'DFUltra220',
     'JGHMCmxYa6PLcFgvD9mg',
+    'DFUT2025GROUP7752',
+    'DFUT2025GROUP6698',
     'DFMagic057',
     'DFGalaxy250',
     'DFHorizon503',
@@ -344,6 +360,10 @@
     'DFISPACECITYISG',
     'DFISPACECITYMDB',
     'DFISPACECITYECMO',
+    'DFnewversiongift',
+    'DFIWDAY1START',
+    'DFIWDAY1OPOP',
+    'DFIWDAY3WAW',
   ];
 
   const RESPONSE_CODE_MAP = {
@@ -516,7 +536,12 @@
           status: 200,
           time: Date.now(),
         });
-        console.log('[Capture] Received via postMessage:', data.code, 'msg=' + (data.msg || data.message || ''), 'url=' + (url || ''));
+        console.log(
+          '[Capture] Received via postMessage:',
+          data.code,
+          'msg=' + (data.msg || data.message || ''),
+          'url=' + (url || ''),
+        );
       }
     });
   }
@@ -868,7 +893,12 @@
 
     async redeemSingle(code) {
       resetCapture(code);
-      console.log('[Redeem] Starting redeem for code:', code, '_currentCode:', capture._currentCode);
+      console.log(
+        '[Redeem] Starting redeem for code:',
+        code,
+        '_currentCode:',
+        capture._currentCode,
+      );
       const input = findInput();
       const btn = findButton();
       if (!input || !btn)
@@ -919,7 +949,12 @@
             return;
           }
           if (Date.now() - start > timeout) {
-            console.warn('[Redeem] waitForCapturedResponse TIMEOUT after', Date.now() - start, 'ms, responses:', capture.responses.length);
+            console.warn(
+              '[Redeem] waitForCapturedResponse TIMEOUT after',
+              Date.now() - start,
+              'ms, responses:',
+              capture.responses.length,
+            );
             resolve(null);
             return;
           }
@@ -989,7 +1024,9 @@
 
   function clickRedeem(button) {
     // Use dispatchEvent to trigger onclick handler without triggering javascript: href navigation (CSP violation)
-    button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    button.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true, view: window }),
+    );
   }
 
   function initRedeemController() {
