@@ -116,7 +116,7 @@
   // Đợi DOMContentLoaded + 2s để HQ scripts load xong
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(setupInterceptors, 2000);
+      setTimeout(setupInterceptors, 4000);
     });
   } else {
     // Page đã load rồi
