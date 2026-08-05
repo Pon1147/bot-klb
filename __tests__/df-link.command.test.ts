@@ -6,6 +6,14 @@
 
 jest.mock('discord.js', () => ({
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
+  ButtonBuilder: class {
+    constructor() { this._data = {}; }
+    setCustomId(v: string) { this._data.customId = v; return this; }
+    setLabel(v: string) { this._data.label = v; return this; }
+    setStyle(v: any) { this._data.style = v; return this; }
+    toJSON() { return { type: 2, custom_id: this._data.customId, label: this._data.label, style: this._data.style }; }
+  },
+  ButtonStyle: { Primary: 1 },
   SlashCommandBuilder: class {
     setName() { return this; }
     setDescription() { return this; }

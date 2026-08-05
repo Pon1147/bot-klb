@@ -9,6 +9,7 @@ import {
   StringSelectMenuInteraction,
 } from 'discord.js';
 import { createLogger } from '../utils/logger.js';
+import { botConfig } from '../config/bot.config.js';
 import { ContainerIds, ContainerModalPrefix } from '../commands/container/container-ids.js';
 import { TeamFindIds } from '../commands/df/team-find-ids.js';
 import { handleTeamFindButton, handleTeamFindSelect } from '../commands/df/team-find.handlers.js';
@@ -30,6 +31,25 @@ export async function execute(
 ): Promise<void> {
   // ── 1. Button Interactions ──
   if (interaction.isButton()) {
+    // DF Link: reveal webhook URL (ephemeral, auto-delete 5s)
+    if (interaction.customId === 'df-link:reveal-webhook') {
+      if (!botConfig.dfWebhookUrl) {
+        await interaction.reply({
+          content: 'Webhook URL chưa được cấu hình.',
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+      const msg = await interaction.reply({
+        content: `Webhook URL:\n\`${botConfig.dfWebhookUrl}\``,
+        flags: MessageFlags.Ephemeral,
+      });
+      setTimeout(() => {
+        void msg.delete().catch(() => {});
+      }, 5000);
+      return;
+    }
+
     // Container editor buttons
     if (interaction.customId.startsWith(ContainerIds.PREFIX)) {
       try {

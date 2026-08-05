@@ -8,7 +8,13 @@
  * - manual: Fallback tech — user paste openid + token
  */
 
-import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
+import {
+  ButtonBuilder,
+  ButtonStyle,
+  ChatInputCommandInteraction,
+  MessageFlags,
+  SlashCommandBuilder,
+} from 'discord.js';
 import Database from 'better-sqlite3';
 import {
   buildErrorContainer,
@@ -84,15 +90,23 @@ async function handleStart(interaction: ChatInputCommandInteraction): Promise<vo
     return;
   }
 
+  // Build button để reveal webhook URL
+  const revealButton = new ButtonBuilder()
+    .setCustomId('df-link:reveal-webhook')
+    .setLabel('🔓 Mở khóa Webhook URL')
+    .setStyle(ButtonStyle.Primary);
+
   await dmChannel.send({
     content:
       `**Liên kết tài khoản Delta Force**\n\n` +
       `**Mã claim: \`${code}\`** (hết hạn sau 10 phút)\n\n` +
       '1. Truy cập [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html)\n' +
       '2. Đăng nhập tài khoản → chờ trang load xong\n' +
-      '3. Mở extension → tab **Link** → dán mã claim ở trên → bấm **Liên kết Discord**\n' +
-      '4. Chờ DM "Linked OK" từ bot\n\n' +
+      '3. Mở extension → popup → paste Webhook URL → Lưu\n' +
+      '4. Tab **Link** → dán mã claim → bấm **Liên kết Discord**\n' +
+      '5. Chờ DM "Linked OK" từ bot\n\n' +
       '> ⚠️ Nếu chưa cài extension: mở Chrome → `chrome://extensions` → Developer mode → Load unpacked → chọn folder `garena-redeem-code`',
+    components: [revealButton.toJSON()],
   });
 
   await interaction.reply({
