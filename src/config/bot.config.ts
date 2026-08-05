@@ -31,5 +31,5 @@ export const botConfig = {
   // Discord Webhook handoff config
   dfWebhookSecret: process.env.DF_WEBHOOK_SECRET || '',
   dfLinkChannelId: process.env.DF_LINK_CHANNEL_ID || '',
-  dfWebhookUrl: process.env.DF_WEBHOOK_URL || '',
+  dfWebhookUrl: process.env.DF_CLAIM_WEBHOOK_URL || '',
 };

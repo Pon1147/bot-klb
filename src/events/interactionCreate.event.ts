@@ -32,7 +32,7 @@ export async function execute(
   // ── 1. Button Interactions ──
   if (interaction.isButton()) {
     // DF Link: reveal webhook URL (ephemeral, auto-delete 5s)
-    if (interaction.customId === 'df-link:reveal-webhook') {
+    if (interaction.customId === 'df_link_show_webhook') {
       if (!botConfig.dfWebhookUrl) {
         await interaction.reply({
           content: 'Webhook URL chưa được cấu hình.',
@@ -40,27 +40,24 @@ export async function execute(
         });
         return;
       }
-      const msg = await interaction.reply({
-        content: `Webhook URL (copy nhanh — tự xóa sau 5s):\n\`${botConfig.dfWebhookUrl}\``,
+      await interaction.reply({
+        content: [
+          '**Webhook URL** (copy ngay — tự xóa sau 5 giây):',
+          '```',
+          botConfig.dfWebhookUrl,
+          '```',
+        ].join('\n'),
         flags: MessageFlags.Ephemeral,
       });
-      setTimeout(() => {
-        void msg.delete().catch(() => {});
-      }, 5000);
 
-      // Gửi DM hướng dẫn paste URL vào extension
-      const user = await interaction.client.users.fetch(interaction.user.id);
-      const dm = await user.createDM().catch(() => null);
-      if (dm) {
-        void dm.send({
-          content:
-            `**Hướng dẫn setup extension:**\n\n` +
-            `1. Click icon extension (trên thanh trình duyệt)\n` +
-            `2. Paste Webhook URL vào ô **"🔗 Webhook URL"**\n` +
-            `3. Click **"💾 Lưu Webhook URL"**\n` +
-            `4. Quay lại tab Link → paste mã claim → Liên kết`,
-        });
-      }
+      // Tự xóa sau 5 giây
+      setTimeout(async () => {
+        try {
+          await interaction.deleteReply();
+        } catch {
+          // message đã bị xóa hoặc hết hạn
+        }
+      }, 5000);
       return;
     }
 

@@ -82,9 +82,9 @@ async function handleStart(interaction: ChatInputCommandInteraction): Promise<vo
 
   // Build button để reveal webhook URL (ephemeral, 5s auto-delete)
   const revealButton = new ButtonBuilder()
-    .setCustomId('df-link:reveal-webhook')
-    .setLabel('🔓 Mở khóa Webhook URL')
-    .setStyle(ButtonStyle.Primary);
+    .setCustomId('df_link_show_webhook')
+    .setLabel('🔓 Hiện Webhook URL')
+    .setStyle(ButtonStyle.Secondary);
 
   await interaction.reply({
     content:
