@@ -1,8 +1,10 @@
 # DF Link — Hướng dẫn kiến trúc & triển khai
 
-> **Mục đích tài liệu:** mô tả đầy đủ công nghệ, logic, luồng, triển khai từng bước nhỏ, và test case cho hệ thống **link tài khoản Delta Force HQ → Discord bot** (private bot, không thương mại).  
-> **Phiên bản kiến trúc:** chốt theo thảo luận 2026-08.  
-> **Đối tượng:** developer triển khai bot + extension.
+> **Mục đích tài liệu:** đặc tả công nghệ, logic, luồng, triển khai micro-step, và test case cho hệ thống **link tài khoản Delta Force HQ → Discord bot** (private bot, không thương mại).  
+> **Phiên bản:** 2026-08-04 (thêm mục tích hợp Extension chi tiết).  
+> **Đối tượng:** developer / LLM code agent.  
+> **Thuật ngữ bắt buộc:** **DfTools credential** (openid + token + metadata quan sát được). **Không** gọi "access token" / "OAuth token" cho đến khi Phase 1 (lifecycle) có số liệu.  
+> **Nguyên tắc chống hallucination:** phân biệt **observation** (đã thấy trên wire) với **assumption** (chưa test). Cập nhật thuật ngữ / công thức `s` / TTL chỉ sau Phase 1.
 
 ---
 
@@ -10,27 +12,46 @@
 
 ### 0.1 Mục tiêu sản phẩm
 
-| Mục tiêu           | Mô tả                                                      |
-| ------------------ | ---------------------------------------------------------- |
-| Non-tech UX        | User **không** mở F12 / paste console                      |
-| Multi-máy          | User mạng khác dev vẫn link được                           |
-| Credential an toàn | Token HQ **không** lưu plaintext; **không** log full token |
-| Tách lớp           | Capture ≠ Claim ≠ API client                               |
-| Private use        | Server/guild riêng; không thiết kế marketplace             |
+| Mục tiêu                               | Mô tả                                                                       |
+| -------------------------------------- | --------------------------------------------------------------------------- |
+| Non-tech UX                            | User **không** mở F12 / paste console                                       |
+| Multi-máy                              | User mạng khác máy dev vẫn link được                                        |
+| Dùng bot hằng ngày **không** cần mở HQ | HQ chỉ lúc **link / re-link** (khi credential không còn dùng được)          |
+| Credential an toàn                     | Không plaintext at rest; không log full credential; không trả lại sau claim |
+| Tách lớp                               | Capture ≠ Claim ≠ DfTools client                                            |
+| Private use                            | Server/guild riêng                                                          |
 
 ### 0.2 Không phải mục tiêu
 
-- OAuth chính thức từ Garena/Tencent cho third-party bot (không có).
-- Biến Discord Incoming Webhook thành nơi nhận token production.
-- Dùng bcrypt để “mã hóa” token còn cần gọi API lại.
-- Giả định token HQ là access token vĩnh viễn trước khi có test lifecycle.
+- OAuth chính thức Garena/Tencent cho third-party bot.
+- Discord Incoming Webhook làm ingestion credential production.
+- bcrypt cho credential còn cần dùng lại khi gọi API.
+- Giả định credential sống vĩnh viễn trước Phase 1.
+- User mở HQ mỗi lần dùng lệnh bot.
 
 ### 0.3 Nguyên tắc cốt lõi
 
-1. Credential chỉ xuất hiện trong **browser session HQ** → phải có **client-side capture**.
-2. Discord chỉ **nhận diện user** (claim code), không phải nơi auth HQ.
-3. **HTTPS endpoint cố định** là điều kiện multi-máy; encryption không thay thế endpoint.
-4. Mỗi DfTools endpoint có thể dùng **bộ param khác nhau** (đã chứng minh bằng log).
+1. Credential chỉ có trong **browser session HQ** → cần **client-side capture** lúc bind.
+2. **Extension = client-side bridge**, không phải authentication provider / IdP.
+3. Discord chỉ **nhận diện user** (claim code), không auth HQ.
+4. **HTTPS endpoint cố định** = điều kiện multi-máy; encryption **không** thay endpoint.
+5. Mỗi DfTools endpoint có thể dùng **bộ param khác nhau** (observation từ log).
+6. Agent **không** nhảy Phase 5 (implement client đầy đủ) trước Phase 1 Research.
+7. **Credential reusable** ≠ **Request reusable** (xem R4/R5).
+
+### 0.4 Mental model
+
+```text
+User đã login HQ
+      ↓
+Browser session + DfTools requests
+      ↓
+Extension quan sát request (MAIN world)
+      ↓
+Bridge vào hệ thống private (Claim API)
+      ↓
+Bot decrypt khi cần → DfToolsClient → data trên Discord
+```
 
 ---
 
@@ -38,622 +59,710 @@
 
 ### 1.1 Bot (server)
 
-| Thành phần    | Gợi ý                                           | Ghi chú                                            |
-| ------------- | ----------------------------------------------- | -------------------------------------------------- |
-| Runtime       | Node.js 20+                                     | Khớp Discord.js bot hiện tại                       |
-| Bot framework | discord.js v14                                  | Slash `/df-link`                                   |
-| HTTP          | Express / Fastify / `http` gắn cùng process bot | Route `POST /api/df/claim`                         |
-| DB            | better-sqlite3 (hiện có) hoặc Postgres          | Private bot: SQLite đủ                             |
-| Crypto        | `node:crypto` AES-256-GCM                       | Built-in, không thêm dep bắt buộc                  |
-| Config        | `.env`                                          | `DF_CRED_KEY_V1`, `CLAIM_TTL_SEC`, public base URL |
+| Thành phần | Gợi ý                      | Ghi chú                                              |
+| ---------- | -------------------------- | ---------------------------------------------------- |
+| Runtime    | Node.js 20+                |                                                      |
+| Bot        | discord.js v14             | `/df-link`                                           |
+| HTTP       | Express / Fastify / `http` | `POST /api/df/claim`                                 |
+| DB         | better-sqlite3 / Postgres  |                                                      |
+| Crypto     | `node:crypto` AES-256-GCM  |                                                      |
+| Config     | `.env`                     | `DF_CRED_KEY_V1`, `CLAIM_TTL_SEC`, `PUBLIC_BASE_URL` |
 
-### 1.2 Extension (client bridge)
+### 1.2 Extension (bridge)
 
-| Thành phần | Gợi ý                                                        | Ghi chú                                            |
-| ---------- | ------------------------------------------------------------ | -------------------------------------------------- |
-| Manifest   | MV3                                                          | Content script + service worker                    |
-| UI         | Floating panel (tab **Redeem \| Link**)                      | Pattern giống extension redeem sẵn có              |
-| Capture    | Script inject **MAIN world**                                 | Hook `fetch` / `XHR` + optional `performance` scan |
-| Network    | Background `fetch` → Claim API                               | Tránh CORS/`no-cors` từ page context               |
-| Host match | `https://www.playdeltaforce.com/*` (và subdomain HQ thực tế) | Chỉ quyền tối thiểu                                |
+| Thành phần             | Vai trò                                |
+| ---------------------- | -------------------------------------- |
+| MAIN `page-capture.js` | Chỉ quan sát / extract metadata        |
+| Isolated content       | UI, validate message, nhận claim code  |
+| Service Worker         | **Duy nhất** được POST Claim API (TLS) |
+| Panel                  | Tab Redeem \| Link                     |
 
-### 1.3 Infra bắt buộc (multi-máy)
+### 1.3 Infra multi-máy
 
-| Option                       | Khi nào dùng                                               |
-| ---------------------------- | ---------------------------------------------------------- |
-| Cloudflare **Named Tunnel**  | Bot chạy máy nhà, cần URL HTTPS cố định                    |
-| VPS / Railway / Render / Fly | Bot 24/7, production hơn                                   |
-| **Không** dùng               | `localhost`, `trycloudflare` quick tunnel (URL đổi / chết) |
+- **Dùng:** Named Tunnel / VPS / PaaS — HTTPS cố định.
+- **Không:** localhost, quick tunnel đổi URL, Discord webhook ingestion.
 
-### 1.4 Không dùng cho production token path
+### 1.4 Prototype
 
-- Discord Incoming Webhook làm ingestion credential.
-- `mode: 'no-cors'` POST từ page (không đọc response, opaque).
-- Console userscript là **prototype research only**.
+Console userscript = research only. Không `no-cors` production.
 
 ---
 
 ## 2. Kiến trúc 3 lớp
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│  LAYER 1 — Extension (DF Toolbox)                           │
-│  Trách nhiệm: HQ session → capture credential → POST claim  │
-│  Không: lưu token dài hạn, không business logic Discord     │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ HTTPS POST /api/df/claim
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│  LAYER 2 — Claim API (security boundary)                    │
-│  Trách nhiệm: validate code → map Discord user → encrypt    │
-│               → persist AccountBinding → notify bot/DM      │
-│  Không: gọi DfTools business API                            │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ encrypted store
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│  LAYER 3 — DfTools Client                                   │
-│  Trách nhiệm: load binding → decrypt → request theo profile │
-│  Không: biết credential lấy từ extension hay manual         │
-└─────────────────────────────────────────────────────────────┘
+LAYER 1 Extension     capture → handoff → SW → Claim API
+LAYER 2 Claim API     SECURITY BOUNDARY — không gọi business DfTools
+LAYER 3 DfToolsClient decrypt → profile → API — không biết nguồn credential
 ```
 
-### 2.1 Sơ đồ end-to-end (happy path)
+### 2.1 Phân quyền Extension
 
 ```text
-User                Discord Bot           Extension              Claim API            DB
- │                      │                     │                      │                 │
- │  /df-link            │                     │                      │                 │
- │─────────────────────>│                     │                      │                 │
- │                      │ create claim_code   │                      │                 │
- │                      │ (TTL, one-time)     │                      │                 │
- │  code + "Mở HQ"      │                     │                      │                 │
- │<─────────────────────│                     │                      │                 │
- │                      │                     │                      │                 │
- │  mở HQ (đã login)    │                     │                      │                 │
- │──────────────────────────────────────────>│                      │                 │
- │                      │                     │ panel: dán code      │                 │
- │                      │                     │ hook DfTools         │                 │
- │                      │                     │ openid+token+…       │                 │
- │                      │                     │ POST claim           │                 │
- │                      │                     │─────────────────────>│                 │
- │                      │                     │                      │ validate code   │
- │                      │                     │                      │ encrypt token   │
- │                      │                     │                      │───────────────>│
- │                      │                     │                      │ store binding   │
- │                      │  event / internal   │                      │                 │
- │                      │<────────────────────│──────────────────────│                 │
- │  DM "Linked OK"      │                     │                      │                 │
- │<─────────────────────│                     │                      │                 │
+MAIN world
+   │ capture only — KHÔNG POST claim
+   ▼ postMessage
+Isolated content
+   │ UI + validate shape
+   ▼ runtime.sendMessage
+Service Worker
+   │ HTTPS POST claim
+   ▼
+Claim API
+```
+
+### 2.2 Injection / test
+
+`DfToolsClient` **không** phụ thuộc extension. Có thể:
+
+```text
+Fixture credential → DB / in-memory binding → DfToolsClient → API
+```
+
+để test Layer 3 không chạy browser.
+
+### 2.3 Sequence (tóm tắt)
+
+```text
+/df-link → claim_code → mở HQ → extension capture candidate
+  → SW POST claim → atomic consume + encrypt + persist
+  → DM Linked OK
+
+Hằng ngày: lệnh Discord → decrypt → DfToolsClient → data
+  (không mở HQ trừ khi re-link)
 ```
 
 ---
 
 ## 3. Mô hình dữ liệu
 
-### 3.1 Claim session (ephemeral)
+### 3.1 Claim session (ephemeral, security-critical)
 
-Lưu memory `Map` hoặc Redis/SQLite bảng tạm — **TTL ngắn** (ví dụ 10–15 phút).
+| Field             | Luật                                 |
+| ----------------- | ------------------------------------ |
+| `code`            | Random, entropy đủ                   |
+| `discord_user_id` | Bound user                           |
+| `expires_at`      | Short-lived (ví dụ 10–15 phút)       |
+| `status`          | `pending` \| `consumed` \| `expired` |
 
-| Field             | Kiểu       | Mô tả                                          |
-| ----------------- | ---------- | ---------------------------------------------- |
-| `code`            | string     | Random, đủ entropy (ví dụ 8–12 ký tự alphabet) |
-| `discord_user_id` | snowflake  | User gọi `/df-link`                            |
-| `guild_id`        | snowflake? | Optional                                       |
-| `created_at`      | number     | Unix ms                                        |
-| `expires_at`      | number     | `created_at + TTL`                             |
-| `consumed_at`     | number?    | null until used                                |
-| `status`          | enum       | `pending` \| `consumed` \| `expired`           |
+**Bắt buộc:** random + short-lived + **one-time** + bound Discord user.  
+**Consume phải atomic** (transaction): không để 2 request cùng pass validate rồi cả hai ghi binding.
 
-**Luật:**
-
-- Một code chỉ consume **một lần**.
-- Hết `expires_at` → reject.
-- Optional: một user chỉ có 1 code `pending` (tạo mới → invalidate code cũ).
-
-### 3.2 AccountBinding (persistent)
-
-**Không** thiết kế chỉ `user_id + token + openid`.
+### 3.2 AccountBinding (production persistent)
 
 ```text
 df_account_bindings
-├── id                    INTEGER PK
-├── discord_user_id       TEXT NOT NULL
-├── provider              TEXT NOT NULL DEFAULT 'garena'
-├── platform              TEXT NOT NULL DEFAULT 'df_hq'
-├── openid                TEXT NOT NULL          -- identifier, plaintext OK
-├── cred_nonce            BLOB NOT NULL          -- 12 bytes
-├── cred_ciphertext       BLOB NOT NULL
-├── cred_tag              BLOB NOT NULL          -- 16 bytes GCM tag
-├── key_version           INTEGER NOT NULL DEFAULT 1
-├── status                TEXT NOT NULL DEFAULT 'active'
-│                           -- active | expired | revoked
-├── source_endpoint       TEXT                   -- endpoint bắt được lúc capture
-├── captured_at           TEXT / INTEGER
-├── last_ok_at            TEXT / INTEGER NULL
-├── last_error            TEXT NULL
-├── created_at            TEXT / INTEGER
-├── updated_at            TEXT / INTEGER
-└── UNIQUE(discord_user_id, provider, platform)  -- hoặc cho multi-account sau
+├── id
+├── discord_user_id
+├── provider              -- 'garena'
+├── platform              -- 'df_hq'
+├── openid                -- identifier (không phải auth secret; vẫn hạn chế log)
+├── cred_nonce            -- 12 bytes
+├── cred_ciphertext
+├── cred_tag              -- 16 bytes
+├── key_version
+├── status                -- active | expired | revoked
+├── captured_at
+├── last_ok_at
+├── last_error
+├── created_at
+└── updated_at
 ```
 
-### 3.3 Payload credential (plaintext trước encrypt)
+**Không** bắt buộc field production `source_endpoint` trên bảng này.
 
-JSON một blob (khuyến nghị):
-
-```json
-{
-  "token": "df554b9977ffede320577abb1092abb958306ba3",
-  "u": "e215f791-bc6c-4374-bd95-7a13b3148938",
-  "a": "10005",
-  "ts": "1785732778",
-  "s": "72231ef8fae98d223ff9382140ae350f",
-  "game_id": "30150",
-  "channel": "10",
-  "account_type": "1",
-  "lang_type": "vi"
-}
-```
-
-Chỉ field nào **thật sự bắt được** mới ghi; thiếu thì omit.
-
-### 3.4 Endpoint profile (DfToolsClient)
-
-Không hardcode “mọi call = openid + token”.
+### 3.3 Telemetry research (tách, optional)
 
 ```text
-profiles:
-  GetManufactureRecommendationList:
-    auth: openid_token
-    extra: [game_id, channel, account_type, lang_type]
-    signing: ts_s_optional   # TBD sau research
-
-  GetPrivateRoomKey:
-    auth: session_u_a
-    signing: ts_s
-
-  GetMyData:   # ví dụ — chỉnh theo API bot thật dùng
-    auth: openid_token
-    ...
+credential_capture_events   -- không lưu full credential
+├── id
+├── discord_user_id?
+├── endpoint                -- tên endpoint quan sát
+├── captured_at
+├── credential_fingerprint  -- hash ngắn / len — không phải secret
+└── notes
 ```
 
-Client API bề mặt:
+AccountBinding ≠ research log.
+
+### 3.4 DfTools credential — model tạm (research fixture)
+
+Observation có thể có: `token`, `openid`, `u`, `a`, `ts`, `s`, `game_id`, …
+
+**Chưa commit model persistent cuối cùng trước R4/R5.**
+
+Hướng phân tách **dự kiến** (chỉ sau Phase 1 xác nhận):
+
+```text
+Persistent credential (ứng viên)
+├── openid
+└── token
+    (+ field nào chứng minh reusable dài hạn)
+
+Request context (per call, có thể generate lại)
+├── ts
+├── s          -- có thể là signature theo request
+├── u, a
+└── endpoint-specific params
+```
+
+Nếu `s = f(token, ts, params)` → **không** lưu `s` như secret lâu dài; client regenerate.
+
+JSON research / encrypt blob trước R5 có thể chứa full quan sát được; schema production thắt lại sau số liệu.
+
+### 3.5 Endpoint profiles (Layer 3)
+
+```text
+Observation:
+  GetManufactureRecommendationList → openid + token + …
+  GetPrivateRoomKey              → u + a + ts + s
+```
 
 ```ts
-DfToolsClient.request(discordUserId, endpointKey, extraParams?)
-// load binding → decrypt → build query theo profile → fetch → update last_ok_at
+DfToolsClient.request(discordUserId, endpointKey, extra?)
+// Không: call_df_api(singleToken)
 ```
+
+### 3.6 openid
+
+- Coi là **identifier**, không phải authentication secret.
+- Lưu plaintext để index được chấp nhận.
+- **Vẫn không log** nếu không cần (tránh "plaintext OK → log thoải mái").
 
 ---
 
-## 4. Mã hóa (AES-256-GCM)
+## 4. Mã hóa at rest (AES-256-GCM)
 
-### 4.1 Tại sao không bcrypt
+|       |                                                     |
+| ----- | --------------------------------------------------- |
+| Algo  | `aes-256-gcm`                                       |
+| Key   | 32 bytes, `DF_CRED_KEY_V1`, ngoài DB, `key_version` |
+| Nonce | 12 bytes random mỗi lần encrypt                     |
+| Tag   | 16 bytes                                            |
+| AAD   | `garena\|df_hq\|{discord_user_id}\|{openid}`        |
 
-| Thuật toán      | Tính chất             | Dùng khi                                |
-| --------------- | --------------------- | --------------------------------------- |
-| bcrypt / argon2 | One-way hash          | Password chỉ **verify**                 |
-| AES-256-GCM     | Reversible + auth tag | Server **cần plaintext lại** để gọi API |
+**Không bcrypt** cho credential cần decrypt.
 
-Token HQ → bot phải gửi lại DfTools → **bắt buộc reversible encryption**.
-
-### 4.2 Tham số
-
-| Tham số    | Giá trị                                                |
-| ---------- | ------------------------------------------------------ |
-| Algorithm  | `aes-256-gcm`                                          |
-| Key        | 32 bytes, Base64 trong env `DF_CRED_KEY_V1`            |
-| Nonce / IV | 12 bytes, `crypto.randomBytes(12)` **mỗi lần encrypt** |
-| Auth tag   | 16 bytes                                               |
-| AAD        | `garena\|df_hq\|{discord_user_id}\|{openid}`           |
-
-### 4.3 Micro-steps encrypt
-
-1. Validate claim thành công, có `openid` + `token`.
-2. `plaintext = JSON.stringify(credentialObject)`.
-3. `aad = \`garena|df_hq|${discordUserId}|${openid}\``.
-4. `nonce = randomBytes(12)`.
-5. `createCipheriv('aes-256-gcm', key, nonce)`.
-6. `setAAD(Buffer.from(aad, 'utf8'))`.
-7. `ciphertext = update + final`.
-8. `tag = getAuthTag()`.
-9. Ghi DB: `nonce`, `ciphertext`, `tag`, `key_version`, `openid`, …
-10. **Xóa** biến plaintext khỏi scope; không `console.log(token)`.
-
-### 4.4 Micro-steps decrypt
-
-1. Load row `status = active` theo `discord_user_id`.
-2. Lấy key theo `key_version`.
-3. Rebuild **đúng** AAD như lúc encrypt.
-4. `createDecipheriv` → `setAAD` → `setAuthTag` → `update + final`.
-5. `JSON.parse` → dùng cho **một** request.
-6. Không ghi plaintext ra log / Discord.
-
-### 4.5 Sinh key (một lần trên máy deploy)
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-```
-
-`.env`:
-
-```env
-DF_CRED_KEY_V1=<base64 32-byte key>
-CLAIM_TTL_SEC=900
-PUBLIC_BASE_URL=https://your-fixed-hostname.example
-```
-
-### 4.6 Key rotation (sau này)
-
-1. Thêm `DF_CRED_KEY_V2`.
-2. Encrypt binding mới bằng `key_version = 2`.
-3. Decrypt đọc theo `key_version` trên row.
-4. Optional job: re-encrypt toàn bộ V1 → V2, rồi retire V1.
+Encrypt chỉ trong Claim API sau validate; decrypt chỉ trong DfToolsClient; never log plaintext; never return credential trong HTTP response.
 
 ---
 
-## 5. Claim API
-
-### 5.1 Endpoint
+## 5. Claim API (security boundary)
 
 ```http
 POST {PUBLIC_BASE_URL}/api/df/claim
 Content-Type: application/json
 ```
 
-**Request body:**
+### 5.1 Requirements
+
+```text
+claim_code: random | short-lived | one-time | bound Discord user
+transport: TLS only
+body: Content-Type validation, max body size, timeout
+rate limit: IP + code attempts + create-claim spam
+consume: ATOMIC với persist (không async gap double-consume)
+at rest: encrypt immediately
+response: never credential
+logs: never full token / s
+```
+
+### 5.2 Atomic consume (explicit)
+
+```text
+BEGIN
+  SELECT claim WHERE code=? AND status='pending' AND expires_at>now
+    -- lock / immediate transaction
+  UPDATE claim SET status='consumed'
+  INSERT/UPDATE binding (encrypted)
+COMMIT
+```
+
+Hai POST song song cùng code → chỉ một thành công.
+
+### 5.3 Response
+
+| HTTP    | Body             |
+| ------- | ---------------- |
+| 200     | `{ "ok": true }` |
+| 400     | `invalid_body`   |
+| 401     | `invalid_code`   |
+| 413/400 | body quá lớn     |
+| 429     | rate limited     |
+| 500     | `server_error`   |
+
+### 5.4 Binding ACTIVE vs capture candidate
+
+```text
+MVP capture (extension):
+  credential CANDIDATE đầu tiên có openid + token
+  (chưa gọi là "credential hợp lệ production")
+
+MVP binding ACTIVE:
+  chỉ sau khi server-side validation thành công
+  với ÍT NHẤT một endpoint đã xác định trong Phase 1
+```
+
+Không đánh dấu "hợp lệ mãi" chỉ vì parse được query string.
+
+---
+
+## 6. Discord `/df-link`
+
+| Lệnh     | Việc                             |
+| -------- | -------------------------------- |
+| `start`  | Claim code + hướng dẫn + mở HQ   |
+| `status` | Mask identifier, status, last_ok |
+| `unlink` | revoked                          |
+| `manual` | Optional tech fallback           |
+
+Hằng ngày: lệnh data **không** mở HQ; hết hạn → bảo re-link.
+
+---
+
+## 7. Extension — tổng quan
+
+- MAIN: capture **candidate** only (không POST claim).
+- Isolated content: UI tab Link + bridge message.
+- SW: **duy nhất** POST Claim API.
+- Không hardcode localhost webhook; dùng `PUBLIC_BASE_URL` (options / storage).
+- Không log token preview production.
+- Chi tiết tích hợp vào extension redeem hiện có → **§14**.
+
+---
+
+## 8. Multi-máy
+
+`PUBLIC_BASE_URL` HTTPS cố định. Encryption không sửa lỗi khác mạng.
+
+---
+
+## 9. Phase order (khóa agent)
+
+```text
+Phase 1 — Research          ← bắt buộc trước client đầy đủ
+Phase 2 — Architecture
+Phase 3 — Security
+Phase 4 — UX
+Phase 5 — Implementation
+```
+
+**Song song được:** skeleton Claim API + public URL (test handoff).  
+**Cấm:** hardcode "token = access_token", hardcode mọi endpoint một auth shape, ship TTL vĩnh viễn trước số liệu.
+
+### Phase 1 — Năm câu hỏi bắt buộc
+
+| ID     | Câu hỏi                                                                    | Ý nghĩa                                 |
+| ------ | -------------------------------------------------------------------------- | --------------------------------------- |
+| **R1** | Credential có **reuse ngoài browser** không?                               | Bot server-side có sống được không      |
+| **R2** | Dùng được **endpoint khác** endpoint đã capture không?                     | Scope                                   |
+| **R3** | **Expire** sau bao lâu? (T+10m / 1h / 24h)                                 | Tần suất re-link                        |
+| **R4** | Request nào **replay nguyên vẹn** (cùng URL/param) được?                   | Request reusable vs credential reusable |
+| **R5** | `ts` / `s` / `u` / `a` là **static credential** hay **request-generated**? | Có lưu DB / có phải sign lại mỗi call   |
+
+Sau Phase 1 mới khóa:
+
+```text
+Final persistent credential model
+Request signing strategy (nếu có)
+TTL / status=expired policy
+Thuật ngữ có được nâng lên tương đương session token hay không
+```
+
+---
+
+## 10. Roadmap gắn phase
+
+1. **Phase 1:** trả lời R1–R5 bằng test có kiểm soát (fixture + HTTP client).
+2. **Phase 2–3:** AccountBinding (không nhét research log), encrypt, claim atomic, rate limit, body limits.
+3. **Phase 4:** `/df-link`, panel, DM.
+4. **Phase 5:** Extension port + DfToolsClient theo profile đã chứng minh; ACTIVE sau validation call.
+
+---
+
+## 11. Test cases
+
+### Research (R1–R5)
+
+| ID  | Case                                                           | Ghi nhận                  |
+| --- | -------------------------------------------------------------- | ------------------------- |
+| R1  | Gọi lại API ngoài browser với openid+token (+ param cần thiết) | reusable?                 |
+| R2  | Endpoint khác profile                                          | scope                     |
+| R3  | T+10m, 1h, 24h                                                 | expiry                    |
+| R4  | Replay nguyên URL/param đã capture                             | request reusable?         |
+| R5  | Đổi ts giữ s; đổi param; cùng token request mới                | s/ts static hay generated |
+
+### Claim & crypto
+
+| ID  | Case                            | Expected                                |
+| --- | ------------------------------- | --------------------------------------- |
+| C01 | Happy path                      | 200, encrypted DB, no token in response |
+| C02 | Invalid / expired / double code | 401; atomic: chỉ 1 consume              |
+| C03 | Body thiếu / quá lớn            | 400/413                                 |
+| C04 | Parallel double POST same code  | đúng 1 binding                          |
+| C05 | AAD mismatch / tamper           | decrypt fail                            |
+| C06 | No full credential in logs      | pass                                    |
+
+### Network / extension / product
+
+| ID  | Expected                                      |
+| --- | --------------------------------------------- |
+| N02 | PUBLIC_BASE_URL từ mạng ngoài trả lời         |
+| E02 | MAIN không gọi claim URL                      |
+| E03 | Link non-tech không F12                       |
+| P01 | Sau bind ACTIVE, lệnh bot **không** bắt mở HQ |
+| P02 | Hết hạn → re-link rõ ràng                     |
+
+---
+
+## 12. Quyết định chốt
+
+| Chủ đề        | Quyết định                                          |
+| ------------- | --------------------------------------------------- |
+| Tên           | **DfTools credential** đến hết Phase 1              |
+| Extension     | Bridge; MAIN không POST                             |
+| Claim         | Atomic one-time TTL bound user + TLS + limits       |
+| DB production | AccountBinding **không** bắt buộc `source_endpoint` |
+| Research log  | Event tách, không full secret                       |
+| openid        | Identifier, hạn chế log                             |
+| `ts`/`s`      | Không commit persistent cho đến R5                  |
+| Capture MVP   | **Candidate** openid+token                          |
+| ACTIVE        | Sau validation server-side (≥1 endpoint đã biết)    |
+| Multi-máy     | HTTPS cố định                                       |
+| bcrypt        | Không                                               |
+| Agent         | Không Phase 5 client đầy đủ trước R1–R5             |
+
+---
+
+## 13. Checklist
+
+```text
+[ ] R1–R5 có ghi chú kết quả
+[ ] Final credential model (sau R5) đã cập nhật section 3.4
+[ ] DF_CRED_KEY_V1
+[ ] PUBLIC_BASE_URL https cố định
+[ ] Claim atomic + rate limit + max body
+[ ] AccountBinding không nhầm research log
+[ ] Extension MAIN → SW only
+[ ] Không log full credential
+[ ] P01: dùng bot không mở HQ liên tục
+```
+
+---
+
+## 14. Tích hợp vào Extension (Garena Redeem → DF Toolbox)
+
+Tài liệu này map **1:1** lên repo extension redeem hiện có (`garena-redeem-code`), không viết extension từ zero nếu không cần.
+
+### 14.1 Hiện trạng extension redeem (baseline)
+
+```text
+garena-redeem-code/
+├── manifest.json
+├── background/service-worker.js     # onInstalled + storage init
+├── content/
+│   ├── content.js                   # dashboard UI + RedeemController (~1000 dòng)
+│   ├── page-capture.js              # MAIN world: hook XHR/fetch redeem API
+│   └── dashboard.css
+├── popup/                           # quản lý danh sách code
+└── assets/
+```
+
+**Pattern đã có (tái sử dụng):**
+
+| Pattern redeem                      | Dùng cho Link                                |
+| ----------------------------------- | -------------------------------------------- |
+| `page-capture.js` inject MAIN world | Hook DfTools thay vì RedeemCDKey             |
+| `postMessage({ source, data })`     | Gửi credential candidate lên content         |
+| Floating dashboard + CSS            | Thêm tab bar Redeem \| Link                  |
+| `chrome.storage.local`              | Lưu `claimBaseUrl` (không lưu token lâu)     |
+| Service worker                      | Thêm listener `DF_CLAIM` → `fetch` Claim API |
+
+**Khác biệt quan trọng:**
+
+| Redeem                        | Link                                         |
+| ----------------------------- | -------------------------------------------- |
+| Host: `redeem.df.garena.sg`   | Host: `playdeltaforce.com` (HQ)              |
+| Bắt **response** JSON redeem  | Bắt **request URL query** (openid, token, …) |
+| Logic xử lý hết trong content | Credential **chỉ** SW POST đi server         |
+| Không cần Discord claim code  | Cần ô nhập claim code từ `/df-link`          |
+
+### 14.2 Target structure (sau gộp)
+
+```text
+df-toolbox/   (đổi name extension)
+├── manifest.json
+├── background/
+│   └── service-worker.js
+├── content/
+│   ├── bootstrap.js              # (optional) route theo hostname
+│   ├── shell/
+│   │   ├── panel.css             # dashboard.css mở rộng tab bar
+│   │   └── panel-shell.js        # inject shell + 2 tab
+│   ├── redeem/
+│   │   ├── content.js            # logic redeem cũ (đổi path import)
+│   │   └── page-capture.js       # capture redeem (như cũ)
+│   └── link/
+│       ├── panel.js              # UI tab Link
+│       ├── bridge.js             # listen postMessage + sendMessage SW
+│       └── page-capture.js       # MAIN: hook DfTools
+├── popup/
+└── assets/
+```
+
+**Cách gộp tối thiểu (ít đụng file hơn):** giữ `content/content.js` một file, thêm tab UI + module link; thêm `content/link-page-capture.js`; mở rộng SW. Chấp nhận được cho private MVP.
+
+### 14.3 manifest.json — micro-steps
+
+1. Đổi `name` → ví dụ `DF Toolbox` / `Garena DF Tools`.
+2. Thêm `host_permissions`:
+   - Giữ: `https://redeem.df.garena.sg/*`, `https://*.playerinfinite.com/*`
+   - Thêm: `https://www.playdeltaforce.com/*` (và host HQ thật nếu khác)
+   - Thêm: origin của `PUBLIC_BASE_URL` (Claim API), ví dụ `https://df-bot.example.com/*`
+3. `content_scripts`: **hai entry** (hoặc một entry multi-match + bootstrap):
 
 ```json
-{
-  "code": "AB12CD34",
-  "openid": "7882496458699115941",
-  "token": "df554b9977ffede320577abb1092abb958306ba3",
-  "ts": "1785732778",
-  "s": "72231ef8fae98d223ff9382140ae350f",
-  "u": "e215f791-bc6c-4374-bd95-7a13b3148938",
-  "a": "10005",
-  "game_id": "30150",
-  "channel": "10",
-  "account_type": "1",
-  "lang_type": "vi",
-  "source_endpoint": "GetManufactureRecommendationList"
+"content_scripts": [
+  {
+    "matches": ["https://redeem.df.garena.sg/*"],
+    "js": ["content/content.js"],
+    "run_at": "document_idle"
+  },
+  {
+    "matches": ["https://www.playdeltaforce.com/*"],
+    "js": ["content/link-content.js"],
+    "run_at": "document_idle"
+  }
+]
+```
+
+4. `web_accessible_resources`:
+
+```json
+"web_accessible_resources": [
+  {
+    "resources": ["content/page-capture.js", "content/dashboard.css"],
+    "matches": ["https://redeem.df.garena.sg/*"]
+  },
+  {
+    "resources": ["content/link-page-capture.js", "content/dashboard.css"],
+    "matches": ["https://www.playdeltaforce.com/*"]
+  }
+]
+```
+
+5. `permissions`: giữ `storage`; thêm không bắt buộc `alarms` trừ khi cần.
+
+6. **Không** nhúng `PUBLIC_BASE_URL` cứng vào manifest nếu có thể — lưu `chrome.storage.local.claimBaseUrl` (options page hoặc hardcode build private một lần).
+
+### 14.4 link-page-capture.js (MAIN world) — micro-steps
+
+Port từ userscript research + pattern `page-capture.js` redeem.
+
+1. IIFE `'use strict'`.
+2. `const SOURCE = 'df-link-capture'`.
+3. Helper `isDfToolsUrl(url)` → `url.includes('DfTools')` (chỉnh nếu host API khác path).
+4. Helper `extractCredential(url)`:
+   - `const p = new URL(url, location.origin).searchParams`
+   - Lấy `openid`, `token`, optional `ts`, `s`, `u`, `a`, `game_id`, …
+   - Nếu thiếu `openid` hoặc `token` → return null
+   - Return plain object **candidate** (không gọi là “valid production”).
+5. Hook `XMLHttpRequest.prototype.open/send`: khi URL DfTools và extract được → `postMessage`.
+6. Hook `window.fetch`: tương tự (URL từ `Request` hoặc string).
+7. Optional: `performance.getEntriesByType('resource')` scan một lần lúc inject (trang đã load).
+8. `postMessage` shape:
+
+```js
+window.postMessage(
+  {
+    source: 'df-link-capture',
+    type: 'CREDENTIAL_CANDIDATE',
+    credential: { openid, token, ts, s, u, a /* … */ },
+    endpoint: 'GetManufactureRecommendationList', // từ path
+    capturedAt: Date.now(),
+  },
+  window.location.origin,
+); // ưu tiên origin cụ thể, tránh '*'
+```
+
+9. **Cấm trong file này:** `fetch(claimUrl)`, đọc claim code, `chrome.*`, log full token.
+
+### 14.5 Inject MAIN script từ content (như redeem)
+
+Trong `link-content.js` / bootstrap HQ:
+
+```js
+function injectLinkCapture() {
+  const s = document.createElement('script');
+  s.src = chrome.runtime.getURL('content/link-page-capture.js');
+  s.onload = () => s.remove();
+  (document.documentElement || document.head).appendChild(s);
+}
+injectLinkCapture();
+```
+
+### 14.6 link-content.js — bridge + panel
+
+**A. Lắng nghe candidate**
+
+```js
+window.addEventListener('message', (event) => {
+  if (event.origin !== window.location.origin) return;
+  const d = event.data;
+  if (!d || d.source !== 'df-link-capture') return;
+  if (d.type !== 'CREDENTIAL_CANDIDATE') return;
+  if (!d.credential?.openid || !d.credential?.token) return;
+  // giữ trong biến module-level; UI hiện "Đã bắt credential"
+  state.candidate = d.credential;
+  state.endpoint = d.endpoint;
+  renderLinkPanel();
+});
+```
+
+**B. UI tab Link (tối thiểu)**
+
+```text
+[ Redeem ] [ Link ]
+---
+Claim code: [____________]
+Trạng thái capture: Chưa có / Đã bắt (openid •••1234)
+[ Liên kết Discord ]
+Kết quả: …
+```
+
+**C. Nút Liên kết → SW**
+
+```js
+async function submitClaim() {
+  const code = input.value.trim();
+  if (!code || !state.candidate) return showError('…');
+  const res = await chrome.runtime.sendMessage({
+    type: 'DF_CLAIM',
+    code,
+    credential: state.candidate,
+    source_endpoint: state.endpoint,
+  });
+  // res: { ok: true } | { ok: false, error: 'invalid_code' | 'network' | … }
 }
 ```
 
-**Response (không echo credential):**
+**D. Không** `chrome.storage` full token; optional clear `state.candidate` sau claim OK.
 
-| HTTP | Body                                         | Ý nghĩa                            |
-| ---- | -------------------------------------------- | ---------------------------------- |
-| 200  | `{ "ok": true }`                             | Đã bind                            |
-| 400  | `{ "ok": false, "error": "invalid_body" }`   | Thiếu field                        |
-| 401  | `{ "ok": false, "error": "invalid_code" }`   | Sai / hết hạn / đã dùng            |
-| 409  | `{ "ok": false, "error": "already_linked" }` | Policy: không overwrite (tuỳ chọn) |
-| 500  | `{ "ok": false, "error": "server_error" }`   | Lỗi nội bộ                         |
+### 14.7 service-worker.js — thêm Claim
 
-### 5.2 Micro-steps handler
+Giữ `onInstalled` redeem. Thêm:
 
-1. Parse JSON; reject nếu thiếu `code`, `openid`, `token`.
-2. Normalize: trim code, token length sanity (ví dụ 20–128 hex/char).
-3. Lookup claim session by code.
-4. Nếu không có / `expires_at < now` / `status !== pending` → `401 invalid_code`.
-5. Mark claim `consumed` **trước hoặc trong transaction** với insert binding (tránh double consume).
-6. Build credential JSON từ body.
-7. Encrypt với AAD có `discord_user_id` từ claim session.
-8. Upsert `df_account_bindings` (`status = active`).
-9. Trigger bot: DM user `Linked OK` (và optional ephemeral follow-up).
-10. Return `{ ok: true }`.
-11. **Không** log `token`, `s` full; có thể log `openid` suffix + `source_endpoint`.
+```js
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg?.type !== 'DF_CLAIM') return;
 
-### 5.3 CORS
+  (async () => {
+    try {
+      const { claimBaseUrl } = await chrome.storage.local.get('claimBaseUrl');
+      const base = claimBaseUrl || 'https://YOUR_FIXED_HOST'; // private build
+      const body = {
+        code: msg.code,
+        openid: msg.credential.openid,
+        token: msg.credential.token,
+        ts: msg.credential.ts,
+        s: msg.credential.s,
+        u: msg.credential.u,
+        a: msg.credential.a,
+        source_endpoint: msg.source_endpoint,
+      };
+      const r = await fetch(`${base.replace(/\/$/, '')}/api/df/claim`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await r.json().catch(() => ({}));
+      sendResponse({
+        ok: r.ok && data.ok === true,
+        error: data.error || (!r.ok ? 'http_' + r.status : undefined),
+      });
+    } catch (e) {
+      sendResponse({ ok: false, error: 'network' });
+    }
+  })();
 
-- Extension background POST: thường **không** dính CORS page.
-- Nếu test từ page context: server cần  
-  `Access-Control-Allow-Origin` (whitelist origin HQ hoặc `*` chỉ khi private + risk chấp nhận được)
-  - `POST`, `Content-Type`.
-- **Cấm** dựa vào `mode: 'no-cors'` cho production.
-
-### 5.4 Rate limit (nên có)
-
-- Theo IP: ví dụ 30 req/phút.
-- Theo code: 5 attempt fail rồi lock code.
-- Theo `discord_user_id`: không spam create claim.
-
----
-
-## 6. Discord command `/df-link`
-
-### 6.1 Subcommands gợi ý
-
-| Subcommand          | Hành vi                                        |
-| ------------------- | ---------------------------------------------- |
-| `start` / default   | Tạo claim code, hướng dẫn + link mở HQ         |
-| `status`            | Đã link? `openid` mask, `last_ok_at`, `status` |
-| `unlink`            | `status = revoked`, xóa ciphertext (hoặc soft) |
-| `manual` (optional) | Tech user dán openid+token + code (fallback)   |
-
-### 6.2 Micro-steps `/df-link start`
-
-1. Check user chưa bị rate-limit.
-2. Invalidate claim `pending` cũ của user (nếu có).
-3. Generate `code`.
-4. Lưu claim session TTL.
-5. Reply ephemeral (hoặc DM):
-   - Code (monospace)
-   - Nút link: `https://www.playdeltaforce.com/...` (URL HQ thật)
-   - Hướng dẫn ngắn: cài extension → tab Link → dán code → Link
-6. **Không** nhúng webhook localhost trong message production.
-
-### 6.3 Sau claim thành công
-
-- Bot nhận signal (cùng process: gọi hàm `notifyLinked(userId)`; hoặc queue).
-- DM: “Đã liên kết tài khoản DF HQ.”
-- Optional: thử 1 soft `GetMyData` / endpoint nhẹ → cập nhật `last_ok_at` hoặc `last_error`.
-
----
-
-## 7. Extension — Link tab
-
-### 7.1 Cấu trúc thư mục gợi ý
-
-```text
-df-toolbox/
-├── manifest.json
-├── background/
-│   └── service-worker.js      # POST claim API
-├── content/
-│   ├── bootstrap.js           # inject panel + page-capture
-│   ├── page-capture.js        # MAIN world hooks (web_accessible)
-│   └── panel.css
-├── modules/
-│   ├── redeem/                # giữ logic redeem cũ
-│   └── link/
-│       ├── panel.js           # UI claim code + trạng thái
-│       └── capture-bridge.js  # postMessage ↔ background
-└── popup/                     # optional
+  return true; // async sendResponse
+});
 ```
 
-### 7.2 Manifest (ý chính)
+**Cấm:** log `msg.credential.token`.
 
-- `manifest_version: 3`
-- `content_scripts` matches HQ host
-- `background.service_worker`
-- `host_permissions`: HQ + `PUBLIC_BASE_URL` origin
-- `web_accessible_resources`: `page-capture.js`
+### 14.8 Cấu hình PUBLIC_BASE_URL trong extension
 
-### 7.3 Capture logic (port từ userscript research)
+| Cách                                                      | Khi nào                         |
+| --------------------------------------------------------- | ------------------------------- |
+| Hardcode trong SW (private build)                         | Server bạn bè, URL ít đổi       |
+| `chrome.storage.local.claimBaseUrl` + options/popup field | Đổi tunnel/domain không rebuild |
+| Build-time replace `@@CLAIM_BASE_URL@@`                   | CI                              |
 
-**Giữ:**
+User non-tech **không** sửa URL mỗi lần link — chỉ dán claim code.
 
-- Hook `window.fetch` khi URL chứa `DfTools`
-- Hook `XMLHttpRequest.open/send`
-- Optional: `performance.getEntriesByType('resource')` scan URL đã load
-- Extract query: `openid`, `token`, `ts`, `s`, `u`, …
+### 14.9 Gộp UI một dashboard hai tab
 
-**Bỏ / đổi:**
+Micro-steps trên trang **redeem** (giữ UX cũ):
 
-- `WEBHOOK_URL` / `CODE` hardcode trong script
-- `mode: 'no-cors'`
-- `console.log` token preview trên bản ship
-- “Gửi token dài nhất mọi endpoint” như mục tiêu vô hạn — MVP: **first valid openid+token** hoặc whitelist endpoint bot cần
+1. Shell có tab; tab Redeem = UI hiện tại.
+2. Tab Link trên trang redeem: chỉ hiện hướng dẫn “Mở HQ để link” (capture không chạy trên redeem host).
 
-### 7.4 Micro-steps UI Link tab
+Micro-steps trên trang **HQ**:
 
-1. User mở HQ (đúng host match) → panel hiện.
-2. Ô nhập **Claim code**.
-3. Nút **Link** / tự động khi đã có credential trong memory session.
-4. Content script nhận credential từ MAIN world qua `postMessage` (origin check).
-5. Gửi message tới service worker: `{ type: 'DF_CLAIM', code, credential }`.
-6. Service worker `fetch(PUBLIC_BASE_URL + '/api/df/claim', { method:'POST', headers:{'Content-Type':'application/json'}, body })`.
-7. UI: `Đang gửi…` → `Thành công — kiểm tra DM Discord` / `Mã không hợp lệ` / `Lỗi mạng`.
-8. Không lưu token vào `chrome.storage` lâu dài (hoặc chỉ cache vài phút optional).
+1. Chỉ mount tab Link (hoặc full shell với Redeem disabled + deep link sang redeem.garena).
+2. Inject `link-page-capture.js`.
+3. Panel claim code + status.
 
-### 7.5 Cài đặt cho non-tech (private)
+Không bắt buộc một `content.js` chạy cả hai host; **hai content script entry** sạch hơn.
 
-| Cách                               | Phù hợp        |
-| ---------------------------------- | -------------- |
-| Chrome Web Store (nếu public được) | Tốt nhất       |
-| Load unpacked + doc 5 bước có ảnh  | Private server |
-| File `.crx` ký nội bộ              | Team nhỏ       |
-
-Hướng dẫn user **chỉ**: Cài extension → Discord lấy code → Mở HQ → Dán code → Link.
-
----
-
-## 8. Public URL (giải multi-máy)
-
-### 8.1 Vấn đề
+### 14.10 Thứ tự implement extension (sau / song song Phase 1 tối thiểu)
 
 ```text
-User máy B  ──X──>  http://127.0.0.1:PORT  (máy A / dev)
+E1. manifest: hosts + web_accessible link-page-capture
+E2. link-page-capture.js (MAIN) + inject
+E3. link-content.js: message listener + state candidate (UI thô)
+E4. SW: DF_CLAIM fetch (cần PUBLIC_BASE_URL + Claim API đã lên)
+E5. Panel UI claim code + error mapping
+E6. (Optional) tab shell gộp redeem
+E7. QA: E02 MAIN không fetch claim; E03 non-tech path
 ```
 
-Encryption **không** sửa được. Phải có:
+**Phụ thuộc server:** E4 cần Claim API + HTTPS cố định. Có thể mock SW response để test UI trước.
+
+### 14.11 Checklist tích hợp extension
 
 ```text
-User máy B  ────>  https://fixed-host/.../api/df/claim  ────>  Bot process
+[ ] manifest matches HQ + claim API origin
+[ ] link-page-capture chỉ postMessage, không POST claim
+[ ] content chỉ nhận message đúng source + origin
+[ ] SW unique path DF_CLAIM
+[ ] claimBaseUrl không phải localhost trên bản user
+[ ] Không storage lâu full token
+[ ] Không console.log token
+[ ] Redeem path không bị regress
+[ ] Trên HQ: bắt được candidate sau khi trang gọi DfTools
+[ ] Claim sai code → UI invalid_code; đúng → ok + user kiểm tra DM
 ```
 
-### 8.2 Micro-steps Cloudflare Named Tunnel (ví dụ)
+### 14.12 Mapping userscript research → extension
 
-1. Cài `cloudflared` trên máy chạy bot.
-2. `cloudflared tunnel login`.
-3. Tạo named tunnel, map `https://df-bot.yourdomain.com` → `http://127.0.0.1:BOT_PORT`.
-4. Chạy tunnel daemon (service systemd / docker).
-5. Set `PUBLIC_BASE_URL=https://df-bot.yourdomain.com`.
-6. Extension + bot dùng **cùng** base URL.
-7. Test từ điện thoại 4G: `curl -X POST https://df-bot.../api/df/claim -d '{}'` → phải về 400 chứ không timeout.
+| Userscript               | Extension                        |
+| ------------------------ | -------------------------------- |
+| `@@WEBHOOK_URL@@`        | `claimBaseUrl` / SW              |
+| `@@CLAIM_CODE@@`         | Input panel                      |
+| `mode: 'no-cors'`        | Bỏ — SW `fetch` bình thường      |
+| `send()` ngay trong page | `postMessage` → content → SW     |
+| `log token preview`      | Tắt production                   |
+| perf-scan + xhr + fetch  | Giữ trong `link-page-capture.js` |
 
-### 8.3 Checklist “đã hết lỗi khác mạng”
+### 14.13 Điều không làm trong extension
 
-- [ ] URL không chứa `localhost` / `127.0.0.1`
-- [ ] HTTPS (trang HQ HTTPS → tránh mixed content nếu gọi từ page; background extension vẫn nên HTTPS)
-- [ ] URL **không đổi** mỗi lần restart (named tunnel / VPS)
-- [ ] Bot process + tunnel cùng uptime policy
-
----
-
-## 9. Thứ tự triển khai (micro roadmap)
-
-### Phase 0 — Research (đã có một phần)
-
-- [x] Userscript bắt được `openid` + `token` từ DfTools
-- [ ] Reuse token ngoài browser trên **đúng** endpoint bot cần
-- [ ] Ghi nhận scope / lỗi hết hạn
-- [ ] Quan sát `ts`/`s` trên ≥3 request (không block Phase 1)
-
-### Phase 1 — Claim path server (bắt buộc trước extension)
-
-1. Thêm bảng `df_account_bindings` + migration.
-2. Env `DF_CRED_KEY_V1`, helper `encryptCredential` / `decryptCredential`.
-3. Claim store (Map + TTL cleanup interval).
-4. `POST /api/df/claim` + CORS/rate limit tối thiểu.
-5. `/df-link start` tạo code + hướng dẫn tạm (kể cả manual POST bằng curl).
-6. Publish **PUBLIC_BASE_URL** (tunnel/VPS).
-7. Test curl từ mạng khác.
-
-### Phase 2 — Extension Link MVP
-
-1. Skeleton MV3 + panel tab Link.
-2. Port hook MAIN world (không log token).
-3. Background POST claim.
-4. UX trạng thái thành công/thất bại.
-5. Nội bộ: 2–3 user non-tech thử theo doc 5 bước.
-
-### Phase 3 — DfToolsClient
-
-1. `getBinding(discordUserId)` + decrypt.
-2. Profile endpoint tối thiểu (1–2 API thật dùng).
-3. Slash command đọc data (profile/daily/…).
-4. Xử lý `status = expired` khi API reject → bảo user `/df-link` lại.
-
-### Phase 4 — Hardening
-
-1. Tắt mọi log credential.
-2. Unlink / status.
-3. Key version field sẵn sàng rotate.
-4. Gộp Redeem \| Link polish UI.
-5. Gỡ / đánh dấu deprecated console userscript trong `/df-link`.
+- Không decrypt / không gọi DfTools business API từ extension.
+- Không embed Discord bot token.
+- Không coi candidate là ACTIVE binding (server quyết định).
+- Không yêu cầu user mở HQ mỗi ngày (chỉ lúc link/re-link).
 
 ---
 
-## 10. Test cases
-
-### 10.1 Claim & crypto
-
-| ID  | Case              | Steps                                | Expected                                      |
-| --- | ----------------- | ------------------------------------ | --------------------------------------------- |
-| C01 | Happy path        | Tạo code → POST đủ field → DB        | 200, row active, ciphertext ≠ plaintext token |
-| C02 | Sai code          | POST code random                     | 401 `invalid_code`, không ghi DB              |
-| C03 | Hết hạn           | Tạo code, chờ TTL, POST              | 401                                           |
-| C04 | Double consume    | POST 2 lần cùng code                 | Lần 1: 200; lần 2: 401                        |
-| C05 | Thiếu token       | POST không `token`                   | 400                                           |
-| C06 | Decrypt + AAD     | Encrypt rồi decrypt đúng AAD         | Plaintext khớp                                |
-| C07 | Sai AAD           | Đổi discord_id trong AAD khi decrypt | Throw / fail                                  |
-| C08 | Tamper ciphertext | Đổi 1 byte ciphertext                | Decrypt fail                                  |
-| C09 | Không log token   | Chạy C01, grep log                   | Không có full token                           |
-
-### 10.2 Multi-máy / network
-
-| ID  | Case                    | Steps                                            | Expected                             |
-| --- | ----------------------- | ------------------------------------------------ | ------------------------------------ |
-| N01 | Localhost từ máy khác   | POST `http://127.0.0.1:...` từ host khác         | **Fail** (đây là bug cũ — phải fail) |
-| N02 | Public URL từ 4G        | POST `PUBLIC_BASE_URL/api/df/claim` body invalid | 400 nhanh, không timeout             |
-| N03 | Extension trên máy user | User nhà, bot + tunnel online                    | Link OK, nhận DM                     |
-
-### 10.3 Extension capture
-
-| ID  | Case                    | Steps                | Expected                             |
-| --- | ----------------------- | -------------------- | ------------------------------------ |
-| E01 | HQ đã login, có DfTools | Mở trang trigger API | Bắt được openid+token                |
-| E02 | Chưa login HQ           | Mở HQ                | UI: chưa có credential / hướng login |
-| E03 | Code đúng + đã capture  | Bấm Link             | 200, DM                              |
-| E04 | Code sai                | Bấm Link             | UI invalid_code                      |
-| E05 | Không còn console       | User không mở F12    | Vẫn link được                        |
-
-### 10.4 DfToolsClient (sau Phase 3)
-
-| ID  | Case                  | Steps                         | Expected                                 |
-| --- | --------------------- | ----------------------------- | ---------------------------------------- |
-| D01 | Reuse credential      | Decrypt + gọi endpoint đã bắt | 2xx hoặc JSON hợp lệ                     |
-| D02 | Endpoint khác profile | Gọi endpoint chỉ cần u/a/ts/s | Không nhét token bừa                     |
-| D03 | Token hết hạn         | Sau thời điểm fail            | `status=expired`, user được báo link lại |
-| D04 | User chưa link        | Command data                  | Message “chưa liên kết”                  |
-
-### 10.5 Security regression
-
-| ID  | Case                                         | Expected                                                |
-| --- | -------------------------------------------- | ------------------------------------------------------- |
-| S01 | Response claim không chứa token              | Body chỉ `ok` / `error`                                 |
-| S02 | Discord message không chứa token             | DM chỉ status                                           |
-| S03 | DB file không chứa substring token plaintext | `strings`/`grep` token sample → không hit plaintext cột |
-
----
-
-## 11. Prototype userscript — phạm vi
-
-Script console (hook fetch/XHR/perf) **chỉ** để:
-
-- Chứng minh capture được param từ HQ.
-- Hỗ trợ Phase 0 research.
-
-**Không** ship cho end user. Khi port extension:
-
-| Userscript          | Extension                      |
-| ------------------- | ------------------------------ |
-| `@@WEBHOOK_URL@@`   | Config `PUBLIC_BASE_URL`       |
-| `@@CLAIM_CODE@@`    | Input panel                    |
-| `mode: 'no-cors'`   | Background `fetch` bình thường |
-| `log token preview` | Tắt                            |
-| Gửi ngay token đầu  | MVP OK; sau filter endpoint    |
-
----
-
-## 12. Quyết định đã chốt (quick reference)
-
-| Chủ đề          | Quyết định                                          |
-| --------------- | --------------------------------------------------- |
-| UX non-tech     | Chrome extension panel trên HQ                      |
-| Multi-máy       | HTTPS **cố định** (Named Tunnel / VPS)              |
-| Discord webhook | Không dùng ingestion token                          |
-| Mã hóa          | AES-256-GCM, key env, AAD bind user+openid          |
-| bcrypt          | Không cho token API                                 |
-| DB              | `AccountBinding` abstraction, không chỉ 3 cột phẳng |
-| Client API      | Endpoint profiles, không `call(token)` một tham số  |
-| `s` / expiry    | Research song song; không block Claim + encrypt     |
-| Redeem + Link   | Một extension, hai tab, module tách                 |
-
----
-
-## 13. Định nghĩa “xong MVP Link”
-
-User non-tech, **máy và mạng khác** máy dev:
-
-1. Cài extension (theo doc).
-2. Trong Discord: `/df-link` → nhận code.
-3. Mở HQ đã login.
-4. Tab Link → dán code → Link.
-5. Nhận DM thành công.
-6. (Optional) một lệnh bot đọc được 1 field từ API HQ.
-
-Không đạt (5) vì timeout/localhost → **chưa** xong phần infra.  
-Không đạt vì phải F12 → **chưa** xong phần extension.
-
----
-
-## 14. Phụ lục — checklist deploy một lần
-
-```text
-[ ] DF_CRED_KEY_V1 trong env (32-byte base64)
-[ ] PUBLIC_BASE_URL https cố định
-[ ] Tunnel/VPS trỏ đúng port bot
-[ ] POST /api/df/claim reachable từ mạng ngoài
-[ ] Bảng df_account_bindings migrated
-[ ] /df-link start tạo code TTL
-[ ] Extension host_permissions khớp HQ + claim origin
-[ ] Không log token trên bot & extension production
-[ ] Test N02 + E03 + C01 pass
-```
-
----
-
-_Tài liệu này là đặc tả triển khai nội bộ. Cập nhật khi đã khóa lifecycle token / công thức `s` / danh sách endpoint profile production._
+_Master instruction cho agent. Observation ≠ assumption. Cập nhật access-token / công thức `s` / TTL chỉ khi Phase 1 có số liệu._

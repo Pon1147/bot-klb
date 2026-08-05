@@ -663,3 +663,161 @@ if (!verifyDfCryptoKey()) {
 ---
 
 _Design draft r2 — awaiting review before Phase 3 Security implementation._
+
+---
+
+## 9. Extension Integration Guide
+
+Hướng dẫn tích hợp Chrome Extension vào bot command flow.
+
+### 9.1 User Flow (step-by-step)
+
+```
+1. User chạy /df-link start trên Discord
+2. Bot:
+   a. Sinh claim code (6 chars, TTL 10 phút)
+   b. Gửi DM với:
+      - Claim code
+      - Hướng dẫn cài extension (load unpacked)
+      - Hướng dẫn dùng extension
+3. User:
+   a. Cài extension (chrome://extensions → Load unpacked → extensions/df-toolbox/)
+   b. Truy cập https://www.playdeltaforce.com/events/hq/vi/
+   c. Đăng nhập HQ
+   d. Mở extension panel (click icon)
+   e. Dán claim code vào ô input
+   f. Extension panel tự capture credential từ HQ session
+   g. Nhấn Submit → SW POST lên Claim API
+4. Bot:
+   a. Claim API: atomic consume + encrypt + persist
+   b. Gửi DM "Linked thành công"
+5. User dùng /df-daily, /df-stats... không cần mở HQ
+```
+
+### 9.2 Extension Installation (cho user)
+
+```
+1. Mở Chrome → chrome://extensions/
+2. Bật "Developer mode" (góc trên phải)
+3. Click "Load unpacked"
+4. Chọn folder: extensions/df-toolbox/
+5. Extension hiện icon trên toolbar
+```
+
+### 9.3 Bot Command Response (DM content)
+
+```
+**Liên kết tài khoản Delta Force**
+
+**Mã claim: `ABC123** (hết hạn sau 10 phút)
+
+📦 **Cài extension:**
+1. Mở chrome://extensions/
+2. Bật Developer mode → Load unpacked
+3. Chọn folder: extensions/df-toolbox/
+
+🔗 **Dùng extension:**
+1. Truy cập https://www.playdeltaforce.com/events/hq/vi/
+2. Đăng nhập tài khoản
+3. Mở extension panel (click icon)
+4. Dán code `ABC123` vào ô input
+5. Extension tự capture token từ HQ session
+6. Nhấn Submit → chờ DM xác nhận!
+```
+
+### 9.4 Extension Panel Flow
+
+```
+Panel UI:
+┌─────────────────────────────┐
+│ DF Toolbox — Link           │
+├─────────────────────────────┤
+│ Status: Chờ credential...   │
+│                             │
+│ [ ABC123 ]                  │ ← Claim code (auto-fill)
+│                             │
+│ [ Dán code claim ]          │ ← Input
+│                             │
+│ [ Submit Link ]             │ ← Button (disabled until code entered)
+│                             │
+│ Hint:                       │
+│ 1. /df-link start trên DC   │
+│ 2. Dán code ở trên          │
+│ 3. Mở HQ → đăng nhập        │
+│ 4. Nhấn Submit              │
+└─────────────────────────────┘
+```
+
+### 9.5 Message Protocol (chi tiết)
+
+```
+MAIN world (page-capture.js)
+  ↓ postMessage({ type: 'DF_CREDENTIALS', params })
+Isolated bridge.js
+  ↓ chrome.storage.local.set({ df_credential: params })
+  ↓ chrome.runtime.sendMessage({ type: 'DF_SHOW_PANEL', credential })
+Panel (link.html)
+  ↓ User dán code → panel.js
+  ↓ chrome.storage.local.set({ df_claim_code: code })
+  ↓ chrome.runtime.sendMessage({ type: 'DF_SUBMIT_CLAIM' })
+bridge.js
+  ↓ chrome.runtime.sendMessage({ type: 'DF_CLAIM_REQUEST', code, params })
+SW (sw.js)
+  ↓ fetch(CLAIM_API_URL, { POST body })
+Claim API
+```
+
+### 9.6 Claim API Endpoint
+
+```http
+POST {PUBLIC_BASE_URL}/api/df/claim
+Content-Type: application/json
+
+{
+  "code": "ABC123",
+  "openid": "...",
+  "token": "...",
+  "ts": "...",
+  "s": "...",
+  "u": "..."
+}
+
+Response:
+200 { "ok": true }
+400 { "ok": false, "error": "invalid_body" }
+401 { "ok": false, "error": "invalid_code" }
+429 { "ok": false, "error": "rate_limited" }
+```
+
+### 9.7 Development Workflow
+
+```bash
+# 1. Clone repo
+git clone ...
+
+# 2. Install dependencies
+npm install
+
+# 3. Load extension trong Chrome
+#    chrome://extensions/ → Developer mode → Load unpacked
+#    Chọn: extensions/df-toolbox/
+
+# 4. Chạy bot (cần .env với WEBHOOK_URL)
+npm run dev
+
+# 5. Test flow
+#    a. /df-link start trên Discord
+#    b. Nhận DM với claim code
+#    c. Mở HQ, đăng nhập
+#    d. Mở extension panel, dán code
+#    e. Submit → chờ DM xác nhận
+```
+
+### 9.8 Troubleshooting
+
+| Vấn đề | Giải pháp |
+|--------|-----------|
+| Extension không capture token | Kiểm tra HQ đã đăng nhập, mở console xem log |
+| Claim API fail 401 | Code đã hết hạn hoặc sai — dùng /df-link start mới |
+| DM không nhận được | Bật DM trong Server Settings |
+| Extension không hiện panel | Kiểm tra console browser xem bridge.js có load không |
