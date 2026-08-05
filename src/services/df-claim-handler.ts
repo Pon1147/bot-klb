@@ -68,7 +68,7 @@ function validateBody(body: unknown): ClaimRequestBody | null {
 /**
  * Gửi DM thông báo linked thành công.
  */
-async function sendLinkedDm(client: Client, userId: string, openid: string): Promise<void> {
+async function sendLinkedDm(client: Client, userId: string, _openid: string): Promise<void> {
   try {
     const user = await client.users.fetch(userId).catch(() => null);
     if (!user) return;
@@ -76,14 +76,10 @@ async function sendLinkedDm(client: Client, userId: string, openid: string): Pro
     const dm = await user.createDM().catch(() => null);
     if (!dm) return;
 
-    // Mask openid: chỉ hiện 4 ký tự đầu + 4 cuối
-    const masked = openid.length > 8 ? `${openid.slice(0, 4)}****${openid.slice(-4)}` : '****';
-
     await dm.send({
       content:
-        `**Đã liên kết tài khoản Delta Force!**\n\n` +
-        `OpenID: ${masked}\n\n` +
-        `Bạn có thể dùng các lệnh \`/df-daily\`, \`/df-stats\`, \`/df-history\` mà không cần mở HQ.`,
+        `**Chúc mừng bạn đã liên kết thành công account đến Delta Force HQ!**\n\n` +
+        `Bây giờ bạn có thể dùng các lệnh \`/df-daily\`, \`/df-stats\`, \`/df-history\` mà không cần mở HQ.`,
     });
   } catch (error) {
     logger.warn(

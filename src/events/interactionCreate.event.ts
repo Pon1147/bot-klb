@@ -13,7 +13,6 @@ import {
 } from 'discord.js';
 import { createLogger } from '../utils/logger.js';
 import { botConfig } from '../config/bot.config.js';
-import { getActiveBinding } from '../database/df-binding.db.js';
 import { ContainerIds, ContainerModalPrefix } from '../commands/container/container-ids.js';
 import { TeamFindIds } from '../commands/df/team-find-ids.js';
 import { handleTeamFindButton, handleTeamFindSelect } from '../commands/df/team-find.handlers.js';
@@ -47,26 +46,6 @@ export async function execute(
         return;
       }
 
-      // Kiểm tra user đã link chưa → disable button
-      const binding = getActiveBinding(client.database, interaction.user.id);
-      if (binding) {
-        const disabledBtn = new ButtonBuilder()
-          .setCustomId('df_link_show_webhook')
-          .setLabel('✅ Đã link — không cần URL')
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(true);
-        const row = new ActionRowBuilder().addComponents(disabledBtn);
-        try {
-          await interaction.update({
-            content: interaction.message.content,
-            components: [row.toJSON()],
-          });
-        } catch {
-          // message đã expire
-        }
-        return;
-      }
-
       try {
         await interaction.reply({
           content: [
@@ -78,7 +57,23 @@ export async function execute(
           flags: MessageFlags.Ephemeral,
         });
 
-        // Tự xóa sau 5 giây
+        // Disable button trên message gốc
+        const disabledBtn = new ButtonBuilder()
+          .setCustomId('df_link_show_webhook')
+          .setLabel('✅ Đã hiện URL — copy xong')
+          .setStyle(ButtonStyle.Secondary)
+          .setDisabled(true);
+        const row = new ActionRowBuilder().addComponents(disabledBtn);
+        try {
+          await interaction.update({
+            content: interaction.message.content,
+            components: [row.toJSON()],
+          });
+        } catch {
+          // message đã expire
+        }
+
+        // Tự xóa ephemeral sau 5 giây
         setTimeout(async () => {
           try {
             await interaction.deleteReply();

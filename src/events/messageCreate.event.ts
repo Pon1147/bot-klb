@@ -54,6 +54,9 @@ export async function execute(client: Client, message: Message): Promise<void> {
     logger.error(
       'Webhook claim handler error: ' + (error instanceof Error ? error.message : String(error)),
     );
+  } finally {
+    // Xóa webhook message khỏi channel (không hiển thị raw JSON cho user)
+    void message.delete().catch(() => {});
   }
 }
 
