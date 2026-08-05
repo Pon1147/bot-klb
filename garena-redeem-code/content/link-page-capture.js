@@ -80,7 +80,9 @@
 
     XMLHttpRequest.prototype.send = function (...args) {
       const url = this.__dfToolsUrl || '';
+      console.log('[DF Toolbox] XHR:', url);
       if (isDfToolsUrl(url)) {
+        console.log('[DF Toolbox] MATCHED DfTools URL:', url);
         const credential = extractCredential(url);
         if (credential) {
           postCredential(credential, getEndpoint(url));
@@ -94,7 +96,9 @@
   const originalFetch = window.fetch;
   window.fetch = async function (...args) {
     const url = args[0]?.url ?? String(args[0]);
+    console.log('[DF Toolbox] Fetch:', url);
     if (isDfToolsUrl(url)) {
+      console.log('[DF Toolbox] MATCHED DfTools URL:', url);
       const credential = extractCredential(url);
       if (credential) {
         postCredential(credential, getEndpoint(url));
