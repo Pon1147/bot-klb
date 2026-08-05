@@ -188,7 +188,7 @@
     } catch (err) {
       console.log('[DF Toolbox] sendMessage error:', err);
       state.status = 'error';
-      const errMsg = err?.message || 'Không thể kết nối đến bot. Kiểm tra PUBLIC_BASE_URL trong extension.';
+      const errMsg = err?.message || 'Không thể gửi claim. Kiểm tra webhook URL trong extension.';
       statusEl.textContent = '❌ ' + errMsg;
       statusEl.style.color = '#f44336';
       submitBtn.disabled = false;

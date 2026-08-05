@@ -17,11 +17,9 @@ import { loadEvents } from './handlers/event.handler.js';
 import { createLogger } from './utils/logger.js';
 import { startSessionCleanup } from './commands/container/container-session.js';
 import { cleanup as cleanupTeamFindSessions } from './services/team-find-session.js';
-import { startWebhookServer } from './server/webhook-server.js';
 import { startCleanup as startClaimCleanup } from './services/df-claim-store.js';
-import { setupTunnel, stopTunnel } from './services/webhook-tunnel.js';
 import { startDfCodesScheduler } from './services/df-codes-scheduler.js';
-import { DEFAULT_WEBHOOK_PORT, TEAM_FIND_CLEANUP_INTERVAL_MS } from './config/app.constants.js';
+import { TEAM_FIND_CLEANUP_INTERVAL_MS } from './config/app.constants.js';
 
 const logger = createLogger('Bot');
 
@@ -91,34 +89,6 @@ async function main(): Promise<void> {
     intents: BOT_INTENTS,
   });
   logger.info('Discord client created');
-
-  // Step 4b: Start webhook server (needed before tunnel)
-  const webhookPort = parseInt(process.env.WEBHOOK_PORT ?? String(DEFAULT_WEBHOOK_PORT), 10);
-  logger.info(`Starting webhook server on port ${webhookPort}...`);
-  const webhook = startWebhookServer(database, client, webhookPort);
-  logger.info(`Webhook server ready on port ${webhook.port}`);
-
-  // Step 4c: Setup cloudflared quick tunnel (auto HTTPS)
-  try {
-    const url = await setupTunnel(webhook.port);
-    process.env.WEBHOOK_URL = url;
-  } catch (err) {
-    logger.warn(
-      `Cloudflared tunnel setup failed: ${(err as Error).message}. Using localhost fallback.`,
-    );
-  }
-
-  // Graceful shutdown: stop webhook server + tunnel
-  process.on('SIGTERM', () => {
-    stopTunnel();
-    webhook.stop();
-    process.exit(0);
-  });
-  process.on('SIGINT', () => {
-    stopTunnel();
-    webhook.stop();
-    process.exit(0);
-  });
 
   // Step 5: Load commands
   logger.info('Loading commands...');

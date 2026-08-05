@@ -68,11 +68,9 @@ export async function execute(
   }
 }
 
-/** Subcommand `start` — tạo claim code, gửi script qua DM */
+/** Subcommand `start` — tạo claim code, gửi hướng dẫn extension qua DM */
 async function handleStart(interaction: ChatInputCommandInteraction): Promise<void> {
   if (await requireGuild(interaction)) return;
-
-  // Invalidate claim code cũ của user (tạo mới sẽ overwrite)
 
   const code = generateCode(interaction.user.id);
 
@@ -92,22 +90,13 @@ async function handleStart(interaction: ChatInputCommandInteraction): Promise<vo
       `**Mã claim: \`${code}\`** (hết hạn sau 10 phút)\n\n` +
       '1. Truy cập [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html)\n' +
       '2. Đăng nhập tài khoản → chờ trang load xong\n' +
-      '3. Bấm **F12** → tab **Console** → paste script bên dưới → Enter\n' +
-      '4. Script tự capture token và gửi về bot — chờ DM xác nhận!\n' +
-      '5. Nếu Console hiện "chưa tìm thấy" → nhấn vài nút trên trang → script sẽ capture khi có API call',
-    files: [
-      {
-        attachment: process.env.WEBHOOK_URL
-          ? `${process.env.WEBHOOK_URL}/api/df/webhook-script?code=${code}`
-          : 'data:text/javascript;base64,' +
-            Buffer.from('// Script đang chờ cấu hình WEBHOOK_URL').toString('base64'),
-        name: 'df-link-script.js',
-      },
-    ],
+      '3. Mở extension → tab **Link** → dán mã claim ở trên → bấm **Liên kết Discord**\n' +
+      '4. Chờ DM "Linked OK" từ bot\n\n' +
+      '> ⚠️ Nếu chưa cài extension: mở Chrome → `chrome://extensions` → Developer mode → Load unpacked → chọn folder `garena-redeem-code`',
   });
 
   await interaction.reply({
-    content: `Script đã gửi qua DM. Mã claim: \`${code}\` — hết hạn sau 10 phút.`,
+    content: `Hướng dẫn đã gửi qua DM. Mã claim: \`${code}\` — hết hạn sau 10 phút.`,
     flags: MessageFlags.Ephemeral,
   });
 }

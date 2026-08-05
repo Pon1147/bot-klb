@@ -28,6 +28,7 @@ export const botConfig = {
   databasePath: process.env.DATABASE_PATH || './data/bot.db',
   // DF Link crypto key (32 bytes, Base64-encoded)
   dfCredKeyV1: process.env.DF_CRED_KEY_V1 || null,
-  // Public HTTPS URL for claim API (multi-machine support)
-  publicBaseUrl: process.env.PUBLIC_BASE_URL || null,
+  // Discord Webhook handoff config
+  dfWebhookSecret: process.env.DF_WEBHOOK_SECRET || '',
+  dfLinkChannelId: process.env.DF_LINK_CHANNEL_ID || '',
 };

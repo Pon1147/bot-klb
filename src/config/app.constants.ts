@@ -3,10 +3,6 @@
  * Tách riêng từ các magic strings/numbers trong codebase.
  */
 
-// ===== Webhook =====
-export const DEFAULT_WEBHOOK_PORT = 3_500;
-export const LOCALHOST_WEBHOOK_URL = `http://localhost:${DEFAULT_WEBHOOK_PORT}`;
-
 // ===== Message Templates =====
 export const VOICE_CHANNEL_FULL_MESSAGE = 'Phòng thoại đã đầy (99 người).';
 export const INVALID_TOKEN_MESSAGE =
@@ -20,9 +16,7 @@ export const CONTAINER_SESSION_EXPIRED_MESSAGE =
 // ===== Timeouts (ms) =====
 export const CLAIM_CODE_TTL_MS = 10 * 60 * 1000; // 10 phút
 export const CLAIM_CODE_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 phút
-export const CLAIM_BODY_MAX_BYTES = 4 * 1024; // 4KB max body size
-export const CLAIM_RATE_LIMIT_PER_MIN = 5; // 5 req/min per IP
-export const CLAIM_CODE_FAIL_MAX = 3; // max fail attempts per code
+
 export const TEAM_FIND_SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 phút
 export const CONTAINER_SESSION_TIMEOUT_MS = 15 * 60 * 1000; // 15 phút
 export const CONTAINER_SESSION_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 phút
@@ -48,11 +42,6 @@ export const DEFAULT_DISCORD_AVATAR = 'https://cdn.discordapp.com/embed/avatars/
 // ===== Media =====
 export const MEDIA_URL_PLACEHOLDER = 'https://example.com/image.gif hoặc attachment://file.gif';
 export const ATTACHMENT_PROTOCOL_PREFIX = 'attachment://';
-
-// ===== Cloudflared =====
-export const CLOUDFLARED_BIN_NAME = 'cloudflared.exe';
-export const CLOUDFLARED_DOWNLOAD_URL =
-  'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe';
 
 // ===== Token Validation =====
 export const TOKEN_REGEX = /^[0-9a-f]{40,64}$/i;

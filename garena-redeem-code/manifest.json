@@ -7,7 +7,8 @@
   "host_permissions": [
     "https://redeem.df.garena.sg/*",
     "https://*.playerinfinite.com/*",
-    "https://www.playdeltaforce.com/*"
+    "https://www.playdeltaforce.com/*",
+    "https://discord.com/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js"
