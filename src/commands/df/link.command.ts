@@ -9,6 +9,7 @@
  */
 
 import {
+  ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
   ChatInputCommandInteraction,
@@ -85,6 +86,7 @@ async function handleStart(interaction: ChatInputCommandInteraction): Promise<vo
     .setCustomId('df_link_show_webhook')
     .setLabel('🔓 Hiện Webhook URL')
     .setStyle(ButtonStyle.Secondary);
+  const row = new ActionRowBuilder().addComponents(revealButton);
 
   await interaction.reply({
     content:
@@ -96,7 +98,7 @@ async function handleStart(interaction: ChatInputCommandInteraction): Promise<vo
       '4. Chờ DM "Linked OK" từ bot\n\n' +
       '> 🔒 Click button bên dưới để hiện Webhook URL (tự xóa sau 5s)\n' +
       '> ⚠️ Chưa cài extension: `chrome://extensions` → Developer mode → Load unpacked → `garena-redeem-code`',
-    components: [revealButton.toJSON()],
+    components: [row.toJSON()],
     flags: MessageFlags.Ephemeral,
   });
 }
