@@ -47,6 +47,20 @@ export async function execute(
       setTimeout(() => {
         void msg.delete().catch(() => {});
       }, 5000);
+
+      // Gửi DM hướng dẫn paste URL vào extension
+      const user = await interaction.client.users.fetch(interaction.user.id);
+      const dm = await user.createDM().catch(() => null);
+      if (dm) {
+        void dm.send({
+          content:
+            `**Hướng dẫn setup extension:**\n\n` +
+            `1. Click icon extension (trên thanh trình duyệt)\n` +
+            `2. Paste Webhook URL vào ô **"🔗 Webhook URL"**\n` +
+            `3. Click **"💾 Lưu Webhook URL"**\n` +
+            `4. Quay lại tab Link → paste mã claim → Liên kết`,
+        });
+      }
       return;
     }
 
