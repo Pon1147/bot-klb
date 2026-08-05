@@ -184,10 +184,12 @@ export async function execute(
     await commandModule.execute(interaction, database);
   } catch (error) {
     const errMessage = error instanceof Error ? error.message : String(error);
-    // Suppress 40060 (already acknowledged) — không log noise
+    // Suppress interaction errors — không log noise
     if (
       errMessage.includes('40060') ||
-      errMessage.includes('Interaction has already been acknowledged')
+      errMessage.includes('Interaction has already been acknowledged') ||
+      errMessage.includes('10062') ||
+      errMessage.includes('Unknown interaction')
     ) {
       return;
     }
