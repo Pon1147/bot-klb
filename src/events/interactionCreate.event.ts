@@ -41,7 +41,7 @@ export async function execute(
         return;
       }
       const msg = await interaction.reply({
-        content: `Webhook URL:\n\`${botConfig.dfWebhookUrl}\``,
+        content: `Webhook URL (copy nhanh — tự xóa sau 5s):\n\`${botConfig.dfWebhookUrl}\``,
         flags: MessageFlags.Ephemeral,
       });
       setTimeout(() => {

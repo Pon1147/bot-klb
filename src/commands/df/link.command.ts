@@ -74,43 +74,29 @@ export async function execute(
   }
 }
 
-/** Subcommand `start` — tạo claim code, gửi hướng dẫn extension qua DM */
+/** Subcommand `start` — tạo claim code, reply in-channel với button reveal webhook URL */
 async function handleStart(interaction: ChatInputCommandInteraction): Promise<void> {
   if (await requireGuild(interaction)) return;
 
   const code = generateCode(interaction.user.id);
 
-  const dmChannel = await interaction.user.createDM().catch(() => null);
-  if (!dmChannel) {
-    const err = buildErrorContainer('Không thể mở DM. Hãy bật DM trong Server Settings.');
-    await interaction.reply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  // Build button để reveal webhook URL
+  // Build button để reveal webhook URL (ephemeral, 5s auto-delete)
   const revealButton = new ButtonBuilder()
     .setCustomId('df-link:reveal-webhook')
     .setLabel('🔓 Mở khóa Webhook URL')
     .setStyle(ButtonStyle.Primary);
 
-  await dmChannel.send({
+  await interaction.reply({
     content:
       `**Liên kết tài khoản Delta Force**\n\n` +
       `**Mã claim: \`${code}\`** (hết hạn sau 10 phút)\n\n` +
-      '1. Truy cập [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html)\n' +
-      '2. Đăng nhập tài khoản → chờ trang load xong\n' +
-      '3. Mở extension → popup → paste Webhook URL → Lưu\n' +
-      '4. Tab **Link** → dán mã claim → bấm **Liên kết Discord**\n' +
-      '5. Chờ DM "Linked OK" từ bot\n\n' +
-      '> ⚠️ Nếu chưa cài extension: mở Chrome → `chrome://extensions` → Developer mode → Load unpacked → chọn folder `garena-redeem-code`',
+      '1. Mở [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html) → đăng nhập\n' +
+      '2. Mở extension → popup → paste Webhook URL → Lưu\n' +
+      '3. Tab **Link** → dán mã claim → bấm **Liên kết Discord**\n' +
+      '4. Chờ DM "Linked OK" từ bot\n\n' +
+      '> 🔒 Click button bên dưới để hiện Webhook URL (tự xóa sau 5s)\n' +
+      '> ⚠️ Chưa cài extension: `chrome://extensions` → Developer mode → Load unpacked → `garena-redeem-code`',
     components: [revealButton.toJSON()],
-  });
-
-  await interaction.reply({
-    content: `Hướng dẫn đã gửi qua DM. Mã claim: \`${code}\` — hết hạn sau 10 phút.`,
     flags: MessageFlags.Ephemeral,
   });
 }

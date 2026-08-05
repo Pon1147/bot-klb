@@ -136,48 +136,25 @@ describe('df-link.command', () => {
   });
 
   describe('subcommand: start', () => {
-    it('nên sinh claim code và gửi hướng dẫn qua DM', async () => {
+    it('nên sinh claim code và reply in-channel với button', async () => {
       const interaction = createMockInteraction();
       await execute(interaction, mockDb);
 
       expect(generateCode).toHaveBeenCalledWith('222');
-      expect(mockCreateDm).toHaveBeenCalled();
-      expect(mockDmSend).toHaveBeenCalled();
+      expect(mockCreateDm).not.toHaveBeenCalled();
+      expect(mockDmSend).not.toHaveBeenCalled();
       expect(mockReply).toHaveBeenCalled();
     });
 
-    it('nên gửi DM có chứa claim code', async () => {
-      const interaction = createMockInteraction();
-      await execute(interaction, mockDb);
-
-      const dmCall = mockDmSend.mock.calls[0];
-      expect(dmCall[0].content).toContain('ABC123');
-    });
-
-    it('nên reply ephemeral với xác nhận', async () => {
+    it('nên reply chứa claim code + button components', async () => {
       const interaction = createMockInteraction();
       await execute(interaction, mockDb);
 
       const replyCall = mockReply.mock.calls[0];
-      expect(replyCall[0].flags).toBe(MessageFlags.Ephemeral);
       expect(replyCall[0].content).toContain('ABC123');
-    });
-
-    it('nên handle DM error gracefully', async () => {
-      const mockConsoleError = console.error;
-      console.error = jest.fn();
-      try {
-        const interaction = createMockInteraction({
-          user: { id: '222', createDM: jest.fn().mockRejectedValue(new Error('DM blocked')) },
-        });
-        await execute(interaction, mockDb);
-
-        // Phải có reply (error case)
-        const responded = mockReply.mock.calls.length > 0;
-        expect(responded).toBe(true);
-      } finally {
-        console.error = mockConsoleError;
-      }
+      expect(replyCall[0].flags).toBe(MessageFlags.Ephemeral);
+      expect(replyCall[0].components).toBeDefined();
+      expect(replyCall[0].components).toHaveLength(1);
     });
   });
 
