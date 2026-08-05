@@ -47,7 +47,7 @@
       <style>
         #df-toolbox-panel {
           position: fixed;
-          top: 20px;
+          bottom: 20px;
           right: 20px;
           width: 320px;
           background: #1a1a2e;
@@ -185,7 +185,8 @@
       }
     } catch (err) {
       state.status = 'error';
-      statusEl.textContent = '❌ Network error: ' + err.message;
+      const errMsg = err?.message || 'Không thể kết nối đến bot. Kiểm tra PUBLIC_BASE_URL trong extension.';
+      statusEl.textContent = '❌ ' + errMsg;
       statusEl.style.color = '#f44336';
       submitBtn.disabled = false;
     }

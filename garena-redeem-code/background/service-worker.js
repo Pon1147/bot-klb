@@ -51,7 +51,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         error: data.error || (!r.ok ? 'http_' + r.status : undefined),
       });
     } catch (e) {
-      sendResponse({ ok: false, error: 'network' });
+      sendResponse({
+        ok: false,
+        error: 'network — Kiểm tra PUBLIC_BASE_URL trong extension',
+      });
     }
   })();
 
