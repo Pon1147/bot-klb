@@ -96,10 +96,8 @@ async function handleStart(interaction: ChatInputCommandInteraction): Promise<vo
       '2. Mở extension → popup → paste Webhook URL → Lưu\n' +
       '3. Tab **Link** → dán mã claim → bấm **Liên kết Discord**\n' +
       '4. Chờ DM "Linked OK" từ bot\n\n' +
-      '> 🔒 Click button bên dưới để hiện Webhook URL (tự xóa sau 5s)\n' +
-      '> ⚠️ Chưa cài extension: `chrome://extensions` → Developer mode → Load unpacked → `garena-redeem-code`',
+      '> 🔒 Click button bên dưới để hiện Webhook URL (chỉ hiện 1 lần, tự xóa sau 5s)',
     components: [row.toJSON()],
-    flags: MessageFlags.Ephemeral,
   });
 }
 

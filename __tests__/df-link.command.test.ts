@@ -157,7 +157,6 @@ describe('df-link.command', () => {
 
       const replyCall = mockReply.mock.calls[0];
       expect(replyCall[0].content).toContain('ABC123');
-      expect(replyCall[0].flags).toBe(MessageFlags.Ephemeral);
       expect(replyCall[0].components).toBeDefined();
       expect(replyCall[0].components).toHaveLength(1);
     });
