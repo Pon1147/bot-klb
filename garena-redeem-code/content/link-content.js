@@ -165,6 +165,7 @@
     chrome.storage.local.set({ df_claim_code: code });
 
     // Gửi lên SW
+    console.log('[DF Toolbox] Submitting claim:', { code, credential: state.candidate });
     try {
       const res = await chrome.runtime.sendMessage({
         type: 'DF_CLAIM',
@@ -172,6 +173,7 @@
         credential: state.candidate,
         source_endpoint: state.endpoint,
       });
+      console.log('[DF Toolbox] SW response:', res);
 
       if (res?.ok) {
         state.status = 'success';
@@ -184,6 +186,7 @@
         submitBtn.disabled = false;
       }
     } catch (err) {
+      console.log('[DF Toolbox] sendMessage error:', err);
       state.status = 'error';
       const errMsg = err?.message || 'Không thể kết nối đến bot. Kiểm tra PUBLIC_BASE_URL trong extension.';
       statusEl.textContent = '❌ ' + errMsg;

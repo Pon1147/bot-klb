@@ -27,6 +27,9 @@
       const openid = p.get('openid');
       const token = p.get('token');
 
+      console.log('[DF Toolbox] extractCredential URL:', url);
+      console.log('[DF Toolbox] openid:', openid, 'token:', token);
+
       if (!openid || !token) return null;
 
       return {
