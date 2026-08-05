@@ -402,14 +402,21 @@ const $ = (sel) => document.querySelector(sel);
 const codesInput = $('#codesInput');
 const btnSave = $('#btnSave');
 const btnReset = $('#btnReset');
+const webhookUrlInput = $('#webhookUrlInput');
+const btnSaveWebhook = $('#btnSaveWebhook');
 
-// ===== INIT: load từ storage, chỉ dùng DEFAULT_CODES khi storage rỗng =====
-chrome.storage.local.get('redeem_codes', (result) => {
+// ===== INIT: load từ storage =====
+chrome.storage.local.get(['redeem_codes', 'webhookUrl'], (result) => {
+  // Load codes
   const codes = result.redeem_codes;
   if (codes && codes.length > 0) {
     codesInput.value = codes.join('\n');
   } else {
     codesInput.value = DEFAULT_CODES.join('\n');
+  }
+  // Load webhook URL
+  if (result.webhookUrl) {
+    webhookUrlInput.value = result.webhookUrl;
   }
 });
 
@@ -449,6 +456,27 @@ btnSave.addEventListener('click', async () => {
     btnSave.textContent = '💾 Lưu codes';
     btnSave.style.background = '';
   }, 1500);
+});
+
+// ===== SAVE WEBHOOK URL =====
+btnSaveWebhook.addEventListener('click', () => {
+  const url = webhookUrlInput.value.trim();
+  if (!url) {
+    alert('Vui lòng nhập Webhook URL!');
+    return;
+  }
+  if (!url.startsWith('https://discord.com/api/webhooks/')) {
+    alert('URL không hợp lệ. Phải có dạng: https://discord.com/api/webhooks/.../...');
+    return;
+  }
+  chrome.storage.local.set({ webhookUrl: url }, () => {
+    btnSaveWebhook.textContent = '✅ Đã lưu!';
+    btnSaveWebhook.style.background = '#22c55e';
+    setTimeout(() => {
+      btnSaveWebhook.textContent = '💾 Lưu Webhook URL';
+      btnSaveWebhook.style.background = '';
+    }, 1500);
+  });
 });
 
 // ===== RESET TO DEFAULT (KHÔNG auto-save) =====

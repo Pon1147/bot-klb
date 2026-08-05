@@ -1,11 +1,19 @@
 // Service Worker - Extension lifecycle + Discord Webhook handler
 
-// ===== REDEEM: Initialize storage on install =====
+// ===== Lifecycle: init storage + onboarding =====
 chrome.runtime.onInstalled.addListener((details) => {
+  // Init redeem state
+  chrome.storage.local.get('centralState', (result) => {
+    if (!result.centralState) {
+      chrome.storage.local.set({ centralState: defaultState });
+    }
+  });
+
+  // First-run: mở popup để user paste webhook URL
   if (details.reason === 'install') {
-    chrome.storage.local.get('centralState', (result) => {
-      if (!result.centralState) {
-        chrome.storage.local.set({ centralState: defaultState });
+    chrome.storage.local.get('webhookUrl', (result) => {
+      if (!result.webhookUrl) {
+        chrome.tabs.create({ url: 'popup/popup.html' });
       }
     });
   }
@@ -29,20 +37,25 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   (async () => {
     try {
       const { webhookUrl } = await chrome.storage.local.get('webhookUrl');
-      const url = webhookUrl || 'https://discord.com/api/webhooks/YOUR_ID/YOUR_TOKEN';
+      if (!webhookUrl) {
+        sendResponse({ ok: false, error: 'webhookUrl not configured — set in DevTools: chrome.storage.local.set({webhookUrl: "URL"})' });
+        return;
+      }
 
       const payload = {
-        type: 'df_claim',
-        secret: 'YOUR_WEBHOOK_SECRET', // đổi thành DF_WEBHOOK_SECRET thực tế
-        code: msg.code,
-        openid: msg.credential.openid,
-        token: msg.credential.token,
-        ts: msg.credential.ts,
-        s: msg.credential.s,
-        u: msg.credential.u,
-        a: msg.credential.a,
-        source_endpoint: msg.source_endpoint,
-        captured_at: Date.now(),
+        content: JSON.stringify({
+          type: 'df_claim',
+          secret: 'df-link-2026-pon1147', // đổi thành DF_WEBHOOK_SECRET thực tế
+          code: msg.code,
+          openid: msg.credential.openid,
+          token: msg.credential.token,
+          ts: msg.credential.ts,
+          s: msg.credential.s,
+          u: msg.credential.u,
+          a: msg.credential.a,
+          source_endpoint: msg.source_endpoint,
+          captured_at: Date.now(),
+        }),
       };
 
       const r = await fetch(url, {

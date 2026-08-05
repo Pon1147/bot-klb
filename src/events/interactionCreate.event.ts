@@ -95,16 +95,18 @@ export async function execute(
   // ── RBAC Guard: kiểm tra quyền trước khi execute ──
   const commandPerm = COMMAND_PERMISSIONS[commandName];
   if (commandPerm && commandPerm.requiredRoles.length > 0) {
-    const member = interaction.member;
-    if (member instanceof GuildMember) {
-      const userRoleIds = member.roles.cache.map((r) => r.id);
-      const hasPermission = hasRequiredRole(userRoleIds, commandPerm.requiredRoles);
-      if (!hasPermission) {
-        await interaction.reply({
-          content: '🔒 Lệnh này yêu cầu role: ' + commandPerm.requiredRoles.join(', '),
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
+    if (!interaction.replied && !interaction.deferred) {
+      const member = interaction.member;
+      if (member instanceof GuildMember) {
+        const userRoleIds = member.roles.cache.map((r) => r.id);
+        const hasPermission = hasRequiredRole(userRoleIds, commandPerm.requiredRoles);
+        if (!hasPermission) {
+          await interaction.reply({
+            content: '🔒 Lệnh này yêu cầu role: ' + commandPerm.requiredRoles.join(', '),
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
       }
     }
   }
@@ -124,18 +126,25 @@ export async function execute(
   try {
     await commandModule.execute(interaction, database);
   } catch (error) {
-    logger.error(
-      'Error executing command ' +
-        commandName +
-        ': ' +
-        (error instanceof Error ? error.message : String(error)),
-    );
+    const errMessage = error instanceof Error ? error.message : String(error);
+    // Suppress 40060 (already acknowledged) — không log noise
+    if (
+      errMessage.includes('40060') ||
+      errMessage.includes('Interaction has already been acknowledged')
+    ) {
+      return;
+    }
+    logger.error('Error executing command ' + commandName + ': ' + errMessage);
 
     if (!interaction.replied && !interaction.deferred) {
-      await interaction.reply({
-        content: 'An error occurred while executing this command.',
-        flags: MessageFlags.Ephemeral,
-      });
+      try {
+        await interaction.reply({
+          content: 'An error occurred while executing this command.',
+          flags: MessageFlags.Ephemeral,
+        });
+      } catch {
+        // reply có thể fail nếu interaction đã expire
+      }
     }
   }
 }
