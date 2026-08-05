@@ -1,5 +1,8 @@
 import {
+  ActionRowBuilder,
+  ButtonBuilder,
   ButtonInteraction,
+  ButtonStyle,
   ChatInputCommandInteraction,
   Client,
   Events,
@@ -10,6 +13,7 @@ import {
 } from 'discord.js';
 import { createLogger } from '../utils/logger.js';
 import { botConfig } from '../config/bot.config.js';
+import { getActiveBinding } from '../database/df-binding.db.js';
 import { ContainerIds, ContainerModalPrefix } from '../commands/container/container-ids.js';
 import { TeamFindIds } from '../commands/df/team-find-ids.js';
 import { handleTeamFindButton, handleTeamFindSelect } from '../commands/df/team-find.handlers.js';
@@ -31,33 +35,60 @@ export async function execute(
 ): Promise<void> {
   // ── 1. Button Interactions ──
   if (interaction.isButton()) {
-    // DF Link: reveal webhook URL (ephemeral, auto-delete 5s)
+    // DF Link: reveal webhook URL (ephemeral, auto-delete 5s, chỉ 1 lần)
     if (interaction.customId === 'df_link_show_webhook') {
       if (!botConfig.dfWebhookUrl) {
-        await interaction.reply({
-          content: 'Webhook URL chưa được cấu hình.',
-          flags: MessageFlags.Ephemeral,
-        });
+        await interaction
+          .reply({
+            content: 'Webhook URL chưa được cấu hình.',
+            flags: MessageFlags.Ephemeral,
+          })
+          .catch(() => {});
         return;
       }
-      await interaction.reply({
-        content: [
-          '**Webhook URL** (copy ngay — tự xóa sau 5 giây):',
-          '```',
-          botConfig.dfWebhookUrl,
-          '```',
-        ].join('\n'),
-        flags: MessageFlags.Ephemeral,
-      });
 
-      // Tự xóa sau 5 giây
-      setTimeout(async () => {
+      // Kiểm tra user đã link chưa → disable button
+      const binding = getActiveBinding(client.database, interaction.user.id);
+      if (binding) {
+        const disabledBtn = new ButtonBuilder()
+          .setCustomId('df_link_show_webhook')
+          .setLabel('✅ Đã link — không cần URL')
+          .setStyle(ButtonStyle.Secondary)
+          .setDisabled(true);
+        const row = new ActionRowBuilder().addComponents(disabledBtn);
         try {
-          await interaction.deleteReply();
+          await interaction.update({
+            content: interaction.message.content,
+            components: [row.toJSON()],
+          });
         } catch {
-          // message đã bị xóa hoặc hết hạn
+          // message đã expire
         }
-      }, 5000);
+        return;
+      }
+
+      try {
+        await interaction.reply({
+          content: [
+            '**Webhook URL** (copy ngay — tự xóa sau 5 giây):',
+            '```',
+            botConfig.dfWebhookUrl,
+            '```',
+          ].join('\n'),
+          flags: MessageFlags.Ephemeral,
+        });
+
+        // Tự xóa sau 5 giây
+        setTimeout(async () => {
+          try {
+            await interaction.deleteReply();
+          } catch {
+            // message đã bị xóa hoặc hết hạn
+          }
+        }, 5000);
+      } catch {
+        // interaction đã expire (10062) — bỏ qua
+      }
       return;
     }
 
