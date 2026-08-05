@@ -23,13 +23,17 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 // ===== LINK: Handle DF_CLAIM from link-content.js =====
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  console.log('[DF Toolbox SW] Received DF_CLAIM:', msg);
+
   if (msg?.type !== 'DF_CLAIM') return;
 
   (async () => {
     try {
       // Đọc claimBaseUrl từ storage, fallback hardcode
       const { claimBaseUrl } = await chrome.storage.local.get('claimBaseUrl');
-      const base = claimBaseUrl || 'https://moves-reproduction-accept-carl.trycloudflare.com'; // private build
+      const base = claimBaseUrl || 'https://moves-reproduction-accept-carl.trycloudflare.com';
+      console.log('[DF Toolbox SW] Using base URL:', base);
+
       const body = {
         code: msg.code,
         openid: msg.credential.openid,
@@ -40,20 +44,30 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         a: msg.credential.a,
         source_endpoint: msg.source_endpoint,
       };
-      const r = await fetch(`${base.replace(/\/$/, '')}/api/df/claim`, {
+      console.log('[DF Toolbox SW] Sending body:', JSON.stringify(body).slice(0, 100) + '...');
+
+      const url = `${base.replace(/\/$/, '')}/api/df/claim`;
+      console.log('[DF Toolbox SW] Fetch URL:', url);
+
+      const r = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
+
+      console.log('[DF Toolbox SW] Fetch response status:', r.status);
       const data = await r.json().catch(() => ({}));
+      console.log('[DF Toolbox SW] Fetch response data:', data);
+
       sendResponse({
         ok: r.ok && data.ok === true,
         error: data.error || (!r.ok ? 'http_' + r.status : undefined),
       });
     } catch (e) {
+      console.log('[DF Toolbox SW] Fetch error:', e);
       sendResponse({
         ok: false,
-        error: 'network — Kiểm tra PUBLIC_BASE_URL trong extension',
+        error: 'network — ' + (e?.message || 'Unknown error'),
       });
     }
   })();
