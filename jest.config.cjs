@@ -25,7 +25,6 @@ module.exports = {
     'src/**/*.ts',
     '!src/index.ts',
     '!src/config/bot.config.ts',
-    '!src/scraper/**/*.ts',
     '!src/services/deltaforce.scraper.ts',
     '!src/services/team-find-*.ts',
   ],
@@ -38,7 +37,6 @@ module.exports = {
       statements: 93,
     },
     // Per-file thresholds for ESM tracking gaps and mocking limitations:
-    // - webhook.routes.ts: express router fallback parse + outer catch block
     // - df-claim-store.ts: makeCode() fallback path requires 10 random collisions
     // - df/code.command.ts: buildCodesContainer uses discord.js builders
     // - df-guards.ts: requireDfToken/requireDfTokenOrInfo not reached by unit tests
@@ -47,12 +45,6 @@ module.exports = {
     // - df/history.command.ts: addIntegerOption builder call
     // - df/link.command.ts: editReply fallback in catch block
     // - df/unlink.command.ts: legacy df_tokens delete path
-    'src/server/webhook.routes.ts': {
-      branches: 50,
-      functions: 100,
-      lines: 85,
-      statements: 86,
-    },
     'src/services/df-claim-store.ts': {
       branches: 100,
       functions: 100,

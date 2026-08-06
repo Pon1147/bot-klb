@@ -120,14 +120,9 @@ describe('df-link.command', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.WEBHOOK_URL = 'https://test.trycloudflare.com';
     (generateCode as jest.Mock).mockReturnValue('ABC123');
     (getActiveBinding as jest.Mock).mockReturnValue(undefined);
     (saveDfToken as jest.Mock).mockReturnValue(true);
-  });
-
-  afterEach(() => {
-    delete process.env.WEBHOOK_URL;
   });
 
   describe('guild check', () => {
