@@ -73,6 +73,13 @@ export function generateCode(database: Database.Database, discordId: string): st
 }
 
 /**
+ * Bat dau cleanup tu dong moi 5 phut.
+ */
+export function startCleanup(): void {
+  store.startCleanup();
+}
+
+/**
  * Dung ma claim. Tra ve discordId neu thanh cong, null neu ma sai/het han/da dung.
  */
 export function consumeCode(code: string): string | null {
@@ -90,13 +97,6 @@ export function consumeCode(code: string): string | null {
  */
 export function cleanupExpired(): void {
   store.cleanupExpired();
-}
-
-/**
- * Bat dau cleanup tu dong moi 5 phut.
- */
-export function startCleanup(): void {
-  store.startCleanup();
 }
 
 /**

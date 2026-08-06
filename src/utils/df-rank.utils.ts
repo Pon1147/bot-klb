@@ -429,18 +429,15 @@ export function resolveRankFromScore(score: number): DfRank | null {
       return rank;
     }
   }
-  // Fallback: return closest rank by score (dead code — all ranges contiguous)
-  /* istanbul ignore next */
-  {
-    const sorted = [...modeRanks].sort((a, b) => a.minScore - b.minScore);
-    let closest = sorted[0];
-    for (const rank of sorted) {
-      if (score >= rank.minScore) {
-        closest = rank;
-      } else {
-        break;
-      }
+  // Fallback: score ngoài mọi range → trả về rank gần nhất
+  const sorted = [...modeRanks].sort((a, b) => a.minScore - b.minScore);
+  let closest = sorted[0];
+  for (const rank of sorted) {
+    if (score >= rank.minScore) {
+      closest = rank;
+    } else {
+      break;
     }
-    return closest;
   }
+  return closest;
 }
