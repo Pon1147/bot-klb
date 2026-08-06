@@ -94,6 +94,7 @@ export function encryptCredential(
   cipher.setAAD(aad);
 
   const ciphertext = cipher.update(plaintext, 'utf8', 'hex');
+  cipher.final(); // finalize GCM trước khi getAuthTag
   const tag = cipher.getAuthTag().toString('hex');
 
   return { nonce: nonce.toString('hex'), ciphertext, tag };
