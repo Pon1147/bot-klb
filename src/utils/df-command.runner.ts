@@ -3,6 +3,8 @@
 import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import Database from 'better-sqlite3';
 import { getDfToken, touchDfToken } from '../database/df.token.db.js';
+import { getActiveBinding } from '../database/df-binding.db.js';
+import { decryptCredential } from '../services/df-crypto.js';
 import { requireGuild } from './df-guards.js';
 import { buildErrorContainer } from './container.utils.js';
 
@@ -24,7 +26,7 @@ export interface DfCommandContext {
 /**
  * Execute a Delta Force command with shared boilerplate:
  * 1. requireGuild guard
- * 2. Token validation (getDfToken + error container)
+ * 2. Binding validation (getActiveBinding → decrypt, fallback getDfToken legacy)
  * 3. deferReply
  * 4. Execute the command callback
  * 5. Handle errors with buildErrorContainer
@@ -39,8 +41,45 @@ export async function runDfCommand(
   // Step 1: Guild guard
   if (await requireGuild(ctx.interaction)) return true;
 
-  // Step 2: Token validation
-  const token = getDfToken(ctx.database, ctx.userId);
+  // Step 2: Binding validation (new encrypted binding first, fallback legacy)
+  let token: import('../database/df.token.db.js').DfTokenRow | undefined | null = null;
+
+  try {
+    const binding = getActiveBinding(ctx.database, ctx.userId);
+    if (binding) {
+      // Decrypt credential from binding
+      try {
+        const decrypted = decryptCredential(
+          binding.cred_nonce,
+          binding.cred_ciphertext,
+          binding.cred_tag,
+          binding.discord_user_id,
+          binding.openid,
+        );
+        const cred = JSON.parse(decrypted);
+        token = {
+          discord_id: ctx.userId,
+          openid: binding.openid,
+          token: cred.token,
+          ts: cred.ts || null,
+          s: cred.s || null,
+          u: cred.u || null,
+          linked_at: binding.captured_at || new Date().toISOString(),
+          last_used_at: null,
+        };
+      } catch {
+        // Decrypt failed → fallback to legacy
+        token = getDfToken(ctx.database, ctx.userId);
+      }
+    } else {
+      // No binding → check legacy token
+      token = getDfToken(ctx.database, ctx.userId);
+    }
+  } catch {
+    // Table doesn't exist (test env) → fallback to legacy
+    token = getDfToken(ctx.database, ctx.userId);
+  }
+
   if (!token) {
     const err = buildErrorContainer(
       'Ban chua lien ket tai khoan. Dung `/df-link start` hoac `/df-link manual` de bat dau.',
