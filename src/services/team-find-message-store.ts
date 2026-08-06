@@ -32,8 +32,3 @@ export function getMessageRef(
 export function deleteMessageRef(guildId: string, userId: string): void {
   store.delete(key(guildId, userId));
 }
-
-/** Xóa tất cả reference cũ */
-export function clearStore(): void {
-  store.clear();
-}

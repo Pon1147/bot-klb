@@ -41,14 +41,6 @@ export function loadPermissions(config: PermissionsConfig): void {
 }
 
 /**
- * Lấy tất cả role IDs (Owner + Moderator).
- * Dùng để check permissions chung.
- */
-export function getAllRoleIds(): string[] {
-  return Object.values(ROLE_IDS);
-}
-
-/**
  * Check xem user có ít nhất 1 role được yêu cầu không.
  */
 export function hasRequiredRole(userRoleIds: string[], requiredRoleIds: string[]): boolean {

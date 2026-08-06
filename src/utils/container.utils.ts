@@ -29,10 +29,7 @@ export interface BuildContainerOptions {
  * Build hàng nút bút chì để mở container editor.
  * CustomId encode guildId + type để router có thể extract khi click.
  */
-export function buildPencilButtonRow(
-  editType: string,
-  guildId: string,
-): ActionRowBuilder<ButtonBuilder> {
+function buildPencilButtonRow(editType: string, guildId: string): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`container_edit_pencil_${guildId}_${editType}`)

@@ -22,13 +22,6 @@ export interface EncryptedCredential {
 const keyRegistry = new Map<string, Buffer>();
 
 /**
- * Đăng ký key cho version. Default: v1 từ DF_CRED_KEY_V1 env.
- */
-export function registerKey(version: string, key: Buffer): void {
-  keyRegistry.set(version, key);
-}
-
-/**
  * Khởi tạo key từ env variable (Base64-encoded 32 bytes).
  * Throw nếu thiếu hoặc sai độ dài.
  */
@@ -43,14 +36,7 @@ export function initCryptoKey(version = 'v1'): void {
     throw new Error(`DF_CRED_KEY_V1 must be 32 bytes (got ${key.length})`);
   }
 
-  registerKey(version, key);
-}
-
-/**
- * Kiểm tra key đã được cấu hình chưa.
- */
-export function verifyCryptoKey(version = 'v1'): boolean {
-  return keyRegistry.has(version);
+  keyRegistry.set(version, key);
 }
 
 /**
