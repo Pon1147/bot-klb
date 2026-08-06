@@ -65,7 +65,7 @@ export async function execute(
 
   switch (subcommand) {
     case 'start':
-      return handleStart(interaction);
+      return handleStart(interaction, database);
     case 'status':
       return handleStatus(interaction, database);
     case 'unlink':
@@ -76,10 +76,13 @@ export async function execute(
 }
 
 /** Subcommand `start` — tạo claim code, reply in-channel với button reveal webhook URL */
-async function handleStart(interaction: ChatInputCommandInteraction): Promise<void> {
+async function handleStart(
+  interaction: ChatInputCommandInteraction,
+  database: Database.Database,
+): Promise<void> {
   if (await requireGuild(interaction)) return;
 
-  const code = generateCode(interaction.user.id);
+  const code = generateCode(database, interaction.user.id);
 
   // Build button để reveal webhook URL (ephemeral, 5s auto-delete)
   const revealButton = new ButtonBuilder()

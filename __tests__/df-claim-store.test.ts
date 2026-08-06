@@ -11,8 +11,17 @@ import {
 } from '../src/services/df-claim-store.js';
 
 describe('df-claim-store', () => {
+  // Mock database cho generateCode (cần DB để save claim session)
+  const mockDb: any = {
+    prepare: jest.fn(() => ({
+      run: jest.fn().mockReturnValue({ changes: 1 }),
+    })),
+    exec: jest.fn(),
+  };
+
   beforeEach(() => {
     resetStore();
+    mockDb.prepare.mockClear();
   });
 
   afterEach(() => {
@@ -21,21 +30,21 @@ describe('df-claim-store', () => {
 
   describe('generateCode', () => {
     it('nên tạo mã claim 6 ký tự', () => {
-      const code = generateCode('user-123');
+      const code = generateCode(mockDb, 'user-123');
       expect(code).toHaveLength(6);
       // Không chứa ký tự dễ nhầm: I, 1, O, 0
       expect(code).not.toMatch(/[I1O0]/);
     });
 
     it('nên tạo mã khác nhau cho các user khác nhau', () => {
-      const code1 = generateCode('user-1');
-      const code2 = generateCode('user-2');
+      const code1 = generateCode(mockDb, 'user-1');
+      const code2 = generateCode(mockDb, 'user-2');
       expect(code1).not.toBe(code2);
     });
 
     it('nên thay thế mã cũ khi cùng user generate lại', () => {
-      const code1 = generateCode('user-123');
-      const code2 = generateCode('user-123');
+      const code1 = generateCode(mockDb, 'user-123');
+      const code2 = generateCode(mockDb, 'user-123');
       expect(code1).not.toBe(code2);
       // Mã cũ không thể consume được nữa
       expect(consumeCode(code1)).toBeNull();
@@ -45,7 +54,7 @@ describe('df-claim-store', () => {
 
   describe('consumeCode', () => {
     it('nên trả về discordId khi mã hợp lệ', () => {
-      const code = generateCode('user-123');
+      const code = generateCode(mockDb, 'user-123');
       expect(consumeCode(code)).toBe('user-123');
     });
 
@@ -54,7 +63,7 @@ describe('df-claim-store', () => {
     });
 
     it('nên trả về null cho mã đã dùng (single-use)', () => {
-      const code = generateCode('user-123');
+      const code = generateCode(mockDb, 'user-123');
       consumeCode(code);
       expect(consumeCode(code)).toBeNull();
     });
@@ -62,7 +71,7 @@ describe('df-claim-store', () => {
 
   describe('cleanupExpired', () => {
     it('nên để nguyên các mã chưa hết hạn', () => {
-      generateCode('user-123');
+      generateCode(mockDb, 'user-123');
       // Mã mới không bị xóa
       // Vì TTL là 10 phút, cleanup sẽ không xóa
       expect(() => cleanupExpired()).not.toThrow();
@@ -73,7 +82,7 @@ describe('df-claim-store', () => {
     });
 
     it('nên xóa các mã đã hết hạn', () => {
-      generateCode('user-123');
+      generateCode(mockDb, 'user-123');
 
       // Manual: inject expired entry into store via generateCode + time travel
       // Since we can't set expiresAt directly, verify cleanupExpired runs
@@ -83,14 +92,14 @@ describe('df-claim-store', () => {
     });
 
     it('nên xử lý mã hết hạn khi consumeCode', () => {
-      generateCode('user-123');
+      generateCode(mockDb, 'user-123');
 
       // Simulate expired code by calling consumeCode twice (second returns null)
-      const code = generateCode('user-exp');
+      const code = generateCode(mockDb, 'user-exp');
       consumeCode(code); // consume
 
       // Re-generate for same user (old is deleted)
-      const code2 = generateCode('user-exp');
+      const code2 = generateCode(mockDb, 'user-exp');
       expect(consumeCode(code2)).toBe('user-exp');
       expect(consumeCode(code2)).toBeNull(); // single-use
     });
@@ -125,13 +134,17 @@ describe('df-claim-store', () => {
 
       reset();
 
+      const mockDbFallback: any = {
+        prepare: jest.fn(() => ({ run: jest.fn().mockReturnValue({ changes: 1 }) })),
+      };
+
       // First call: store is empty, "AAAAAA" is generated and stored (attempt 1 succeeds)
-      const code1 = gen('user-1');
+      const code1 = gen(mockDbFallback, 'user-1');
       expect(code1).toBe('AAAAAA');
 
       // For the next user, "AAAAAA" already exists in store (from user-1)
       // makeCode() retries 10 times, all returning "AAAAAA" → hits fallback
-      const code2 = gen('user-2');
+      const code2 = gen(mockDbFallback, 'user-2');
       expect(code2).not.toBe('AAAAAA');
       expect(code2).toHaveLength(6);
 
@@ -150,7 +163,12 @@ describe('df-claim-store', () => {
           resetStore: reset,
         } = require('../src/services/df-claim-store.js');
         reset();
-        const code = genCode('user-expired');
+
+        const mockDbExpired: any = {
+          prepare: jest.fn(() => ({ run: jest.fn().mockReturnValue({ changes: 1 }) })),
+        };
+
+        const code = genCode(mockDbExpired, 'user-expired');
 
         // Advance past TTL (10 min + 1s)
         jest.advanceTimersByTime(10 * 60 * 1000 + 1000);
@@ -173,14 +191,18 @@ describe('df-claim-store', () => {
           consumeCode: consume,
         } = require('../src/services/df-claim-store.js');
 
+        const mockDbCleanup: any = {
+          prepare: jest.fn(() => ({ run: jest.fn().mockReturnValue({ changes: 1 }) })),
+        };
+
         // Generate a code, then advance past TTL
-        const code = genCode('user-cleanup');
+        const code = genCode(mockDbCleanup, 'user-cleanup');
 
         // Code should be valid now
         expect(consume(code)).not.toBeNull();
 
         // Generate again and advance time
-        const code2 = genCode('user-cleanup-2');
+        const code2 = genCode(mockDbCleanup, 'user-cleanup-2');
         jest.advanceTimersByTime(10 * 60 * 1000 + 1000);
 
         // cleanupExpired should delete expired code (line 79)

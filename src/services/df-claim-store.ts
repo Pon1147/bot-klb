@@ -4,7 +4,9 @@
  */
 
 import { randomBytes } from 'crypto';
+import Database from 'better-sqlite3';
 import { TTLStore } from '../utils/ttl-store.js';
+import { createClaimSession } from '../database/df-claim.db.js';
 import {
   CLAIM_CODE_TTL_MS,
   CLAIM_CODE_CLEANUP_INTERVAL_MS,
@@ -49,7 +51,7 @@ function makeCode(): string {
 /**
  * Tao ma claim moi cho user Discord.
  */
-export function generateCode(discordId: string): string {
+export function generateCode(database: Database.Database, discordId: string): string {
   // Xoa ma cuo cua user neu con (1 user = 1 ma tai 1 thoi diem)
   for (const [code, entry] of store.entries()) {
     if (entry.discordId === discordId) {
@@ -58,10 +60,15 @@ export function generateCode(discordId: string): string {
   }
 
   const code = makeCode();
+  const expiresAt = Date.now() + CLAIM_CODE_TTL_MS;
   store.set(code as string, {
     discordId,
-    expiresAt: Date.now() + CLAIM_CODE_TTL_MS,
+    expiresAt,
   });
+
+  // Luu vao DB de atomicConsumeClaim tim thay
+  createClaimSession(database, code, discordId, expiresAt);
+
   return code;
 }
 

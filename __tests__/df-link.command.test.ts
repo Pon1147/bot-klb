@@ -145,7 +145,7 @@ describe('df-link.command', () => {
       const interaction = createMockInteraction();
       await execute(interaction, mockDb);
 
-      expect(generateCode).toHaveBeenCalledWith('222');
+      expect(generateCode).toHaveBeenCalledWith(mockDb, '222');
       expect(mockCreateDm).not.toHaveBeenCalled();
       expect(mockDmSend).not.toHaveBeenCalled();
       expect(mockReply).toHaveBeenCalled();
