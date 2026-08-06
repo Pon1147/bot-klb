@@ -114,9 +114,11 @@
       <input type="text" id="df-link-code" placeholder="Dán claim code từ Discord" maxlength="6" />
       <button id="df-link-submit" ${state.status !== 'ready' ? 'disabled' : ''}>Liên kết Discord</button>
       <div class="hint">
-        1. Dùng /df-link start trên Discord<br>
+        <strong>Bắt buộc:</strong> Chạy /df-link start trên Discord trước<br>
+        1. Chạy /df-link start → nhận code<br>
         2. Dán code ở trên<br>
-        3. Nhấn Liên kết Discord
+        3. Nhấn Liên kết Discord<br>
+        4. Chờ DM "Chúc mừng liên kết thành công"
       </div>
     `;
 
@@ -139,7 +141,7 @@
       case 'idle': return 'Đang chờ credential từ HQ session...';
       case 'ready': return `Đã capture! OpenID: ${state.candidate.openid.slice(0, 4)}•••`;
       case 'submitting': return 'Đang gửi claim...';
-      case 'success': return '✅ Linked thành công! Kiểm tra DM Discord.';
+      case 'success': return '✅ Đã gửi yêu cầu! Chờ DM "Chúc mừng liên kết thành công".';
       case 'error': return '❌ Lỗi — xem console.';
       default: return 'Đang tải...';
     }
