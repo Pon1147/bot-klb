@@ -1,12 +1,5 @@
+import type { DfApiToken } from '../types/deltaforce.types.js';
 import type { DfTokenRow } from '../database/df.token.db.js';
-
-export interface DfApiToken {
-  openid: string;
-  token: string;
-  ts: string | undefined;
-  s: string | undefined;
-  u: string | undefined;
-}
 
 export function buildDfApiToken(row: DfTokenRow): DfApiToken {
   return {
