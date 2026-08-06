@@ -10,7 +10,7 @@
 
 import Database from 'better-sqlite3';
 
-export interface AccountBindingRow {
+interface AccountBindingRow {
   id: number;
   discord_user_id: string;
   provider: string;

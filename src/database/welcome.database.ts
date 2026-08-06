@@ -6,7 +6,7 @@ import { botConfig } from '../config/bot.config.js';
 /**
  * Interface for welcome message configuration stored in database.
  */
-export interface WelcomeConfiguration {
+interface WelcomeConfiguration {
   guildId: string;
   channelId: string | null;
   roleId: string | null;

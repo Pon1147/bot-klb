@@ -8,16 +8,6 @@
 
 import Database from 'better-sqlite3';
 
-export interface ClaimSessionRow {
-  code: string;
-  discord_user_id: string;
-  status: 'pending' | 'consumed' | 'expired';
-  created_at: string;
-  expires_at: string;
-  consumed_at: string | null;
-  fail_count: number;
-}
-
 /**
  * Khởi tạo bảng df_claim_sessions.
  */
