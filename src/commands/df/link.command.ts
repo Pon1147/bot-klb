@@ -75,7 +75,7 @@ export async function execute(
   }
 }
 
-/** Subcommand `start` — tạo claim code, reply in-channel với button reveal webhook URL */
+/** Subcommand `start` — tạo claim code, reply ephemeral với button reveal webhook URL */
 async function handleStart(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
@@ -84,10 +84,10 @@ async function handleStart(
 
   const code = generateCode(database, interaction.user.id);
 
-  // Build button để reveal webhook URL (ephemeral, 5s auto-delete)
+  // Build button để reveal webhook URL (ephemeral reply, button disable sau click)
   const revealButton = new ButtonBuilder()
     .setCustomId('df_link_show_webhook')
-    .setLabel('🔓 Hiện Webhook URL')
+    .setLabel('Hiện Webhook URL')
     .setStyle(ButtonStyle.Secondary);
   const row = new ActionRowBuilder().addComponents(revealButton);
 
@@ -99,8 +99,9 @@ async function handleStart(
       '2. Mở extension → popup → paste Webhook URL → Lưu\n' +
       '3. Tab **Link** → dán mã claim → bấm **Liên kết Discord**\n' +
       '4. Chờ DM "Linked OK" từ bot\n\n' +
-      '> 🔒 Click button bên dưới để hiện Webhook URL (chỉ hiện 1 lần, tự xóa sau 5s)',
+      '> Nhấn button bên dưới để hiện Webhook URL (chỉ hiện 1 lần)',
     components: [row.toJSON()],
+    flags: MessageFlags.Ephemeral,
   });
 }
 

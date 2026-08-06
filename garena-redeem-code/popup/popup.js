@@ -405,7 +405,53 @@ const btnReset = $('#btnReset');
 const webhookUrlInput = $('#webhookUrlInput');
 const btnSaveWebhook = $('#btnSaveWebhook');
 
-// ===== INIT: load từ storage =====
+// ===== SITE DETECTION =====
+/**
+ * Detect website hiện tại từ active tab URL → trả về 'playdeltaforce' | 'garena' | null
+ */
+function detectSiteFromUrl(url) {
+  if (!url) return null;
+  if (url.includes('playdeltaforce.com')) return 'playdeltaforce';
+  if (url.includes('redeem.df.garena.sg')) return 'garena';
+  return null;
+}
+
+/**
+ * Hiển thị/ẩn sections dựa trên site detected.
+ * Chỉ show section phù hợp với website hiện tại.
+ */
+function showSectionForSite(site) {
+  const sections = document.querySelectorAll('.section[data-site]');
+  sections.forEach((section) => {
+    const siteKey = section.getAttribute('data-site');
+    if (site && siteKey === site) {
+      section.classList.remove('hidden');
+    } else {
+      section.classList.add('hidden');
+    }
+  });
+}
+
+/**
+ * Load URL của tab đang active → detect site → show/hide sections.
+ */
+async function initDynamicUI() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const site = detectSiteFromUrl(tab?.url);
+    if (site) {
+      console.log('[Popup] Detected site:', site, '— showing relevant section');
+      showSectionForSite(site);
+    } else {
+      console.log('[Popup] Unknown site — showing all sections');
+    }
+  } catch (err) {
+    console.warn('[Popup] Failed to detect site:', err);
+  }
+}
+
+// ===== INIT: load từ storage + detect site =====
+initDynamicUI();
 chrome.storage.local.get(['redeem_codes', 'webhookUrl'], (result) => {
   // Load codes
   const codes = result.redeem_codes;
@@ -472,6 +518,8 @@ btnSaveWebhook.addEventListener('click', () => {
   chrome.storage.local.set({ webhookUrl: url }, () => {
     btnSaveWebhook.textContent = '✅ Đã lưu!';
     btnSaveWebhook.style.background = '#22c55e';
+    // Ẩn input để tránh lộ URL
+    webhookUrlInput.value = '';
     setTimeout(() => {
       btnSaveWebhook.textContent = '💾 Lưu Webhook URL';
       btnSaveWebhook.style.background = '';

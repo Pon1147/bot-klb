@@ -179,3 +179,8 @@ body {
 .footer a:hover {
   text-decoration: underline;
 }
+
+/* Ẩn phần tử (dùng cho dynamic UI) */
+.hidden {
+  display: none !important;
+}

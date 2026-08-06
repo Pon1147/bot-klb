@@ -19,6 +19,9 @@ import { handleTeamFindButton, handleTeamFindSelect } from '../commands/df/team-
 
 const logger = createLogger('InteractionCreate');
 import { COMMAND_PERMISSIONS, hasRequiredRole } from '../config/permissions.js';
+
+// Track users đã click button reveal webhook URL — chống spam
+const webhookRevealedUsers = new Set<string>();
 import {
   handleEditorButtonInteraction as handleContainerEditorButtonInteraction,
   handleEditorModalSubmit as handleContainerEditorModalSubmit,
@@ -34,8 +37,19 @@ export async function execute(
 ): Promise<void> {
   // ── 1. Button Interactions ──
   if (interaction.isButton()) {
-    // DF Link: reveal webhook URL (ephemeral, auto-delete 5s, chỉ 1 lần)
+    // DF Link: reveal webhook URL (ephemeral, chỉ 1 lần/user)
     if (interaction.customId === 'df_link_show_webhook') {
+      // Guard: chống spam — user chỉ reveal 1 lần
+      if (webhookRevealedUsers.has(interaction.user.id)) {
+        await interaction
+          .reply({
+            content: 'Bạn đã hiện Webhook URL rồi.',
+            flags: MessageFlags.Ephemeral,
+          })
+          .catch(() => {});
+        return;
+      }
+
       if (!botConfig.dfWebhookUrl) {
         await interaction
           .reply({
@@ -45,6 +59,9 @@ export async function execute(
           .catch(() => {});
         return;
       }
+
+      // Đánh dấu ngay — trước khi reply để chống race condition
+      webhookRevealedUsers.add(interaction.user.id);
 
       try {
         await interaction.reply({
@@ -57,10 +74,10 @@ export async function execute(
           flags: MessageFlags.Ephemeral,
         });
 
-        // Disable button trên message gốc
+        // Disable button trên message gốc (backup)
         const disabledBtn = new ButtonBuilder()
           .setCustomId('df_link_show_webhook')
-          .setLabel('✅ Đã hiện URL — copy xong')
+          .setLabel('Đã hiện URL')
           .setStyle(ButtonStyle.Secondary)
           .setDisabled(true);
         const row = new ActionRowBuilder().addComponents(disabledBtn);
@@ -70,7 +87,7 @@ export async function execute(
             components: [row.toJSON()],
           });
         } catch {
-          // message đã expire
+          // button đã expire hoặc đã disable
         }
 
         // Tự xóa ephemeral sau 5 giây

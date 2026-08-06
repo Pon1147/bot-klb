@@ -1,7 +1,7 @@
 /**
  * E2E test mock factories — Discord objects only.
  * DB, Express, and business logic run real code.
- */
+ **/
 
 import type {
   ChatInputCommandInteraction,
@@ -120,7 +120,16 @@ export function createMockGuild(overrides: MockGuildOverrides = {}): any {
 
 /* ==================== Mock text channel ==================== */
 
-export function createMockTextChannel(overrides: { id?: string; name?: string; isTextBased?: () => boolean; send?: jest.Mock; toString?: () => string; messages?: any } = {}): any {
+export function createMockTextChannel(
+  overrides: {
+    id?: string;
+    name?: string;
+    isTextBased?: () => boolean;
+    send?: jest.Mock;
+    toString?: () => string;
+    messages?: any;
+  } = {},
+): any {
   return {
     id: overrides.id ?? 'channel-999',
     name: 'test-channel',
@@ -134,7 +143,9 @@ export function createMockTextChannel(overrides: { id?: string; name?: string; i
 
 /* ==================== Mock role ==================== */
 
-export function createMockRole(overrides: { id?: string; name?: string; color?: { toHex: () => string } } = {}): any {
+export function createMockRole(
+  overrides: { id?: string; name?: string; color?: { toHex: () => string } } = {},
+): any {
   return {
     id: overrides.id ?? 'role-999',
     name: 'TestRole',
