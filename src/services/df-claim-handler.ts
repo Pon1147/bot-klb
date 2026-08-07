@@ -9,7 +9,7 @@
 import Database from 'better-sqlite3';
 import { Client } from 'discord.js';
 import { atomicConsumeClaim } from '../database/df-claim.db.js';
-import { upsertAccountBinding } from '../database/df-binding.db.js';
+import { upsertAccountBinding, getActiveBinding } from '../database/df-binding.db.js';
 import { encryptCredential } from './df-crypto.js';
 import { createLogger } from '../utils/logger.js';
 import { INVALID_CLAIM_MESSAGE } from '../config/app.constants.js';
@@ -122,9 +122,36 @@ export async function handleClaim(
   logger.info('Claim received: code=' + code + ', openid=' + openid);
 
   // 2. Atomic consume (lock + update trong 1 SQL)
+  const claimRow = database
+    .prepare('SELECT status, expires_at, discord_user_id FROM df_claim_sessions WHERE code = ?')
+    .get(code) as { status: string; expires_at: string; discord_user_id: string } | undefined;
+
+  if (!claimRow) {
+    logger.warn('Claim code not found: code=' + code);
+    return {
+      status: 401,
+      body: { ok: false, error: INVALID_CLAIM_MESSAGE },
+    };
+  }
+
   const discordId = atomicConsumeClaim(database, code);
   if (!discordId) {
-    logger.warn('Claim consume failed: code=' + code);
+    if (claimRow.status === 'consumed') {
+      // Code đã dùng rồi → check xem binding đã tồn tại chưa
+      const binding = getActiveBinding(database, claimRow.discord_user_id);
+      if (binding) {
+        logger.info('Claim already consumed but binding exists: code=' + code);
+        return {
+          status: 200,
+          body: { ok: true },
+        };
+      }
+      logger.warn('Claim already consumed, no binding found: code=' + code);
+    } else if (claimRow.status === 'expired') {
+      logger.warn('Claim expired: code=' + code + ' expires_at=' + claimRow.expires_at);
+    } else {
+      logger.warn('Claim consume failed: code=' + code + ' status=' + claimRow.status);
+    }
     return {
       status: 401,
       body: { ok: false, error: INVALID_CLAIM_MESSAGE },
