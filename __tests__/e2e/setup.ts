@@ -49,6 +49,28 @@ export function createTestDb(): Database.Database {
     )
   `);
 
+  // df_account_bindings table (new link system)
+  db.exec(`
+    CREATE TABLE df_account_bindings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      discord_user_id TEXT NOT NULL UNIQUE,
+      provider TEXT NOT NULL DEFAULT 'garena',
+      platform TEXT NOT NULL DEFAULT 'df_hq',
+      openid TEXT NOT NULL,
+      cred_nonce TEXT NOT NULL,
+      cred_ciphertext TEXT NOT NULL,
+      cred_tag TEXT NOT NULL,
+      key_version TEXT NOT NULL DEFAULT 'v1',
+      status TEXT NOT NULL DEFAULT 'active'
+        CHECK(status IN ('active', 'expired', 'revoked')),
+      captured_at DATETIME,
+      last_ok_at DATETIME,
+      last_error TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   return db;
 }
 
@@ -96,4 +118,17 @@ export function seedWelcomeConfig(
   db.prepare(
     'INSERT OR REPLACE INTO welcome_configuration (guild_id, channel_id, role_id, message_template, embed_image_url, is_enabled) VALUES (?, ?, ?, ?, ?, ?)',
   ).run(guildId, channelId, roleId, null, null, isEnabled ? 1 : 0);
+}
+
+/**
+ * Seed a df_account_bindings row for testing.
+ */
+export function seedBinding(
+  db: Database.Database,
+  discordUserId: string,
+  openid: string = 'test-openid',
+): void {
+  db.prepare(
+    'INSERT OR REPLACE INTO df_account_bindings (discord_user_id, openid, cred_nonce, cred_ciphertext, cred_tag, status) VALUES (?, ?, ?, ?, ?, ?)',
+  ).run(discordUserId, openid, 'nonce', 'ciphertext', 'tag', 'active');
 }

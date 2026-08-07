@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DF Toolbox",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "Delta Force HQ credential bridge + Garena redeem codes",
   "permissions": ["storage", "activeTab"],
   "host_permissions": [
@@ -30,23 +30,17 @@
     }
   ],
   "icons": {
-    "16": "assets/icon_16.png",
-    "48": "assets/icon_48.png",
+    "16": "assets/image.png",
+    "48": "assets/image.png",
     "128": "assets/icon_128.png"
   },
   "web_accessible_resources": [
     {
-      "resources": [
-        "content/dashboard.css",
-        "content/page-capture.js"
-      ],
+      "resources": ["content/dashboard.css", "content/page-capture.js"],
       "matches": ["https://redeem.df.garena.sg/*"]
     },
     {
-      "resources": [
-        "content/link-page-capture.js",
-        "content/dashboard.css"
-      ],
+      "resources": ["content/link-page-capture.js", "content/dashboard.css"],
       "matches": ["https://www.playdeltaforce.com/*"]
     }
   ]
