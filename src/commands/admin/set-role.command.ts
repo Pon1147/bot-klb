@@ -96,7 +96,7 @@ export async function execute(
 
   try {
     // 1. Đọc permissions.json
-    const permPath = join(__dirname, '..', '..', 'config', 'permissions.json');
+    const permPath = join(__dirname, '..', '..', '..', 'src', 'config', 'permissions.json');
     const permData = JSON.parse(readFileSync(permPath, 'utf8')) as Record<string, unknown>;
 
     // 2. Update role ID

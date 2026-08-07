@@ -6,34 +6,57 @@
   },
   "commands": {
     "container": {
-      "requiredRoles": ["Owner", "Moderator"]
+      "requiredRoles": [
+        "Owner",
+        "Moderator"
+      ]
     },
     "df-link": {
-      "requiredRoles": ["Member"]
+      "requiredRoles": [
+        "Member"
+      ]
     },
     "df-unlink": {
-      "requiredRoles": ["Member"]
+      "requiredRoles": [
+        "Member"
+      ]
     },
     "df-daily": {
-      "requiredRoles": ["Member"]
+      "requiredRoles": [
+        "Member"
+      ]
     },
     "df-stats": {
-      "requiredRoles": ["Member"]
+      "requiredRoles": [
+        "Member"
+      ]
     },
     "df-history": {
-      "requiredRoles": ["Member"]
+      "requiredRoles": [
+        "Member"
+      ]
     },
     "df-code": {
-      "requiredRoles": ["Member"]
+      "requiredRoles": [
+        "Member"
+      ]
     },
     "team-find": {
-      "requiredRoles": ["Member"]
+      "requiredRoles": [
+        "Member"
+      ]
     },
     "booster": {
-      "requiredRoles": ["Owner", "Moderator"]
+      "requiredRoles": [
+        "Owner",
+        "Moderator"
+      ]
     },
     "welcome": {
-      "requiredRoles": ["Owner", "Moderator"]
+      "requiredRoles": [
+        "Owner",
+        "Moderator"
+      ]
     }
   }
 }

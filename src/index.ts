@@ -73,7 +73,7 @@ async function main(): Promise<void> {
   // Step 3b: Load RBAC permissions
   logger.info('Loading RBAC permissions...');
   try {
-    const permPath = join(__dirname, '..', 'config', 'permissions.json');
+    const permPath = join(__dirname, '..', 'src', 'config', 'permissions.json');
     const permData = JSON.parse(readFileSync(permPath, 'utf8')) as PermissionsConfig;
     loadPermissions(permData);
     logger.info(`RBAC permissions loaded: ${Object.keys(permData.commands).length} command(s)`);
