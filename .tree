@@ -1,31 +1,38 @@
 bot_klb
 ├ CLAUDE.md
-├ RBAC.md
+├ DEPLOY.md
 ├ README.md
-├ REPORT.md
 ├ __tests__
-│ ├ config.test.ts
-│ ├ container-booster-edit.test.ts
-│ ├ container-builders.test.ts
-│ ├ container-edit.handler.test.ts
-│ ├ container-header-template.test.ts
-│ ├ container.command.test.ts
-│ ├ container.session.cleanup.test.ts
-│ ├ container.utils.test.ts
-│ ├ coverage-gaps.test.ts
-│ ├ deltaforce.api.test.ts
-│ ├ df-claim-store.test.ts
-│ ├ df-code.command.test.ts
-│ ├ df-daily.command.test.ts
-│ ├ df-guards.test.ts
-│ ├ df-history.command.test.ts
-│ ├ df-link.command.test.ts
-│ ├ df-operator.utils.test.ts
-│ ├ df-rank.utils.test.ts
-│ ├ df-stats.command.test.ts
-│ ├ df-unlink.command.test.ts
-│ ├ df-voice.utils.test.ts
-│ ├ df.token.db.test.ts
+│ ├ admin
+│ │ ├ permissions.test.ts
+│ │ └ set-role.command.test.ts
+│ ├ config
+│ │ └ config.test.ts
+│ ├ container
+│ │ ├ container-booster-edit.test.ts
+│ │ ├ container-builders.test.ts
+│ │ ├ container-edit.handler.test.ts
+│ │ ├ container-header-template.test.ts
+│ │ ├ container.command.test.ts
+│ │ ├ container.session.cleanup.test.ts
+│ │ └ container.utils.test.ts
+│ ├ database
+│ │ ├ guild.settings.db.deepMerge.test.ts
+│ │ └ welcome.database.test.ts
+│ ├ df
+│ │ ├ df-claim-store.test.ts
+│ │ ├ df-code.command.test.ts
+│ │ ├ df-codes-scheduler.test.ts
+│ │ ├ df-daily.command.test.ts
+│ │ ├ df-guards.test.ts
+│ │ ├ df-history.command.test.ts
+│ │ ├ df-link.command.test.ts
+│ │ ├ df-operator.utils.test.ts
+│ │ ├ df-rank.utils.test.ts
+│ │ ├ df-stats.command.test.ts
+│ │ ├ df-unlink.command.test.ts
+│ │ ├ df-voice.utils.test.ts
+│ │ └ df.token.db.test.ts
 │ ├ e2e
 │ │ ├ config.e2e.test.ts
 │ │ ├ database.e2e.test.ts
@@ -34,35 +41,24 @@ bot_klb
 │ │ ├ fixtures.ts
 │ │ ├ jest.e2e.config.cjs
 │ │ ├ setup.ts
-│ │ ├ tsconfig.json
-│ │ └ webhook.server.e2e.test.ts
-│ ├ guild.settings.db.deepMerge.test.ts
-│ ├ logger.test.ts
-│ ├ section-config.test.ts
-│ ├ settings.service.test.ts
-│ ├ team-find.command.test.ts
-│ ├ team-find.embed.test.ts
-│ ├ template.utils.test.ts
+│ │ └ tsconfig.json
+│ ├ extensions
+│ │ ├ extension-architecture.test.ts
+│ │ ├ extension-classifier.test.ts
+│ │ ├ extension-debug.test.ts
+│ │ └ extension-stats-realtime.test.ts
+│ ├ services
+│ │ ├ deltaforce.api.test.ts
+│ │ └ settings.service.test.ts
+│ ├ team-find
+│ │ ├ team-find.command.test.ts
+│ │ └ team-find.embed.test.ts
 │ ├ tsconfig.json
-│ ├ webhook.routes.test.ts
-│ └ welcome.database.test.ts
-├ backlog
-│ ├ README.md
-│ ├ doing
-│ │ └ README.md
-│ ├ done
-│ │ ├ 2026-06-17-team-find-task-01-extract-config.md
-│ │ ├ 2026-06-17-team-find-task-02-voice-guard.md
-│ │ ├ 2026-06-17-team-find-task-03-embed-builder.md
-│ │ ├ 2026-06-17-team-find-task-04-command-button.md
-│ │ └ README.md
-│ ├ todo
-│ │ ├ 2026-06-17-team-find-command.md
-│ │ ├ 2026-06-17-team-find-overview.md
-│ │ └ README.md
-│ └ version-changes
-│   └ README.md
-├ codes-output.txt
+│ └ utils
+│   ├ coverage-gaps.test.ts
+│   ├ logger.test.ts
+│   ├ section-config.test.ts
+│   └ template.utils.test.ts
 ├ coverage
 │ ├ clover.xml
 │ ├ coverage-final.json
@@ -85,6 +81,7 @@ bot_klb
 │ │ │ │ │ └ index.ts.html
 │ │ │ │ ├ container-builders.ts.html
 │ │ │ │ ├ container-edit.handler.ts.html
+│ │ │ │ ├ container-ids.ts.html
 │ │ │ │ ├ container-reset.handler.ts.html
 │ │ │ │ ├ container-session.ts.html
 │ │ │ │ ├ container.command.ts.html
@@ -124,9 +121,11 @@ bot_klb
 │ │ │   ├ test.command.ts.html
 │ │ │   └ welcome-test.command.ts.html
 │ │ ├ config
+│ │ │ ├ app.constants.ts.html
 │ │ │ ├ bot.config.ts.html
 │ │ │ ├ container.variables.ts.html
 │ │ │ ├ default.settings.ts.html
+│ │ │ ├ deltaforce.config.ts.html
 │ │ │ ├ embed.variables.ts.html
 │ │ │ ├ index.html
 │ │ │ ├ logger.variables.ts.html
@@ -135,6 +134,8 @@ bot_klb
 │ │ │ └ variables.ts.html
 │ │ ├ container.interactive.edit.ts.html
 │ │ ├ database
+│ │ │ ├ df-binding.db.ts.html
+│ │ │ ├ df-claim.db.ts.html
 │ │ │ ├ df.token.db.ts.html
 │ │ │ ├ guild.settings.db.ts.html
 │ │ │ ├ index.html
@@ -171,17 +172,14 @@ bot_klb
 │ │ ├ index.html
 │ │ ├ prettify.css
 │ │ ├ prettify.js
-│ │ ├ server
-│ │ │ ├ index.html
-│ │ │ └ webhook.routes.ts.html
 │ │ ├ services
 │ │ │ ├ deltaforce.api.ts.html
+│ │ │ ├ df-claim-handler.ts.html
 │ │ │ ├ df-claim-store.ts.html
 │ │ │ ├ index.html
 │ │ │ ├ settings.service.ts.html
 │ │ │ ├ team-find-message-store.ts.html
-│ │ │ ├ team-find-session.ts.html
-│ │ │ └ webhook-tunnel.ts.html
+│ │ │ └ team-find-session.ts.html
 │ │ ├ sort-arrow-sprite.png
 │ │ ├ sorter.js
 │ │ ├ types
@@ -189,6 +187,7 @@ bot_klb
 │ │ │ └ ticket.types.ts.html
 │ │ └ utils
 │ │   ├ container.utils.ts.html
+│ │   ├ df-command.runner.ts.html
 │ │   ├ df-guards.ts.html
 │ │   ├ df-operator.utils.ts.html
 │ │   ├ df-rank.utils.ts.html
@@ -198,13 +197,13 @@ bot_klb
 │ │   ├ index.html
 │ │   ├ logger.ts.html
 │ │   ├ section-config.handlers.ts.html
-│ │   └ template.utils.ts.html
+│ │   ├ template.utils.ts.html
+│ │   └ ttl-store.ts.html
 │ └ lcov.info
 ├ data
 │ ├ bot.db
 │ ├ bot.db-shm
 │ └ bot.db-wal
-├ diagrams.md
 ├ dist
 │ ├ commands
 │ │ ├ admin
@@ -226,6 +225,10 @@ bot_klb
 │ │ │ ├ container-edit.handler.d.ts.map
 │ │ │ ├ container-edit.handler.js
 │ │ │ ├ container-edit.handler.js.map
+│ │ │ ├ container-ids.d.ts
+│ │ │ ├ container-ids.d.ts.map
+│ │ │ ├ container-ids.js
+│ │ │ ├ container-ids.js.map
 │ │ │ ├ container-reset.handler.d.ts
 │ │ │ ├ container-reset.handler.d.ts.map
 │ │ │ ├ container-reset.handler.js
@@ -272,6 +275,10 @@ bot_klb
 │ │ │ ├ stats.command.d.ts.map
 │ │ │ ├ stats.command.js
 │ │ │ ├ stats.command.js.map
+│ │ │ ├ team-find-ids.d.ts
+│ │ │ ├ team-find-ids.d.ts.map
+│ │ │ ├ team-find-ids.js
+│ │ │ ├ team-find-ids.js.map
 │ │ │ ├ team-find.command.d.ts
 │ │ │ ├ team-find.command.d.ts.map
 │ │ │ ├ team-find.command.js
@@ -280,6 +287,10 @@ bot_klb
 │ │ │ ├ team-find.embed.d.ts.map
 │ │ │ ├ team-find.embed.js
 │ │ │ ├ team-find.embed.js.map
+│ │ │ ├ team-find.handlers.d.ts
+│ │ │ ├ team-find.handlers.d.ts.map
+│ │ │ ├ team-find.handlers.js
+│ │ │ ├ team-find.handlers.js.map
 │ │ │ ├ team-find.interaction.d.ts
 │ │ │ ├ team-find.interaction.d.ts.map
 │ │ │ ├ team-find.interaction.js
@@ -298,6 +309,10 @@ bot_klb
 │ │   ├ setup.command.js
 │ │   └ setup.command.js.map
 │ ├ config
+│ │ ├ app.constants.d.ts
+│ │ ├ app.constants.d.ts.map
+│ │ ├ app.constants.js
+│ │ ├ app.constants.js.map
 │ │ ├ bot.config.d.ts
 │ │ ├ bot.config.d.ts.map
 │ │ ├ bot.config.js
@@ -310,6 +325,10 @@ bot_klb
 │ │ ├ default.settings.d.ts.map
 │ │ ├ default.settings.js
 │ │ ├ default.settings.js.map
+│ │ ├ deltaforce.config.d.ts
+│ │ ├ deltaforce.config.d.ts.map
+│ │ ├ deltaforce.config.js
+│ │ ├ deltaforce.config.js.map
 │ │ ├ index.d.ts
 │ │ ├ index.d.ts.map
 │ │ ├ index.js
@@ -335,6 +354,18 @@ bot_klb
 │ │ ├ variables.js
 │ │ └ variables.js.map
 │ ├ database
+│ │ ├ df-binding.db.d.ts
+│ │ ├ df-binding.db.d.ts.map
+│ │ ├ df-binding.db.js
+│ │ ├ df-binding.db.js.map
+│ │ ├ df-claim.db.d.ts
+│ │ ├ df-claim.db.d.ts.map
+│ │ ├ df-claim.db.js
+│ │ ├ df-claim.db.js.map
+│ │ ├ df-telemetry.db.d.ts
+│ │ ├ df-telemetry.db.d.ts.map
+│ │ ├ df-telemetry.db.js
+│ │ ├ df-telemetry.db.js.map
 │ │ ├ df.token.db.d.ts
 │ │ ├ df.token.db.d.ts.map
 │ │ ├ df.token.db.js
@@ -347,11 +378,6 @@ bot_klb
 │ │ ├ welcome.database.d.ts.map
 │ │ ├ welcome.database.js
 │ │ └ welcome.database.js.map
-│ ├ decorators
-│ │ ├ requireRole.d.ts
-│ │ ├ requireRole.d.ts.map
-│ │ ├ requireRole.js
-│ │ └ requireRole.js.map
 │ ├ events
 │ │ ├ guildMemberAdd.event.d.ts
 │ │ ├ guildMemberAdd.event.d.ts.map
@@ -364,7 +390,11 @@ bot_klb
 │ │ ├ interactionCreate.event.d.ts
 │ │ ├ interactionCreate.event.d.ts.map
 │ │ ├ interactionCreate.event.js
-│ │ └ interactionCreate.event.js.map
+│ │ ├ interactionCreate.event.js.map
+│ │ ├ messageCreate.event.d.ts
+│ │ ├ messageCreate.event.d.ts.map
+│ │ ├ messageCreate.event.js
+│ │ └ messageCreate.event.js.map
 │ ├ handlers
 │ │ ├ command.handler.d.ts
 │ │ ├ command.handler.d.ts.map
@@ -378,20 +408,6 @@ bot_klb
 │ ├ index.d.ts.map
 │ ├ index.js
 │ ├ index.js.map
-│ ├ scraper
-│ │ ├ df-webhook.d.ts
-│ │ ├ df-webhook.d.ts.map
-│ │ ├ df-webhook.js
-│ │ └ df-webhook.js.map
-│ ├ server
-│ │ ├ webhook-server.d.ts
-│ │ ├ webhook-server.d.ts.map
-│ │ ├ webhook-server.js
-│ │ ├ webhook-server.js.map
-│ │ ├ webhook.routes.d.ts
-│ │ ├ webhook.routes.d.ts.map
-│ │ ├ webhook.routes.js
-│ │ └ webhook.routes.js.map
 │ ├ services
 │ │ ├ deltaforce.api.d.ts
 │ │ ├ deltaforce.api.d.ts.map
@@ -401,10 +417,26 @@ bot_klb
 │ │ ├ deltaforce.scraper.d.ts.map
 │ │ ├ deltaforce.scraper.js
 │ │ ├ deltaforce.scraper.js.map
+│ │ ├ df-claim-handler.d.ts
+│ │ ├ df-claim-handler.d.ts.map
+│ │ ├ df-claim-handler.js
+│ │ ├ df-claim-handler.js.map
 │ │ ├ df-claim-store.d.ts
 │ │ ├ df-claim-store.d.ts.map
 │ │ ├ df-claim-store.js
 │ │ ├ df-claim-store.js.map
+│ │ ├ df-codes-scheduler.d.ts
+│ │ ├ df-codes-scheduler.d.ts.map
+│ │ ├ df-codes-scheduler.js
+│ │ ├ df-codes-scheduler.js.map
+│ │ ├ df-crypto.d.ts
+│ │ ├ df-crypto.d.ts.map
+│ │ ├ df-crypto.js
+│ │ ├ df-crypto.js.map
+│ │ ├ df-tools-client.d.ts
+│ │ ├ df-tools-client.d.ts.map
+│ │ ├ df-tools-client.js
+│ │ ├ df-tools-client.js.map
 │ │ ├ settings.service.d.ts
 │ │ ├ settings.service.d.ts.map
 │ │ ├ settings.service.js
@@ -416,11 +448,7 @@ bot_klb
 │ │ ├ team-find-session.d.ts
 │ │ ├ team-find-session.d.ts.map
 │ │ ├ team-find-session.js
-│ │ ├ team-find-session.js.map
-│ │ ├ webhook-tunnel.d.ts
-│ │ ├ webhook-tunnel.d.ts.map
-│ │ ├ webhook-tunnel.js
-│ │ └ webhook-tunnel.js.map
+│ │ └ team-find-session.js.map
 │ ├ types
 │ │ ├ deltaforce.types.d.ts
 │ │ ├ deltaforce.types.d.ts.map
@@ -435,6 +463,10 @@ bot_klb
 │   ├ container.utils.d.ts.map
 │   ├ container.utils.js
 │   ├ container.utils.js.map
+│   ├ df-command.runner.d.ts
+│   ├ df-command.runner.d.ts.map
+│   ├ df-command.runner.js
+│   ├ df-command.runner.js.map
 │   ├ df-guards.d.ts
 │   ├ df-guards.d.ts.map
 │   ├ df-guards.js
@@ -466,24 +498,54 @@ bot_klb
 │   ├ template.utils.d.ts
 │   ├ template.utils.d.ts.map
 │   ├ template.utils.js
-│   └ template.utils.js.map
+│   ├ template.utils.js.map
+│   ├ ttl-store.d.ts
+│   ├ ttl-store.d.ts.map
+│   ├ ttl-store.js
+│   └ ttl-store.js.map
+├ docs
+├ eslint.config.mjs
+├ extensions
+├ garena-redeem-code
+│ ├ README.md
+│ ├ assets
+│ │ ├ icon_128.png
+│ │ ├ icon_16.png
+│ │ ├ icon_48.png
+│ │ └ image.png
+│ ├ background
+│ │ └ service-worker.js
+│ ├ content
+│ │ ├ content.js
+│ │ ├ dashboard.css
+│ │ ├ link-content.js
+│ │ ├ link-page-capture.js
+│ │ └ page-capture.js
+│ ├ manifest.json
+│ └ popup
+│   ├ popup.css
+│   ├ popup.html
+│   └ popup.js
 ├ jest.config.cjs
-├ judge.md
 ├ package-lock.json
 ├ package.json
-├ plan.md
-├ refactor_repo.md
 ├ script.js
+├ script_demo.js
 ├ src
 │ ├ assets
 │ │ └ img
+│ │   ├ icon
+│ │   │ ├ 7ac79760-2067-4d4a-8478-4a4dccfe2794.png
+│ │   │ └ icon_1.png
 │ │   └ map
+│ │     ├ ChatGPT Image Jul 27, 2026, 10_34_05 AM.png
 │ │     ├ map_az3.png
 │ │     ├ map_brakkesh.png
 │ │     ├ map_layali.png
 │ │     ├ map_spacecity.png
 │ │     ├ map_tideprison.png
-│ │     └ map_zero.png
+│ │     ├ map_zero.png
+│ │     └ test.png
 │ ├ commands
 │ │ ├ admin
 │ │ │ └ set-role.command.ts
@@ -492,6 +554,7 @@ bot_klb
 │ │ ├ container
 │ │ │ ├ container-builders.ts
 │ │ │ ├ container-edit.handler.ts
+│ │ │ ├ container-ids.ts
 │ │ │ ├ container-reset.handler.ts
 │ │ │ ├ container-routers.ts
 │ │ │ ├ container-session.ts
@@ -505,17 +568,21 @@ bot_klb
 │ │ │ ├ history.command.ts
 │ │ │ ├ link.command.ts
 │ │ │ ├ stats.command.ts
+│ │ │ ├ team-find-ids.ts
 │ │ │ ├ team-find.command.ts
 │ │ │ ├ team-find.embed.ts
+│ │ │ ├ team-find.handlers.ts
 │ │ │ ├ team-find.interaction.ts
 │ │ │ ├ team-find.menu.ts
 │ │ │ └ unlink.command.ts
 │ │ └ welcome
 │ │   └ setup.command.ts
 │ ├ config
+│ │ ├ app.constants.ts
 │ │ ├ bot.config.ts
 │ │ ├ container.variables.ts
 │ │ ├ default.settings.ts
+│ │ ├ deltaforce.config.ts
 │ │ ├ index.ts
 │ │ ├ intents.ts
 │ │ ├ logger.variables.ts
@@ -524,38 +591,39 @@ bot_klb
 │ │ ├ team-find.config.ts
 │ │ └ variables.ts
 │ ├ database
+│ │ ├ df-binding.db.ts
+│ │ ├ df-claim.db.ts
+│ │ ├ df-telemetry.db.ts
 │ │ ├ df.token.db.ts
 │ │ ├ guild.settings.db.ts
 │ │ └ welcome.database.ts
-│ ├ decorators
-│ │ └ requireRole.ts
 │ ├ events
 │ │ ├ guildMemberAdd.event.ts
 │ │ ├ guildMemberUpdate.event.ts
-│ │ └ interactionCreate.event.ts
+│ │ ├ interactionCreate.event.ts
+│ │ └ messageCreate.event.ts
 │ ├ handlers
 │ │ ├ command.handler.ts
 │ │ └ event.handler.ts
 │ ├ index.ts
-│ ├ scraper
-│ │ └ df-webhook.ts
-│ ├ server
-│ │ ├ webhook-server.ts
-│ │ └ webhook.routes.ts
 │ ├ services
 │ │ ├ deltaforce.api.ts
 │ │ ├ deltaforce.scraper.ts
+│ │ ├ df-claim-handler.ts
 │ │ ├ df-claim-store.ts
+│ │ ├ df-codes-scheduler.ts
+│ │ ├ df-crypto.ts
+│ │ ├ df-tools-client.ts
 │ │ ├ settings.service.ts
 │ │ ├ team-find-message-store.ts
-│ │ ├ team-find-session.ts
-│ │ └ webhook-tunnel.ts
+│ │ └ team-find-session.ts
 │ ├ types
 │ │ ├ client-augmentation.d.ts
 │ │ ├ deltaforce.types.ts
 │ │ └ settings.types.ts
 │ └ utils
 │   ├ container.utils.ts
+│   ├ df-command.runner.ts
 │   ├ df-guards.ts
 │   ├ df-operator.utils.ts
 │   ├ df-rank.utils.ts
@@ -563,6 +631,7 @@ bot_klb
 │   ├ df-voice.utils.ts
 │   ├ logger.ts
 │   ├ section-config.handlers.ts
-│   └ template.utils.ts
+│   ├ template.utils.ts
+│   └ ttl-store.ts
 ├ tsconfig.json
 └ tsconfig.scripts.json
