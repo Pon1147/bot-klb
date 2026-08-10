@@ -14,7 +14,6 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
   SlashCommandSubcommandBuilder,
-  GuildMember,
   Role,
 } from 'discord.js';
 import Database from 'better-sqlite3';
@@ -23,6 +22,8 @@ import { join } from 'path';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import type { PermissionsConfig } from '../../config/permissions.js';
 import { loadPermissions } from '../../config/permissions.js';
+import { requireAdministrator } from '../../utils/df-guards.js';
+import { sendReply } from '../../utils/reply.utils.js';
 
 // ─── Subcommand Builder ───────────────────────────────────────────
 
@@ -63,31 +64,19 @@ export async function execute(
   _database: Database.Database,
 ): Promise<void> {
   if (!interaction.guild) {
-    await interaction.reply({
-      content: 'Lệnh này chỉ dùng được trong server.',
-      flags: MessageFlags.Ephemeral,
-    });
+    await sendReply(interaction, { content: 'Lệnh này chỉ dùng được trong server.' });
     return;
   }
 
-  const member = interaction.member as GuildMember;
-  if (!member || !member.permissions.has(PermissionFlagsBits.Administrator)) {
-    await interaction.reply({
-      content: 'Bạn cần quyền Administrator để sử dụng lệnh này.',
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
+  if (await requireAdministrator(interaction)) return;
 
   const subcommand = interaction.options.getSubcommand();
   const roleKey = ROLE_KEY_MAP[subcommand];
   const role = interaction.options.getRole('role') as Role;
 
   if (!role) {
-    const err = buildErrorContainer('Không tìm thấy role đã chọn.');
-    await interaction.reply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
+    await sendReply(interaction, {
+      components: buildErrorContainer('Không tìm thấy role đã chọn.').toJSON(),
     });
     return;
   }
@@ -115,9 +104,6 @@ export async function execute(
     });
   } catch (error) {
     const err = buildErrorContainer(`Lỗi khi lưu: ${(error as Error).message}`);
-    await interaction.editReply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
-    });
+    await interaction.editReply({ components: err.toJSON() });
   }
 }
