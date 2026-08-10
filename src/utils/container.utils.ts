@@ -242,34 +242,31 @@ export function buildEmptyContainer(_accentColor: number): BuildContainerResult 
   );
 }
 
-export function buildSuccessContainer(successMessage: string): BuildContainerResult {
-  const text = { type: ComponentType.TextDisplay, content: `**✅ Success**\n${successMessage}` };
-  const sep = { type: ComponentType.Separator, accentColor: COLORS.SUCCESS };
+/** Builder chung cho success/error/info container */
+function buildStatusContainer(
+  prefix: string,
+  message: string,
+  color: number,
+): BuildContainerResult {
+  const text = { type: ComponentType.TextDisplay, content: `**${prefix}**\n${message}` };
+  const sep = { type: ComponentType.Separator, accentColor: color };
   return makeResult(
     [{ type: ComponentType.Container, components: [text, sep] }],
     MessageFlags.IsComponentsV2,
     [],
   );
+}
+
+export function buildSuccessContainer(successMessage: string): BuildContainerResult {
+  return buildStatusContainer('✅ Success', successMessage, COLORS.SUCCESS);
 }
 
 export function buildErrorContainer(errorMessage: string): BuildContainerResult {
-  const text = { type: ComponentType.TextDisplay, content: `**❌ Error**\n${errorMessage}` };
-  const sep = { type: ComponentType.Separator, accentColor: COLORS.ERROR };
-  return makeResult(
-    [{ type: ComponentType.Container, components: [text, sep] }],
-    MessageFlags.IsComponentsV2,
-    [],
-  );
+  return buildStatusContainer('❌ Error', errorMessage, COLORS.ERROR);
 }
 
 export function buildInfoContainer(infoMessage: string): BuildContainerResult {
-  const text = { type: ComponentType.TextDisplay, content: `**ℹ️ Info**\n${infoMessage}` };
-  const sep = { type: ComponentType.Separator, accentColor: COLORS.INFO };
-  return makeResult(
-    [{ type: ComponentType.Container, components: [text, sep] }],
-    MessageFlags.IsComponentsV2,
-    [],
-  );
+  return buildStatusContainer('ℹ️ Info', infoMessage, COLORS.INFO);
 }
 
 export function buildTextOnlyContainer(

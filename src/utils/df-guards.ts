@@ -1,18 +1,13 @@
-import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+import { ChatInputCommandInteraction, GuildMember, PermissionFlagsBits } from 'discord.js';
 import Database from 'better-sqlite3';
 import { buildErrorContainer, buildInfoContainer } from './container.utils.js';
 import { getDfToken } from '../database/df.token.db.js';
 import { getActiveBinding } from '../database/df-binding.db.js';
+import { sendReply } from './reply.utils.js';
 
 export async function requireGuild(interaction: ChatInputCommandInteraction): Promise<boolean> {
   if (!interaction.guild) {
-    // Đã defer/reply rồi → dùng editReply, ngược lại dùng reply
-    if (interaction.replied || interaction.deferred) {
-      // editReply không nhận flags — message đã ephemeral từ defer
-      await interaction.editReply({ content: 'Chỉ dùng trong server.' });
-    } else {
-      await interaction.reply({ content: 'Chỉ dùng trong server.', flags: MessageFlags.Ephemeral });
-    }
+    await sendReply(interaction, { content: 'Chỉ dùng trong server.' });
     return true;
   }
   return false;
@@ -27,18 +22,7 @@ export async function requireDfToken(
     const err = buildErrorContainer(
       'Bạn chưa liên kết tài khoản. Dùng `/df-link start` hoặc `/df-link manual` để bắt đầu.',
     );
-    // Đã defer/reply rồi → dùng editReply, ngược lại dùng reply
-    if (interaction.replied || interaction.deferred) {
-      // editReply không nhận flags — message đã ephemeral từ defer
-      await interaction.editReply({
-        components: err.toJSON(),
-      });
-    } else {
-      await interaction.reply({
-        components: err.toJSON(),
-        flags: err.flags | MessageFlags.Ephemeral,
-      });
-    }
+    await sendReply(interaction, { components: err.toJSON() });
     return true;
   }
   return false;
@@ -51,18 +35,7 @@ export async function requireDfTokenOrInfo(
   const existing = getDfToken(database, interaction.user.id);
   if (!existing) {
     const info = buildInfoContainer('Bạn chưa liên kết tài khoản Delta Force nào.');
-    // Đã defer/reply rồi → dùng editReply, ngược lại dùng reply
-    if (interaction.replied || interaction.deferred) {
-      // editReply không nhận flags — message đã ephemeral từ defer
-      await interaction.editReply({
-        components: info.toJSON(),
-      });
-    } else {
-      await interaction.reply({
-        components: info.toJSON(),
-        flags: info.flags | MessageFlags.Ephemeral,
-      });
-    }
+    await sendReply(interaction, { components: info.toJSON() });
     return true;
   }
   return false;
@@ -83,14 +56,23 @@ export async function requireDfBinding(
     const err = buildErrorContainer(
       'Bạn chưa liên kết tài khoản. Dùng `/df-link start` hoặc `/df-link manual` để bắt đầu.',
     );
-    if (interaction.replied || interaction.deferred) {
-      await interaction.editReply({ components: err.toJSON() });
-    } else {
-      await interaction.reply({
-        components: err.toJSON(),
-        flags: err.flags | MessageFlags.Ephemeral,
-      });
-    }
+    await sendReply(interaction, { components: err.toJSON() });
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Guard: yêu cầu quyền Administrator.
+ * Trả về true nếu bị block (không có quyền).
+ */
+export async function requireAdministrator(
+  interaction: ChatInputCommandInteraction,
+): Promise<boolean> {
+  if (!interaction.guild) return true;
+  const member = interaction.member as GuildMember;
+  if (!member || !member.permissions.has(PermissionFlagsBits.Administrator)) {
+    await sendReply(interaction, { content: 'Bạn cần quyền Administrator để sử dụng lệnh này.' });
     return true;
   }
   return false;

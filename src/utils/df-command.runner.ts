@@ -1,6 +1,7 @@
 /** Shared DF command runner — eliminates boilerplate across stats/daily/history */
 
 import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+import { sendReply } from './reply.utils.js';
 import Database from 'better-sqlite3';
 import { getDfToken, touchDfToken } from '../database/df.token.db.js';
 import { getActiveBinding } from '../database/df-binding.db.js';
@@ -84,14 +85,7 @@ export async function runDfCommand(
     const err = buildErrorContainer(
       'Ban chua lien ket tai khoan. Dung `/df-link start` hoac `/df-link manual` de bat dau.',
     );
-    if (ctx.interaction.replied || ctx.interaction.deferred) {
-      await ctx.interaction.editReply({ components: err.toJSON() });
-    } else {
-      await ctx.interaction.reply({
-        components: err.toJSON(),
-        flags: err.flags | MessageFlags.Ephemeral,
-      });
-    }
+    await sendReply(ctx.interaction, { components: err.toJSON() });
     return true;
   }
 
