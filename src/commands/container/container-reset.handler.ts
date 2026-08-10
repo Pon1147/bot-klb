@@ -1,7 +1,8 @@
-﻿import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+﻿import { ChatInputCommandInteraction } from 'discord.js';
 import { getSettingsService } from '../../services/settings.service.js';
 import { cloneDefaultSettings } from '../../config/default.settings.js';
 import { buildSuccessContainer } from '../../utils/container.utils.js';
+import { sendReply } from '../../utils/reply.utils.js';
 
 /**
  * Handle /container reset — reset container settings về default.
@@ -23,8 +24,5 @@ export async function handleContainerReset(
   });
 
   const successContainer = buildSuccessContainer(`Đã reset container "${type}" về mặc định.`);
-  await interaction.reply({
-    components: successContainer.toJSON(),
-    flags: successContainer.flags | MessageFlags.Ephemeral,
-  });
+  await sendReply(interaction, { components: successContainer.toJSON() });
 }

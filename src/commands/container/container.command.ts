@@ -1,15 +1,15 @@
 ﻿import {
   ChatInputCommandInteraction,
-  MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
   SlashCommandStringOption,
   SlashCommandSubcommandBuilder,
-  GuildMember,
 } from 'discord.js';
 import Database from 'better-sqlite3';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { createLogger } from '../../utils/logger.js';
+import { requireAdministrator } from '../../utils/df-guards.js';
+import { sendReply } from '../../utils/reply.utils.js';
 
 const logger = createLogger('Container');
 import { startInteractiveEdit } from './container-edit.handler.js';
@@ -93,22 +93,12 @@ export async function execute(
 ): Promise<void> {
   // Guard clause: chỉ dùng trong guild
   if (!interaction.guild) {
-    await interaction.reply({
-      content: 'Lệnh này chỉ dùng được trong server.',
-      flags: MessageFlags.Ephemeral,
-    });
+    await sendReply(interaction, { content: 'Lệnh này chỉ dùng được trong server.' });
     return;
   }
 
   // Guard clause: check Administrator permission
-  const commandingMember = interaction.member as GuildMember;
-  if (!commandingMember || !commandingMember.permissions.has(PermissionFlagsBits.Administrator)) {
-    await interaction.reply({
-      content: 'Bạn cần quyền Administrator để sử dụng lệnh này.',
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
+  if (await requireAdministrator(interaction)) return;
 
   const subcommandName = interaction.options.getSubcommand();
   const guildId = interaction.guild.id;
@@ -126,13 +116,10 @@ export async function execute(
         break;
       }
 
-      default: {
-        const errorContainer = buildErrorContainer('Subcommand không hợp lệ.');
-        await interaction.reply({
-          components: errorContainer.toJSON(),
-          flags: errorContainer.flags | MessageFlags.Ephemeral,
+      default:
+        await sendReply(interaction, {
+          components: buildErrorContainer('Subcommand không hợp lệ').toJSON(),
         });
-      }
     }
   } catch (error) {
     logger.error(
@@ -143,10 +130,8 @@ export async function execute(
     );
     // Guard: interaction có thể đã replied ở trong handler
     if (!interaction.replied) {
-      const errorContainer = buildErrorContainer('Xảy ra lỗi. Kiểm tra console logs.');
-      await interaction.reply({
-        components: errorContainer.toJSON(),
-        flags: errorContainer.flags | MessageFlags.Ephemeral,
+      await sendReply(interaction, {
+        components: buildErrorContainer('Xảy ra lỗi. Kiểm tra console logs.').toJSON(),
       });
     }
   }

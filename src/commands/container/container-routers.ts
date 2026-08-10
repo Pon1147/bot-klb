@@ -1,10 +1,4 @@
-﻿import {
-  ButtonInteraction,
-  GuildMember,
-  MessageFlags,
-  ModalSubmitInteraction,
-  PermissionFlagsBits,
-} from 'discord.js';
+﻿import { ButtonInteraction, ModalSubmitInteraction, PermissionFlagsBits } from 'discord.js';
 import { ContainerSettings } from '../../types/settings.types.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { getSettingsService } from '../../services/settings.service.js';
@@ -36,6 +30,7 @@ import { handleSave, handleReset, handleCancel } from './handlers/action.handler
 import { CONTAINER_SESSION_EXPIRED_MESSAGE } from '../../config/app.constants.js';
 import { createLogger } from '../../utils/logger.js';
 import { ContainerIds, ContainerModalPrefix } from './container-ids.js';
+import { sendReply } from '../../utils/reply.utils.js';
 
 const logger = createLogger('ContainerRouters');
 
@@ -52,10 +47,8 @@ export async function handleEditorButtonInteraction(interaction: ButtonInteracti
   const session = editSessions.get(interaction.user.id);
 
   if (!isSessionValid(session)) {
-    const errorContainer = buildErrorContainer(CONTAINER_SESSION_EXPIRED_MESSAGE);
-    await interaction.reply({
-      components: errorContainer.toJSON(),
-      flags: errorContainer.flags | MessageFlags.Ephemeral,
+    await sendReply(interaction, {
+      components: buildErrorContainer(CONTAINER_SESSION_EXPIRED_MESSAGE).toJSON(),
     });
     return;
   }
@@ -142,10 +135,8 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
   const session = editSessions.get(interaction.user.id);
 
   if (!isSessionValid(session)) {
-    const errorContainer = buildErrorContainer('Session edit đã hết hạn.');
-    await interaction.reply({
-      components: errorContainer.toJSON(),
-      flags: errorContainer.flags | MessageFlags.Ephemeral,
+    await sendReply(interaction, {
+      components: buildErrorContainer('Session edit đã hết hạn.').toJSON(),
     });
     return;
   }
@@ -162,10 +153,8 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
     const indexValue = interaction.fields.getTextInputValue('edit_line_index');
     const index = parseInt(indexValue, 10);
     if (isNaN(index) || index < 0 || index >= session.draft.contentLines.length) {
-      const errorContainer = buildErrorContainer(`Index không hợp lệ: "${indexValue}".`);
-      await interaction.reply({
-        components: errorContainer.toJSON(),
-        flags: errorContainer.flags | MessageFlags.Ephemeral,
+      await sendReply(interaction, {
+        components: buildErrorContainer(`Index không hợp lệ: "${indexValue}".`).toJSON(),
       });
       return;
     }
@@ -175,10 +164,8 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
     const value = interaction.fields.getTextInputValue('line_remove_index');
     const index = parseInt(value, 10);
     if (isNaN(index) || index < 0 || index >= session.draft.contentLines.length) {
-      const errorContainer = buildErrorContainer(`Index không hợp lệ: "${value}".`);
-      await interaction.reply({
-        components: errorContainer.toJSON(),
-        flags: errorContainer.flags | MessageFlags.Ephemeral,
+      await sendReply(interaction, {
+        components: buildErrorContainer(`Index không hợp lệ: "${value}".`).toJSON(),
       });
       return;
     }
@@ -187,23 +174,19 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
     const value = interaction.fields.getTextInputValue('custom_color');
     const hex = value.replace('#', '');
     if (hex.length !== 6) {
-      const errorContainer = buildErrorContainer(
-        `Mã màu không hợp lệ: "${value}". Dùng định dạng #RRGGBB (6 ký tự hex).`,
-      );
-      await interaction.reply({
-        components: errorContainer.toJSON(),
-        flags: errorContainer.flags | MessageFlags.Ephemeral,
+      await sendReply(interaction, {
+        components: buildErrorContainer(
+          `Mã màu không hợp lệ: "${value}". Dùng định dạng #RRGGBB (6 ký tự hex).`,
+        ).toJSON(),
       });
       return;
     }
     const parsed = parseInt(hex, 16);
     if (isNaN(parsed)) {
-      const errorContainer = buildErrorContainer(
-        `Mã màu không hợp lệ: "${value}". Dùng định dạng #RRGGBB.`,
-      );
-      await interaction.reply({
-        components: errorContainer.toJSON(),
-        flags: errorContainer.flags | MessageFlags.Ephemeral,
+      await sendReply(interaction, {
+        components: buildErrorContainer(
+          `Mã màu không hợp lệ: "${value}". Dùng định dạng #RRGGBB.`,
+        ).toJSON(),
       });
       return;
     }
@@ -215,10 +198,8 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
     session.draft.mediaDescription = descValue.trim() || null;
   } else {
     logger.warn('Unknown container modal submission: ' + modalId);
-    const errorContainer = buildErrorContainer('Modal không hợp lệ.');
-    await interaction.reply({
-      components: errorContainer.toJSON(),
-      flags: errorContainer.flags | MessageFlags.Ephemeral,
+    await sendReply(interaction, {
+      components: buildErrorContainer('Modal không hợp lệ.').toJSON(),
     });
     return;
   }
@@ -263,21 +244,24 @@ async function updateModalEditorPreview(
  * Starts an interactive edit session without needing /container edit.
  */
 async function handlePencilButtonClick(interaction: ButtonInteraction): Promise<void> {
-  const member = interaction.member as GuildMember;
   const guild = interaction.guild;
 
   if (!guild) {
-    await interaction.reply({
-      content: 'Lệnh này chỉ dùng được trong server.',
-      flags: MessageFlags.Ephemeral,
-    });
+    await sendReply(interaction, { content: 'Lệnh này chỉ dùng được trong server.' });
     return;
   }
 
-  if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
-    await interaction.reply({
+  // Guard: yêu cầu Administrator permission
+  const member = interaction.member;
+  if (
+    !member ||
+    !('permissions' in (member as object)) ||
+    !(member as { permissions: { has: (p: unknown) => boolean } }).permissions.has(
+      PermissionFlagsBits.Administrator,
+    )
+  ) {
+    await sendReply(interaction, {
       content: 'Bạn cần quyền Administrator để chỉnh sửa container.',
-      flags: MessageFlags.Ephemeral,
     });
     return;
   }
@@ -318,10 +302,8 @@ async function handlePencilButtonClick(interaction: ButtonInteraction): Promise<
         (error instanceof Error ? error.message : String(error)),
     );
     if (!interaction.replied) {
-      const errorContainer = buildErrorContainer(`Lỗi khi mở editor: ${(error as Error).message}`);
-      await interaction.reply({
-        components: errorContainer.toJSON(),
-        flags: errorContainer.flags | MessageFlags.Ephemeral,
+      await sendReply(interaction, {
+        components: buildErrorContainer(`Lỗi khi mở editor: ${(error as Error).message}`).toJSON(),
       });
     }
   }

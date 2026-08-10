@@ -1,10 +1,11 @@
-﻿import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+﻿import { ChatInputCommandInteraction } from 'discord.js';
 import { ContainerSettings } from '../../types/settings.types.js';
 import { getSettingsService } from '../../services/settings.service.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { cloneContainerSettings, createSession } from './container-session.js';
 import { buildLivePreviewContainer, buildAllEditorRows } from './container-builders.js';
 import { createLogger } from '../../utils/logger.js';
+import { sendReply } from '../../utils/reply.utils.js';
 
 const logger = createLogger('ContainerEdit');
 
@@ -27,12 +28,10 @@ export async function startInteractiveEdit(
         (error instanceof Error ? error.message : String(error)),
     );
     if (!interaction.replied) {
-      const errorContainer = buildErrorContainer(
-        `Lỗi khi khởi tạo editor: ${(error as Error).message}`,
-      );
-      await interaction.reply({
-        components: errorContainer.toJSON(),
-        flags: errorContainer.flags | MessageFlags.Ephemeral,
+      await sendReply(interaction, {
+        components: buildErrorContainer(
+          `Lỗi khi khởi tạo editor: ${(error as Error).message}`,
+        ).toJSON(),
       });
     }
   }
