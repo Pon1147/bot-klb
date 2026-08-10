@@ -221,9 +221,11 @@ describe('df-code.command', () => {
     expect(json.subcommands).toHaveLength(3);
   });
 
-  it('nen reject khi khong co admin permission', async () => {
+  it('nen reject khi khong co admin permission (setchannel)', async () => {
     const interaction = createMockInteraction({
+      guild: { id: 'guild-123' },
       member: { permissions: { has: () => false } },
+      options: { getSubcommand: () => 'setchannel' },
     });
     await execute(interaction, mockDb);
     expect(mockReply).toHaveBeenCalledWith(
@@ -232,6 +234,17 @@ describe('df-code.command', () => {
         flags: MessageFlags.Ephemeral,
       }),
     );
+  });
+
+  it('show subcommand khong can admin permission', async () => {
+    const interaction = createMockInteraction({
+      guild: { id: 'guild-123' },
+      member: { permissions: { has: () => false } },
+      options: { getSubcommand: () => 'show' },
+    });
+    await execute(interaction, mockDb);
+    expect(mockDeferReply).toHaveBeenCalled();
+    expect(mockReply).not.toHaveBeenCalled();
   });
 
   it('nen call setchannel subcommand', async () => {
