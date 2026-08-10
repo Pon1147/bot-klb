@@ -4,9 +4,7 @@ import {
   ChatInputCommandInteraction,
   ComponentType,
   MessageFlags,
-  PermissionFlagsBits,
   SlashCommandBuilder,
-  type GuildMember,
 } from 'discord.js';
 import Database from 'better-sqlite3';
 
@@ -19,6 +17,8 @@ import {
 } from '../../utils/section-config.handlers.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { COLORS } from '../../config/container.variables.js';
+import { requireAdministrator } from '../../utils/df-guards.js';
+import { sendReply } from '../../utils/reply.utils.js';
 
 export { MAP_DISPLAY };
 
@@ -90,20 +90,7 @@ export async function execute(
 ): Promise<void> {
   // Guard: chỉ dùng trong guild
   if (!interaction.guild) {
-    await interaction.reply({
-      content: 'Lệnh này chỉ dùng được trong server.',
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  const member = interaction.member as GuildMember;
-  // Guard: yêu cầu Administrator permission
-  if (!member || !member.permissions.has(PermissionFlagsBits.Administrator)) {
-    await interaction.reply({
-      content: 'Bạn cần quyền Administrator để sử dụng lệnh này.',
-      flags: MessageFlags.Ephemeral,
-    });
+    await sendReply(interaction, { content: 'Lệnh này chỉ dùng được trong server.' });
     return;
   }
 
@@ -125,11 +112,13 @@ export async function execute(
       const err = buildErrorContainer(`Loi khi lay du lieu: ${(error as Error).message}`);
       await interaction.editReply({
         components: err.toJSON(),
-        flags: err.flags | MessageFlags.Ephemeral,
       });
     }
     return;
   }
+
+  // Guard: yêu cầu Administrator permission cho setchannel/status
+  if (await requireAdministrator(interaction)) return;
 
   if (subcommand === 'setchannel') {
     await handleSectionSetChannel(interaction, guildId, DF_CODES_CONFIG);

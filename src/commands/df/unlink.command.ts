@@ -1,9 +1,10 @@
-﻿import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from 'discord.js';
+﻿import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import Database from 'better-sqlite3';
 import { buildErrorContainer, buildSuccessContainer } from '../../utils/container.utils.js';
 import { requireGuild } from '../../utils/df-guards.js';
 import { deleteDfToken, getDfToken } from '../../database/df.token.db.js';
 import { getActiveBinding, revokeBinding } from '../../database/df-binding.db.js';
+import { sendReply } from '../../utils/reply.utils.js';
 
 export const data = new SlashCommandBuilder()
   .setName('df-unlink')
@@ -19,10 +20,8 @@ export async function execute(
   const hasToken = getDfToken(database, interaction.user.id) !== undefined;
 
   if (!hasBinding && !hasToken) {
-    const err = buildErrorContainer('Bạn chưa liên kết tài khoản Delta Force nào.');
-    await interaction.reply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
+    await sendReply(interaction, {
+      components: buildErrorContainer('Bạn chưa liên kết tài khoản Delta Force nào.').toJSON(),
     });
     return;
   }
@@ -35,8 +34,5 @@ export async function execute(
   }
 
   const result = buildSuccessContainer('Đã hủy liên kết tài khoản Delta Force.');
-  await interaction.reply({
-    components: result.toJSON(),
-    flags: result.flags | MessageFlags.Ephemeral,
-  });
+  await sendReply(interaction, { components: result.toJSON() });
 }

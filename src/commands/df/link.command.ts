@@ -30,6 +30,8 @@ import { saveDfToken } from '../../database/df.token.db.js';
 import { revokeBinding } from '../../database/df-binding.db.js';
 import { TOKEN_REGEX, INVALID_TOKEN_MESSAGE } from '../../config/app.constants.js';
 import { createLogger } from '../../utils/logger.js';
+import { sendReply } from '../../utils/reply.utils.js';
+import { maskString } from '../../utils/string.utils.js';
 
 const logger = createLogger('DfLink');
 
@@ -91,7 +93,7 @@ async function handleStart(
     .setStyle(ButtonStyle.Secondary);
   const row = new ActionRowBuilder().addComponents(revealButton);
 
-  await interaction.reply({
+  await sendReply(interaction, {
     content:
       `**Liên kết tài khoản Delta Force**\n\n` +
       `**Mã claim: \`${code}\`** (hết hạn sau 10 phút)\n\n` +
@@ -101,7 +103,6 @@ async function handleStart(
       '4. Chờ DM "Linked OK" từ bot\n\n' +
       '> Nhấn button bên dưới để hiện Webhook URL (chỉ hiện 1 lần)',
     components: [row.toJSON()],
-    flags: MessageFlags.Ephemeral,
   });
 }
 
@@ -115,10 +116,7 @@ async function handleStatus(
   // Kiểm tra binding mới (encrypted)
   const binding = getActiveBinding(database, interaction.user.id);
   if (binding) {
-    const masked =
-      binding.openid.length > 8
-        ? `${binding.openid.slice(0, 4)}****${binding.openid.slice(-4)}`
-        : '****';
+    const masked = maskString(binding.openid);
     const lastOk = binding.last_ok_at
       ? `Last OK: ${binding.last_ok_at}`
       : 'Chưa có request thành công';
@@ -128,39 +126,27 @@ async function handleStatus(
         `Trạng thái: ${binding.status}\n` +
         lastOk,
     );
-    await interaction.reply({
-      components: info.toJSON(),
-      flags: info.flags | MessageFlags.Ephemeral,
-    });
+    await sendReply(interaction, { components: info.toJSON() });
     return;
   }
 
   // Fallback: kiểm tra legacy df_tokens
   const legacyToken = getDfToken(database, interaction.user.id);
   if (legacyToken) {
-    const masked =
-      legacyToken.openid.length > 8
-        ? `${legacyToken.openid.slice(0, 4)}****${legacyToken.openid.slice(-4)}`
-        : '****';
+    const masked = maskString(legacyToken.openid);
     const info = buildInfoContainer(
       `**Đã liên kết (legacy)**\n\n` +
         `OpenID: ${masked}\n` +
         `Liên kết lúc: ${legacyToken.linked_at}\n\n` +
         `> ⚠️ Bạn nên dùng \`/df-link start\` để cập nhật lên hệ thống mới.`,
     );
-    await interaction.reply({
-      components: info.toJSON(),
-      flags: info.flags | MessageFlags.Ephemeral,
-    });
+    await sendReply(interaction, { components: info.toJSON() });
     return;
   }
 
   // Chưa link
   const info = buildInfoContainer('Bạn chưa liên kết tài khoản Delta Force.');
-  await interaction.reply({
-    components: info.toJSON(),
-    flags: info.flags | MessageFlags.Ephemeral,
-  });
+  await sendReply(interaction, { components: info.toJSON() });
 }
 
 /** Subcommand `unlink` — hủy liên kết */
@@ -176,10 +162,7 @@ async function handleUnlink(
 
   if (!binding && !legacyToken) {
     const info = buildInfoContainer('Bạn chưa liên kết tài khoản Delta Force.');
-    await interaction.reply({
-      components: info.toJSON(),
-      flags: info.flags | MessageFlags.Ephemeral,
-    });
+    await sendReply(interaction, { components: info.toJSON() });
     return;
   }
 
@@ -194,10 +177,7 @@ async function handleUnlink(
   }
 
   const result = buildSuccessContainer('Đã hủy liên kết tài khoản Delta Force.');
-  await interaction.reply({
-    components: result.toJSON(),
-    flags: result.flags | MessageFlags.Ephemeral,
-  });
+  await sendReply(interaction, { components: result.toJSON() });
 }
 
 /** Subcommand `manual` — fallback user paste openid + token */
@@ -212,10 +192,8 @@ async function handleManual(
 
   // Validate format token
   if (!TOKEN_REGEX.test(token)) {
-    const err = buildErrorContainer(INVALID_TOKEN_MESSAGE);
-    await interaction.reply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
+    await sendReply(interaction, {
+      components: buildErrorContainer(INVALID_TOKEN_MESSAGE).toJSON(),
     });
     return;
   }
@@ -233,14 +211,10 @@ async function handleManual(
     );
     await interaction.editReply({
       components: successResult.toJSON(),
-      flags: successResult.flags | MessageFlags.Ephemeral,
     });
   } catch (error: unknown) {
     logger.error('Manual link failed: ' + (error instanceof Error ? error.message : String(error)));
     const err = buildErrorContainer('Không thể lưu thông tin liên kết. Kiểm tra openid và token.');
-    await interaction.editReply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
-    });
+    await interaction.editReply({ components: err.toJSON() });
   }
 }

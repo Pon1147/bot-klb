@@ -3,7 +3,6 @@
 import {
   ChatInputCommandInteraction,
   GuildTextBasedChannel,
-  MessageFlags,
   SlashCommandBuilder,
 } from 'discord.js';
 import Database from 'better-sqlite3';
@@ -12,6 +11,7 @@ import { checkVoiceForTeamFind } from '../../utils/df-voice.utils.js';
 import { buildSelectMenuMessage } from './team-find.menu.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { createSession } from '../../services/team-find-session.js';
+import { sendReply } from '../../utils/reply.utils.js';
 
 export const data = new SlashCommandBuilder()
   .setName('team-find')
@@ -26,10 +26,7 @@ export async function execute(
   const voiceResult = checkVoiceForTeamFind(interaction);
   if (!voiceResult.success) {
     const err = buildErrorContainer(voiceResult.errorMessage!);
-    await interaction.reply({
-      components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
-    });
+    await sendReply(interaction, { components: err.toJSON() });
     return;
   }
 
@@ -45,7 +42,6 @@ export async function execute(
   const response = await interaction.reply({
     content: menu.content,
     components: menu.components,
-    flags: MessageFlags.Ephemeral,
     fetchReply: true,
   });
 

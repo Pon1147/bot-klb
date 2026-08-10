@@ -15,6 +15,7 @@ import { DIFFICULTY_CONFIG, type Difficulty } from '../../config/team-find.confi
 import { SESSION_EXPIRED_MESSAGE, EMBED_AVATAR_SIZE } from '../../config/app.constants.js';
 import { createLogger } from '../../utils/logger.js';
 import { TeamFindIds } from './team-find-ids.js';
+import { sendReply } from '../../utils/reply.utils.js';
 
 const logger = createLogger('TeamFind');
 
@@ -31,19 +32,13 @@ export async function handleTeamFindInteraction(
     const userId = parts[1];
 
     if (userId !== interaction.user.id) {
-      await interaction.reply({
-        content: 'Đây không phải session của bạn.',
-        flags: MessageFlags.Ephemeral,
-      });
+      await sendReply(interaction, { content: 'Đây không phải session của bạn.' });
       return true;
     }
 
     const session = getSession(userId);
     if (!session) {
-      await interaction.reply({
-        content: SESSION_EXPIRED_MESSAGE,
-        flags: MessageFlags.Ephemeral,
-      });
+      await sendReply(interaction, { content: SESSION_EXPIRED_MESSAGE });
       return true;
     }
 
@@ -60,7 +55,6 @@ export async function handleTeamFindInteraction(
     await interaction.update({
       content: menu.content,
       components: menu.components,
-      flags: MessageFlags.Ephemeral,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
     return true;
@@ -73,19 +67,13 @@ export async function handleTeamFindInteraction(
     const userId = parts[1];
 
     if (userId !== interaction.user.id) {
-      await interaction.reply({
-        content: 'Đây không phải session của bạn.',
-        flags: MessageFlags.Ephemeral,
-      });
+      await sendReply(interaction, { content: 'Đây không phải session của bạn.' });
       return true;
     }
 
     const session = getSession(userId);
     if (!session) {
-      await interaction.reply({
-        content: SESSION_EXPIRED_MESSAGE,
-        flags: MessageFlags.Ephemeral,
-      });
+      await sendReply(interaction, { content: SESSION_EXPIRED_MESSAGE });
       return true;
     }
 
@@ -100,7 +88,6 @@ export async function handleTeamFindInteraction(
     await interaction.update({
       content: menu.content,
       components: menu.components,
-      flags: MessageFlags.Ephemeral,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
     return true;
@@ -111,19 +98,13 @@ export async function handleTeamFindInteraction(
     const userId = customId.split(':')[1];
 
     if (userId !== interaction.user.id) {
-      await interaction.reply({
-        content: 'Đây không phải session của bạn.',
-        flags: MessageFlags.Ephemeral,
-      });
+      await sendReply(interaction, { content: 'Đây không phải session của bạn.' });
       return true;
     }
 
     const session = getSession(userId);
     if (!session) {
-      await interaction.reply({
-        content: SESSION_EXPIRED_MESSAGE,
-        flags: MessageFlags.Ephemeral,
-      });
+      await sendReply(interaction, { content: SESSION_EXPIRED_MESSAGE });
       return true;
     }
 
@@ -139,7 +120,6 @@ export async function handleTeamFindInteraction(
     await interaction.update({
       content: menu.content,
       components: menu.components,
-      flags: MessageFlags.Ephemeral,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
     return true;
@@ -150,20 +130,15 @@ export async function handleTeamFindInteraction(
     const userId = customId.split(':')[1];
 
     if (userId !== interaction.user.id) {
-      await interaction.reply({
-        content: 'Đây không phải session của bạn.',
-        flags: MessageFlags.Ephemeral,
-      });
+      await sendReply(interaction, { content: 'Đây không phải session của bạn.' });
       return true;
     }
 
     const session = getSession(userId);
     if (!session || !session.map || !session.mode) {
       // Show error message thay vì silent fail
-      const err = buildErrorContainer('Bạn cần chọn map và mode trước khi hoàn thành.');
-      await interaction.reply({
-        components: err.toJSON(),
-        flags: err.flags | MessageFlags.Ephemeral,
+      await sendReply(interaction, {
+        components: buildErrorContainer('Bạn cần chọn map và mode trước khi hoàn thành.').toJSON(),
       });
       deleteSession(userId);
       return true;
@@ -182,10 +157,10 @@ export async function handleTeamFindInteraction(
     const member = interaction.member;
     const voiceChannel = member instanceof GuildMember ? member.voice?.channel : null;
     if (!voiceChannel) {
-      const err = buildErrorContainer('Bạn phải đang trong phòng thoại để sử dụng lệnh này.');
-      await interaction.reply({
-        components: err.toJSON(),
-        flags: err.flags | MessageFlags.Ephemeral,
+      await sendReply(interaction, {
+        components: buildErrorContainer(
+          'Bạn phải đang trong phòng thoại để sử dụng lệnh này.',
+        ).toJSON(),
       });
       deleteSession(userId);
       return true;
