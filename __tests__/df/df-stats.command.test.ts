@@ -6,6 +6,9 @@ jest.mock('discord.js', () => ({
   ComponentType: { TextDisplay: 10, Separator: 14, Container: 17, Section: 9, Thumbnail: 11 },
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
   SlashCommandBuilder: class { setName() { return this; } setDescription() { return this; } },
+  ActionRowBuilder: class { addComponents() { return this; } toJSON() { return []; } },
+  StringSelectMenuBuilder: class { setCustomId() { return this; } setPlaceholder() { return this; } addOptions() { return this; } },
+  StringSelectMenuOptionBuilder: class { setLabel() { return this; } setValue() { return this; } setDefault() { return this; } },
 }));
 
 jest.mock('../../src/database/df.token.db.js', () => ({
@@ -14,7 +17,7 @@ jest.mock('../../src/database/df.token.db.js', () => ({
 }));
 
 jest.mock('../../src/services/deltaforce.api.js', () => ({
-  getSeasonData: jest.fn(),
+  getOverviewData: jest.fn(),
 }));
 
 jest.mock('../../src/utils/df-rank.utils.js', () => ({
@@ -37,7 +40,7 @@ jest.mock('../../src/utils/container.utils.js', () => ({
 
 import { execute } from '../../src/commands/df/stats.command.js';
 import { getDfToken, touchDfToken } from '../../src/database/df.token.db.js';
-import { getSeasonData } from '../../src/services/deltaforce.api.js';
+import { getOverviewData } from '../../src/services/deltaforce.api.js';
 import { resolveRankFromScore } from '../../src/utils/df-rank.utils.js';
 import { MessageFlags } from 'discord.js';
 
@@ -77,13 +80,13 @@ describe('df-stats.command', () => {
     (getDfToken as jest.Mock).mockReturnValue(undefined);
     await execute(createMockInteraction(), mockDb);
     expect(mockReply).toHaveBeenCalled();
-    expect(getSeasonData).not.toHaveBeenCalled();
+    expect(getOverviewData).not.toHaveBeenCalled();
   });
 
   it('nên hiển thị stats khi có token và API trả về data', async () => {
     const mockToken = { openid: '123', token: 'abc', ts: '42', s: 'sig1', u: 'dev1', linked_at: '2026-06-09', last_used_at: null };
     (getDfToken as jest.Mock).mockReturnValue(mockToken);
-    (getSeasonData as jest.Mock).mockResolvedValue({
+    (getOverviewData as jest.Mock).mockResolvedValue({
       player_info: { avatar: '', level: 50, nickname: 'TestPlayer', play_duration: '100.5', register_time: '1609459200' },
       rank_data: { current_rank: 'Vàng', current_rank_score: 2000, highest_rank: 'Bạch Kim', highest_rank_season_id: 8 },
       summary_data: {
@@ -100,9 +103,8 @@ describe('df-stats.command', () => {
       rankId: 32, mode: 'SOL', name: 'Vàng III', minScore: 2100, maxScore: 2299, imageUrl: 'https://example.com/rank.png',
     });
     await execute(createMockInteraction(), mockDb);
-    expect(getSeasonData).toHaveBeenCalledWith(
+    expect(getOverviewData).toHaveBeenCalledWith(
       expect.objectContaining({ openid: '123', token: 'abc', ts: '42', s: 'sig1', u: 'dev1' }),
-      '10009',
     );
     expect(touchDfToken).toHaveBeenCalledWith(mockDb, '222');
     expect(mockEditReply).toHaveBeenCalled();
@@ -111,7 +113,7 @@ describe('df-stats.command', () => {
   it('nên xử lý khi combat data là null', async () => {
     const mockToken = { openid: '123', token: 'abc', linked_at: '2026-06-09', last_used_at: null };
     (getDfToken as jest.Mock).mockReturnValue(mockToken);
-    (getSeasonData as jest.Mock).mockResolvedValue({
+    (getOverviewData as jest.Mock).mockResolvedValue({
       player_info: { avatar: '', level: 10, nickname: 'NewPlayer', play_duration: '0.5', register_time: '1700000000' },
       rank_data: { current_rank: 'Đồng', current_rank_score: 1050, highest_rank: 'Đồng III', highest_rank_season_id: 9 },
       summary_data: { bf_combat: null, combat: null, economy: null, performance: null, team: null, total_match_count: 0, vehicle: null },
@@ -126,7 +128,7 @@ describe('df-stats.command', () => {
   it('nên handle API error', async () => {
     const mockToken = { openid: '123', token: 'abc', linked_at: '2026-06-09', last_used_at: null };
     (getDfToken as jest.Mock).mockReturnValue(mockToken);
-    (getSeasonData as jest.Mock).mockRejectedValue(new Error('Token expired'));
+    (getOverviewData as jest.Mock).mockRejectedValue(new Error('Token expired'));
     await execute(createMockInteraction(), mockDb);
     expect(mockEditReply).toHaveBeenCalled();
     expect(touchDfToken).not.toHaveBeenCalled();
@@ -135,7 +137,7 @@ describe('df-stats.command', () => {
   it('nên fallback rank name khi resolveRankFromScore trả về null', async () => {
     const mockToken = { openid: '123', token: 'abc', linked_at: '2026-06-09', last_used_at: null };
     (getDfToken as jest.Mock).mockReturnValue(mockToken);
-    (getSeasonData as jest.Mock).mockResolvedValue({
+    (getOverviewData as jest.Mock).mockResolvedValue({
       player_info: { avatar: '', level: 5, nickname: 'Test', play_duration: '1.0', register_time: '1609459200' },
       rank_data: { current_rank: 'Unknown', current_rank_score: 9999, highest_rank: 'Unknown', highest_rank_season_id: 1 },
       summary_data: { bf_combat: null, combat: null, economy: null, performance: null, team: null, total_match_count: 0, vehicle: null },

@@ -124,6 +124,30 @@ export async function getSeasonData(
 }
 
 /**
+ * Call GetMyData without season → returns latest/overview data.
+ */
+export async function getOverviewData(token: DfApiToken): Promise<DfMyDataResponse> {
+  const instance = buildInstance(token);
+  const body = {
+    openid: token.openid,
+    token: token.token,
+    game_id: GAME_ID,
+    channel: DF_CHANNEL,
+    account_type: Number(ACCOUNT_TYPE),
+    lang_type: LANG_TYPE,
+    needLogin: true,
+    report_type: 1,
+  };
+
+  const res = await instance.post<DfApiResponse<DfMyDataResponse>>('/GetMyData', body);
+  if (res.data.code !== 0) {
+    logger.info('GetMyData(overview) failed: code=' + res.data.code + ', msg=' + res.data.msg);
+    throw new Error(`GetMyData (overview) failed: code=${res.data.code} msg=${res.data.msg}`);
+  }
+  return res.data.data;
+}
+
+/**
  * Call DfTools/GetMatchList to fetch recent match history.
  * Hỗ trợ pagination với offset và limit.
  */

@@ -36,8 +36,9 @@ export const SEASONS_MY_DATA = [
   '10007',
   '10008',
   '10009',
+  '10010',
 ] as const;
-export const SEASON_LATEST = '10009';
+export const SEASON_LATEST = '10010';
 
 // ===== SOL Mode Threshold =====
 export const SOL_MODE_THRESHOLD = 1000;

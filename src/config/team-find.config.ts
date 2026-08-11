@@ -71,8 +71,8 @@ export const MAP_NAMES: Record<number, string> = {
 };
 
 /** Season ID của mùa mới nhất — update khi mùa mới ra */
-export const LATEST_SEASON = '10009';
-export const LATEST_SEASON_NAME = 'S9';
+export const LATEST_SEASON = '10011';
+export const LATEST_SEASON_NAME = 'S10';
 
 /** SOL rank choices for /team-find — matches /df-stats display */
 export const TEAM_FIND_RANKS: { name: string; value: string }[] = [
