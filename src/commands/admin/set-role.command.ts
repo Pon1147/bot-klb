@@ -43,18 +43,27 @@ function buildModeratorSubcommand(
     .addRoleOption((opt) => opt.setName('role').setDescription('Role Moderator').setRequired(true));
 }
 
+function buildMemberSubcommand(sub: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder {
+  return sub
+    .setName('member')
+    .setDescription('Set Member role cho RBAC.')
+    .addRoleOption((opt) => opt.setName('role').setDescription('Role Member').setRequired(true));
+}
+
 export const data = new SlashCommandBuilder()
   .setName('set-role')
   .setDescription('Cấu hình role IDs cho RBAC system.')
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addSubcommand(buildOwnerSubcommand)
-  .addSubcommand(buildModeratorSubcommand);
+  .addSubcommand(buildModeratorSubcommand)
+  .addSubcommand(buildMemberSubcommand);
 
 // ─── Permission mapping ───────────────────────────────────────────
 
-const ROLE_KEY_MAP: Record<string, 'Owner' | 'Moderator'> = {
+const ROLE_KEY_MAP: Record<string, 'Owner' | 'Moderator' | 'Member'> = {
   owner: 'Owner',
   moderator: 'Moderator',
+  member: 'Member',
 };
 
 // ─── Execute ──────────────────────────────────────────────────────
@@ -77,6 +86,22 @@ export async function execute(
   if (!role) {
     await sendReply(interaction, {
       components: buildErrorContainer('Không tìm thấy role đã chọn.').toJSON(),
+    });
+    return;
+  }
+
+  // Validate: không set @everyone (ID = guild ID)
+  if (role.id === interaction.guild!.id) {
+    await sendReply(interaction, {
+      components: buildErrorContainer('Không thể dùng @everyone làm role.').toJSON(),
+    });
+    return;
+  }
+
+  // Validate: role name không rỗng
+  if (!role.name || role.name.trim() === '') {
+    await sendReply(interaction, {
+      components: buildErrorContainer('Role phải có tên hợp lệ.').toJSON(),
     });
     return;
   }

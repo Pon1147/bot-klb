@@ -16,9 +16,10 @@ import { botConfig } from '../config/bot.config.js';
 import { ContainerIds, ContainerModalPrefix } from '../commands/container/container-ids.js';
 import { TeamFindIds } from '../commands/df/team-find-ids.js';
 import { handleTeamFindButton, handleTeamFindSelect } from '../commands/df/team-find.handlers.js';
+import { handleDfStatsSelect } from './dfStatsSelect.handler.js';
 
 const logger = createLogger('InteractionCreate');
-import { COMMAND_PERMISSIONS, hasRequiredRole } from '../config/permissions.js';
+import { COMMAND_PERMISSIONS, hasRequiredRole, ROLE_IDS } from '../config/permissions.js';
 
 // Track users đã click button reveal webhook URL — chống spam
 const webhookRevealedUsers = new Set<string>();
@@ -128,6 +129,7 @@ export async function execute(
     if (interaction.customId.startsWith(TeamFindIds.RANK)) {
       await handleTeamFindSelect(interaction);
     }
+    if ((await handleDfStatsSelect(interaction)).handled) return;
     return;
   }
 
@@ -173,13 +175,26 @@ export async function execute(
       const member = interaction.member;
       if (member instanceof GuildMember) {
         const userRoleIds = member.roles.cache.map((r) => r.id);
-        const hasPermission = hasRequiredRole(userRoleIds, commandPerm.requiredRoles);
-        if (!hasPermission) {
-          await interaction.reply({
-            content: '🔒 Lệnh này yêu cầu role: ' + commandPerm.requiredRoles.join(', '),
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
+        // Owner/Moderator bypass — toàn quyền mọi command
+        const adminRoleIds = ['Owner', 'Moderator'].map((r) => ROLE_IDS[r]).filter(Boolean);
+        if (userRoleIds.some((id) => adminRoleIds.includes(id))) {
+          // admin bypass — cho chạy luôn
+        } else {
+          // requiredRoles trong JSON là tên role → resolve thành role IDs
+          const requiredRoleIds = commandPerm.requiredRoles
+            .map((roleName) => ROLE_IDS[roleName] ?? null)
+            .filter((v): v is string => v !== null);
+          const hasPermission = hasRequiredRole(userRoleIds, requiredRoleIds);
+          if (!hasPermission) {
+            logger.warn(
+              `RBAC denied: user=${interaction.user.id} cmd=${commandName} required=${commandPerm.requiredRoles.join(',')}`,
+            );
+            await interaction.reply({
+              content: '🔒 Lệnh này yêu cầu role: ' + commandPerm.requiredRoles.join(', '),
+              flags: MessageFlags.Ephemeral,
+            });
+            return;
+          }
         }
       }
     }

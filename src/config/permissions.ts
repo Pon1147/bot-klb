@@ -6,6 +6,7 @@
 export interface RoleConfig {
   Owner: string;
   Moderator: string;
+  Member: string;
 }
 
 export interface CommandPermission {
@@ -38,6 +39,19 @@ export function loadPermissions(config: PermissionsConfig): void {
   Object.entries(config.commands).forEach(([cmd, perm]) => {
     COMMAND_PERMISSIONS[cmd] = perm;
   });
+
+  // Validate: warn nếu command yêu cầu role chưa có ID
+  const unresolved: string[] = [];
+  for (const [cmd, perm] of Object.entries(COMMAND_PERMISSIONS)) {
+    for (const roleName of perm.requiredRoles) {
+      if (!ROLE_IDS[roleName]) {
+        unresolved.push(`${cmd} → ${roleName}`);
+      }
+    }
+  }
+  if (unresolved.length > 0) {
+    console.warn(`[RBAC] Unresolved roles: ${unresolved.join(', ')}. Commands may deny all users.`);
+  }
 }
 
 /**
