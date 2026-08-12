@@ -47,7 +47,7 @@ export const MAP_MODES: Record<MapKey, Difficulty[]> = {
   'Thung lũng Layali': ['easy'],
   'Đập Nước Zero': ['easy', 'normal'],
   'Phố Cổ Brakkesh': ['normal', 'hard'],
-  AZ3: ['easy', 'normal', 'hard'],
+  AZ3: ['easy', 'normal'],
   'Trạm Không Gian': ['normal', 'hard'],
   'Ngục Giam Thủy Triều': ['hard'],
 };
