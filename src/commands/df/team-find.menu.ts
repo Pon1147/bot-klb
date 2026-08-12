@@ -51,8 +51,11 @@ function buildStatusContent(username: string, state: MenuState): string {
   ].join('\n');
 }
 
-/** Build the Map button row */
-function buildMapButtons(userId: string, selectedMap: MapKey | null) {
+/** Build the Map button rows — split into chunks of 5 (Discord API limit) */
+function buildMapButtons(
+  userId: string,
+  selectedMap: MapKey | null,
+): ActionRowBuilder<ButtonBuilder>[] {
   const buttons = Object.keys(MAP_DISPLAY).map((m) => {
     const isSelected = m === selectedMap;
     return new ButtonBuilder()
@@ -61,7 +64,12 @@ function buildMapButtons(userId: string, selectedMap: MapKey | null) {
       .setStyle(MAP_COLORS[m] || ButtonStyle.Secondary)
       .setDisabled(isSelected);
   });
-  return new ActionRowBuilder<ButtonBuilder>().addComponents(buttons);
+  // Discord giới hạn 5 buttons per ActionRow → chia thành nhiều rows
+  const rows: ActionRowBuilder<ButtonBuilder>[] = [];
+  for (let i = 0; i < buttons.length; i += 5) {
+    rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(buttons.slice(i, i + 5)));
+  }
+  return rows;
 }
 
 /** Build the Mode button row — filtered by map */
@@ -116,8 +124,8 @@ function buildDoneButton(userId: string, enabled: boolean) {
 export function buildSelectMenuMessage(userId: string, username: string, state: MenuState) {
   const content = buildStatusContent(username, state);
 
-  // Map buttons — show only if map not selected yet
-  const mapRow = buildMapButtons(userId, state.map);
+  // Map buttons — split into rows of 5 (Discord API limit)
+  const mapRows = buildMapButtons(userId, state.map);
 
   // Mode buttons — show only if map selected and mode not selected
   const modeRow = buildModeButtons(userId, state.map, state.mode);
@@ -130,6 +138,11 @@ export function buildSelectMenuMessage(userId: string, username: string, state: 
 
   return {
     content,
-    components: [mapRow.toJSON(), modeRow.toJSON(), rankRow.toJSON(), doneRow.toJSON()],
+    components: [
+      ...mapRows.map((r) => r.toJSON()),
+      modeRow.toJSON(),
+      rankRow.toJSON(),
+      doneRow.toJSON(),
+    ],
   };
 }
