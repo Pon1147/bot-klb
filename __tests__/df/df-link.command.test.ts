@@ -146,14 +146,23 @@ describe('df-link.command', () => {
       expect(mockReply).toHaveBeenCalled();
     });
 
-    it('nên reply chứa claim code + button components', async () => {
+    it('nên reply chứa claim code trong container + button components', async () => {
       const interaction = createMockInteraction();
       await execute(interaction, mockDb);
 
       const replyCall = mockReply.mock.calls[0];
-      expect(replyCall[0].content).toContain('ABC123');
       expect(replyCall[0].components).toBeDefined();
-      expect(replyCall[0].components).toHaveLength(1);
+      // 2 components: info container + button row
+      expect(replyCall[0].components).toHaveLength(2);
+      // component đầu là container với TextDisplay chứa claim code
+      const infoComp = replyCall[0].components[0];
+      expect(infoComp.type).toBe(17); // Container
+      // Tìm TextDisplay trong nested components
+      const textDisplay = infoComp.components?.find((c: any) => c.content?.includes('ABC123'));
+      expect(textDisplay).toBeDefined();
+      expect(textDisplay?.content).toContain('ABC123');
+      // component thứ 2 là button row
+      expect(replyCall[0].components[1].type).toBe(1); // ActionRow
     });
   });
 

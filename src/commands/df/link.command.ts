@@ -93,17 +93,19 @@ async function handleStart(
     .setStyle(ButtonStyle.Secondary);
   const row = new ActionRowBuilder().addComponents(revealButton);
 
-  await sendReply(interaction, {
-    content:
-      `**Liên kết tài khoản Delta Force**\n\n` +
+  const info = buildInfoContainer(
+    `**Liên kết tài khoản Delta Force**\n\n` +
       `**Mã claim: \`${code}\`** (hết hạn sau 10 phút)\n\n` +
       '1. Mở [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html) → đăng nhập\n' +
       '2. Mở extension → popup → paste Webhook URL → Lưu\n' +
       '3. Tab **Link** → dán mã claim → bấm **Liên kết Discord**\n' +
       '4. Chờ DM "Linked OK" từ bot\n\n' +
       '> Nhấn button bên dưới để hiện Webhook URL (chỉ hiện 1 lần)',
-    components: [row.toJSON()],
-  });
+  );
+  await interaction.reply({
+    components: [...info.toJSON(), row.toJSON()],
+    flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+  } as Parameters<typeof interaction.reply>[0]);
 }
 
 /** Subcommand `status` — kiểm tra trạng thái liên kết */
