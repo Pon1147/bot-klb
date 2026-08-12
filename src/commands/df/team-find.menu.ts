@@ -99,7 +99,7 @@ function buildRankMenu(userId: string, selectedRank: string | null) {
     .setMinValues(1)
     .setMaxValues(1)
     .addOptions(
-      TEAM_FIND_RANKS.map((r) => ({
+      [...TEAM_FIND_RANKS].reverse().map((r) => ({
         label: r.name,
         value: r.value,
       })),
