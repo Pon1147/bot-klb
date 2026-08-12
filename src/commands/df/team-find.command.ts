@@ -3,6 +3,7 @@
 import {
   ChatInputCommandInteraction,
   GuildTextBasedChannel,
+  MessageFlags,
   SlashCommandBuilder,
 } from 'discord.js';
 import Database from 'better-sqlite3';
@@ -39,11 +40,14 @@ export async function execute(
     rank: null,
   });
 
-  const response = await interaction.reply({
+  // Initial menu ephemeral — chỉ user mới thấy buttons/options
+  await interaction.reply({
     content: menu.content,
     components: menu.components,
-    fetchReply: true,
+    flags: MessageFlags.Ephemeral,
   });
+
+  const response = await interaction.fetchReply();
 
   createSession(interaction.user.id, guild.id, response.id, channel.id);
 }

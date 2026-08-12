@@ -51,12 +51,12 @@ export async function handleTeamFindInteraction(
       mode: updated.mode,
       rank: updated.rank,
     });
-    // discord.js v14 type mismatch
+    // Cập nhật ephemeral menu — chỉ user thấy
+    // Cập nhật ephemeral menu — chỉ user thấy
     await interaction.update({
       content: menu.content,
       components: menu.components,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    } as Parameters<typeof interaction.update>[0]);
     return true;
   }
 
@@ -84,12 +84,10 @@ export async function handleTeamFindInteraction(
       mode: updated.mode,
       rank: updated.rank,
     });
-    // discord.js v14 type mismatch
     await interaction.update({
       content: menu.content,
       components: menu.components,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    } as Parameters<typeof interaction.update>[0]);
     return true;
   }
 
@@ -116,12 +114,10 @@ export async function handleTeamFindInteraction(
       mode: updated.mode,
       rank: updated.rank,
     });
-    // discord.js v14 type mismatch
     await interaction.update({
       content: menu.content,
       components: menu.components,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    } as Parameters<typeof interaction.update>[0]);
     return true;
   }
 

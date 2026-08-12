@@ -78,6 +78,7 @@ describe('team-find.command — execute', () => {
       options: {},
       channel: { id: 'channel-1', messages: { fetch: jest.fn().mockResolvedValue(null) } },
       reply: mockReply,
+      fetchReply: jest.fn().mockResolvedValue({ id: 'msg-123' }),
       replied: false,
       deferred: false,
       ...overrides,
