@@ -1,13 +1,17 @@
 {
   "manifest_version": 3,
   "name": "DF Toolbox",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Delta Force HQ credential bridge + Garena redeem codes",
   "permissions": ["storage", "activeTab"],
   "host_permissions": [
     "https://redeem.df.garena.sg/*",
     "https://*.playerinfinite.com/*",
     "https://www.playdeltaforce.com/*",
+    "https://sso.garena.com/*",
+    "https://account.garena.com/*",
+    "https://auth.garena.com/*",
+    "https://common-web.intlgame.com/*",
     "https://discord.com/*"
   ],
   "background": {
@@ -25,8 +29,31 @@
     },
     {
       "matches": ["https://www.playdeltaforce.com/*"],
-      "js": ["content/link-page-capture.js", "content/link-content.js"],
+      "js": [
+        "content/link-page-capture.js",
+        "content/link-content.js"
+      ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.playdeltaforce.com/*"],
+      "js": ["content/auth-investigator-content.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://sso.garena.com/*"],
+      "js": ["content/auth-investigator-content.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://auth.garena.com/*"],
+      "js": ["content/auth-investigator-content.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://common-web.intlgame.com/*"],
+      "js": ["content/auth-investigator-content.js"],
+      "run_at": "document_start"
     }
   ],
   "icons": {
@@ -40,8 +67,24 @@
       "matches": ["https://redeem.df.garena.sg/*"]
     },
     {
-      "resources": ["content/link-page-capture.js", "content/dashboard.css"],
+      "resources": [
+        "content/link-page-capture.js",
+        "content/dashboard.css",
+        "content/auth-investigator.js"
+      ],
       "matches": ["https://www.playdeltaforce.com/*"]
+    },
+    {
+      "resources": ["content/auth-investigator.js"],
+      "matches": ["https://sso.garena.com/*"]
+    },
+    {
+      "resources": ["content/auth-investigator.js"],
+      "matches": ["https://auth.garena.com/*"]
+    },
+    {
+      "resources": ["content/auth-investigator.js"],
+      "matches": ["https://common-web.intlgame.com/*"]
     }
   ]
 }

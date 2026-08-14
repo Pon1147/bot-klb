@@ -3,50 +3,217 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Config — Pon1147</title>
+    <title>Config — Garena Redeem</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <div class="container">
-      <div class="header">
-        <img class="icon" src="../assets/icon_16.png" alt="icon">
-        <h1>Garena Redeem</h1>
-      </div>
+    <div class="app">
 
-      <div class="info-card">
-        <p class="info-text">Dashboard đang hiển thị trên trang.</p>
-        <p class="info-sub">Kéo panel bằng thanh drag handle phía trên.</p>
-      </div>
-
-      <div class="section" data-site="playdeltaforce">
-        <label class="label">🔗 Webhook URL (DF Link):</label>
-        <input
-          class="codes-input"
-          id="webhookUrlInput"
-          type="url"
-          placeholder="https://discord.com/api/webhooks/.../..."
-          style="width: 100%; padding: 8px; border: 1px solid #333; border-radius: 4px; background: #1a1a2e; color: #e0e0e0; font-size: 11px; margin-bottom: 8px;"
-        />
-        <button class="btn btn-save" id="btnSaveWebhook" style="width: 100%; padding: 6px; font-size: 11px;">💾 Lưu Webhook URL</button>
-      </div>
-
-      <div class="section" data-site="garena">
-        <label class="label">Tùy chỉnh codes (mỗi dòng 1 code):</label>
-        <textarea
-          class="codes-input"
-          id="codesInput"
-          placeholder="DFSL9304&#10;DFSL6257&#10;..."
-        ></textarea>
-        <div class="actions">
-          <button class="btn btn-save" id="btnSave">💾 Lưu codes</button>
-          <button class="btn btn-reset" id="btnReset">🔄 Reset default</button>
+      <!-- Header -->
+      <header class="header">
+        <img class="header-icon" src="../assets/icon_16.png" alt="icon" />
+        <div class="header-brand">
+          <h1 id="headerTitle">Garena Redeem</h1>
+          <span class="header-subtitle">Redeem Tool</span>
         </div>
-      </div>
+        <div class="header-status" id="headerStatus">
+          <span class="status-dot" id="statusDot"></span>
+          <span class="status-label" id="statusLabel">Ready</span>
+        </div>
+      </header>
 
-      <div class="footer">
-        <span>Pon1147 Redeem Tool</span>
-        <a href="https://discord.gg/vz6w6c3Xe3" target="_blank">Discord</a>
-      </div>
+      <!-- Segmented Tab Navigation -->
+      <nav class="segmented-nav" id="tabNav">
+        <button class="segment-btn active" data-tab="config">
+          <span class="segment-icon">⚙</span>
+          <span>Config</span>
+        </button>
+        <button class="segment-btn" data-tab="investigator">
+          <span class="segment-icon">🔍</span>
+          <span>Auth Investigator</span>
+        </button>
+      </nav>
+
+      <!-- ===== CONFIG TAB ===== -->
+      <main class="tab-content active" id="tab-config">
+
+        <!-- Redeem Summary -->
+        <section class="card summary-card" id="summaryGrid">
+          <div class="summary-item">
+            <span class="summary-icon">📋</span>
+            <span class="summary-value" id="summaryTotal">0</span>
+            <span class="summary-label">Total</span>
+          </div>
+          <div class="summary-item summary-redeemed">
+            <span class="summary-icon">✓</span>
+            <span class="summary-value" id="summaryRedeemed">0</span>
+            <span class="summary-label">Redeemed</span>
+          </div>
+          <div class="summary-item summary-dead">
+            <span class="summary-icon">✗</span>
+            <span class="summary-value" id="summaryDead">0</span>
+            <span class="summary-label">Dead</span>
+          </div>
+          <div class="summary-item summary-retryable">
+            <span class="summary-icon">↻</span>
+            <span class="summary-value" id="summaryRetryable">0</span>
+            <span class="summary-label">Retryable</span>
+          </div>
+          <div class="summary-item summary-untested">
+            <span class="summary-icon">?</span>
+            <span class="summary-value" id="summaryUntested">0</span>
+            <span class="summary-label">Untested</span>
+          </div>
+        </section>
+
+        <!-- Redeemed Codes -->
+        <section class="card code-list-section" id="redeemedCodesSection" style="display: none;">
+          <div class="section-header">
+            <h3 class="section-title">Redeemed Codes</h3>
+          </div>
+          <pre class="code-list" id="redeemedCodesList"></pre>
+        </section>
+
+        <!-- Dead Codes -->
+        <section class="card code-list-section" id="deadCodesSection" style="display: none;">
+          <div class="section-header">
+            <h3 class="section-title">Dead Codes</h3>
+          </div>
+          <pre class="code-list" id="deadCodesList"></pre>
+        </section>
+
+        <!-- Retryable Codes -->
+        <section class="card code-list-section" id="retryableCodesSection" style="display: none;">
+          <div class="section-header">
+            <h3 class="section-title">Retryable Codes</h3>
+          </div>
+          <pre class="code-list" id="retryableCodesList"></pre>
+        </section>
+
+        <!-- Webhook Section -->
+        <section class="card input-section" data-site="playdeltaforce">
+          <div class="section-header">
+            <h3 class="section-title">Webhook</h3>
+            <span class="section-subtitle">Used for DF Link notifications</span>
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="webhookUrlInput">Discord Webhook URL</label>
+            <div class="input-wrapper">
+              <input
+                class="input-field"
+                id="webhookUrlInput"
+                type="url"
+                placeholder="https://discord.com/api/webhooks/.../..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+            <button class="btn btn-primary btn-block" id="btnSaveWebhook">Save Webhook</button>
+          </div>
+        </section>
+
+        <!-- Codes Section -->
+        <section class="card input-section" data-site="garena">
+          <div class="section-header">
+            <h3 class="section-title">Redeem Codes</h3>
+            <span class="section-subtitle">One code per line</span>
+          </div>
+          <div class="input-group">
+            <textarea
+              class="textarea-monospace"
+              id="codesInput"
+              placeholder="DFSL9304&#10;DFSL6257&#10;..."
+              spellcheck="false"
+            ></textarea>
+            <div class="textarea-footer">
+              <span class="code-counter" id="codeCounter">0 codes</span>
+              <div class="actions">
+                <button class="btn btn-primary" id="btnSave">Save Codes</button>
+                <button class="btn btn-ghost" id="btnReset">Reset</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+      <!-- Config tab end -->
+
+      <!-- ===== AUTH INVESTIGATOR TAB ===== -->
+      <main class="tab-content" id="tab-investigator">
+
+        <!-- Overview Stats -->
+        <section class="card stats-grid" id="statsGrid">
+          <div class="stat-card">
+            <span class="stat-value" id="totalEvents">0</span>
+            <span class="stat-label">Events</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="authCalls">0</span>
+            <span class="stat-label">Auth Events</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="hasRefreshToken">0</span>
+            <span class="stat-label">Refreshes</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="hasChannelInfo">—</span>
+            <span class="stat-label">Channel Info</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="hasGarenaOpenId">—</span>
+            <span class="stat-label">Garena OpenID</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="hasDfToolsOpenId">—</span>
+            <span class="stat-label">DfTools OpenID</span>
+          </div>
+        </section>
+
+        <!-- Identity Mapping -->
+        <section class="card">
+          <h3 class="section-title">Identity Mapping</h3>
+          <div class="mapping-card" id="mappingCard">
+            <div class="mapping-row">
+              <span class="mapping-label">Garena SNS OpenID</span>
+              <span class="mapping-value" id="garenaOpenId">—</span>
+            </div>
+            <div class="mapping-row">
+              <span class="mapping-label">DfTools OpenID</span>
+              <span class="mapping-value" id="dfToolsOpenid">—</span>
+            </div>
+            <div class="mapping-row mapping-row-highlight">
+              <span class="mapping-label">Identity Match</span>
+              <span class="mapping-value" id="matchResult">—</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Domains -->
+        <section class="card">
+          <h3 class="section-title">Domains</h3>
+          <div class="domain-list" id="domainList">—</div>
+        </section>
+
+        <!-- Events -->
+        <section class="card">
+          <div class="section-header">
+            <h3 class="section-title">Events</h3>
+            <button class="btn btn-ghost btn-sm" id="btnClear">Clear All</button>
+          </div>
+          <div class="events-list" id="eventsList">
+            <div class="empty-state">No events yet.</div>
+          </div>
+        </section>
+
+      </main>
+      <!-- Auth Investigator tab end -->
+
+      <!-- Footer -->
+      <footer class="footer">
+        <span>Garena Redeem — Pon1147</span>
+        <a href="https://discord.gg/vz6w6c3Xe3" target="_blank" rel="noopener noreferrer">Discord</a>
+      </footer>
+
     </div>
 
     <script src="popup.js"></script>
