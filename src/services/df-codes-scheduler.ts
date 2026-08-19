@@ -84,7 +84,6 @@ async function checkAndSend(client: Client, database: Database.Database): Promis
       await (channel as { send: (data: unknown) => Promise<unknown> }).send({
         content: '_Daily codes updated._',
         components: result.toJSON(),
-        files: result.files,
         flags: result.flags,
       });
 

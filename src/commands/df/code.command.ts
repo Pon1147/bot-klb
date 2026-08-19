@@ -54,7 +54,6 @@ export function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean)
   return {
     components: [{ type: ComponentType.Container, components: containerInner }],
     flags: MessageFlags.IsComponentsV2,
-    files: [] as unknown[],
     toJSON() {
       return this.components;
     },
@@ -98,20 +97,22 @@ export async function execute(
   const guildId = interaction.guild.id;
 
   if (subcommand === 'show') {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply();
+
     try {
       const codes = await fetchDailyCodes().catch(() => null);
       const hasCodes = hasAnyCodes(codes);
       const container = buildCodesContainer(codes, hasCodes);
+
       await interaction.editReply({
         components: container.toJSON(),
-        files: container.files,
-        flags: container.flags,
-      } as Parameters<typeof interaction.editReply>[0]);
+        flags: MessageFlags.IsComponentsV2,
+      });
     } catch (error) {
       const err = buildErrorContainer(`Loi khi lay du lieu: ${(error as Error).message}`);
       await interaction.editReply({
         components: err.toJSON(),
+        flags: MessageFlags.IsComponentsV2,
       });
     }
     return;
