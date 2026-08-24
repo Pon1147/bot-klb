@@ -12,13 +12,32 @@
   const SOURCE = 'auth-investigator';
   const STORAGE_KEY = 'auth_events';
   const MAX_EVENTS = 200; // giới hạn số events lưu trữ
+  const AUTH_STATE_KEY = 'auth_state';
+  const AUTH_NOTIF_KEY = 'auth_notifications';
+  const MAX_NOTIFICATIONS = 50;
 
   console.log('[DF Investigator] Auth investigator content script loaded (isolated world)');
+
+  // ===== Inject MAIN world auth-utils.js (shared) =====
+  (function injectAuthUtils() {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('content/auth-utils.js');
+    script.onload = () => script.remove();
+    (document.head || document.documentElement).appendChild(script);
+  })();
 
   // ===== Inject MAIN world auth-investigator.js =====
   (function injectAuthInvestigator() {
     const script = document.createElement('script');
     script.src = chrome.runtime.getURL('content/auth-investigator.js');
+    script.onload = () => script.remove();
+    (document.head || document.documentElement).appendChild(script);
+  })();
+
+  // ===== Inject MAIN world auth-state-engine.js =====
+  (function injectAuthStateEngine() {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('content/auth-state-engine.js');
     script.onload = () => script.remove();
     (document.head || document.documentElement).appendChild(script);
   })();
@@ -92,7 +111,114 @@
       });
       return true; // async response
     }
+
+    if (msg?.type === 'GET_AUTH_STATE') {
+      chrome.storage.local.get(AUTH_STATE_KEY, (result) => {
+        sendResponse({
+          ok: true,
+          state: result[AUTH_STATE_KEY] || null,
+        });
+      });
+      return true; // async response
+    }
+
+    if (msg?.type === 'GET_AUTH_NOTIFICATIONS') {
+      chrome.storage.local.get(AUTH_NOTIF_KEY, (result) => {
+        sendResponse({
+          ok: true,
+          notifications: result[AUTH_NOTIF_KEY] || [],
+        });
+      });
+      return true; // async response
+    }
+
+    if (msg?.type === 'CLEAR_AUTH_NOTIFICATIONS') {
+      chrome.storage.local.set({ [AUTH_NOTIF_KEY]: [] }, () => {
+        sendResponse({ ok: true });
+      });
+      return true; // async response
+    }
+
+    if (msg?.type === 'MARK_NOTIF_READ') {
+      // Đọc storage → tìm notification → đánh dấu read → lưu lại
+      chrome.storage.local.get(AUTH_NOTIF_KEY, (result) => {
+        const notifs = result[AUTH_NOTIF_KEY] || [];
+        const idx = notifs.findIndex((n) => n.id === msg.notifId);
+        if (idx === -1) {
+          sendResponse({ ok: false, error: 'not found' });
+          return;
+        }
+        notifs[idx].read = true;
+        chrome.storage.local.set({ [AUTH_NOTIF_KEY]: notifs }, () => {
+          sendResponse({ ok: true });
+        });
+      });
+      return true; // async response
+    }
   });
+
+  // ===== E. Lắng nghe postMessage từ auth-state-engine =====
+  window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (event.source !== window) return;
+    if (event.data?.source !== 'auth-state-engine') return;
+
+    const data = event.data;
+    console.log('[Auth State Engine] Received:', data.type, 'at', new Date(data.timestamp).toISOString());
+
+    if (data.type === 'STATE_CHANGE') {
+      // State change — persist to storage
+      chrome.storage.local.get(AUTH_STATE_KEY, (result) => {
+        const state = result[AUTH_STATE_KEY] || {};
+        Object.assign(state, {
+          sessionId: data.sessionId,
+          state: data.newState,
+          prevState: data.prevState,
+          lastStateChange: data.timestamp,
+        });
+        chrome.storage.local.set({ [AUTH_STATE_KEY]: state });
+      });
+      // Also save as event for timeline
+      saveEvent({
+        type: 'auth_state_change',
+        prevState: data.prevState,
+        newState: data.newState,
+        sessionId: data.sessionId,
+        timestamp: data.timestamp,
+      });
+    }
+
+    if (data.type === 'NOTIFICATION') {
+      // New notification — persist to storage
+      chrome.storage.local.get(AUTH_NOTIF_KEY, (result) => {
+        const notifs = result[AUTH_NOTIF_KEY] || [];
+        notifs.unshift({
+          id: data.id || `notif_${Date.now()}`,
+          type: data.type,
+          reason: data.reason,
+          sessionId: data.sessionId,
+          shortSessionId: data.shortSessionId,
+          timestamp: data.timestamp,
+          read: false,
+        });
+        while (notifs.length > MAX_NOTIFICATIONS) notifs.pop();
+        chrome.storage.local.set({ [AUTH_NOTIF_KEY]: notifs });
+      });
+      // Send Discord notification
+      sendDiscordNotification(data);
+    }
+  });
+
+  // ===== Send Discord notification via service worker =====
+  function sendDiscordNotification(notif) {
+    if (!chrome.runtime?.id) return;
+    chrome.runtime.sendMessage({
+      type: 'AUTH_NOTIFICATION',
+      notification: notif,
+    }).catch(() => {
+      console.warn('[Auth State Engine] Failed to send Discord notification');
+    });
+  }
 
   // ===== D. Compute panel state từ events =====
   function computePanelState(events) {
@@ -108,13 +234,16 @@
 
     // ===== Token State =====
     const latestTokenEvent = findLatestTokenEvent(authEvents);
-    const tokenState = computeTokenState(latestTokenEvent);
+    const tokenState = AuthUtils.computeTokenState(latestTokenEvent);
 
     // ===== Identity Mapping =====
-    const identity = computeIdentityMapping(authEvents);
+    const identity = AuthUtils.computeIdentityMapping(authEvents);
 
     // ===== Refresh Flow =====
-    const refreshFlow = computeRefreshFlow(normalized);
+    const refreshFlow = AuthUtils.computeRefreshFlow(normalized);
+
+    // ===== Refresh Correlation =====
+    const correlatedRefreshPairs = AuthUtils.buildRefreshCorrelation(normalized);
 
     // ===== Timeline =====
     const timeline = buildTimeline(authEvents);
@@ -145,6 +274,9 @@
 
       // Refresh flow
       refreshFlow,
+
+      // Refresh correlation
+      correlatedRefreshPairs,
 
       // Timeline
       timeline,
@@ -180,7 +312,8 @@
         auth: {
           hasAccessToken: raw.hasAccessToken || false,
           hasRefreshToken: raw.hasRefreshToken || false,
-          hasExpiresIn: raw.hasExpiresIn || false,
+          expiresIn: raw.expiresIn ?? null,
+          accessTokenFingerprint: raw.accessTokenFingerprint || null,
           hasGarenaSnsOpenid: raw.hasGarenaSnsOpenid || false,
           hasOpenId: raw.hasOpenId || false,
           hasThirdType: raw.hasThirdType || false,
@@ -193,15 +326,16 @@
           resultKeys: raw.resultKeys || null,
         },
         identity: {
-          garenaOpenIdHash: raw.garenaSnsOpenidHash || null,
-          dfToolsOpenIdHash: raw.dfToolsOpenidHash || null,
+          garenaOpenIdHash: raw.garenaSnsOpenidHash || raw.urlGarenaOpenidHash || null,
+          dfToolsOpenIdHash: raw.dfToolsOpenidHash || raw.urlDfToolsOpenidHash || null,
           channelInfoGarenaOpenIdHash: raw.channelInfoGarenaOpenidHash || null,
           channelInfoDfToolsOpenIdHash: raw.channelInfoOpenIdHash || null,
         },
         refresh: {
           isRequest: false,
           isResponse: false,
-          correlatedRequestId: null,
+          requestId: raw.requestId || null,
+          correlatedRequestId: raw.correlatedRefreshRequest ? raw.requestId : null,
           success: raw.isSuccess,
         },
         dfTools: {
@@ -221,6 +355,7 @@
         refresh: {
           isRequest: true,
           isResponse: false,
+          requestId: raw.requestId || null,
           hasRefreshTokenInBody: raw.hasRefreshTokenInBody || false,
           bodySummary: raw.bodySummary || null,
         },
@@ -293,107 +428,8 @@
     return latest;
   }
 
-  // ===== D4. Compute token state =====
-  function computeTokenState(event) {
-    if (!event) {
-      return {
-        accessToken: 'NOT AVAILABLE',
-        refreshToken: 'NOT AVAILABLE',
-        expiresIn: null,
-        lastIssued: null,
-        tokenType: null,
-      };
-    }
-
-    return {
-      accessToken: event.auth.hasAccessToken ? 'PRESENT' : 'NOT AVAILABLE',
-      refreshToken: event.auth.hasRefreshToken ? 'PRESENT' : 'NOT AVAILABLE',
-      expiresIn: event.auth.hasExpiresIn ? event.resultKeys?.includes('expires_in') ? 1296000 : null : null,
-      lastIssued: new Date(event.timestamp).toLocaleTimeString('vi-VN'),
-      tokenType: 'Bearer',
-    };
-  }
-
-  // ===== D5. Compute identity mapping =====
-  function computeIdentityMapping(authEvents) {
-    let garenaHash = null;
-    let dfToolsHash = null;
-    let channelGarenaHash = null;
-    let channelDfToolsHash = null;
-
-    for (const e of authEvents) {
-      if (e.identity?.garenaOpenIdHash) garenaHash = e.identity.garenaOpenIdHash;
-      if (e.identity?.dfToolsOpenIdHash) dfToolsHash = e.identity.dfToolsOpenIdHash;
-      if (e.identity?.channelInfoGarenaOpenIdHash) channelGarenaHash = e.identity.channelInfoGarenaOpenIdHash;
-      if (e.identity?.channelInfoDfToolsOpenIdHash) channelDfToolsHash = e.identity.channelInfoDfToolsOpenIdHash;
-    }
-
-    // Prefer channel hashes (more specific)
-    const finalGarena = channelGarenaHash || garenaHash;
-    const finalDfTools = channelDfToolsHash || dfToolsHash;
-
-    let match = 'NOT AVAILABLE';
-    if (finalGarena && finalDfTools) {
-      match = finalGarena === finalDfTools ? 'MATCH' : 'DIFFERENT';
-    } else if (finalGarena || finalDfTools) {
-      match = 'INCOMPLETE';
-    }
-
-    return {
-      garenaHash: finalGarena || '—',
-      dfToolsHash: finalDfTools || '—',
-      match,
-    };
-  }
-
-  // ===== D6. Compute refresh flow =====
-  function computeRefreshFlow(normalized) {
-    const refreshRequests = normalized.filter((e) => e.refresh?.isRequest);
-    const refreshResponses = normalized.filter((e) => e.refresh?.isResponse || e.refresh?.correlatedRequestId);
-
-    let requestCount = refreshRequests.length;
-    let successCount = 0;
-    let failedCount = 0;
-    let lastRefreshTime = null;
-    let tokenReplacement = 'NOT DETECTED';
-
-    for (const e of refreshResponses) {
-      if (e.refresh?.success === true) {
-        successCount++;
-      } else if (e.refresh?.success === false) {
-        failedCount++;
-      }
-      if (e.timestamp > (lastRefreshTime || 0)) {
-        lastRefreshTime = e.timestamp;
-      }
-    }
-
-    // Determine refresh support status
-    const hasRefreshToken = normalized.some(
-      (e) => e.auth?.hasRefreshToken || e.refresh?.hasRefreshTokenInBody,
-    );
-    const hasRefreshRequest = requestCount > 0;
-    const hasRefreshSuccess = successCount > 0;
-
-    if (hasRefreshSuccess) {
-      tokenReplacement = 'CONFIRMED';
-    } else if (hasRefreshRequest) {
-      tokenReplacement = 'DETECTED';
-    } else if (hasRefreshToken) {
-      tokenReplacement = 'NOT YET CONFIRMED';
-    } else {
-      tokenReplacement = 'NOT DETECTED';
-    }
-
-    return {
-      requestCount,
-      successCount,
-      failedCount,
-      lastRefreshTime: lastRefreshTime ? new Date(lastRefreshTime).toLocaleTimeString('vi-VN') : null,
-      tokenReplacement,
-      supported: hasRefreshToken,
-    };
-  }
+  // ===== D4-D8: Delegate to AuthUtils =====
+  // computeTokenState, computeIdentityMapping, computeRefreshFlow, buildRefreshCorrelation
 
   // ===== D7. Build timeline =====
   function buildTimeline(authEvents) {
@@ -418,6 +454,67 @@
       if (event[key]) values.add(event[key]);
     }
     return Array.from(values);
+  }
+
+  // ===== D8. Correlate refresh request/response by requestId =====
+  function buildRefreshCorrelation(normalized) {
+    const requests = normalized.filter((e) => e.refresh?.isRequest);
+    const responses = normalized.filter((e) => e.refresh?.isResponse);
+
+    const pairs = [];
+    for (const req of requests) {
+      const reqId = req.refresh?.requestId;
+      if (!reqId) continue;
+      const matchingResponse = responses.find(
+        (r) => r.refresh?.requestId === reqId || r.refresh?.correlatedRequestId === reqId,
+      );
+
+      // Token events within this refresh cycle
+      const cycleStart = req.timestamp;
+      const cycleEnd = matchingResponse?.timestamp || Date.now();
+      const cycleTokenEvents = normalized.filter((e) =>
+        e.auth?.hasAccessToken && e.timestamp >= cycleStart && e.timestamp <= cycleEnd,
+      );
+
+      let tokenChanged = false;
+      let expiryChanged = null;
+      if (cycleTokenEvents.length >= 2) {
+        const sorted = [...cycleTokenEvents].sort((a, b) => a.timestamp - b.timestamp);
+        const last = sorted[sorted.length - 1];
+        const prev = sorted[sorted.length - 2];
+        tokenChanged = last.auth.accessTokenFingerprint !== prev.auth.accessTokenFingerprint;
+        expiryChanged = (last.auth.expiresIn ?? null) !== (prev.auth.expiresIn ?? null);
+      }
+
+      pairs.push({
+        requestId: reqId,
+        requestTime: req.timestamp,
+        requestTimeFormatted: new Date(req.timestamp).toLocaleTimeString('vi-VN'),
+        requestUrl: req.url || '',
+        responseTime: matchingResponse?.timestamp || null,
+        responseTimeFormatted: matchingResponse ? new Date(matchingResponse.timestamp).toLocaleTimeString('vi-VN') : null,
+        responseStatus: matchingResponse?.statusCode || null,
+        duration: matchingResponse ? matchingResponse.timestamp - req.timestamp : null,
+        hasResponse: !!matchingResponse,
+        success: matchingResponse?.refresh?.success,
+        // Per-cycle evidence
+        tokenChanged,
+        expiryChanged: expiryChanged ?? null,
+        cycleFpBefore: cycleTokenEvents.length >= 2
+          ? cycleTokenEvents[0].auth.accessTokenFingerprint
+          : null,
+        cycleFpAfter: cycleTokenEvents.length >= 2
+          ? cycleTokenEvents[cycleTokenEvents.length - 1].auth.accessTokenFingerprint
+          : null,
+        cycleExpiryBefore: cycleTokenEvents.length >= 2
+          ? cycleTokenEvents[0].auth.expiresIn
+          : null,
+        cycleExpiryAfter: cycleTokenEvents.length >= 2
+          ? cycleTokenEvents[cycleTokenEvents.length - 1].auth.expiresIn
+          : null,
+      });
+    }
+    return pairs;
   }
 
 })();

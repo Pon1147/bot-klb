@@ -82,7 +82,7 @@
         postRefreshRequestEvent(requestId, url, method, requestBody);
       }
 
-      const onload = () => {
+      const onload = async () => {
         try {
           const reqInfo = activeRequests.get(requestId);
           if (reqInfo) {
@@ -101,7 +101,7 @@
             }
 
             if (parsed) {
-              const event = createAuthEvent('auth_xhr_response', requestId, url, method, parsed);
+              const event = await createAuthEvent('auth_xhr_response', requestId, url, method, parsed);
               // Correlate với refresh request
               if (isRefresh) {
                 event.isRefreshResponse = true;
@@ -109,6 +109,12 @@
               }
               postEvent(event);
             }
+          } else if (this.status >= 300 && this.status < 400) {
+            // Redirect response — parse URL params cho OpenID
+            const redirectEvent = await createAuthEvent('auth_xhr_redirect', requestId, url, method, null);
+            redirectEvent.statusCode = this.status;
+            redirectEvent.isRedirect = true;
+            postEvent(redirectEvent);
           }
 
           activeRequests.delete(requestId);
@@ -173,7 +179,7 @@
         postRefreshRequestEvent(requestId, url, method, requestBody);
       }
 
-      postEvent(createAuthEvent('auth_fetch_sent', requestId, url, method, null));
+      postEvent(await createAuthEvent('auth_fetch_sent', requestId, url, method, null));
 
       try {
         const response = await originalFetch.apply(this, args);
@@ -191,7 +197,7 @@
             reqInfo.statusCode = response.status;
           }
 
-          const event = createAuthEvent('auth_fetch_response', requestId, url, method, jsonData);
+          const event = await createAuthEvent('auth_fetch_response', requestId, url, method, jsonData);
           // Correlate với refresh request
           if (isRefresh) {
             event.isRefreshResponse = true;
@@ -199,7 +205,13 @@
           }
           postEvent(event);
         } catch {
-          /* not JSON */
+          // Không phải JSON — kiểm tra redirect
+          if (response.status >= 300 && response.status < 400) {
+            const redirectEvent = await createAuthEvent('auth_fetch_redirect', requestId, url, method, null);
+            redirectEvent.statusCode = response.status;
+            redirectEvent.isRedirect = true;
+            postEvent(redirectEvent);
+          }
         }
 
         // Trả response gốc lại cho page
@@ -258,15 +270,40 @@
   }
 
   // ===== D. Tạo auth event từ parsed JSON =====
-  function createAuthEvent(type, requestId, url, method, data) {
+  async function createAuthEvent(type, requestId, url, method, data) {
     if (!data || typeof data !== 'object') {
-      return {
+      const event = {
         type: `${type}_no_data`,
         requestId,
         url: url?.slice(0, 200),
         method,
         timestamp: Date.now(),
+        hasAccessToken: false,
+        hasRefreshToken: false,
+        hasGarenaSnsOpenid: false,
+        hasOpenId: false,
+        hasDfToolsOpenid: false,
+        hasDfToolsToken: false,
       };
+
+      // Parse URL params cho redirect events (Garena login callback)
+      try {
+        const urlObj = new URL(url, location.origin);
+        for (const [key, value] of urlObj.searchParams) {
+          if (key === 'garena_sns_openid' && value) {
+            event.hasGarenaSnsOpenid = true;
+            event.urlGarenaOpenidHash = await hashValue(value);
+          }
+          if (key === 'openid' && value) {
+            event.hasDfToolsOpenid = true;
+            event.urlDfToolsOpenidHash = await hashValue(value);
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+
+      return event;
     }
 
     const event = {
@@ -278,14 +315,17 @@
       // Auth fields presence
       hasAccessToken: 'access_token' in data,
       hasRefreshToken: 'refresh_token' in data,
-      hasExpiresIn: 'expires_in' in data,
+      expiresIn: data.expires_in ?? null,
       hasGarenaSnsOpenid: 'garena_sns_openid' in data,
       hasOpenId: 'open_id' in data,
       hasThirdType: 'third_type' in data,
       thirdType: data.third_type || null,
-      // Hashed OpenID values (không lưu giá trị thật) — hash async sau
+      // Hashed values (không lưu raw data) — hash async sau
+      accessTokenFingerprint: null,
       garenaSnsOpenidHash: null,
       dfToolsOpenidHash: null,
+      urlGarenaOpenidHash: null,
+      urlDfToolsOpenidHash: null,
       // Channel info detection
       hasChannelInfo: 'channel_info' in data,
       channelInfoKeys: null,
@@ -304,27 +344,52 @@
       event.channelInfoKeys = Object.keys(data.channel_info);
       event.channelInfoHasAccessToken = 'access_token' in data.channel_info;
       event.channelInfoHasRefreshToken = 'refresh_token' in data.channel_info;
+      // Also check for token/openid/expires_in in channel_info
+      if ('token' in data.channel_info) event.hasAccessToken = true;
+      if ('token' in data.channel_info) event.accessTokenFingerprint = await hashValue(data.channel_info.token);
+      if ('refresh_token' in data.channel_info) event.hasRefreshToken = true;
+      if ('expires_in' in data.channel_info) event.expiresIn = data.channel_info.expires_in;
+      if ('expiresIn' in data.channel_info) event.expiresIn = data.channel_info.expiresIn;
+      if ('openid' in data.channel_info) {
+        event.hasOpenId = true;
+        event.dfToolsOpenidHash = await hashValue(data.channel_info.openid);
+      }
+      if ('garena_sns_openid' in data.channel_info) {
+        event.hasGarenaSnsOpenid = true;
+        event.garenaSnsOpenidHash = await hashValue(data.channel_info.garena_sns_openid);
+      }
     }
 
-    // Parse URL params cho DfTools credentials
+    // Parse URL params cho DfTools + Garena credentials
     try {
       const urlObj = new URL(url, location.origin);
       for (const [key, value] of urlObj.searchParams) {
-        if (key === 'openid') event.hasDfToolsOpenid = true;
+        if (key === 'openid' && value) {
+          event.hasDfToolsOpenid = true;
+          event.urlDfToolsOpenidHash = await hashValue(value);
+        }
+        if (key === 'garena_sns_openid' && value) {
+          event.hasGarenaSnsOpenid = true;
+          event.urlGarenaOpenidHash = await hashValue(value);
+        }
         if (key === 'token') event.hasDfToolsToken = true;
       }
     } catch {
       /* ignore */
     }
 
-    // Async hash (không block interceptor)
-    enrichWithHashes(event, data);
+    // Hash OpenID trước khi return để đảm bảo data đầy đủ
+    await enrichWithHashes(event, data);
 
     return event;
   }
 
-  // ===== D1. Async hash OpenID values =====
+  // ===== D1. Async hash values (access_token, OpenID) =====
   async function enrichWithHashes(event, data) {
+    // Token fingerprint (hash toàn bộ access_token, không lưu raw)
+    if (data.access_token) {
+      event.accessTokenFingerprint = await hashValue(data.access_token);
+    }
     if (data.garena_sns_openid) {
       event.garenaSnsOpenidHash = await hashValue(data.garena_sns_openid);
     }
@@ -403,11 +468,47 @@
   function bootstrap() {
     console.log('[DF Investigator v2] Starting immediately...');
 
+    // Parse callback URL params (Garena login redirect)
+    parseCallbackUrl();
+
     setupXHRInterceptor();
     setupFetchInterceptor();
     setupStorageMonitor();
 
     console.log('[DF Investigator v2] Ready — intercepting all XHR/fetch/storage');
+  }
+
+  // ===== Parse Garena login callback URL =====
+  function parseCallbackUrl() {
+    try {
+      const urlObj = new URL(window.location.href);
+      const garenaOpenid = urlObj.searchParams.get('garena_sns_openid');
+      const garenaToken = urlObj.searchParams.get('token');
+
+      if (garenaOpenid) {
+        hashValue(garenaOpenid).then(hash => {
+          postEvent({
+            type: 'auth_callback_garena',
+            timestamp: Date.now(),
+            hasGarenaSnsOpenid: true,
+            garenaSnsOpenidHash: hash,
+            urlGarenaOpenidHash: hash,
+          });
+        });
+      }
+      if (garenaToken) {
+        hashValue(garenaToken).then(hash => {
+          postEvent({
+            type: 'auth_callback_garena_token',
+            timestamp: Date.now(),
+            hasAccessToken: true,
+            accessTokenFingerprint: hash,
+          });
+        });
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   // Chạy ngay khi script được inject
