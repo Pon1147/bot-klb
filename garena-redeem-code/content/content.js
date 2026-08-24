@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   'use strict';
 
   console.log('[Garena Redeem] Content script loaded');
@@ -10,7 +10,7 @@
   document.head.appendChild(link);
 
   // ===== INJECT PAGE-CONTEXT CAPTURE SCRIPT =====
-  // Content script runs in isolated world — cannot intercept page XHR/fetch.
+  // Content script runs in isolated world â€” cannot intercept page XHR/fetch.
   // Inject a <script> tag so the interceptor runs in page context.
   (function injectPageCapture() {
     const script = document.createElement('script');
@@ -21,18 +21,29 @@
     (document.head || document.documentElement).appendChild(script);
   })();
 
+  // ===== INJECT REDEEM ENGINE =====
+  // TÃ¡ch logic redeem ra redeem-engine.js Ä‘á»ƒ giáº£m content.js God Object
+  (function injectRedeemEngine() {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('content/redeem-engine.js');
+    script.onload = () => {
+      script.remove();
+    };
+    (document.head || document.documentElement).appendChild(script);
+  })();
+
   // ===== Redeem response code mapping =====
   const RESPONSE_CODE_MAP = {
-    0: { result: 'SUCCESS', reason: 'REDEEMED', label: 'Thành công' },
-    400001: { result: 'FAILED', reason: 'INVALID', label: 'Code không hợp lệ' },
-    400002: { result: 'FAILED', reason: 'EXPIRED', label: 'Code hết hạn' },
-    400003: { result: 'FAILED', reason: 'INVALID', label: 'Không tìm thấy code' },
-    400054: { result: 'FAILED', reason: 'INVALID', label: 'Code không khớp' },
-    400067: { result: 'FAILED', reason: 'LIMIT_REACHED', label: 'Đạt giới hạn nhóm' },
-    400070: { result: 'FAILED', reason: 'EXPIRED', label: 'Code hết hạn' },
-    400071: { result: 'FAILED', reason: 'LIMIT_REACHED', label: 'Đạt giới hạn nhận' },
-    400072: { result: 'FAILED', reason: 'USED', label: 'Đã sử dụng' },
-    400073: { result: 'FAILED', reason: 'VERIFY', label: 'Cần xác minh' },
+    0: { result: 'SUCCESS', reason: 'REDEEMED', label: 'ThÃ nh cÃ´ng' },
+    400001: { result: 'FAILED', reason: 'INVALID', label: 'Code khÃ´ng há»£p lá»‡' },
+    400002: { result: 'FAILED', reason: 'EXPIRED', label: 'Code háº¿t háº¡n' },
+    400003: { result: 'FAILED', reason: 'INVALID', label: 'KhÃ´ng tÃ¬m tháº¥y code' },
+    400054: { result: 'FAILED', reason: 'INVALID', label: 'Code khÃ´ng khá»›p' },
+    400067: { result: 'FAILED', reason: 'LIMIT_REACHED', label: 'Äáº¡t giá»›i háº¡n nhÃ³m' },
+    400070: { result: 'FAILED', reason: 'EXPIRED', label: 'Code háº¿t háº¡n' },
+    400071: { result: 'FAILED', reason: 'LIMIT_REACHED', label: 'Äáº¡t giá»›i háº¡n nháº­n' },
+    400072: { result: 'FAILED', reason: 'USED', label: 'ÄÃ£ sá»­ dá»¥ng' },
+    400073: { result: 'FAILED', reason: 'VERIFY', label: 'Cáº§n xÃ¡c minh' },
   };
 
   // ===== Redeem code states (enum) =====
@@ -177,7 +188,7 @@
     if (capture.initialized) return;
     capture.initialized = true;
     capture.responses = [];
-    capture.requestMap = new Map(); // requestId → { code, requestId, ... }
+    capture.requestMap = new Map(); // requestId â†’ { code, requestId, ... }
 
     window.addEventListener('message', (e) => {
       // Security: only accept messages from our own window
@@ -202,7 +213,7 @@
         time: timestamp || Date.now(),
       });
 
-      // Map requestId → response for quick lookup
+      // Map requestId â†’ response for quick lookup
       capture.requestMap.set(requestId, {
         code: capture._currentCode || 'unknown',
         data: data,
@@ -240,7 +251,7 @@
     return s.display !== 'none' && s.visibility !== 'hidden' && el.offsetParent !== null;
   }
 
-  // ===== Phân loại codeStates thành 4 nhóm =====
+  // ===== PhÃ¢n loáº¡i codeStates thÃ nh 4 nhÃ³m =====
   function classifyCodes(state) {
     if (!state || !Array.isArray(state.codeStates)) {
       return {
@@ -289,7 +300,7 @@
         continue;
       }
 
-      // TIMEOUT/CANCELLED/unknown — đưa vào untested để user xem xét
+      // TIMEOUT/CANCELLED/unknown â€” Ä‘Æ°a vÃ o untested Ä‘á»ƒ user xem xÃ©t
       untested.push(code);
     }
 
@@ -321,20 +332,20 @@
         <span class="grd-status-text"></span>
       </div>
       <div class="grd-stats">
-        <div class="grd-stat"><div class="grd-stat-value grd-stat-total">0</div><div class="grd-stat-label">Tổng</div></div>
-        <div class="grd-stat"><div class="grd-stat-value grd-stat-success">0</div><div class="grd-stat-label">Thành công</div></div>
-        <div class="grd-stat"><div class="grd-stat-value grd-stat-failed">0</div><div class="grd-stat-label">Thất bại</div></div>
-        <div class="grd-stat"><div class="grd-stat-value grd-stat-remaining">0</div><div class="grd-stat-label">Còn lại</div></div>
+        <div class="grd-stat"><div class="grd-stat-value grd-stat-total">0</div><div class="grd-stat-label">Tá»•ng</div></div>
+        <div class="grd-stat"><div class="grd-stat-value grd-stat-success">0</div><div class="grd-stat-label">ThÃ nh cÃ´ng</div></div>
+        <div class="grd-stat"><div class="grd-stat-value grd-stat-failed">0</div><div class="grd-stat-label">Tháº¥t báº¡i</div></div>
+        <div class="grd-stat"><div class="grd-stat-value grd-stat-remaining">0</div><div class="grd-stat-label">CÃ²n láº¡i</div></div>
       </div>
       <div class="grd-progress-wrap">
         <div class="grd-progress-bar"><div class="grd-progress-fill"></div></div>
         <div class="grd-progress-text">0%</div>
       </div>
       <div class="grd-buttons">
-        <button class="grd-btn grd-btn-start" disabled>Bắt đầu</button>
-        <button class="grd-btn grd-btn-stop" disabled>Dừng</button>
+        <button class="grd-btn grd-btn-start" disabled>Báº¯t Ä‘áº§u</button>
+        <button class="grd-btn grd-btn-stop" disabled>Dá»«ng</button>
       </div>
-      <div class="grd-logs-header"><span class="grd-logs-title">Nhật ký</span><button class="grd-logs-clear">Xóa</button></div>
+      <div class="grd-logs-header"><span class="grd-logs-title">Nháº­t kÃ½</span><button class="grd-logs-clear">XÃ³a</button></div>
       <div class="grd-logs"></div>
       <div class="grd-footer"><span>Pon1147 Redeem Tool</span><a href="https://discord.gg/vz6w6c3Xe3" target="_blank">Discord</a></div>
     `;
@@ -402,11 +413,11 @@
   }
 
   const STATUS_CONFIG = {
-    NO_CODES: { dotClass: 'grd-no-codes', text: 'Chưa sẵn sàng' },
-    READY: { dotClass: 'grd-ready', text: 'Sẵn sàng' },
-    RUNNING: { dotClass: 'grd-running', text: 'Đang chạy' },
-    PAUSED: { dotClass: 'grd-paused', text: 'Đã tạm dừng' },
-    COMPLETED: { dotClass: 'grd-completed', text: 'Hoàn tất' },
+    NO_CODES: { dotClass: 'grd-no-codes', text: 'ChÆ°a sáºµn sÃ ng' },
+    READY: { dotClass: 'grd-ready', text: 'Sáºµn sÃ ng' },
+    RUNNING: { dotClass: 'grd-running', text: 'Äang cháº¡y' },
+    PAUSED: { dotClass: 'grd-paused', text: 'ÄÃ£ táº¡m dá»«ng' },
+    COMPLETED: { dotClass: 'grd-completed', text: 'HoÃ n táº¥t' },
   };
 
   function render(state) {
@@ -434,10 +445,10 @@
     const canStop = state.status === 'RUNNING';
     btnStart.disabled = !canStart;
     btnStop.disabled = !canStop;
-    btnStart.textContent = state.status === 'PAUSED' ? 'Tiếp tục' : 'Bắt đầu';
+    btnStart.textContent = state.status === 'PAUSED' ? 'Tiáº¿p tá»¥c' : 'Báº¯t Ä‘áº§u';
 
     if (state.currentCode) {
-      currentCodeEl.textContent = 'Đang xử lý: ' + state.currentCode;
+      currentCodeEl.textContent = 'Äang xá»­ lÃ½: ' + state.currentCode;
       currentCodeEl.classList.add('grd-visible');
     } else {
       currentCodeEl.classList.remove('grd-visible');
@@ -457,11 +468,11 @@
         resultClass = '',
         reasonText = log.reason || 'Unknown';
       if (log.result === 'SUCCESS') {
-        icon = '✔';
+        icon = 'âœ”';
         resultClass = 'grd-log-success';
-        reasonText = 'Thành công';
+        reasonText = 'ThÃ nh cÃ´ng';
       } else if (log.result === 'FAILED') {
-        icon = '✘';
+        icon = 'âœ˜';
         resultClass = 'grd-log-failed';
         reasonText = getReasonLabel(log.reason);
       }
@@ -474,16 +485,16 @@
 
   function getReasonLabel(reason) {
     const labels = {
-      REDEEMED: 'Đã nhận thành công',
-      USED: 'Đã sử dụng',
-      EXPIRED: 'Hết hạn',
-      INVALID: 'Không hợp lệ',
-      LIMIT_REACHED: 'Đạt giới hạn',
-      PRESENT_ERROR: 'Lỗi trình bày',
-      VERIFY: 'Cần xác minh',
-      TEMP_ERROR: 'Lỗi tạm thời',
-      UNKNOWN: 'Không xác định',
-      NO_RESPONSE: 'Không có phản hồi',
+      REDEEMED: 'ÄÃ£ nháº­n thÃ nh cÃ´ng',
+      USED: 'ÄÃ£ sá»­ dá»¥ng',
+      EXPIRED: 'Háº¿t háº¡n',
+      INVALID: 'KhÃ´ng há»£p lá»‡',
+      LIMIT_REACHED: 'Äáº¡t giá»›i háº¡n',
+      PRESENT_ERROR: 'Lá»—i trÃ¬nh bÃ y',
+      VERIFY: 'Cáº§n xÃ¡c minh',
+      TEMP_ERROR: 'Lá»—i táº¡m thá»i',
+      UNKNOWN: 'KhÃ´ng xÃ¡c Ä‘á»‹nh',
+      NO_RESPONSE: 'KhÃ´ng cÃ³ pháº£n há»“i',
     };
     return labels[reason] || reason;
   }
@@ -506,250 +517,32 @@
     render(state);
   }
 
-  // ===== REDEEM CONTROLLER =====
-  let controller = null;
+  // ===== REDEEM ENGINE — instance =====
+  let redeemEngine = null;
 
-  class RedeemController {
-    constructor() {
-      this.isRunning = false;
-      this.abortFlag = false;
-    }
-
-    async start() {
-      if (this.isRunning) return;
-      let state = await getCentralState();
-      if (!state) return;
-      try {
-        state = transition(state, 'RUNNING');
-        await setCentralState(state);
-      } catch (e) {
-        console.error('[RedeemController] Start failed:', e);
-        return;
-      }
-      this.isRunning = true;
-      this.abortFlag = false;
-      initCapture();
-      await this.processQueue(state);
-    }
-
-    async pause() {
-      this.abortFlag = true;
-      const state = await getCentralState();
-      if (state && state.status === 'RUNNING') {
-        try {
-          const paused = transition(state, 'PAUSED');
-          await setCentralState(paused);
-        } catch (e) {
-          console.error('[RedeemController] Pause transition failed:', e);
-        }
-      }
-    }
-
-    async resume() {
-      let state = await getCentralState();
-      if (!state || state.status !== 'PAUSED') return;
-      try {
-        state = transition(state, 'RUNNING');
-        await setCentralState(state);
-      } catch (e) {
-        console.error('[RedeemController] Resume failed:', e);
-        return;
-      }
-      this.isRunning = true;
-      this.abortFlag = false;
-      initCapture();
-      await this.processQueue(state);
-    }
-
-    async processQueue(state) {
-      while (!this.abortFlag) {
-        // Always read fresh state each iteration
-        state = await getCentralState();
-        if (!state) return;
-
-        const nextIndex = this.findNextPending(state);
-        if (nextIndex === -1) {
-          state = completeState(state);
-          await setCentralState(state);
-          this.isRunning = false;
-          return;
-        }
-        const codeEntry = state.codeStates[nextIndex];
-        if (codeEntry.status === 'PENDING') {
-          state = setCurrentIndex(state, nextIndex);
-          state = setCurrentCode(state, codeEntry.redeemCode);
-          state = updateCodeState(state, nextIndex, { status: 'PROCESSING' });
-          await setCentralState(state);
-          const result = await this.processCode(
-            codeEntry.redeemCode,
-            nextIndex,
-            state.codes.length,
-          );
-          if (this.abortFlag) return;
-          await this.handleResponse(state, result, nextIndex);
-        }
-        await sleep(CONFIG.delayBetweenCodesMs);
-      }
-      this.isRunning = false;
-    }
-
-    findNextPending(state) {
-      for (let i = state.currentIndex; i < state.codes.length; i++) {
-        if (state.codeStates[i].status === CODE_STATES.PENDING) return i;
-      }
-      for (let i = 0; i < state.currentIndex; i++) {
-        if (state.codeStates[i].status === CODE_STATES.PENDING) return i;
-      }
-      return -1;
-    }
-
-    async processCode(code, index, total) {
-      const maxRetries = CONFIG.maxRetries + 1;
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        if (this.abortFlag) return { result: CODE_STATES.CANCELLED, reason: 'CANCELLED' };
-        try {
-          const result = await this.redeemSingle(code);
-          // TIMEOUT không retry — là state riêng
-          if (result.result === CODE_STATES.TIMEOUT) {
-            return result;
-          }
-          if (result.reason === 'TEMP_ERROR' && attempt < maxRetries - 1) {
-            await sleep(1000);
-            continue;
-          }
-          return result;
-        } catch (err) {
-          if (attempt < maxRetries - 1) {
-            await sleep(1000);
-            continue;
-          }
-          return { result: CODE_STATES.FAILED, reason: 'TEMP_ERROR' };
-        }
-      }
-      return { result: CODE_STATES.FAILED, reason: 'TEMP_ERROR' };
-    }
-
-    async redeemSingle(code) {
-      resetCapture(code);
-      console.log(
-        '[Redeem] Starting redeem for code:',
-        code,
-        '_currentCode:',
-        capture._currentCode,
-      );
-      const input = findInput();
-      const btn = findButton();
-      if (!input || !btn)
-        return { result: 'FAILED', reason: 'PRESENT_ERROR', message: 'UI not found' };
-
-      setValue(input, '');
-      await sleep(50);
-      setValue(input, code);
-      await sleep(80);
-
-      // Click the button — waitForCapturedResponse handles the full wait (up to timeoutMs)
-      // Register waiter BEFORE click để không bỏ lỡ response nhanh
-      const waiter = this.waitForCapturedResponse(CONFIG.timeoutMs);
-      let clicked = false;
-
-      for (let submitTry = 1; submitTry <= 2; submitTry++) {
-        const submitBtn = submitTry === 1 ? btn : findButton();
-        if (!submitBtn) break;
-        console.log('[Redeem] Click attempt', submitTry);
-        clickRedeem(submitBtn);
-        clicked = true;
-        // Kiểm tra response đã có chưa (trường hợp response quá nhanh)
-        const existing = getLastResponse();
-        if (existing) {
-          console.log('[Redeem] Response captured during click delay');
-          break;
-        }
-        await sleep(200); // small delay to let page process before response arrives
-      }
-
-      if (!clicked) {
-        return { result: CODE_STATES.FAILED, reason: 'PRESENT_ERROR', message: 'Không tìm thấy nút redeem' };
-      }
-
-      console.log('[Redeem] Waiting for response (timeout:', CONFIG.timeoutMs, 'ms)...');
-      const response = await waiter;
-      if (!response) {
-        console.warn('[Redeem] TIMEOUT — capture.responses.length =', capture.responses.length);
-        return { result: CODE_STATES.TIMEOUT, reason: 'TIMEOUT', message: 'Timeout không nhận response' };
-      }
-      console.log('[Redeem] Response received:', JSON.stringify(response).slice(0, 200));
-      return parseRedeemResponse(response);
-    }
-
-    waitForCapturedResponse(timeout) {
-      return new Promise((resolve) => {
-        const start = Date.now();
-        const check = () => {
-          const last = getLastResponse();
-          if (last) {
-            console.log('[Redeem] Found captured response after', Date.now() - start, 'ms');
-            resolve(last.data);
-            return;
-          }
-          if (Date.now() - start > timeout) {
-            console.warn(
-              '[Redeem] waitForCapturedResponse TIMEOUT after',
-              Date.now() - start,
-              'ms, responses:',
-              capture.responses.length,
-            );
-            resolve(null);
-            return;
-          }
-          setTimeout(check, 100);
-        };
-        check();
-      });
-    }
-
-    async handleResponse(state, parsed, index) {
-      // Always read latest state from storage before updating to avoid stale data race
-      state = await getCentralState();
-      if (!state) return;
-
-      if (parsed.result === CODE_STATES.SUCCESS) {
-        state = updateCodeState(state, index, {
-          status: CODE_STATES.SUCCESS,
-          result: CODE_STATES.SUCCESS,
-          reason: parsed.reason,
-        });
-        state = updateStats(state, 1, 0);
-      } else if (parsed.result === CODE_STATES.FAILED) {
-        state = updateCodeState(state, index, {
-          status: CODE_STATES.FAILED,
-          result: CODE_STATES.FAILED,
-          reason: parsed.reason,
-        });
-        state = updateStats(state, 0, 1);
-      } else if (parsed.result === CODE_STATES.TIMEOUT) {
-        state = updateCodeState(state, index, {
-          status: CODE_STATES.TIMEOUT,
-          result: CODE_STATES.TIMEOUT,
-          reason: parsed.reason,
-        });
-        // TIMEOUT không tính vào failed stat
-      } else if (parsed.result === CODE_STATES.CANCELLED) {
-        // CANCELLED — giữ nguyên status (user pause)
-      }
-      const log = {
-        id: generateId(),
-        redeemCode: state.codeStates[index]?.redeemCode || '',
-        result: parsed.result,
-        reason: parsed.reason,
-        responseCode: parsed.responseCode ?? null,
-        responseMessage: parsed.message || '',
-        responseSeq: parsed.seq || '',
-        timestamp: Date.now(),
-      };
-      state = appendLog(state, log);
-      state = setCurrentCode(state, null);
-      await setCentralState(state);
-    }
+  function initRedeemEngine() {
+    // Inject dependencies vÃ o RedeemEngine
+    redeemEngine = new window.RedeemEngine({
+      capture: capture,
+      CONFIG: CONFIG,
+      CODE_STATES: CODE_STATES,
+      sleep: sleep,
+      findInput: findInput,
+      findButton: findButton,
+      setValue: setValue,
+      clickRedeem: clickRedeem,
+      parseRedeemResponse: parseRedeemResponse,
+      getCentralState: getCentralState,
+      setCentralState: setCentralState,
+      transition: transition,
+      completeState: completeState,
+      setCurrentIndex: setCurrentIndex,
+      setCurrentCode: setCurrentCode,
+      updateCodeState: updateCodeState,
+      updateStats: updateStats,
+      appendLog: appendLog,
+      generateId: generateId,
+    });
   }
 
   function findInput() {
@@ -763,7 +556,7 @@
     const direct = document.querySelector('.btn-exchange');
     if (visible(direct)) return direct;
     const btns = [...document.querySelectorAll('a,button')];
-    return btns.find((el) => visible(el) && el.innerText.trim() === 'Đổi');
+    return btns.find((el) => visible(el) && el.innerText.trim() === 'Äá»•i');
   }
 
   function setValue(input, value) {
@@ -782,10 +575,10 @@
   }
 
   function initRedeemController() {
-    controller = new RedeemController();
-    callbacks.onStart = () => controller.start();
+    initRedeemEngine();
+    callbacks.onStart = () => redeemEngine.start();
     callbacks.onStop = async () => {
-      await controller.pause();
+      await redeemEngine.pause();
     };
   }
 
