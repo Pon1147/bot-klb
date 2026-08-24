@@ -167,26 +167,45 @@
     if (capture.initialized) return;
     capture.initialized = true;
     capture.responses = [];
+    capture.requestMap = new Map(); // requestId → { code, requestId, ... }
 
     window.addEventListener('message', (e) => {
       // Security: only accept messages from our own window
       if (e.source !== window) return;
       if (e.data?.source !== 'garena-redeem-capture') return;
-      const { data, url } = e.data;
-      if (data && typeof data === 'object' && 'code' in data) {
-        capture.responses.push({
-          code: capture._currentCode || 'unknown',
-          data: data,
-          status: 200,
-          time: Date.now(),
-        });
-        console.log(
-          '[Capture] Received via postMessage:',
-          data.code,
-          'msg=' + (data.msg || data.message || ''),
-          'url=' + (url || ''),
-        );
-      }
+
+      // Handle normalized NetworkEvent format
+      const event = e.data.event;
+      const data = e.data.data;
+
+      if (!event || !data) return;
+      if (typeof data !== 'object' || !('code' in data)) return;
+
+      const { requestId, timestamp, status } = event;
+
+      // Store response with requestId for correlation
+      capture.responses.push({
+        requestId,
+        code: capture._currentCode || 'unknown',
+        data: data,
+        status: status || 200,
+        time: timestamp || Date.now(),
+      });
+
+      // Map requestId → response for quick lookup
+      capture.requestMap.set(requestId, {
+        code: capture._currentCode || 'unknown',
+        data: data,
+        status: status || 200,
+        time: timestamp || Date.now(),
+      });
+
+      console.log(
+        '[Capture] Received via postMessage:',
+        data.code,
+        'msg=' + (data.msg || data.message || ''),
+        'requestId=' + requestId,
+      );
     });
   }
 
@@ -615,18 +634,23 @@
       await sleep(80);
 
       // Click the button — waitForCapturedResponse handles the full wait (up to timeoutMs)
+      // Register waiter BEFORE click để không bỏ lỡ response nhanh
+      const waiter = this.waitForCapturedResponse(CONFIG.timeoutMs);
       let clicked = false;
+
       for (let submitTry = 1; submitTry <= 2; submitTry++) {
         const submitBtn = submitTry === 1 ? btn : findButton();
         if (!submitBtn) break;
         console.log('[Redeem] Click attempt', submitTry);
         clickRedeem(submitBtn);
         clicked = true;
-        await sleep(200); // small delay to let page process before response arrives
-        if (getLastResponse()) {
+        // Kiểm tra response đã có chưa (trường hợp response quá nhanh)
+        const existing = getLastResponse();
+        if (existing) {
           console.log('[Redeem] Response captured during click delay');
           break;
         }
+        await sleep(200); // small delay to let page process before response arrives
       }
 
       if (!clicked) {
@@ -634,7 +658,7 @@
       }
 
       console.log('[Redeem] Waiting for response (timeout:', CONFIG.timeoutMs, 'ms)...');
-      const response = await this.waitForCapturedResponse(CONFIG.timeoutMs);
+      const response = await waiter;
       if (!response) {
         console.warn('[Redeem] TIMEOUT — capture.responses.length =', capture.responses.length);
         return { result: 'FAILED', reason: 'NO_RESPONSE', message: 'Timeout không nhận response' };
