@@ -150,44 +150,124 @@
           </div>
         </div>
 
-        <!-- Auth State Overview -->
-        <section class="card stats-grid" id="authStateGrid">
-          <div class="stat-card">
-            <span class="stat-value" id="authSessionId">—</span>
-            <span class="stat-label">Session</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value" id="authTokenState">—</span>
-            <span class="stat-label">Token</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value" id="authRefreshSupport">—</span>
-            <span class="stat-label">Refresh</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value" id="authExpiresIn">—</span>
-            <span class="stat-label">Còn lại</span>
-          </div>
-        </section>
+        <!-- Sub-tab Navigation -->
+        <nav class="sub-tab-nav" id="subTabNav">
+          <button class="sub-tab-btn active" data-subtab="overview">Overview</button>
+          <button class="sub-tab-btn" data-subtab="timeline">Timeline</button>
+          <button class="sub-tab-btn" data-subtab="refresh">Refresh</button>
+          <button class="sub-tab-btn" data-subtab="network">Network</button>
+          <button class="sub-tab-btn" data-subtab="storage">Storage</button>
+        </nav>
 
-        <!-- Token State -->
-        <section class="card">
-          <h3 class="section-title">Token State</h3>
-          <div class="mapping-card" id="tokenState">
-            <div class="empty-state">No token data.</div>
-          </div>
-        </section>
+        <!-- ===== OVERVIEW SUB-TAB ===== -->
+        <div class="sub-tab-content active" id="subtab-overview">
+          <!-- Auth State Overview -->
+          <section class="card stats-grid" id="authStateGrid">
+            <div class="stat-card">
+              <span class="stat-value" id="authSessionId">—</span>
+              <span class="stat-label">Session</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="authTokenState">—</span>
+              <span class="stat-label">Token</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="authRefreshSupport">—</span>
+              <span class="stat-label">Refresh</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="authExpiresIn">—</span>
+              <span class="stat-label">Còn lại</span>
+            </div>
+          </section>
 
-        <!-- Notifications -->
-        <section class="card">
-          <div class="section-header">
-            <h3 class="section-title">Notifications</h3>
-            <button class="btn btn-ghost btn-sm" id="btnClearNotifs">Clear All</button>
+          <!-- Token State -->
+          <section class="card">
+            <h3 class="section-title">Token State</h3>
+            <div class="mapping-card" id="tokenState">
+              <div class="empty-state">No token data.</div>
+            </div>
+          </section>
+
+          <!-- Notifications -->
+          <section class="card">
+            <div class="section-header">
+              <h3 class="section-title">Notifications</h3>
+              <button class="btn btn-ghost btn-sm" id="btnClearNotifs">Clear All</button>
+            </div>
+            <div class="notifications-list" id="notificationsList">
+              <div class="empty-state">No notifications yet.</div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ===== TIMELINE SUB-TAB ===== -->
+        <div class="sub-tab-content" id="subtab-timeline">
+          <section class="card">
+            <div class="section-header">
+              <h3 class="section-title">Event Timeline</h3>
+              <button class="btn btn-ghost btn-sm" id="btnClearEvents">Clear All</button>
+            </div>
+            <div class="timeline-list" id="timelineList">
+              <div class="empty-state">Chưa có events.</div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ===== REFRESH SUB-TAB ===== -->
+        <div class="sub-tab-content" id="subtab-refresh">
+          <section class="card">
+            <h3 class="section-title">Refresh Flow</h3>
+            <div class="refresh-flow-card" id="refreshFlow">
+              <div class="empty-state">Chưa có refresh events.</div>
+            </div>
+          </section>
+          <section class="card">
+            <h3 class="section-title">Refresh Correlation</h3>
+            <div class="refresh-correlation-list" id="refreshCorrelationList">
+              <div class="empty-state">No refresh events.</div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ===== NETWORK SUB-TAB ===== -->
+        <div class="sub-tab-content" id="subtab-network">
+          <section class="card">
+            <div class="section-header">
+              <h3 class="section-title">Network Events</h3>
+              <div class="network-filters" id="networkFilters">
+                <span class="chip active" data-filter="all">All</span>
+                <span class="chip" data-filter="response">Responses</span>
+                <span class="chip" data-filter="refresh">Refresh</span>
+              </div>
+            </div>
+            <div class="network-events-list" id="networkEventsList">
+              <div class="empty-state">Chưa có network events.</div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ===== STORAGE SUB-TAB ===== -->
+        <div class="sub-tab-content" id="subtab-storage">
+          <section class="card">
+            <h3 class="section-title">Storage Writes</h3>
+            <div class="storage-events-list" id="storageEventsList">
+              <div class="empty-state">Chưa có storage events.</div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ===== Event Inspector Modal ===== -->
+        <div class="modal-overlay" id="modalOverlay">
+          <div class="modal">
+            <div class="modal-header">
+              <h3 class="modal-title" id="modalTitle">Event Details</h3>
+              <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+            </div>
           </div>
-          <div class="notifications-list" id="notificationsList">
-            <div class="empty-state">No notifications yet.</div>
-          </div>
-        </section>
+        </div>
 
       </main>
       <!-- Auth State Engine tab end -->
