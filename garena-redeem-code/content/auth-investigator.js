@@ -102,10 +102,11 @@
 
             if (parsed) {
               const event = await createAuthEvent('auth_xhr_response', requestId, url, method, parsed);
-              // Correlate với refresh request
+              // Correlate với refresh request — truyền requestId
               if (isRefresh) {
                 event.isRefreshResponse = true;
                 event.correlatedRefreshRequest = true;
+                event.refreshRequestId = requestId;
               }
               postEvent(event);
             }
@@ -198,10 +199,11 @@
           }
 
           const event = await createAuthEvent('auth_fetch_response', requestId, url, method, jsonData);
-          // Correlate với refresh request
+          // Correlate với refresh request — truyền requestId
           if (isRefresh) {
             event.isRefreshResponse = true;
             event.correlatedRefreshRequest = true;
+            event.refreshRequestId = requestId;
           }
           postEvent(event);
         } catch {

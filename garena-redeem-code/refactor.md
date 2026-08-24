@@ -17,10 +17,10 @@
   - [x] Match response bằng requestId thay vì URL/timestamp/code
   - [ ] Enum states: PENDING, SUCCESS, FAILED, TIMEOUT, CANCELLED
 
-- [ ] AuthEngine dùng chung correlation mechanism
-  - [ ] REFRESH_REQUEST → requestId
-  - [ ] REFRESH_RESPONSE → requestId match
-  - [ ] Correlate request/response pairs
+- [x] AuthEngine dùng chung correlation mechanism
+  - [x] REFRESH_REQUEST → requestId
+  - [x] REFRESH_RESPONSE → requestId match
+  - [x] Correlate request/response pairs
 
 - [x] Update `auth-investigator.js` interceptor
   - [x] Gán requestId vào XHR/fetch intercept
