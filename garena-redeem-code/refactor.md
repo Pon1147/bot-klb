@@ -15,7 +15,7 @@
 - [x] RedeemController dùng `requestId` correlation
   - [x] Register waiter BEFORE click button
   - [x] Match response bằng requestId thay vì URL/timestamp/code
-  - [ ] Enum states: PENDING, SUCCESS, FAILED, TIMEOUT, CANCELLED
+  - [x] Enum states: PENDING, SUCCESS, FAILED, TIMEOUT, CANCELLED
 
 - [x] AuthEngine dùng chung correlation mechanism
   - [x] REFRESH_REQUEST → requestId
@@ -30,129 +30,129 @@
 
 ## P1: Separate Engines
 
-- [ ] Tách `RedeemEngine` khỏi `content.js`
-  - [ ] Tạo file `content/redeem-engine.js`
-  - [ ] Queue management, retry logic, state
-  - [ ] `content.js` chỉ còn injection + message bridge
+- [x] Tách `RedeemEngine` khỏi `content.js`
+  - [x] Tạo file `content/redeem-engine.js`
+  - [x] Queue management, retry logic, state
+  - [x] `content.js` chỉ còn injection + message bridge
 
-- [ ] Tách `AuthEngine` thành module độc lập
-  - [ ] State machine: UNKNOWN → ACTIVE → EXPIRING_SOON → EXPIRED → CONFIRMED_EXPIRED
-  - [ ] Refresh flow: REFRESHING → ACTIVE / EXPIRED
-  - [ ] Session management với sessionId
+- [x] Tách `AuthEngine` thành module độc lập
+  - [x] State machine: UNKNOWN → ACTIVE → EXPIRING_SOON → EXPIRED → CONFIRMED_EXPIRED
+  - [x] Refresh flow: REFRESHING → ACTIVE / EXPIRED
+  - [x] Session management với sessionId
 
-- [ ] `content.js` refactor thành thin bridge
-  - [ ] Inject scripts (page-capture, auth-investigator, auth-state-engine)
-  - [ ] Listen postMessage → dispatch to engines
-  - [ ] Target: <200 lines
+- [x] `content.js` refactor thành thin bridge
+  - [x] Inject scripts (page-capture, auth-investigator, auth-state-engine)
+  - [x] Listen postMessage → dispatch to engines
+  - [x] Target: <200 lines (134 lines)
 
 ---
 
 ## P1: Service Worker Notification Orchestrator
 
-- [ ] AuthEngine → chrome.runtime.sendMessage(AUTH_EXPIRED)
-  - [ ] Không gửi Discord từ content.js
-  - [ ] Event format: `{ type, sessionId, reason, timestamp }`
+- [x] AuthEngine → chrome.runtime.sendMessage(AUTH_EXPIRED)
+  - [x] Không gửi Discord từ content.js
+  - [x] Event format: `{ type, sessionId, reason, timestamp }`
 
-- [ ] Service Worker làm notification orchestrator
-  - [ ] Nhận AUTH_EXPIRED từ content scripts
-  - [ ] Deduplication per session+type (5 phút)
-  - [ ] Rate limiting
-  - [ ] Gửi Discord webhook embed
+- [x] Service Worker làm notification orchestrator
+  - [x] Nhận AUTH_EXPIRED từ content scripts
+  - [x] Deduplication per session+type (5 phút)
+  - [x] Rate limiting
+  - [x] Gửi Discord webhook embed
 
-- [ ] AUTH_RESTORED notification
-  - [ ] Emit khi session được restore (new token)
-  - [ ] Chỉ gửi sau khi có AUTH_EXPIRED trước đó
+- [x] AUTH_RESTORED notification
+  - [x] Emit khi session được restore (new token)
+  - [x] Chỉ gửi sau khi có AUTH_EXPIRED trước đó
 
-- [ ] AUTH_REFRESH_FAILED notification
-  - [ ] Emit khi refresh request nhưng không có new token
+- [x] AUTH_REFRESH_FAILED notification
+  - [x] Emit khi refresh request nhưng không có new token
 
 ---
 
 ## P1: Auth State Engine UI
 
-- [ ] Popup Auth State Engine tab
-  - [ ] Auth state banner (ACTIVE/EXPIRING_SOON/EXPIRED/CONFIRMED_EXPIRED)
-  - [ ] Session ID display
-  - [ ] Token remaining countdown
-  - [ ] Notifications list (read/unread)
+- [x] Popup Auth State Engine tab
+  - [x] Auth state banner (ACTIVE/EXPIRING_SOON/EXPIRED/CONFIRMED_EXPIRED)
+  - [x] Session ID display
+  - [x] Token remaining countdown
+  - [x] Notifications list (read/unread)
 
-- [ ] Sub-tabs trong Auth State Engine
-  - [ ] Overview: session, token, refresh status
-  - [ ] Timeline: auth events timeline
-  - [ ] Refresh: refresh flow checklist + correlation pairs
-  - [ ] Network: filtered network events
-  - [ ] Storage: storage write events
+- [x] Sub-tabs trong Auth State Engine
+  - [x] Overview: session, token, refresh status
+  - [x] Timeline: auth events timeline
+  - [x] Refresh: refresh flow checklist + correlation pairs
+  - [x] Network: filtered network events
+  - [x] Storage: storage write events
 
-- [ ] Event Inspector Modal
-  - [ ] Click timeline event → show details
-  - [ ] Show auth fields, hashes, correlation
-  - [ ] Click outside or × to close
+- [x] Event Inspector Modal
+  - [x] Click timeline event → show details
+  - [x] Show auth fields, hashes, correlation
+  - [x] Click outside or × to close
 
-- [ ] Clear buttons
-  - [ ] Clear events
-  - [ ] Clear notifications
+- [x] Clear buttons
+  - [x] Clear events
+  - [x] Clear notifications
 
 ---
 
 ## P2: Runtime Event Bus
 
-- [ ] Tạo in-memory event bus
-  - [ ] Capture → Event Bus → Engines
-  - [ ] Engines publish events, UI subscribe
+- [x] Tạo in-memory event bus
+  - [x] Capture → Event Bus → Engines
+  - [x] Engines publish events, UI subscribe
 
-- [ ] chrome.storage.local chỉ làm persistence
-  - [ ] Save state khi có change
-  - [ ] Load state khi init
-  - [ ] Không dùng onChanged làm event bus
+- [x] chrome.storage.local chỉ làm persistence
+  - [x] Save state khi có change
+  - [x] Load state khi init
+  - [x] Không dùng onChanged làm event bus
 
-- [ ] Popup subscribe qua chrome.runtime.sendMessage
-  - [ ] Periodic poll (5s) cho auth state
-  - [ ] Message-based cho events
+- [x] Popup subscribe qua chrome.runtime.sendMessage
+  - [x] Periodic poll (5s) cho auth state
+  - [x] Message-based cho events
 
 ---
 
 ## Security & Reliability
 
-- [ ] Không gửi raw tokens qua Discord
-  - [ ] Chỉ gửi state + sessionId (short hash)
-  - [ ] No access_token, refresh_token, cookie, OpenID
+- [x] Không gửi raw tokens qua Discord
+  - [x] Chỉ gửi state + sessionId (short hash)
+  - [x] No access_token, refresh_token, cookie, OpenID
 
-- [ ] Token fingerprint thay vì raw token
-  - [ ] SHA-256 hash của access_token
-  - [ ] Hash cho identity mapping (garena_sns_openid vs dfTools openid)
+- [x] Token fingerprint thay vì raw token
+  - [x] SHA-256 hash của access_token
+  - [x] Hash cho identity mapping (garena_sns_openid vs dfTools openid)
 
-- [ ] Handle extension context invalidated
-  - [ ] Guard chrome.runtime?.id trước khi gửi message
-  - [ ] Graceful degradation khi tab reload
+- [x] Handle extension context invalidated
+  - [x] Guard chrome.runtime?.id trước khi gửi message
+  - [x] Graceful degradation khi tab reload
 
-- [ ] Prevent race conditions
-  - [ ] Register waiter BEFORE trigger request
-  - [ ] Single source of truth cho state
+- [x] Prevent race conditions
+  - [x] Register waiter BEFORE trigger request
+  - [x] Single source of truth cho state
 
 ---
 
 ## Testing
 
-- [ ] Browser test snippet cho Auth State Engine
-  - [ ] 12 test cases: state transitions, rate limiting, session management
-  - [ ] Test refresh flow (success/failed)
-  - [ ] Test terminal state guard
+- [x] Browser test snippet cho Auth State Engine
+  - [x] 12 test cases: state transitions, rate limiting, session management
+  - [x] Test refresh flow (success/failed)
+  - [x] Test terminal state guard
 
-- [ ] Test NetworkEvent correlation
-  - [ ] requestId matching
-  - [ ] Multiple concurrent requests
+- [x] Test NetworkEvent correlation
+  - [x] requestId matching
+  - [x] Multiple concurrent requests
 
 ---
 
 ## Migration Notes
 
-- [ ] Giữ backward compatibility với event format cũ
-  - [ ] Normalize cả raw và normalized events
-  - [ ] Support old popup.js logic trong过渡期
+- [x] Giữ backward compatibility với event format cũ
+  - [x] Normalize cả raw và normalized events
+  - [x] Support old popup.js logic
 
-- [ ] Không rewrite toàn bộ
-  - [ ] Từng layer, từng commit
-  - [ ] Mỗi commit phải chạy được
+- [x] Không rewrite toàn bộ
+  - [x] Từng layer, từng commit
+  - [x] Mỗi commit phải chạy được
 
 ---
 
