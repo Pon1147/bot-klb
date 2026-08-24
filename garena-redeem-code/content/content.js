@@ -21,6 +21,15 @@
     (document.head || document.documentElement).appendChild(script);
   })();
 
+  // ===== INJECT EVENT BUS =====
+  // In-memory event bus cho realtime communication
+  (function injectEventBus() {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('content/event-bus.js');
+    script.onload = () => { script.remove(); };
+    (document.head || document.documentElement).appendChild(script);
+  })();
+
   // ===== INJECT REDEEM SHARED UTILS =====
   // Shared constants, state helpers, storage, parser, capture, utils
   (function injectRedeemShared() {

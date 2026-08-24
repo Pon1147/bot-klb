@@ -136,8 +136,13 @@
   function setCentralState(state) {
     return new Promise((resolve, reject) => {
       chrome.storage.local.set({ centralState: state }, () => {
-        if (chrome.runtime.lastError) reject(chrome.runtime.lastError);
-        else resolve();
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+          return;
+        }
+        // Emit STATE_CHANGE event cho EventBus
+        window.EventBus.emit('STATE_CHANGE', state);
+        resolve();
       });
     });
   }

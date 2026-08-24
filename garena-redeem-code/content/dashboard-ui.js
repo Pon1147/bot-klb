@@ -100,13 +100,10 @@
       logsContainer.innerHTML = '';
     });
 
-    // Subscribe to storage changes
-    chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === 'local' && changes.centralState) {
-        const newState = changes.centralState.newValue;
-        console.log('[Dashboard] Storage changed, rendering...', newState?.status, newState?.stats);
-        if (newState) render(newState);
-      }
+    // Subscribe to STATE_CHANGE events via EventBus
+    window.EventBus.on('STATE_CHANGE', (data) => {
+      console.log('[Dashboard] STATE_CHANGE received, rendering...', data?.status, data?.stats);
+      if (data) render(data);
     });
 
     renderFromStorage();
