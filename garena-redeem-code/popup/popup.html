@@ -138,75 +138,59 @@
       </main>
       <!-- Config tab end -->
 
-      <!-- ===== AUTH INVESTIGATOR TAB ===== -->
+      <!-- ===== AUTH STATE ENGINE TAB ===== -->
       <main class="tab-content" id="tab-investigator">
 
-        <!-- Overview Stats -->
-        <section class="card stats-grid" id="statsGrid">
+        <!-- Auth State Banner -->
+        <div class="auth-state-banner" id="authStateBanner">
+          <span class="banner-icon" id="bannerIcon">🔒</span>
+          <div class="banner-content">
+            <div class="banner-title" id="bannerTitle">UNKNOWN</div>
+            <div class="banner-subtitle" id="bannerSubtitle">Chưa có dữ liệu auth</div>
+          </div>
+        </div>
+
+        <!-- Auth State Overview -->
+        <section class="card stats-grid" id="authStateGrid">
           <div class="stat-card">
-            <span class="stat-value" id="totalEvents">0</span>
-            <span class="stat-label">Events</span>
+            <span class="stat-value" id="authSessionId">—</span>
+            <span class="stat-label">Session</span>
           </div>
           <div class="stat-card">
-            <span class="stat-value" id="authCalls">0</span>
-            <span class="stat-label">Auth Events</span>
+            <span class="stat-value" id="authTokenState">—</span>
+            <span class="stat-label">Token</span>
           </div>
           <div class="stat-card">
-            <span class="stat-value" id="hasRefreshToken">0</span>
-            <span class="stat-label">Refreshes</span>
+            <span class="stat-value" id="authRefreshSupport">—</span>
+            <span class="stat-label">Refresh</span>
           </div>
           <div class="stat-card">
-            <span class="stat-value" id="hasChannelInfo">—</span>
-            <span class="stat-label">Channel Info</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value" id="hasGarenaOpenId">—</span>
-            <span class="stat-label">Garena OpenID</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value" id="hasDfToolsOpenId">—</span>
-            <span class="stat-label">DfTools OpenID</span>
+            <span class="stat-value" id="authExpiresIn">—</span>
+            <span class="stat-label">Còn lại</span>
           </div>
         </section>
 
-        <!-- Identity Mapping -->
+        <!-- Token State -->
         <section class="card">
-          <h3 class="section-title">Identity Mapping</h3>
-          <div class="mapping-card" id="mappingCard">
-            <div class="mapping-row">
-              <span class="mapping-label">Garena SNS OpenID</span>
-              <span class="mapping-value" id="garenaOpenId">—</span>
-            </div>
-            <div class="mapping-row">
-              <span class="mapping-label">DfTools OpenID</span>
-              <span class="mapping-value" id="dfToolsOpenid">—</span>
-            </div>
-            <div class="mapping-row mapping-row-highlight">
-              <span class="mapping-label">Identity Match</span>
-              <span class="mapping-value" id="matchResult">—</span>
-            </div>
+          <h3 class="section-title">Token State</h3>
+          <div class="mapping-card" id="tokenState">
+            <div class="empty-state">No token data.</div>
           </div>
         </section>
 
-        <!-- Domains -->
-        <section class="card">
-          <h3 class="section-title">Domains</h3>
-          <div class="domain-list" id="domainList">—</div>
-        </section>
-
-        <!-- Events -->
+        <!-- Notifications -->
         <section class="card">
           <div class="section-header">
-            <h3 class="section-title">Events</h3>
-            <button class="btn btn-ghost btn-sm" id="btnClear">Clear All</button>
+            <h3 class="section-title">Notifications</h3>
+            <button class="btn btn-ghost btn-sm" id="btnClearNotifs">Clear All</button>
           </div>
-          <div class="events-list" id="eventsList">
-            <div class="empty-state">No events yet.</div>
+          <div class="notifications-list" id="notificationsList">
+            <div class="empty-state">No notifications yet.</div>
           </div>
         </section>
 
       </main>
-      <!-- Auth Investigator tab end -->
+      <!-- Auth State Engine tab end -->
 
       <!-- Footer -->
       <footer class="footer">
@@ -216,6 +200,7 @@
 
     </div>
 
+    <script src="../content/auth-utils.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

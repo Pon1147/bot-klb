@@ -80,6 +80,7 @@ const DEFAULT_CODES = [
   'DFSL5029',
   'DFSL6257',
   'DFSL7789',
+  'DFUZI777',
   'DFSL9304',
   'DFSpark119',
   'DFTRNG469',
@@ -298,49 +299,9 @@ async function initDynamicUI() {
   }
 }
 
-// ===== classifyCodes: phân loại codeStates thành 4 nhóm =====
+// ===== classifyCodes: delegate to AuthUtils =====
 function classifyCodes(state) {
-  if (!state || !Array.isArray(state.codeStates)) {
-    return { redeemed: [], dead: [], retryable: [], untested: [] };
-  }
-
-  const redeemed = [];
-  const dead = [];
-  const retryable = [];
-  const untested = [];
-
-  const DEAD_REASONS = new Set([
-    'EXPIRED',
-    'USED',
-    'INVALID',
-    'LIMIT_REACHED',
-    'VERIFY',
-    'PRESENT_ERROR',
-  ]);
-  const RETRYABLE_REASONS = new Set(['TEMP_ERROR', 'NO_RESPONSE']);
-
-  for (const cs of state.codeStates) {
-    const code = cs.redeemCode;
-    if (cs.status === 'SUCCESS' || cs.result === 'SUCCESS') {
-      redeemed.push(code);
-      continue;
-    }
-    if (cs.status === 'PENDING') {
-      untested.push(code);
-      continue;
-    }
-    if (cs.status === 'FAILED' && DEAD_REASONS.has(cs.reason)) {
-      dead.push(code);
-      continue;
-    }
-    if (RETRYABLE_REASONS.has(cs.reason)) {
-      retryable.push(code);
-      continue;
-    }
-    untested.push(code);
-  }
-
-  return { redeemed, dead, retryable, untested };
+  return AuthUtils.classifyCodes(state);
 }
 
 // ===== Render redeem summary =====
@@ -534,68 +495,72 @@ function extractUniqueValues(events, key) {
 
 // ===== Compute stats from events (client-side) =====
 function computeStatsFromEvents(events) {
-  const authEvents = events.filter(
-    (e) =>
-      e.type?.includes('xhr_response') ||
-      e.type?.includes('fetch_response') ||
-      e.type === 'storage_write',
-  );
+  // Handle both normalized events (from auth-investigator-content.js)
+  // and raw events (from auth-investigator.js MAIN world)
+  const authEvents = events.filter((e) => {
+    const type = e.type || '';
+    // Normalized format: { type: 'auth_xhr_response', auth: {...} }
+    if (type.includes('auth_')) return true;
+    // Raw format: { type: 'xhr_response', hasAccessToken: ... }
+    if (type.includes('xhr_response') || type.includes('fetch_response')) return true;
+    if (type === 'storage_write' || type === 'auth_refresh_request') return true;
+    return false;
+  });
 
-  const responseEvents = authEvents.filter((e) => e.type?.includes('_response'));
-  const storageEvents = authEvents.filter((e) => e.type === 'storage_write');
+  const responseEvents = authEvents.filter((e) => {
+    const type = e.type || '';
+    if (type.includes('_response')) return true;
+    // Normalized: check nested auth object
+    if (e.auth && typeof e.auth === 'object') return true;
+    return false;
+  });
 
-  // Identity mapping: so sánh hash của garena_sns_openid và dfTools openid
-  const garenaHashes = new Set();
-  const dfHashes = new Set();
-  let garenaOpenidHash = null;
-  let dfOpenidHash = null;
+  const storageEvents = authEvents.filter((e) => {
+    const type = e.type || '';
+    if (type === 'storage_write') return true;
+    // Normalized: check nested storage object
+    if (e.storage && typeof e.storage === 'object') return true;
+    return false;
+  });
 
-  for (const event of responseEvents) {
-    if (event.garenaSnsOpenidHash) garenaHashes.add(event.garenaSnsOpenidHash);
-    if (event.dfToolsOpenidHash) dfHashes.add(event.dfToolsOpenidHash);
+  // Identity mapping — delegate to AuthUtils
+  const identity = AuthUtils.computeIdentityMapping(events);
+  let garenaHash = identity.garenaHash;
+  let dfToolsHash = identity.dfToolsHash;
+  let identityMatch = identity.match === 'MATCH' ? 'MATCH' : identity.match === 'DIFFERENT' ? 'DIFFERENT' : 'Chưa đủ dữ liệu';
+  let identityMatchClass = identity.match === 'MATCH' ? 'match-yes' : identity.match === 'DIFFERENT' ? 'match-no' : 'match-pending';
 
-    // Lấy hash đầu tiên gặp được
-    if (!garenaOpenidHash && event.garenaSnsOpenidHash)
-      garenaOpenidHash = event.garenaSnsOpenidHash;
-    if (!dfOpenidHash && event.dfToolsOpenidHash) dfOpenidHash = event.dfToolsOpenidHash;
-  }
+  // Token state — ưu tiên event có expiresIn > 0
+  const tokenEventsWithExpiry = responseEvents.filter((e) => {
+    const exp = e.auth?.expiresIn ?? e.expiresIn;
+    return (e.auth?.hasAccessToken || e.hasAccessToken) && exp != null && exp > 0;
+  });
 
-  // Xác định mapping
-  let identityMatch = 'Chưa đủ dữ liệu';
-  let identityMatchClass = 'match-pending';
-  if (garenaOpenidHash && dfOpenidHash) {
-    if (garenaOpenidHash === dfOpenidHash) {
-      identityMatch = 'MATCH (hash giống)';
-      identityMatchClass = 'match-yes';
-    } else {
-      identityMatch = 'DIFFERENT (hash khác)';
-      identityMatchClass = 'match-no';
-    }
-  }
+  const tokenEvents = tokenEventsWithExpiry.length > 0 ? tokenEventsWithExpiry : responseEvents.filter((e) => {
+    if (e.auth) return e.auth.hasAccessToken === true;
+    return e.hasAccessToken === true;
+  });
 
-  // Refresh detection: tìm event có cả access_token + refresh_token trong response
-  const authResponses = responseEvents.filter(
-    (e) => e.hasAccessToken === true && e.hasRefreshToken === true,
-  );
-  const channelInfoResponses = responseEvents.filter((e) => e.hasChannelInfo === true);
-  const storageWrites = storageEvents;
+  const latestTokenEvent = tokenEvents.length > 0
+    ? tokenEvents[tokenEvents.length - 1]
+    : null;
 
-  // Refresh request detection: POST request tới URL có "refresh" hoặc response có access_token mới
-  const refreshCandidates = events.filter(
-    (e) => e.type?.includes('sent') && (e.url?.includes('refresh') || e.url?.includes('token')),
-  );
+  // Delegate token state to AuthUtils
+  const tokenState = AuthUtils.computeTokenState(latestTokenEvent);
 
-  // DfTools credential events
-  const dfToolsCredentials = responseEvents.filter(
-    (e) => e.hasDfToolsOpenid === true && e.hasDfToolsToken === true,
-  );
+  // Refresh flow — delegate to AuthUtils
+  const refreshFlow = AuthUtils.computeRefreshFlow(events);
+
+  // Refresh correlation — delegate to AuthUtils
+  const correlatedPairs = AuthUtils.buildRefreshCorrelation(events);
 
   // Collect domains
   const domains = new Set();
   for (const event of events) {
-    if (event.url) {
+    const url = event.url || '';
+    if (url) {
       try {
-        const urlObj = new URL(event.url, location.origin);
+        const urlObj = new URL(url, location.origin);
         if (urlObj.hostname) domains.add(urlObj.hostname);
       } catch {
         /* ignore */
@@ -604,19 +569,29 @@ function computeStatsFromEvents(events) {
   }
 
   return {
-    totalEvents: events.length,
+    authEvents: authEvents.length,
     responseEvents: responseEvents.length,
-    storageWrites: storageWrites.length,
-    refreshCandidates: refreshCandidates.length,
-    authResponses: authResponses.length,
-    channelInfoResponses: channelInfoResponses.length,
-    dfToolsCredentials: dfToolsCredentials.length,
+    channelInfoResponses: responseEvents.filter((e) => e.auth?.hasChannelInfo || e.hasChannelInfo).length,
+    hasAccessToken: tokenEvents.length > 0,
+    hasRefreshToken: events.some((e) => e.auth?.hasRefreshToken || e.hasRefreshToken),
+    hasGarenaOpenId: events.some(e => e.auth?.hasGarenaSnsOpenid || e.hasGarenaSnsOpenid),
+    hasDfToolsOpenId: events.some(e => e.auth?.hasOpenId || e.hasDfToolsOpenid),
+    garenaHash: garenaHash || '—',
+    dfToolsHash: dfToolsHash || '—',
     identityMatch,
     identityMatchClass,
-    garenaHash: garenaOpenidHash || '—',
-    dfHash: dfOpenidHash || '—',
-    thirdTypes: extractUniqueValues(responseEvents, 'thirdType'),
+    tokenState,
+    refreshFlow: {
+      requestCount: refreshFlow.requestCount,
+      successCount: refreshFlow.successCount,
+      failedCount: refreshFlow.failedCount,
+      steps: refreshFlow.steps,
+      status: refreshFlow.status,
+      supported: refreshFlow.supported,
+    },
+    correlatedPairs,
     domains: Array.from(domains),
+    events: authEvents,
   };
 }
 
@@ -635,232 +610,203 @@ document.querySelectorAll('.segment-btn').forEach((tab) => {
     // Update header title
     const titleEl = document.getElementById('headerTitle');
     if (tabId === 'investigator') {
-      titleEl.textContent = 'Auth Investigator';
-      loadInvestigatorData();
-      startInvestigatorRefresh();
+      titleEl.textContent = 'Auth State Engine';
+      loadAuthStateData();
+      startAuthStateRefresh();
     } else {
       titleEl.textContent = 'Garena Redeem';
-      if (investigatorRefreshInterval) clearInterval(investigatorRefreshInterval);
+      if (authStateRefreshInterval) clearInterval(authStateRefreshInterval);
     }
   });
 });
 
-// ===== AUTH INVESTIGATOR DATA LOADING =====
-function loadInvestigatorData() {
-  // Debug: đọc toàn bộ storage để kiểm tra
-  chrome.storage.local.get(null, (allStorage) => {
-    console.log('[Popup] Full storage keys:', Object.keys(allStorage));
-    console.log('[Popup] auth_events present:', 'auth_events' in allStorage);
-    console.log('[Popup] auth_events value:', allStorage.auth_events);
-
-    const events = allStorage.auth_events || [];
-    console.log('[Popup] Loaded', events.length, 'events from storage');
-
-    if (events.length === 0) {
-      document.getElementById('totalEvents').textContent = '0';
-      document.getElementById('eventsList').innerHTML =
-        '<div class="empty-state">Chưa có events. Mở HQ page và login Garena.</div>';
-      return;
+// ===== AUTH STATE ENGINE DATA LOADING =====
+function loadAuthStateData() {
+  // Load auth state directly from storage (popup cannot message content script)
+  chrome.storage.local.get(['auth_state', 'auth_events'], (result) => {
+    const state = result.auth_state;
+    if (state) {
+      updateAuthStateBanner(state);
+      renderAuthStateOverviewFromState(state);
     }
 
+    // Also render token state from events
+    const events = result.auth_events || [];
+    if (events.length === 0) return;
     const stats = computeStatsFromEvents(events);
-    console.log('[Popup] Stats:', stats);
-    renderInvestigatorStats(stats);
-    renderInvestigatorEvents(events);
+    renderTokenState(stats.tokenState);
   });
 }
 
-// ===== AUTO-REFRESH INVESTIGATOR =====
-let investigatorRefreshInterval = null;
+function renderAuthStateOverview(stats) {
+  const sessionIdEl = document.getElementById('authSessionId');
+  const tokenStateEl = document.getElementById('authTokenState');
+  const refreshSupportEl = document.getElementById('authRefreshSupport');
+  const expiresInEl = document.getElementById('authExpiresIn');
 
-function renderInvestigatorStats(stats) {
-  if (!stats) return;
-
-  document.getElementById('totalEvents').textContent = stats.totalEvents || 0;
-  document.getElementById('authCalls').textContent = stats.responseEvents || 0;
-  document.getElementById('hasRefreshToken').textContent = stats.authResponses || 0;
-  document.getElementById('hasChannelInfo').textContent = stats.channelInfoResponses || 0;
-
-  // Identity mapping với hash
-  const garenaEl = document.getElementById('garenaOpenId');
-  const dfEl = document.getElementById('dfToolsOpenid');
-  const matchEl = document.getElementById('matchResult');
-
-  garenaEl.textContent = stats.garenaHash;
-  garenaEl.className =
-    'mapping-value ' + (stats.garenaHash !== '—' ? 'match-yes' : 'match-pending');
-
-  dfEl.textContent = stats.dfHash;
-  dfEl.className = 'mapping-value ' + (stats.dfHash !== '—' ? 'match-yes' : 'match-pending');
-
-  matchEl.textContent = stats.identityMatch;
-  matchEl.className = 'mapping-value ' + stats.identityMatchClass;
-
-  // Domains
-  const domainListEl = document.getElementById('domainList');
-  if (stats.domains && stats.domains.length > 0) {
-    domainListEl.innerHTML = stats.domains
-      .map((d) => `<span class="domain-tag">${escapeHtml(d)}</span>`)
-      .join('');
-  } else {
-    domainListEl.textContent = 'Chưa có dữ liệu';
+  if (sessionIdEl) {
+    sessionIdEl.textContent = stats.tokenState?.lastIssued ? 'ACTIVE' : '—';
+  }
+  if (tokenStateEl) {
+    tokenStateEl.textContent = stats.tokenState?.accessToken === 'PRESENT' ? '✓' : '—';
+  }
+  if (refreshSupportEl) {
+    refreshSupportEl.textContent = stats.hasRefreshToken ? '✓' : '—';
+  }
+  if (expiresInEl && stats.tokenState?.expiresIn) {
+    expiresInEl.textContent = formatRemaining(stats.tokenState.remainingSeconds || 0);
   }
 }
 
-function renderInvestigatorEvents(events) {
-  const eventsListEl = document.getElementById('eventsList');
+function renderAuthStateOverviewFromState(state) {
+  const sessionIdEl = document.getElementById('authSessionId');
+  const tokenStateEl = document.getElementById('authTokenState');
+  const refreshSupportEl = document.getElementById('authRefreshSupport');
+  const expiresInEl = document.getElementById('authExpiresIn');
 
-  if (events.length === 0) {
-    eventsListEl.innerHTML =
-      '<div class="empty-state">Chưa có events. Mở HQ page và login Garena để bắt đầu.</div>';
+  if (sessionIdEl) {
+    sessionIdEl.textContent = state.sessionId ? '#' + state.sessionId.slice(-4) : '—';
+  }
+  if (tokenStateEl) {
+    tokenStateEl.textContent = state.fingerprint ? '✓' : '—';
+  }
+  if (refreshSupportEl) {
+    refreshSupportEl.textContent = state.hasRefreshToken ? '✓' : '—';
+  }
+  if (expiresInEl) {
+    if (state.expiresAt) {
+      const remaining = Math.max(0, (state.expiresAt - Date.now()) / 1000);
+      expiresInEl.textContent = formatRemaining(remaining);
+    } else if (state.expiresIn) {
+      expiresInEl.textContent = formatRemaining(state.expiresIn);
+    } else {
+      expiresInEl.textContent = '—';
+    }
+  }
+}
+
+// ===== Auth State Banner =====
+function updateAuthStateBanner(state) {
+  if (!state) return;
+
+  const bannerEl = document.getElementById('authStateBanner');
+  const iconEl = document.getElementById('bannerIcon');
+  const titleEl = document.getElementById('bannerTitle');
+  const subtitleEl = document.getElementById('bannerSubtitle');
+
+  if (!bannerEl) return;
+
+  bannerEl.className = 'auth-state-banner';
+  const config = AUTH_STATE_CONFIG[state.state] || AUTH_STATE_CONFIG.UNKNOWN;
+  bannerEl.classList.add('state-' + state.state.toLowerCase());
+
+  if (iconEl) iconEl.textContent = config.icon;
+  if (titleEl) {
+    titleEl.textContent = state.state;
+    titleEl.style.color = config.color || 'var(--text-muted)';
+  }
+  if (subtitleEl) {
+    let remaining = '—';
+    if (state.expiresAt) {
+      remaining = formatRemaining(Math.max(0, (state.expiresAt - Date.now()) / 1000));
+    } else if (state.expiresIn) {
+      remaining = formatRemaining(state.expiresIn);
+    }
+    subtitleEl.textContent = state.state === 'ACTIVE' ? `Session ${state.sessionId ? '#' + state.sessionId.slice(-4) : '—'} · Expires in ${remaining}` : 'Theo dõi auth lifecycle';
+  }
+}
+
+// AUTH_STATE_CONFIG loaded from auth-utils.js
+
+// ===== Notifications =====
+function loadNotifications() {
+  // Read directly from storage (popup cannot message content script)
+  chrome.storage.local.get('auth_notifications', (result) => {
+    renderNotifications(result.auth_notifications || []);
+  });
+}
+
+function renderNotifications(notifs) {
+  const el = document.getElementById('notificationsList');
+  if (!el) return;
+
+  if (!notifs || notifs.length === 0) {
+    el.innerHTML = '<div class="empty-state">No notifications yet.</div>';
     return;
   }
 
-  const toRender = events.slice(0, 50);
-  eventsListEl.innerHTML = toRender.map(renderEventItem).join('');
+  el.innerHTML = notifs.map((n) => {
+    const config = NOTIF_CONFIG[n.type] || NOTIF_CONFIG.UNKNOWN;
+    const time = new Date(n.timestamp).toLocaleTimeString('vi-VN');
+    const shortId = n.shortSessionId || (n.sessionId ? '#' + n.sessionId.slice(-4) : '—');
 
-  // Bind click to expand
-  eventsListEl.querySelectorAll('.event-item').forEach((item) => {
-    item.addEventListener('click', () => item.classList.toggle('expanded'));
+    return `
+      <div class="notification-item ${n.read ? '' : 'unread'}" data-notif-id="${n.id}">
+        <span class="notification-icon">${config.icon}</span>
+        <div class="notification-body">
+          <div class="notification-header">
+            <span class="notification-type ${config.typeClass}">${config.label}</span>
+            <span class="notification-time">${time}</span>
+          </div>
+          <div class="notification-reason">${escapeHtml(n.reason || n.type)}</div>
+          <div class="notification-session">Session: ${shortId}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  el.querySelectorAll('.notification-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      const notifId = item.dataset.notifId;
+      chrome.runtime.sendMessage({ type: 'MARK_NOTIF_READ', notifId }, () => {
+        item.classList.remove('unread');
+      });
+    });
   });
 }
 
-function renderEventItem(event) {
-  const typeClass = getEventClass(event.type);
-  const time = event.timestamp ? new Date(event.timestamp).toLocaleTimeString('vi-VN') : '--:--:--';
-  const summary = getEventSummary(event);
+// NOTIF_CONFIG loaded from auth-utils.js
 
-  return `
-    <div class="event-item">
-      <div class="event-header">
-        <span class="event-type ${typeClass}">${escapeHtml(event.type)}</span>
-        <span class="event-time">${time}</span>
-      </div>
-      <div class="event-body">${summary}</div>
-    </div>
+// ===== AUTO-REFRESH AUTH STATE =====
+let authStateRefreshInterval = null;
+
+function startAuthStateRefresh() {
+  if (authStateRefreshInterval) clearInterval(authStateRefreshInterval);
+  authStateRefreshInterval = setInterval(() => {
+    const investigatorTab = document.getElementById('tab-investigator');
+    if (investigatorTab?.classList.contains('active')) {
+      loadAuthStateData();
+      // Load notifications when on investigator tab
+      const notifEl = document.getElementById('notificationsList');
+      if (notifEl) loadNotifications();
+    }
+  }, 5000);
+}
+
+function renderTokenState(ts) {
+  const el = document.getElementById('tokenState');
+  if (!el) return;
+
+  if (!ts.lastIssued) {
+    el.innerHTML = '<div class="empty-state">No token data.</div>';
+    return;
+  }
+
+  const hasValidExpiry = ts.expiresAt != null && ts.expiresAt > 0;
+  const isExpired = ts.isExpired || false;
+  const remaining = hasValidExpiry ? ts.remainingSeconds : null;
+  const remainingClass = isExpired ? 'match-no' : hasValidExpiry && remaining < 3600 ? 'match-pending' : 'match-yes';
+  const remainingText = !hasValidExpiry ? '—' : isExpired ? 'EXPIRED' : formatRemaining(remaining);
+
+  el.innerHTML = `
+    <div class="token-row"><span class="token-label">Issued</span><span class="token-value">${ts.lastIssued}</span></div>
+    <div class="token-row"><span class="token-label">Lifetime</span><span class="token-value">${hasValidExpiry ? formatLifetime(ts.expiresIn) : '—'}</span></div>
+    <div class="token-row"><span class="token-label">Expires</span><span class="token-value">${hasValidExpiry ? ts.expiresAtFormatted : '—'}</span></div>
+    <div class="token-row"><span class="token-label">Remaining</span><span class="token-value ${remainingClass}" id="tokenRemaining">${remainingText}</span></div>
   `;
 }
 
-function getEventClass(type) {
-  if (type?.includes('storage_write')) return 'auth-called';
-  if (type?.includes('xhr_sent')) return 'xhr-sent';
-  if (type?.includes('fetch_sent')) return 'fetch-sent';
-  if (type?.includes('xhr_response')) return 'xhr-response';
-  if (type?.includes('fetch_response')) return 'fetch-response';
-  if (type?.includes('no_data')) return 'auth-rejected';
-  return '';
-}
-
-function getEventSummary(event) {
-  const lines = [];
-
-  if (event.url)
-    lines.push(
-      `<span class="field-key">URL:</span><span class="field-value">${escapeHtml(event.url)}</span>`,
-    );
-  if (event.method)
-    lines.push(
-      `<span class="field-key">Method:</span><span class="field-value">${escapeHtml(event.method)}</span>`,
-    );
-  if (event.statusCode)
-    lines.push(
-      `<span class="field-key">Status:</span><span class="field-value">${event.statusCode}</span>`,
-    );
-  if (event.duration)
-    lines.push(
-      `<span class="field-key">Duration:</span><span class="field-value">${event.duration}ms</span>`,
-    );
-  if (event.isSuccess !== undefined)
-    lines.push(
-      `<span class="field-key">Success:</span><span class="field-value">${event.isSuccess ? '✓' : '✗'}</span>`,
-    );
-
-  // Auth fields
-  if (event.hasAccessToken !== undefined)
-    lines.push(
-      `<span class="field-key">access_token:</span><span class="field-value">${event.hasAccessToken ? '✓' : '✗'}</span>`,
-    );
-  if (event.hasRefreshToken !== undefined)
-    lines.push(
-      `<span class="field-key">refresh_token:</span><span class="field-value">${event.hasRefreshToken ? '✓' : '✗'}</span>`,
-    );
-  if (event.hasExpiresIn !== undefined)
-    lines.push(
-      `<span class="field-key">expires_in:</span><span class="field-value">${event.hasExpiresIn ? '✓' : '✗'}</span>`,
-    );
-  if (event.hasGarenaSnsOpenid !== undefined)
-    lines.push(
-      `<span class="field-key">garena_sns_openid:</span><span class="field-value">${event.hasGarenaSnsOpenid ? '✓' : '✗'}</span>`,
-    );
-  if (event.hasOpenId !== undefined)
-    lines.push(
-      `<span class="field-key">open_id:</span><span class="field-value">${event.hasOpenId ? '✓' : '✗'}</span>`,
-    );
-  if (event.hasDfToolsOpenid !== undefined)
-    lines.push(
-      `<span class="field-key">df_openid:</span><span class="field-value">${event.hasDfToolsOpenid ? '✓' : '✗'}</span>`,
-    );
-  if (event.hasDfToolsToken !== undefined)
-    lines.push(
-      `<span class="field-key">df_token:</span><span class="field-value">${event.hasDfToolsToken ? '✓' : '✗'}</span>`,
-    );
-
-  // Hashed OpenID
-  if (event.garenaSnsOpenidHash)
-    lines.push(
-      `<span class="field-key">garena_hash:</span><span class="field-value">${escapeHtml(event.garenaSnsOpenidHash)}</span>`,
-    );
-  if (event.dfToolsOpenidHash)
-    lines.push(
-      `<span class="field-key">df_hash:</span><span class="field-value">${escapeHtml(event.dfToolsOpenidHash)}</span>`,
-    );
-
-  // Channel info
-  if (event.hasChannelInfo)
-    lines.push(
-      `<span class="field-key">channel_info:</span><span class="field-value">✓ (${(event.channelInfoKeys || []).join(', ')})</span>`,
-    );
-  if (event.channelInfoHasAccessToken)
-    lines.push(`<span class="field-key">ci_access_token:</span><span class="field-value">✓</span>`);
-  if (event.channelInfoHasRefreshToken)
-    lines.push(
-      `<span class="field-key">ci_refresh_token:</span><span class="field-value">✓</span>`,
-    );
-
-  // Third type
-  if (event.thirdType)
-    lines.push(
-      `<span class="field-key">third_type:</span><span class="field-value">${escapeHtml(event.thirdType)}</span>`,
-    );
-
-  // Storage write
-  if (event.type === 'storage_write') {
-    lines.push(
-      `<span class="field-key">Storage:</span><span class="field-value">${escapeHtml(event.storageType)}</span>`,
-    );
-    lines.push(
-      `<span class="field-key">Key:</span><span class="field-value">${escapeHtml(event.key)}</span>`,
-    );
-    lines.push(
-      `<span class="field-key">Value:</span><span class="field-value"><${event.valueLength}chars></span>`,
-    );
-  }
-
-  // Keys
-  if (event.resultKeys && event.resultKeys.length > 0)
-    lines.push(
-      `<span class="field-key">Keys:</span><span class="field-value">${event.resultKeys.join(', ')}</span>`,
-    );
-
-  return lines.join('<br>') || '(no data)';
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = String(str);
-  return div.innerHTML;
-}
+// escapeHtml loaded from auth-utils.js
 
 // ===== CLEAR EVENTS (Auth Investigator) =====
 const btnClear = document.getElementById('btnClear');
@@ -868,13 +814,45 @@ if (btnClear) {
   btnClear.addEventListener('click', () => {
     if (!confirm('Xóa tất cả auth events?')) return;
     chrome.storage.local.set({ auth_events: [] }, () => {
-      loadInvestigatorData();
+      loadAuthStateData();
     });
   });
 }
 
-// ===== AUTO-REFRESH INVESTIGATOR =====
-function startInvestigatorRefresh() {
-  if (investigatorRefreshInterval) clearInterval(investigatorRefreshInterval);
-  investigatorRefreshInterval = setInterval(loadInvestigatorData, 5000);
+// ===== Clear notifications =====
+const btnClearNotifs = document.getElementById('btnClearNotifs');
+if (btnClearNotifs) {
+  btnClearNotifs.addEventListener('click', () => {
+    if (!confirm('Xóa tất cả notifications?')) return;
+    chrome.storage.local.set({ auth_notifications: [] }, () => {
+      loadNotifications();
+    });
+  });
+}
+
+// formatRemaining / formatLifetime loaded from auth-utils.js
+
+// ===== Countdown ticker =====
+let tokenTickerInterval = null;
+
+function startTokenTicker() {
+  if (tokenTickerInterval) clearInterval(tokenTickerInterval);
+  tokenTickerInterval = setInterval(() => {
+    chrome.storage.local.get(null, (allStorage) => {
+      const events = allStorage.auth_events || [];
+      if (events.length === 0) return;
+      const stats = computeStatsFromEvents(events);
+      const ts = stats.tokenState;
+      const el = document.getElementById('tokenRemaining');
+      if (!el || !ts.lastIssued) return;
+      if (ts.isExpired) {
+        el.textContent = 'EXPIRED';
+        el.className = 'token-value match-no';
+        clearInterval(tokenTickerInterval);
+        tokenTickerInterval = null;
+      } else {
+        el.textContent = formatRemaining(ts.remainingSeconds);
+      }
+    });
+  }, 1000);
 }
