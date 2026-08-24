@@ -336,6 +336,7 @@
           isResponse: false,
           requestId: raw.requestId || null,
           correlatedRequestId: raw.correlatedRefreshRequest ? raw.requestId : null,
+          refreshRequestId: raw.refreshRequestId || null,
           success: raw.isSuccess,
         },
         dfTools: {
