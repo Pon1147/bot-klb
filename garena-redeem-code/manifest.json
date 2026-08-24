@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "DF Toolbox",
-  "version": "1.0.5",
-  "description": "Delta Force HQ credential bridge + Garena redeem codes",
+  "version": "1.0.6",
+  "description": "Delta Force HQ credential bridge + Garena redeem codes + Auth State Engine",
   "permissions": ["storage", "activeTab"],
   "host_permissions": [
     "https://redeem.df.garena.sg/*",
@@ -70,20 +70,22 @@
       "resources": [
         "content/link-page-capture.js",
         "content/dashboard.css",
-        "content/auth-investigator.js"
+        "content/auth-utils.js",
+        "content/auth-investigator.js",
+        "content/auth-state-engine.js"
       ],
       "matches": ["https://www.playdeltaforce.com/*"]
     },
     {
-      "resources": ["content/auth-investigator.js"],
+      "resources": ["content/auth-utils.js", "content/auth-investigator.js", "content/auth-state-engine.js"],
       "matches": ["https://sso.garena.com/*"]
     },
     {
-      "resources": ["content/auth-investigator.js"],
+      "resources": ["content/auth-utils.js", "content/auth-investigator.js", "content/auth-state-engine.js"],
       "matches": ["https://auth.garena.com/*"]
     },
     {
-      "resources": ["content/auth-investigator.js"],
+      "resources": ["content/auth-utils.js", "content/auth-investigator.js", "content/auth-state-engine.js"],
       "matches": ["https://common-web.intlgame.com/*"]
     }
   ]
