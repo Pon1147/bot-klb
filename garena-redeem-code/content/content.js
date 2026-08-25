@@ -35,6 +35,16 @@
     400073: { result: 'FAILED', reason: 'VERIFY', label: 'Cần xác minh' },
   };
 
+  // ===== Redeem code states (enum) =====
+  const CODE_STATES = Object.freeze({
+    PENDING: 'PENDING',
+    PROCESSING: 'PROCESSING',
+    SUCCESS: 'SUCCESS',
+    FAILED: 'FAILED',
+    TIMEOUT: 'TIMEOUT',
+    CANCELLED: 'CANCELLED',
+  });
+
   const CONFIG = {
     maxRetries: 2,
     delayBetweenCodesMs: 1300,
@@ -165,25 +175,44 @@
     if (capture.initialized) return;
     capture.initialized = true;
     capture.responses = [];
+    capture.requestMap = new Map(); // requestId → { code, requestId, ... }
 
     window.addEventListener('message', (e) => {
       if (e.source !== window) return;
       if (e.data?.source !== 'garena-redeem-capture') return;
-      const { data, url } = e.data;
-      if (data && typeof data === 'object' && 'code' in data) {
-        capture.responses.push({
-          code: capture._currentCode || 'unknown',
-          data: data,
-          status: 200,
-          time: Date.now(),
-        });
-        console.log(
-          '[Capture] Received via postMessage:',
-          data.code,
-          'msg=' + (data.msg || data.message || ''),
-          'url=' + (url || ''),
-        );
-      }
+
+      // Handle normalized NetworkEvent format
+      const event = e.data.event;
+      const data = e.data.data;
+
+      if (!event || !data) return;
+      if (typeof data !== 'object' || !('code' in data)) return;
+
+      const { requestId, timestamp, status } = event;
+
+      // Store response with requestId for correlation
+      capture.responses.push({
+        requestId,
+        code: capture._currentCode || 'unknown',
+        data: data,
+        status: status || 200,
+        time: timestamp || Date.now(),
+      });
+
+      // Map requestId → response for quick lookup
+      capture.requestMap.set(requestId, {
+        code: capture._currentCode || 'unknown',
+        data: data,
+        status: status || 200,
+        time: timestamp || Date.now(),
+      });
+
+      console.log(
+        '[Capture] Received via postMessage:',
+        data.code,
+        'msg=' + (data.msg || data.message || ''),
+        'requestId=' + requestId,
+      );
     });
   }
 
@@ -206,6 +235,67 @@
     if (!el) return false;
     const s = window.getComputedStyle(el);
     return s.display !== 'none' && s.visibility !== 'hidden' && el.offsetParent !== null;
+  }
+
+  // ===== Phân loại codeStates thành 4 nhóm =====
+  function classifyCodes(state) {
+    if (!state || !Array.isArray(state.codeStates)) {
+      return {
+        redeemed: [],
+        dead: [],
+        retryable: [],
+        untested: [],
+      };
+    }
+
+    const redeemed = [];
+    const dead = [];
+    const retryable = [];
+    const untested = [];
+
+    const DEAD_REASONS = new Set([
+      'EXPIRED',
+      'USED',
+      'INVALID',
+      'LIMIT_REACHED',
+      'VERIFY',
+      'PRESENT_ERROR',
+    ]);
+    const RETRYABLE_REASONS = new Set(['TEMP_ERROR']);
+
+    for (const cs of state.codeStates) {
+      const code = cs.redeemCode;
+
+      if (cs.status === CODE_STATES.SUCCESS || cs.result === CODE_STATES.SUCCESS) {
+        redeemed.push(code);
+        continue;
+      }
+
+      if (cs.status === CODE_STATES.PENDING) {
+        untested.push(code);
+        continue;
+      }
+
+      if (cs.status === CODE_STATES.FAILED && DEAD_REASONS.has(cs.reason)) {
+        dead.push(code);
+        continue;
+      }
+
+      if (RETRYABLE_REASONS.has(cs.reason)) {
+        retryable.push(code);
+        continue;
+      }
+
+      // TIMEOUT/CANCELLED/unknown — đưa vào untested để user xem xét
+      untested.push(code);
+    }
+
+    return {
+      redeemed,
+      dead,
+      retryable,
+      untested,
+    };
   }
 
   // ===== DASHBOARD =====
@@ -501,10 +591,10 @@
 
     findNextPending(state) {
       for (let i = state.currentIndex; i < state.codes.length; i++) {
-        if (state.codeStates[i].status === 'PENDING') return i;
+        if (state.codeStates[i].status === CODE_STATES.PENDING) return i;
       }
       for (let i = 0; i < state.currentIndex; i++) {
-        if (state.codeStates[i].status === 'PENDING') return i;
+        if (state.codeStates[i].status === CODE_STATES.PENDING) return i;
       }
       return -1;
     }
@@ -512,9 +602,13 @@
     async processCode(code, index, total) {
       const maxRetries = CONFIG.maxRetries + 1;
       for (let attempt = 0; attempt < maxRetries; attempt++) {
-        if (this.abortFlag) return { result: 'FAILED', reason: 'NO_RESPONSE' };
+        if (this.abortFlag) return { result: CODE_STATES.CANCELLED, reason: 'CANCELLED' };
         try {
           const result = await this.redeemSingle(code);
+          // TIMEOUT không retry — là state riêng
+          if (result.result === CODE_STATES.TIMEOUT) {
+            return result;
+          }
           if (result.reason === 'TEMP_ERROR' && attempt < maxRetries - 1) {
             await sleep(1000);
             continue;
@@ -525,10 +619,10 @@
             await sleep(1000);
             continue;
           }
-          return { result: 'FAILED', reason: 'TEMP_ERROR' };
+          return { result: CODE_STATES.FAILED, reason: 'TEMP_ERROR' };
         }
       }
-      return { result: 'FAILED', reason: 'TEMP_ERROR' };
+      return { result: CODE_STATES.FAILED, reason: 'TEMP_ERROR' };
     }
 
     async redeemSingle(code) {
@@ -549,29 +643,35 @@
       setValue(input, code);
       await sleep(80);
 
+      // Click the button — waitForCapturedResponse handles the full wait (up to timeoutMs)
+      // Register waiter BEFORE click để không bỏ lỡ response nhanh
+      const waiter = this.waitForCapturedResponse(CONFIG.timeoutMs);
       let clicked = false;
+
       for (let submitTry = 1; submitTry <= 2; submitTry++) {
         const submitBtn = submitTry === 1 ? btn : findButton();
         if (!submitBtn) break;
         console.log('[Redeem] Click attempt', submitTry);
         clickRedeem(submitBtn);
         clicked = true;
-        await sleep(200);
-        if (getLastResponse()) {
+        // Kiểm tra response đã có chưa (trường hợp response quá nhanh)
+        const existing = getLastResponse();
+        if (existing) {
           console.log('[Redeem] Response captured during click delay');
           break;
         }
+        await sleep(200); // small delay to let page process before response arrives
       }
 
       if (!clicked) {
-        return { result: 'FAILED', reason: 'NO_RESPONSE', message: 'Không tìm thấy nút redeem' };
+        return { result: CODE_STATES.FAILED, reason: 'PRESENT_ERROR', message: 'Không tìm thấy nút redeem' };
       }
 
       console.log('[Redeem] Waiting for response (timeout:', CONFIG.timeoutMs, 'ms)...');
-      const response = await this.waitForCapturedResponse(CONFIG.timeoutMs);
+      const response = await waiter;
       if (!response) {
         console.warn('[Redeem] TIMEOUT — capture.responses.length =', capture.responses.length);
-        return { result: 'FAILED', reason: 'NO_RESPONSE', message: 'Timeout không nhận response' };
+        return { result: CODE_STATES.TIMEOUT, reason: 'TIMEOUT', message: 'Timeout không nhận response' };
       }
       console.log('[Redeem] Response received:', JSON.stringify(response).slice(0, 200));
       return parseRedeemResponse(response);
@@ -607,20 +707,29 @@
       state = await getCentralState();
       if (!state) return;
 
-      if (parsed.result === 'SUCCESS') {
+      if (parsed.result === CODE_STATES.SUCCESS) {
         state = updateCodeState(state, index, {
-          status: 'SUCCESS',
-          result: 'SUCCESS',
+          status: CODE_STATES.SUCCESS,
+          result: CODE_STATES.SUCCESS,
           reason: parsed.reason,
         });
         state = updateStats(state, 1, 0);
-      } else if (parsed.result === 'FAILED') {
+      } else if (parsed.result === CODE_STATES.FAILED) {
         state = updateCodeState(state, index, {
-          status: 'FAILED',
-          result: 'FAILED',
+          status: CODE_STATES.FAILED,
+          result: CODE_STATES.FAILED,
           reason: parsed.reason,
         });
         state = updateStats(state, 0, 1);
+      } else if (parsed.result === CODE_STATES.TIMEOUT) {
+        state = updateCodeState(state, index, {
+          status: CODE_STATES.TIMEOUT,
+          result: CODE_STATES.TIMEOUT,
+          reason: parsed.reason,
+        });
+        // TIMEOUT không tính vào failed stat
+      } else if (parsed.result === CODE_STATES.CANCELLED) {
+        // CANCELLED — giữ nguyên status (user pause)
       }
       const log = {
         id: generateId(),
