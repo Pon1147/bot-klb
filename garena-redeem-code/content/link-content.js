@@ -2,6 +2,7 @@
  * Isolated content script — bridge + panel cho tab Link trên HQ.
  *
  * Lắng nghe postMessage từ link-page-capture.js → render panel → submit claim.
+ * Dùng chrome.storage polling thay sendMessage để tránh SW bị terminate.
  */
 
 (function () {
@@ -147,8 +148,12 @@
     }
   }
 
-  // ===== C. Submit claim → SW =====
-  async function handleSubmit() {
+  // ===== C. Submit claim → SW (dùng storage polling, không sendMessage) =====
+  // sendMessage không đáng tin trong MV3 — SW có thể terminate trước khi fetch xong.
+  // Giải pháp: ghi claim vào storage → SW đọc + xử lý → ghi kết quả → content script poll.
+  let pollInterval = null;
+
+  function handleSubmit() {
     const codeInput = document.querySelector('#df-link-code');
     const submitBtn = document.querySelector('#df-link-submit');
     const statusEl = document.querySelector('#df-link-status');
@@ -166,38 +171,59 @@
     // Lưu code vào storage cho lần sau
     chrome.storage.local.set({ df_claim_code: code });
 
-    // Gửi lên SW
-    console.log('[DF Toolbox] Submitting claim:', { code, credential: state.candidate });
-    try {
-      const res = await chrome.runtime.sendMessage({
-        type: 'DF_CLAIM',
-        code,
-        credential: state.candidate,
-        source_endpoint: state.endpoint,
-      });
-      console.log('[DF Toolbox] SW response:', res);
+    // Gửi credential + claim code vào storage để SW xử lý
+    const claimPayload = {
+      code,
+      credential: state.candidate,
+      endpoint: state.endpoint,
+      submittedAt: Date.now(),
+    };
+    console.log('[DF Toolbox] Writing claim to storage:', { code, credential: state.candidate });
+    chrome.storage.local.set({ df_claim_pending: claimPayload }, () => {
+      console.log('[DF Toolbox] Claim written to storage, starting poll...');
 
-      if (res?.ok) {
-        state.status = 'success';
-        state.candidate = null; // clear credential
-        renderPanel();
-      } else {
-        state.status = 'error';
-        statusEl.textContent = '❌ ' + (res?.error || 'Unknown error');
-        statusEl.style.color = '#f44336';
-        submitBtn.disabled = false;
-      }
-    } catch (err) {
-      console.log('[DF Toolbox] sendMessage error:', err);
-      state.status = 'error';
-      const errMsg = err?.message || 'Không thể gửi claim. Kiểm tra webhook URL trong extension.';
-      statusEl.textContent = '❌ ' + errMsg;
-      statusEl.style.color = '#f44336';
-      submitBtn.disabled = false;
-    }
+      // Poll storage cho kết quả (mỗi 1s, tối đa 60s)
+      let elapsed = 0;
+      pollInterval = setInterval(() => {
+        elapsed += 1000;
+
+        chrome.storage.local.get(['df_claim_result', 'df_claim_pending'], (result) => {
+          // Nếu có result → SW đã xử lý xong
+          if (result.df_claim_result) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+
+            const { ok, error } = result.df_claim_result;
+            if (ok) {
+              state.status = 'success';
+              state.candidate = null;
+              // Xóa pending + result
+              chrome.storage.local.remove(['df_claim_pending', 'df_claim_result']);
+            } else {
+              state.status = 'error';
+              statusEl.textContent = '❌ ' + (error || 'Unknown error');
+              statusEl.style.color = '#f44336';
+              chrome.storage.local.remove(['df_claim_pending', 'df_claim_result']);
+            }
+            renderPanel();
+            return;
+          }
+
+          // Timeout 60s
+          if (elapsed >= 60000) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+            state.status = 'error';
+            statusEl.textContent = '❌ Timeout — SW không phản hồi. Kiểm tra webhook URL.';
+            statusEl.style.color = '#f44336';
+            renderPanel();
+          }
+        });
+      }, 1000);
+    });
   }
 
-  // ===== D. Listen for SW response updates =====
+  // ===== D. Listen for SW response updates (fallback) =====
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg?.type === 'DF_LINK_SUCCESS') {
       state.status = 'success';

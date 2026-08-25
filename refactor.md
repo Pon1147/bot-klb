@@ -1,588 +1,166 @@
-Đúng. Tôi nghĩ đây là **bước tiếp theo hợp lý nhất**: chuyển Auth Investigator từ một công cụ "quan sát" thành **Auth State Engine**, rồi Discord chỉ nhận **event đã được xác minh**.
+# DF Toolbox — Refactor Checklist
 
-Tôi sẽ thiết kế lại flow theo hướng này:
-
-## 1. Flow tổng thể
-
-```text
-┌──────────────────────┐
-│ User mở trang Garena │
-│ / Delta Force        │
-└──────────┬───────────┘
-           ↓
-     Capture Auth
-           ↓
-┌──────────────────────┐
-│ SESSION ACTIVE       │
-│ Token fingerprint    │
-│ expiresAt            │
-│ identity mapping     │
-└──────────┬───────────┘
-           ↓
-       User sử dụng
-           ↓
-      API request
-           ↓
-    ┌──────┴──────┐
-    │             │
-    ▼             ▼
-  SUCCESS      EXPIRED
-    │             │
-    │             ▼
-    │       Có refresh flow?
-    │             │
-    │        ┌────┴────┐
-    │        │         │
-    │       YES        NO
-    │        │         │
-    │        ▼         ▼
-    │    REFRESH    SESSION_EXPIRED
-    │        │         │
-    │        ▼         ▼
-    │    SUCCESS    Discord alert
-    │                  │
-    │                  ▼
-    │          "Vui lòng F5..."
-    │
-    ▼
- SESSION ACTIVE
-```
-
-Nhưng tôi **không muốn chỉ dựa vào `expiresAt`**.
+> Audit bugs và roadmap fix cho bot Discord + extension
+> Current score: ~7.5/10 → Target: 9/10+
 
 ---
 
-# 2. Quan trọng: phân biệt `EXPIRING` và `EXPIRED`
+## P0: Critical Bugs
 
-Auth engine nên có state machine:
+### 1. `/df-link start` — không invalidate old claim sessions trong DB
 
-```text
-ACTIVE
-  │
-  ├── remaining > warningThreshold
-  │
-  ▼
-EXPIRING_SOON
-  │
-  ├── remaining <= 0
-  │
-  ▼
-EXPIRED
-  │
-  ├── request thực tế thất bại
-  │
-  ▼
-CONFIRMED_EXPIRED
-```
+**Vấn đề:** Khi user gọi `/df-link start` lần 2, code xóa old entry khỏi in-memory TTLStore nhưng old code trong `df_claim_sessions` (DB) vẫn valid cho đến khi expire → user có thể dùng code cũ để link.
 
-Ví dụ:
+**File cần fix:** `src/services/df-claim-store.ts`, `src/commands/df/link.command.ts`
 
-```text
-ACTIVE
-14d 22h remaining
-
-        ↓
-
-EXPIRING_SOON
-10m remaining
-
-        ↓
-
-EXPIRED
-0s
-
-        ↓
-
-CONFIRMED_EXPIRED
-API request → token expired
-```
-
-### Vì sao cần `CONFIRMED_EXPIRED`?
-
-Vì:
-
-```text
-expiresAt <= Date.now()
-```
-
-chỉ là **dự đoán theo client clock**.
-
-Còn nếu server trả:
-
-```text
-401
-TOKEN_EXPIRED
-INVALID_TOKEN
-SESSION_EXPIRED
-```
-
-thì đó mới là evidence mạnh.
+**Fix:**
+- Gọi `invalidateUserClaims(database, discordUserId)` trước khi sinh code mới
+- Hoặc xóa old code khỏi TTLStore + DB atomicly
 
 ---
 
-# 3. Nếu token hết hạn nhưng user vẫn sử dụng
+### 2. `/df-link manual` — lưu vào legacy DB thay vì encrypted binding
 
-Đây chính là case bạn hỏi.
+**Vấn đề:** `handleManual` lưu trực tiếp vào `df_tokens` (plaintext) thay vì `df_account_bindings` (encrypted). `runDfCommand` ưu tiên binding mới → manual link chỉ hoạt động khi binding không tồn tại.
 
-Ví dụ:
+**File cần fix:** `src/commands/df/link.command.ts`
 
-```text
-Token expires:
-10:00:00
-
-User click "Get Data":
-10:03:12
-```
-
-Interceptor bắt:
-
-```text
-REQUEST
-   ↓
-RESPONSE 401
-   ↓
-error = TOKEN_EXPIRED
-```
-
-Auth Engine chuyển:
-
-```text
-ACTIVE
-   ↓
-EXPIRED
-   ↓
-CONFIRMED_EXPIRED
-```
-
-Sau đó emit một event duy nhất:
-
-```js
-{
-  type: 'AUTH_EXPIRED',
-  reason: 'TOKEN_EXPIRED',
-  timestamp: ...,
-  sessionId: ...
-}
-```
-
-**Không gửi access_token / refresh_token lên Discord.**
+**Fix:**
+- Dùng `upsertAccountBinding()` thay vì `saveDfToken()`
+- Encrypt credential trước khi lưu
+- Update message hướng dẫn user dùng `/df-link start` thay vì manual
 
 ---
 
-# 4. Discord notification
+### 3. `runDfCommand` — decrypt fallback silent
 
-Bot nhận event:
+**Vấn đề:** Khi decrypt binding thất bại (crypto key missing, corrupt data), code tự động fallback sang legacy token mà không báo lỗi → user không biết binding bị corrupt.
 
-```text
-AUTH_EXPIRED
-```
+**File cần fix:** `src/utils/df-command.runner.ts`
 
-và gửi:
-
-> 🔴 **Delta Force Authentication Expired**
->
-> Token/session của bạn đã hết hạn và request vừa được xác nhận thất bại.
->
-> **Vui lòng quay lại trang đăng nhập Garena/Delta Force và nhấn F5 để tạo session mới.**
->
-> Trạng thái: `EXPIRED`
->
-> Thời điểm: `10:03:12`
-
-Tôi sẽ không ghi:
-
-```text
-Token: eyJ...
-Refresh Token: ...
-OpenID: ...
-```
-
-Discord chỉ nhận **state + diagnostic metadata tối thiểu**.
+**Fix:**
+- Log error chi tiết khi decrypt fail
+- Trả về error container thay vì silent fallback
+- Hoặc tự động migrate legacy → binding khi detect legacy token
 
 ---
 
-# 5. Nhưng đừng gửi Discord notification mỗi request
+## P1: Medium Bugs
 
-Đây là một pain point rất dễ phát sinh.
+### 4. `/df-unlink` + `/df-link unlink` — trùng lặp chức năng
 
-Token expired → user tiếp tục click 20 lần.
+**Vấn đề:** 2 commands khác nhau làm cùng 1 việc (revoke binding + delete token), gây nhầm lẫn cho user.
 
-Nếu logic đơn giản:
+**File cần fix:** `src/commands/df/link.command.ts`, `src/commands/df/unlink.command.ts`
 
-```js
-if (expired) sendDiscord();
-```
-
-thì Discord sẽ nhận:
-
-```text
-10:03 Token expired
-10:03 Token expired
-10:03 Token expired
-10:04 Token expired
-...
-```
-
-Rất khó chịu.
-
-Phải có **notification deduplication**.
-
-Ví dụ:
-
-```js
-session.expiredNotified = true;
-```
-
-Sau khi gửi:
-
-```text
-AUTH_EXPIRED
-     ↓
-Discord notification
-     ↓
-notified = true
-```
-
-Các request sau:
-
-```text
-TOKEN_EXPIRED
-TOKEN_EXPIRED
-TOKEN_EXPIRED
-```
-
-→ **không gửi lại**.
+**Fix:**
+- Chọn 1 làm canonical (khuyên dùng `/df-unlink` riêng)
+- Subcommand `/df-link unlink` → redirect sang `/df-unlink` hoặc deprecate
 
 ---
 
-# 6. Khi user F5 và lấy token mới
+### 5. `/df-daily` — API response type không rõ ràng
 
-Đây là phần rất quan trọng.
+**Vấn đề:** Code dùng `battleReport?.battlefield_battle ?? battleReport?.beacon_battle` nhưng type `DailyReport` có thể không có `beacon_battle`.
 
-User:
+**File cần fix:** `src/commands/df/daily.command.ts`, `src/types/deltaforce.types.ts`
 
-```text
-F5
- ↓
-Garena login/session
- ↓
-new access_token
- ↓
-new fingerprint
- ↓
-new expiresAt
-```
-
-Auth Engine phát hiện:
-
-```text
-old fingerprint ≠ new fingerprint
-```
-
-và:
-
-```text
-new expiresAt > Date.now()
-```
-
-→ chuyển:
-
-```text
-EXPIRED
-   ↓
-AUTHENTICATING
-   ↓
-ACTIVE
-```
-
-đồng thời reset:
-
-```js
-expiredNotified = false;
-```
-
-Sau đó Discord có thể gửi **một message recovery**:
-
-> 🟢 **Authentication Restored**
->
-> Session mới đã được phát hiện.
->
-> Token: `ACTIVE`
->
-> Expires: `...`
-
-Hoặc nếu bạn muốn giảm spam, chỉ gửi message này khi trước đó đã có `AUTH_EXPIRED`.
+**Fix:**
+- Kiểm tra type definition của `DailyReport`
+- Thêm type guard cho `beacon_battle`
+- Hoặc đổi fallback field phù hợp
 
 ---
 
-# 7. Tôi đề xuất dùng `sessionId`
+### 6. `/df-stats` select — rate limit 2s cố định
 
-Đây là thay đổi architecture tôi rất muốn thêm.
+**Vấn đề:** `dfStatsSelect.handler.ts:64` có `setTimeout(resolve, 2000)` cứng → trải nghiệm chậm khi user chọn season nhiều lần.
 
-Mỗi lần nhận diện token mới:
+**File cần fix:** `src/events/dfStatsSelect.handler.ts`
 
-```js
-sessionId = randomUUID();
-```
-
-Ví dụ:
-
-```text
-Session A
-──────────────
-fingerprint: abc...
-expires: 10:00
-status: ACTIVE
-```
-
-hết hạn:
-
-```text
-Session A
-status: EXPIRED
-```
-
-User F5:
-
-```text
-Session B
-──────────────
-fingerprint: xyz...
-expires: 10:00 tomorrow
-status: ACTIVE
-```
-
-Như vậy hệ thống không nhầm:
-
-```text
-old token
-```
-
-với:
-
-```text
-new token
-```
-
-và Discord event có thể chứa:
-
-```text
-sessionId: short-id
-```
-
-chỉ để correlation, **không phải credential**.
+**Fix:**
+- Giảm xuống 500ms hoặc bỏ hoàn toàn (API không rate-limit)
+- Hoặc dùng per-user rate limit (1 request/3s)
 
 ---
 
-# 8. Logic nên thiết kế thành Auth State Machine
+### 7. `/df-link unlink` (subcommand) — không revoke legacy token
 
-Tôi sẽ không để `popup.js`, `content.js`, `background.js` mỗi nơi tự quyết định token expired.
+**Vấn đề:** `handleUnlink` trong `link.command.ts` chỉ gọi `revokeBinding()` nhưng không xóa `df_tokens` entry → `/df-link status` sau unlink vẫn hiện legacy token.
 
-Tạo một lớp trung tâm:
+**File cần fix:** `src/commands/df/link.command.ts`
 
-```text
-AuthStateEngine
+**Fix:**
+- Thêm `database.prepare('DELETE FROM df_tokens WHERE discord_id = ?').run(interaction.user.id)` sau revokeBinding
+
+---
+
+## P2: Minor Bugs
+
+### 8. `/df-history` — count text sai
+
+**Vấn đề:** Hiển thị `matchData.list.length` nhưng mảng render là `matches` (đã slice theo limit) → số liệu không khớp.
+
+**File cần fix:** `src/commands/df/daily.command.ts` (dòng 125)
+
+**Fix:**
+- Đổi thành `${matches.length} / ${Math.min(matchData.list.length, MAX_HISTORY_PAGE)} trận`
+
+---
+
+### 9. `/df-code show` — lỗi chính tả
+
+**Vấn đề:** `"Loi khi lay du lieu"` thay vì `"Lỗi khi lấy dữ liệu"`.
+
+**File cần fix:** `src/commands/df/code.command.ts` (dòng 112)
+
+**Fix:**
+- Đổi thành `buildErrorContainer(\`Lỗi khi lấy dữ liệu: \${(error as Error).message}\`)`
+
+---
+
+### 10. `expireBinding` — không xóa legacy token
+
+**Vấn đề:** `expireBinding()` chỉ update status binding thành `expired` nhưng `df_tokens` entry vẫn tồn tại.
+
+**File cần fix:** `src/database/df-binding.db.ts`
+
+**Fix:**
+- Thêm `database.prepare('DELETE FROM df_tokens WHERE discord_id = ?').run(discordUserId)` sau update status
+
+---
+
+## Migration Notes
+
+- Giữ backward compatibility với legacy `df_tokens` table
+- Không xóa table `df_tokens` — vẫn dùng cho manual link fallback
+- Crypto key `DF_CRED_KEY_V1` phải được config trước khi dùng encrypted binding
+
+---
+
+## Architecture Target
+
 ```
-
-Ví dụ:
-
-```js
-const AUTH_STATES = {
-  UNKNOWN: 'UNKNOWN',
-  ACTIVE: 'ACTIVE',
-  EXPIRING_SOON: 'EXPIRING_SOON',
-  EXPIRED: 'EXPIRED',
-  REFRESHING: 'REFRESHING',
-  AUTHENTICATING: 'AUTHENTICATING',
-};
-```
-
-Và event:
-
-```js
-AUTH_EVENTS = {
-  TOKEN_DETECTED,
-  TOKEN_REFRESH_REQUEST,
-  TOKEN_REFRESH_SUCCESS,
-  TOKEN_REFRESH_FAILED,
-  API_TOKEN_EXPIRED,
-  NEW_SESSION_DETECTED,
-};
-```
-
-Flow:
-
-```text
-TOKEN_DETECTED
-      ↓
-ACTIVE
-      ↓
-expiresAt reached
-      ↓
-EXPIRED
-      ↓
-API request
-      ↓
-401 TOKEN_EXPIRED
-      ↓
-CONFIRMED_EXPIRED
-      ↓
-Discord notification
-```
-
-Nếu refresh thành công:
-
-```text
-EXPIRED
-  ↓
-REFRESHING
-  ↓
-TOKEN_RENEWED
-  ↓
-ACTIVE
-```
-
-Nếu refresh không tồn tại/thất bại:
-
-```text
-REFRESHING
-    ↓
-FAILED
-    ↓
-EXPIRED
-    ↓
-Discord
+df_tokens (legacy, plaintext)
+    ↓ fallback
+df_account_bindings (encrypted, AES-256-GCM)
+    ↓ canonical
+runDfCommand → decryptCredential → API calls
 ```
 
 ---
 
-# 9. Tôi còn đề xuất một cải tiến: "F5 Required" không nên là kết luận duy nhất
+## Commit Strategy
 
-Message Discord:
+Mỗi bug → 1 commit riêng:
 
-> Token của bạn đã hết hạn. Vui lòng F5 để lấy token mới.
-
-chỉ nên xuất hiện khi:
-
-```text
-Token expired
-+
-Không có refresh thành công
-+
-Request thực tế xác nhận expired
-```
-
-Còn nếu:
-
-```text
-Token expired
-+
-refresh request detected
-+
-new token detected
-+
-fingerprint changed
-+
-expiry updated
-```
-
-thì **không báo user F5**.
-
-Thay vào đó:
-
-```text
-🟡 Authentication refreshed automatically
-```
-
-hoặc thậm chí không thông báo Discord nếu bạn muốn bot im lặng.
-
----
-
-# 10. Discord nên nhận 3 loại notification
-
-Tôi sẽ giới hạn thành:
-
-### 🔴 `AUTH_EXPIRED`
-
-```text
-Authentication Expired
-
-Session: #a81f
-Reason: TOKEN_EXPIRED
-Detected: 10:03:12
-
-Action required:
-Please return to the authentication page
-and press F5 to obtain a new session.
-```
-
-### 🟢 `AUTH_RESTORED`
-
-Chỉ gửi nếu trước đó đã `AUTH_EXPIRED`:
-
-```text
-Authentication Restored
-
-New session detected.
-Status: ACTIVE
-Expires: 2026-08-27 10:05
-```
-
-### 🟡 `AUTH_REFRESH_FAILED`
-
-```text
-Authentication Refresh Failed
-
-Refresh request was detected,
-but no valid new token was confirmed.
-
-Action required:
-Refresh the authentication page.
-```
-
----
-
-# 11. Kiến trúc cuối tôi khuyên dùng
-
-```text
-                 PAGE
-                  │
-        ┌─────────▼──────────┐
-        │ Auth Investigator  │
-        │ Capture Layer      │
-        └─────────┬──────────┘
-                  │
-                  ▼
-        ┌─────────────────────┐
-        │ Evidence Engine     │
-        │                     │
-        │ Identity            │
-        │ Token fingerprint   │
-        │ Expiry              │
-        │ Refresh correlation │
-        └─────────┬───────────┘
-                  │
-                  ▼
-        ┌─────────────────────┐
-        │ Auth State Engine   │
-        │                     │
-        │ ACTIVE              │
-        │ EXPIRING_SOON       │
-        │ REFRESHING          │
-        │ EXPIRED             │
-        │ AUTHENTICATING      │
-        └─────────┬───────────┘
-                  │
-          ┌───────┴────────┐
-          ▼                ▼
-       Popup            Discord
-          │                │
-          ▼                ▼
-       UI status       Notification
-```
-
-**Đây là thay đổi logic tôi khuyên làm tiếp theo.**
-
-Không cần tiếp tục nhồi thêm feature vào `Auth Investigator`. Phần capture/evidence hiện đã khá đầy đủ; bước tiếp theo là **đưa evidence thành một state machine có lifecycle rõ ràng**.
-
-Và quan trọng: Discord chỉ nên nhận **notification/event trạng thái**, không nhận hay lưu raw `access_token`, `refresh_token`, cookie hoặc OpenID.
+1. `fix(df-link): invalidate old claim sessions trong DB khi start mới`
+2. `fix(df-link): lưu manual link vào encrypted binding thay vì legacy`
+3. `fix(df-command): báo lỗi thay vì silent fallback khi decrypt thất bại`
+4. `chore(df): deprecate /df-link unlink, giữ /df-unlink`
+5. `fix(df-daily): kiểm tra type beacon_battle trước khi access`
+6. `perf(df-stats): giảm rate limit season select từ 2s xuống 500ms`
+7. `fix(df-link): revoke legacy token khi unlink`
+8. `fix(df-history): sửa count text cho matches.length`
+9. `fix(df-code): sửa lỗi chính tả "Loi" → "Lỗi"`
+10. `fix(df-binding): xóa legacy token khi expire binding`

