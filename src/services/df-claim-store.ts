@@ -6,7 +6,7 @@
 import { randomBytes } from 'crypto';
 import Database from 'better-sqlite3';
 import { TTLStore } from '../utils/ttl-store.js';
-import { createClaimSession } from '../database/df-claim.db.js';
+import { createClaimSession, invalidateUserClaims } from '../database/df-claim.db.js';
 import {
   CLAIM_CODE_TTL_MS,
   CLAIM_CODE_CLEANUP_INTERVAL_MS,
@@ -52,6 +52,9 @@ function makeCode(): string {
  * Tao ma claim moi cho user Discord.
  */
 export function generateCode(database: Database.Database, discordId: string): string {
+  // Invalidate old claim sessions trong DB (tránh dùng code cũ sau khi start mới)
+  invalidateUserClaims(database, discordId);
+
   // Xoa ma cuo cua user neu con (1 user = 1 ma tai 1 thoi diem)
   for (const [code, entry] of store.entries()) {
     if (entry.discordId === discordId) {

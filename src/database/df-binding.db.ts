@@ -9,6 +9,7 @@
  */
 
 import Database from 'better-sqlite3';
+import { deleteDfToken } from './df.token.db.js';
 
 interface AccountBindingRow {
   id: number;
@@ -114,6 +115,8 @@ export function expireBinding(database: Database.Database, discordUserId: string
       "UPDATE df_account_bindings SET status = 'expired', updated_at = CURRENT_TIMESTAMP WHERE discord_user_id = ?",
     )
     .run(discordUserId);
+  // Xóa legacy token đồng bộ
+  deleteDfToken(database, discordUserId);
 }
 
 /**

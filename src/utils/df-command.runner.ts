@@ -8,6 +8,9 @@ import { getActiveBinding } from '../database/df-binding.db.js';
 import { decryptCredential } from '../services/df-crypto.js';
 import { requireGuild } from './df-guards.js';
 import { buildErrorContainer } from './container.utils.js';
+import { createLogger } from './logger.js';
+
+const logger = createLogger('DfRunner');
 
 /** Result returned by DF command callbacks */
 export interface DfCommandResult {
@@ -68,9 +71,16 @@ export async function runDfCommand(
           linked_at: binding.captured_at || new Date().toISOString(),
           last_used_at: null,
         };
-      } catch {
-        // Decrypt failed → fallback to legacy
-        token = getDfToken(ctx.database, ctx.userId);
+      } catch (decryptError: unknown) {
+        // Decrypt failed → log chi tiết, warn user, fallback legacy
+        logger.error(
+          `Decrypt binding failed for user ${ctx.userId}: ${(decryptError as Error).message}`,
+        );
+        const warnErr = buildErrorContainer(
+          'Binding bị corrupt. Vui lòng unlink và link lại qua `/df-link start`.',
+        );
+        await sendReply(ctx.interaction, { components: warnErr.toJSON() });
+        return true;
       }
     } else {
       // No binding → check legacy token

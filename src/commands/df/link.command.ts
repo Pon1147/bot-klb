@@ -25,13 +25,14 @@ import {
 import { requireGuild } from '../../utils/df-guards.js';
 import { generateCode } from '../../services/df-claim-store.js';
 import { getActiveBinding } from '../../database/df-binding.db.js';
+import { upsertAccountBinding } from '../../database/df-binding.db.js';
 import { getDfToken } from '../../database/df.token.db.js';
 import { saveDfToken } from '../../database/df.token.db.js';
-import { revokeBinding } from '../../database/df-binding.db.js';
 import { TOKEN_REGEX, INVALID_TOKEN_MESSAGE } from '../../config/app.constants.js';
 import { createLogger } from '../../utils/logger.js';
 import { sendReply } from '../../utils/reply.utils.js';
 import { maskString } from '../../utils/string.utils.js';
+import { encryptCredential } from '../../services/df-crypto.js';
 
 const logger = createLogger('DfLink');
 
@@ -151,35 +152,15 @@ async function handleStatus(
   await sendReply(interaction, { components: info.toJSON() });
 }
 
-/** Subcommand `unlink` — hủy liên kết */
+/** Subcommand `unlink` — deprecate, redirect sang /df-unlink */
 async function handleUnlink(
   interaction: ChatInputCommandInteraction,
-  database: Database.Database,
+  _database: Database.Database,
 ): Promise<void> {
-  if (await requireGuild(interaction)) return;
-
-  // Kiểm tra xem có binding nào không
-  const binding = getActiveBinding(database, interaction.user.id);
-  const legacyToken = getDfToken(database, interaction.user.id);
-
-  if (!binding && !legacyToken) {
-    const info = buildInfoContainer('Bạn chưa liên kết tài khoản Delta Force.');
-    await sendReply(interaction, { components: info.toJSON() });
-    return;
-  }
-
-  // Revoke binding mới
-  if (binding) {
-    revokeBinding(database, interaction.user.id);
-  }
-
-  // Xóa legacy token
-  if (legacyToken) {
-    database.prepare('DELETE FROM df_tokens WHERE discord_id = ?').run(interaction.user.id);
-  }
-
-  const result = buildSuccessContainer('Đã hủy liên kết tài khoản Delta Force.');
-  await sendReply(interaction, { components: result.toJSON() });
+  const info = buildInfoContainer(
+    'Subcommand này đã được deprecated. Vui lòng dùng `/df-unlink` để hủy liên kết.',
+  );
+  await sendReply(interaction, { components: info.toJSON() });
 }
 
 /** Subcommand `manual` — fallback user paste openid + token */
@@ -203,13 +184,45 @@ async function handleManual(
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
-    // Lưu token vào legacy DB (mới sẽ dùng claim API)
+    // Thử lưu vào encrypted binding (canonical store)
+    try {
+      const encrypted = encryptCredential(
+        JSON.stringify({ token, ts: null, s: null, u: null }),
+        interaction.user.id,
+        openid,
+      );
+      upsertAccountBinding(
+        database,
+        interaction.user.id,
+        openid,
+        encrypted.nonce,
+        encrypted.ciphertext,
+        encrypted.tag,
+      );
+      const successResult = buildSuccessContainer(
+        `Đã lưu thông tin liên kết!\n\n` +
+          `OpenID: ${openid}\n\n` +
+          `> ⚠️ Đây là fallback manual. Nên dùng \`/df-link start\` để link tự động qua extension.`,
+      );
+      await interaction.editReply({
+        components: successResult.toJSON(),
+      });
+      return;
+    } catch (encryptError: unknown) {
+      // Crypto key chưa được init → fallback legacy
+      logger.warn(
+        'Manual link: encryption unavailable, fallback to legacy: ' +
+          (encryptError instanceof Error ? encryptError.message : String(encryptError)),
+      );
+    }
+
+    // Fallback: lưu vào legacy DB
     saveDfToken(database, interaction.user.id, openid, token);
 
     const successResult = buildSuccessContainer(
       `Đã lưu thông tin liên kết!\n\n` +
         `OpenID: ${openid}\n\n` +
-        `> ⚠️ Đây là fallback manual. Nên dùng \`/df-link start\` để link tự động qua extension.`,
+        `> ⚠️ Encryption chưa khả dụng, lưu ở chế độ legacy. Nên dùng \`/df-link start\` để link tự động qua extension.`,
     );
     await interaction.editReply({
       components: successResult.toJSON(),

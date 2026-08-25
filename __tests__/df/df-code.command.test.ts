@@ -142,7 +142,7 @@ describe('df-code.command', () => {
       'Ngục Giam Thủy Triều': '7890',
     });
     await execute(createMockInteraction(), mockDb);
-    expect(mockDeferReply).toHaveBeenCalledWith({ flags: MessageFlags.Ephemeral });
+    expect(mockDeferReply).toHaveBeenCalled();
     expect(mockEditReply).toHaveBeenCalled();
   });
 

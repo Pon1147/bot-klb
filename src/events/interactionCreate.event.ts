@@ -129,7 +129,7 @@ export async function execute(
     if (interaction.customId.startsWith(TeamFindIds.RANK)) {
       await handleTeamFindSelect(interaction);
     }
-    if ((await handleDfStatsSelect(interaction)).handled) return;
+    if ((await handleDfStatsSelect(interaction, client.database)).handled) return;
     return;
   }
 

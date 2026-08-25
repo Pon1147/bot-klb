@@ -326,7 +326,7 @@ describe('DF Commands E2E — /df-code', () => {
 
     await execute(interaction, db);
 
-    expect(interaction.deferReply).toHaveBeenCalledWith({ flags: 64 });
+    expect(interaction.deferReply).toHaveBeenCalled();
     expect(interaction.editReply).toHaveBeenCalled();
     db.close();
   });

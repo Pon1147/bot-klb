@@ -210,48 +210,18 @@ describe('df-link.command', () => {
   });
 
   describe('subcommand: unlink', () => {
-    it('nên revoke binding và trả về success', async () => {
+    it('nên hiển thị deprecation message thay vì revoke', async () => {
       const { revokeBinding } = require('../../src/database/df-binding.db.js');
-      (getActiveBinding as jest.Mock).mockReturnValue({
-        id: 1,
-        openid: 'test',
-        status: 'active',
-      });
 
       const interaction = createMockInteraction({
         options: { getSubcommand: jest.fn(() => 'unlink') },
       });
       await execute(interaction, mockDb);
 
-      expect(revokeBinding).toHaveBeenCalledWith(mockDb, '222');
+      expect(revokeBinding).not.toHaveBeenCalled();
       expect(mockReply).toHaveBeenCalled();
-    });
-
-    it('nên xóa legacy token khi không có binding', async () => {
-      const { getDfToken, saveDfToken: _ } = require('../../src/database/df.token.db.js');
-      (getDfToken as jest.Mock).mockReturnValue({
-        openid: 'legacy',
-        token: 'abc',
-      });
-
-      const interaction = createMockInteraction({
-        options: { getSubcommand: jest.fn(() => 'unlink') },
-      });
-      await execute(interaction, mockDb);
-
-      expect(mockReply).toHaveBeenCalled();
-    });
-
-    it('nên hiển thị thông báo chưa link khi không có gì để unlink', async () => {
-      const { getDfToken } = require('../../src/database/df.token.db.js');
-      (getDfToken as jest.Mock).mockReturnValue(undefined);
-
-      const interaction = createMockInteraction({
-        options: { getSubcommand: jest.fn(() => 'unlink') },
-      });
-      await execute(interaction, mockDb);
-
-      expect(mockReply).toHaveBeenCalled();
+      const replyArgs = mockReply.mock.calls[0][0];
+      expect(replyArgs.components[0].components[0].content).toContain('deprecated');
     });
   });
 

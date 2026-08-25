@@ -109,7 +109,7 @@ export async function execute(
         flags: MessageFlags.IsComponentsV2,
       });
     } catch (error) {
-      const err = buildErrorContainer(`Loi khi lay du lieu: ${(error as Error).message}`);
+      const err = buildErrorContainer(`Lỗi khi lấy dữ liệu: ${(error as Error).message}`);
       await interaction.editReply({
         components: err.toJSON(),
         flags: MessageFlags.IsComponentsV2,

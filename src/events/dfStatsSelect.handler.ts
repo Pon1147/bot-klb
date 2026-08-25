@@ -1,3 +1,4 @@
+import Database from 'better-sqlite3';
 import { StringSelectMenuInteraction } from 'discord.js';
 import { getSeasonData, getOverviewData } from '../services/deltaforce.api.js';
 import { buildDfApiToken } from '../utils/df-token.utils.js';
@@ -14,6 +15,7 @@ const logger = createLogger('DfStatsSelect');
 
 export async function handleDfStatsSelect(
   interaction: StringSelectMenuInteraction,
+  database: Database.Database,
 ): Promise<{ handled: boolean }> {
   if (interaction.customId !== DF_STATS_SELECT_ID) {
     return { handled: false };
@@ -21,10 +23,10 @@ export async function handleDfStatsSelect(
 
   const selectedSeason = interaction.values[0];
 
-  // Get token from binding or legacy
+  // Lấy token từ binding hoặc legacy token
   let token: ReturnType<typeof getDfToken> | null = null;
   try {
-    const binding = getActiveBinding(interaction.client.database as any, interaction.user.id);
+    const binding = getActiveBinding(database, interaction.user.id);
     if (binding) {
       const decrypted = decryptCredential(
         binding.cred_nonce,
@@ -45,10 +47,10 @@ export async function handleDfStatsSelect(
         last_used_at: null,
       };
     } else {
-      token = getDfToken(interaction.client.database as any, interaction.user.id) ?? null;
+      token = getDfToken(database, interaction.user.id) ?? null;
     }
   } catch {
-    token = getDfToken(interaction.client.database as any, interaction.user.id) ?? null;
+    token = getDfToken(database, interaction.user.id) ?? null;
   }
 
   if (!token) {
@@ -60,8 +62,8 @@ export async function handleDfStatsSelect(
   }
 
   try {
-    // Rate limit: delay 2s giữa các requests
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Rate limit: delay 500ms giữa các requests
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     const apiToken = buildDfApiToken(token);
     const data =
