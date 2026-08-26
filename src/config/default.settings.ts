@@ -56,6 +56,9 @@ export const defaultGuildSettings: GuildSettings = {
   dfCodes: {
     enabled: true,
     channelId: null,
+    adminChannelId: null,
+    roleId: null,
+    scheduleTime: '01:00', // mặc định 01:00 UTC+7
   },
 };
 

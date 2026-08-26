@@ -57,6 +57,9 @@ export interface BoosterSettings {
 export interface DfCodesSettings {
   enabled: boolean;
   channelId: string | null;
+  adminChannelId: string | null; // channel gửi thông báo lỗi (auth/token hết hạn)
+  roleId: string | null;
+  scheduleTime: string | null; // format "HH:mm" (24h), ví dụ "08:00"
 }
 
 /**

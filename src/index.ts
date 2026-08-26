@@ -130,7 +130,7 @@ async function main(): Promise<void> {
   await client.login(botConfig.token);
 
   // Start daily df-code scheduler
-  logger.info('Starting daily df-code scheduler (01:00 UTC)...');
+  logger.info('Starting daily df-code scheduler...');
   startDfCodesScheduler(client, database);
   logger.info('Daily df-code scheduler started');
 }

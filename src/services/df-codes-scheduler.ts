@@ -1,99 +1,198 @@
+import cron from 'node-cron';
 import type { Client } from 'discord.js';
 import type Database from 'better-sqlite3';
-import { botConfig } from '../config/bot.config.js';
 import { fetchDailyCodes } from './deltaforce.scraper.js';
 import { buildCodesContainer, hasAnyCodes } from '../commands/df/code.command.js';
 import { getSettingsService } from './settings.service.js';
-import { getAllGuildIds } from '../database/guild.settings.db.js';
 import { createLogger } from '../utils/logger.js';
-import { TEAM_FIND_CLEANUP_INTERVAL_MS } from '../config/app.constants.js';
 
 const logger = createLogger('DfCodesScheduler');
 
-let lastRunDate: string | null = null;
-let isRunning = false;
+let cronJob: ReturnType<typeof cron.schedule> | null = null;
 
-/** Start daily df-code scheduler — fires at 01:00 UTC every day */
-export function startDfCodesScheduler(client: Client, database: Database.Database): void {
-  const interval = setInterval(() => checkAndSend(client, database), TEAM_FIND_CLEANUP_INTERVAL_MS);
-
-  // Clear interval on shutdown
-  client.once('disconnect', () => clearInterval(interval));
-  process.once('SIGINT', () => clearInterval(interval));
-  process.once('SIGTERM', () => clearInterval(interval));
+/**
+ * Tạo cron expression từ giờ Việt Nam (UTC+7).
+ * node-cron chạy theo giờ server (UTC+7) → dùng trực tiếp giờ Việt Nam.
+ * Ví dụ: "15:30" → "30 15 * * *"
+ */
+function timeToCron(timeStr: string): string {
+  const [hour, minute] = timeStr.split(':').map(Number);
+  return `${minute} ${hour} * * *`;
 }
 
-async function checkAndSend(client: Client, database: Database.Database): Promise<void> {
-  if (isRunning) return;
+/**
+ * Hủy cron job hiện tại.
+ */
+function stopCronJob(): void {
+  if (cronJob) {
+    cronJob.stop();
+    cronJob = null;
+    logger.info('Cron job stopped');
+  }
+}
 
-  const now = new Date();
-  const utcHour = now.getUTCHours();
-  const utcMinute = now.getUTCMinutes();
-  const today = now.toISOString().slice(0, 10);
-
-  // Fire only at 01:00 UTC, once per day
-  if (utcHour !== 1 || utcMinute !== 0) return;
-  if (lastRunDate === today) return;
-
-  lastRunDate = today;
-  isRunning = true;
-
+/**
+ * Lấy timezone hệ thống để log/debug.
+ */
+function getSystemTimezone(): string {
   try {
-    const codes = await fetchDailyCodes().catch(() => null);
-    const hasCodes = hasAnyCodes(codes);
-    const result = buildCodesContainer(codes, hasCodes);
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return 'unknown';
+  }
+}
 
-    if (!result.components || result.components.length === 0) {
-      logger.warn('No codes to send');
-      return;
+/**
+ * Khởi động daily df-code scheduler — dùng cron job thay vì polling.
+ */
+export function startDfCodesScheduler(client: Client, database: Database.Database): void {
+  // Hủy job cũ (nếu có)
+  stopCronJob();
+
+  const settingsService = getSettingsService();
+  // ORDER BY guild_id để thứ tự luôn xác định (guild có ID nhỏ nhất được chọn đầu tiên)
+  const guildIds = database
+    .prepare('SELECT DISTINCT guild_id FROM guild_settings ORDER BY guild_id ASC')
+    .all() as Array<{ guild_id: string }>;
+
+  logger.info(`[init] Found ${guildIds.length} guild(s) in database`);
+
+  let scheduleTime = '01:00'; // fallback mặc định
+  let channelId: string | null = null;
+  let configuredGuildId: string | null = null;
+
+  // Log chi tiết config của TẤT CẢ guilds
+  for (const { guild_id } of guildIds) {
+    const settings = settingsService.get(guild_id);
+    const dfCodes = settings.dfCodes;
+    const hasChannel = !!dfCodes?.channelId;
+    const hasTime = !!dfCodes?.scheduleTime;
+    logger.info(
+      `[init] guild=${guild_id} dfCodes.channelId=${dfCodes?.channelId ?? 'null'} dfCodes.scheduleTime=${dfCodes?.scheduleTime ?? 'null'} hasChannel=${hasChannel} hasTime=${hasTime}`,
+    );
+
+    // Lấy config từ guild đầu tiên có channel configured
+    if (dfCodes?.channelId && dfCodes?.scheduleTime) {
+      scheduleTime = dfCodes.scheduleTime;
+      channelId = dfCodes.channelId;
+      configuredGuildId = guild_id;
+      logger.info(
+        `[init] Selected guild ${guild_id} for cron job (channelId=${channelId}, scheduleTime=${scheduleTime})`,
+      );
+      break;
     }
+  }
 
-    const guildIds = getAllGuildIds(database);
-    const settingsService = getSettingsService();
+  if (!channelId) {
+    logger.warn(
+      '[init] No df-codes channel configured — skipping cron job (need both channelId AND scheduleTime)',
+    );
+    return;
+  }
 
-    let sentCount = 0;
-    const channels = new Set<string>();
+  const cronExpr = timeToCron(scheduleTime);
+  const systemTz = getSystemTimezone();
+  // Tính giờ UTC để log
+  const [vietHour, vietMinute] = scheduleTime.split(':').map(Number);
+  const utcHour = (vietHour - 7 + 24) % 24;
+  const utcTime = `${String(utcHour).padStart(2, '0')}:${String(vietMinute).padStart(2, '0')}`;
+  logger.info(
+    `[init] Starting cron job | expr="${cronExpr}" | scheduleTime=${scheduleTime} (UTC+7) | utc=${utcTime} | systemTz=${systemTz} | channel=${channelId}`,
+  );
 
-    // Collect channels from guild settings
-    for (const guildId of guildIds) {
-      const settings = settingsService.get(guildId);
-      const channelId = settings.dfCodes.channelId;
-      if (channelId && !channels.has(channelId)) {
-        channels.add(channelId);
+  cronJob = cron.schedule(cronExpr, async () => {
+    const fireTime = new Date().toISOString();
+    logger.info(`[cron] FIRED at ${fireTime} (cronExpr=${cronExpr})`);
+
+    try {
+      logger.info(`[cron] Step 1/4: Scraping daily codes...`);
+      const codes = await fetchDailyCodes().catch((e) => {
+        logger.error(`[cron] Step 1/4 FAILED: scrape error = ${(e as Error).message}`);
+        return null;
+      });
+      logger.info(`[cron] Step 1/4: scrape result = ${JSON.stringify(codes)}`);
+
+      const hasCodes = hasAnyCodes(codes);
+      logger.info(`[cron] Step 1/4: hasCodes=${hasCodes}`);
+      if (!hasCodes) {
+        logger.warn('[cron] Step 1/4: No codes to send (scrape returned null or all null)');
+        return;
       }
-    }
 
-    // Fallback to env var if no guild has channel configured
-    if (channels.size === 0 && botConfig.dfCodesChannelId) {
-      channels.add(botConfig.dfCodesChannelId);
-    }
+      logger.info(`[cron] Step 2/4: Building codes container...`);
+      const result = buildCodesContainer(codes, hasCodes);
+      if (!result.components || result.components.length === 0) {
+        logger.warn('[cron] Step 2/4: buildCodesContainer returned empty components');
+        return;
+      }
+      logger.info(`[cron] Step 2/4: Container built with ${result.components.length} component(s)`);
 
-    if (channels.size === 0) {
-      logger.warn('No df-codes channel configured — skipping');
-      return;
-    }
-
-    // Send to each channel
-    for (const channelId of channels) {
-      const channel = await client.channels.fetch(channelId);
+      logger.info(`[cron] Step 3/4: Fetching channel ${channelId}...`);
+      const channel = await client.channels.fetch(channelId!);
       if (!channel?.isTextBased()) {
-        logger.warn(`Channel ${channelId} is not a text channel — skipping`);
-        continue;
+        logger.warn(
+          `[cron] Step 3/4: Channel ${channelId} is not a text channel (type=${channel?.type ?? 'null'}) — skipping`,
+        );
+        return;
       }
+      const channelName = 'name' in channel ? (channel as { name: string }).name : channelId;
+      logger.info(`[cron] Step 3/4: Channel found = #${channelName} (id=${channel.id})`);
 
+      logger.info(`[cron] Step 4/4: Sending message to #${channelName}...`);
       await (channel as { send: (data: unknown) => Promise<unknown> }).send({
-        content: '_Daily codes updated._',
         components: result.toJSON(),
         flags: result.flags,
       });
 
-      sentCount++;
-    }
+      logger.info(
+        `[cron] SUCCESS — Daily df-codes sent to #${channelName} (${channelId}) at ${fireTime}`,
+      );
+    } catch (error) {
+      const errorMsg = (error as Error).message;
+      const errorStack = (error as Error).stack || '';
+      logger.error(`[cron] FAILED: ${errorMsg}`);
+      logger.error(`[cron] Stack: ${errorStack}`);
 
-    logger.info(`Daily df-codes sent to ${sentCount} channel(s)`);
-  } catch (error) {
-    logger.error(`Failed to send daily df-codes: ${(error as Error).message}`);
-  } finally {
-    isRunning = false;
-  }
+      // Gửi thông báo vào admin channel nếu có
+      const adminChannelId = configuredGuildId
+        ? settingsService.get(configuredGuildId)?.dfCodes?.adminChannelId
+        : undefined;
+      if (adminChannelId) {
+        logger.info(`[cron] Sending admin notification to ${adminChannelId}...`);
+        try {
+          const adminChannel = await client.channels.fetch(adminChannelId);
+          if (adminChannel?.isTextBased()) {
+            await (adminChannel as { send: (data: unknown) => Promise<unknown> }).send({
+              content: `⚠️ **DF Codes scheduler lỗi:** ${errorMsg}`,
+            });
+            const adminChannelName =
+              'name' in adminChannel ? (adminChannel as { name: string }).name : adminChannelId;
+            logger.info(`[cron] Admin notification sent to #${adminChannelName}`);
+          } else {
+            logger.warn(`[cron] Admin channel ${adminChannelId} is not a text channel`);
+          }
+        } catch (adminError) {
+          logger.error(
+            `[cron] Failed to send admin notification: ${(adminError as Error).message}`,
+          );
+        }
+      } else {
+        logger.warn('[cron] No adminChannelId configured — cannot send error notification');
+      }
+    }
+  });
+
+  // Cleanup khi bot disconnect
+  client.once('disconnect', () => stopCronJob());
+  process.once('SIGINT', () => stopCronJob());
+  process.once('SIGTERM', () => stopCronJob());
+}
+
+/**
+ * Reschedule cron job khi user đổi time/channel.
+ * Gọi từ /df-code settime hoặc setchannel.
+ */
+export function rescheduleDfCodes(client: Client, database: Database.Database): void {
+  stopCronJob();
+  startDfCodesScheduler(client, database);
 }

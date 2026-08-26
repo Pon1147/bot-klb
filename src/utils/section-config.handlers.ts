@@ -104,15 +104,31 @@ export async function handleSectionStatus(
 ): Promise<void> {
   const settingsService = getSettingsService();
   const settings = settingsService.get(guildId)[config.sectionKey];
+  logger.info(`/${config.sectionKey} status for guild ${guildId}: ${JSON.stringify(settings)}`);
   const channelName = settings.channelId ? `<#${settings.channelId}>` : 'Chưa đặt';
   const roleId = 'roleId' in settings ? (settings as { roleId?: string }).roleId : undefined;
   const roleName = roleId ? `<@&${roleId}>` : 'Chưa đặt';
+
+  // Thêm scheduleTime và adminChannelId cho dfCodes
+  let scheduleTimeLine = '';
+  if (config.sectionKey === 'dfCodes' && 'scheduleTime' in settings) {
+    const st = (settings as { scheduleTime?: string }).scheduleTime;
+    scheduleTimeLine = `\n**Giờ tự động:** ${st || 'Chưa đặt'} (UTC+7)`;
+  }
+  let adminChannelLine = '';
+  if (config.sectionKey === 'dfCodes' && 'adminChannelId' in settings) {
+    const ac = (settings as { adminChannelId?: string }).adminChannelId;
+    adminChannelLine = ac ? `\n**Admin channel:** <#${ac}>` : '';
+  }
+
   const statusContent = [
     `**${config.statusEmoji} Cấu hình ${config.displayName} hiện tại:**`,
     '',
     `**Trạng thái:** ${settings.enabled ? 'Bật' : 'Tắt'}`,
-    `**Kênh:** ${channelName}`,
+    `**Kênh codes:** ${channelName}`,
     `**Role:** ${roleName}`,
+    scheduleTimeLine,
+    adminChannelLine,
   ].join('\n');
   const container = buildTextOnlyContainer(statusContent, config.statusColor);
   await sendReply(interaction, { components: container.toJSON() });

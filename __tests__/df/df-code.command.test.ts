@@ -23,6 +23,25 @@ jest.mock('discord.js', () => ({
           cb(mockOpt);
           return this;
         },
+        addRoleOption(cb: any) {
+          const mockOpt: any = {
+            setName() { return this; },
+            setDescription() { return this; },
+            setRequired() { return this; },
+          };
+          cb(mockOpt);
+          return this;
+        },
+        addStringOption(cb: any) {
+          const mockOpt: any = {
+            setName() { return this; },
+            setDescription() { return this; },
+            setRequired() { return this; },
+            setAutocomplete() { return this; },
+          };
+          cb(mockOpt);
+          return this;
+        },
       };
       cmd(mockSub);
       this._subcommands.push(mockSub);
@@ -99,7 +118,7 @@ import { MessageFlags } from 'discord.js';
 import { randomUUID } from 'crypto';
 
 describe('df-code.command', () => {
-  const mockDb: any = { prepare: jest.fn(() => ({ get: jest.fn(), run: jest.fn() })) };
+  const mockDb: any = { prepare: jest.fn(() => ({ get: jest.fn(), run: jest.fn(), all: jest.fn(() => []) })) };
   const mockReply = jest.fn().mockResolvedValue(undefined);
   const mockEditReply = jest.fn().mockResolvedValue({ id: 'msg-123' });
   const mockDeferReply = jest.fn().mockResolvedValue(undefined);
@@ -109,10 +128,11 @@ describe('df-code.command', () => {
       guild: { id: '111' },
       user: { id: '222' },
       channel: { id: `ch-${randomUUID()}` },
+      client: { database: mockDb },
       reply: mockReply,
       editReply: mockEditReply,
       deferReply: mockDeferReply,
-      options: { getSubcommand: () => 'show' },
+      options: { getSubcommand: () => 'show', getChannel: () => null, getString: () => null },
       replied: false,
       deferred: false,
       member: { permissions: { has: () => true } },
@@ -213,12 +233,12 @@ describe('df-code.command', () => {
     expect(data.toJSON).toBeDefined();
   });
 
-  it('data co du 2 subcommand (setchannel + status)', () => {
+  it('data co du 6 subcommand (show + setchannel + setrole + settime + setadminchannel + status)', () => {
     const { data } = require('../../src/commands/df/code.command.js');
     const json = data.toJSON();
-    // SlashCommandBuilder.toJSON() trả về array có 2 subcommands
+    // SlashCommandBuilder.toJSON() trả về array có 6 subcommands
     expect(json).toHaveProperty('subcommands');
-    expect(json.subcommands).toHaveLength(3);
+    expect(json.subcommands).toHaveLength(6);
   });
 
   it('nen reject khi khong co admin permission (setchannel)', async () => {
