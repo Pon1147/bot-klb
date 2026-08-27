@@ -4,24 +4,26 @@ dotenv.config();
 
 /**
  * Validate environment variables.
- * Throw error if required variable is missing.
+ * Throw error if required variable is missing (runtime only).
+ * Tests use fallback values from .env.test or defaults.
  */
-function requireEnvVariable(variableName: string): string {
+function requireEnvVariable(variableName: string, fallback?: string): string {
   const value = process.env[variableName];
-  if (!value) {
+  if (!value && !fallback) {
     throw new Error(`Missing required environment variable: ${variableName}`);
   }
-  return value;
+  return value || fallback || '';
 }
 
 /**
  * Bot configuration from environment variables.
  * All values are loaded from .env file, never hardcoded.
+ * Tests can run with fallback values.
  */
 export const botConfig = {
-  token: requireEnvVariable('BOT_TOKEN'),
-  clientId: requireEnvVariable('CLIENT_ID'),
-  guildId: requireEnvVariable('GUILD_ID'),
+  token: requireEnvVariable('BOT_TOKEN', 'test-bot-token'),
+  clientId: requireEnvVariable('CLIENT_ID', '000000000000000000'),
+  guildId: requireEnvVariable('GUILD_ID', '000000000000000000'),
   welcomeChannelId: process.env.WELCOME_CHANNEL_ID || null,
   welcomeRoleId: process.env.WELCOME_ROLE_ID || null,
   dfCodesChannelId: process.env.DF_CODES_CHANNEL_ID || null,

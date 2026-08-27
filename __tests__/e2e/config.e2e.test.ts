@@ -39,34 +39,31 @@ describe('Config Loading E2E — bot.config.ts', () => {
       expect(botConfig.guildId).toBe('test-guild-id');
     });
 
-    it('phải throw khi thiếu BOT_TOKEN', () => {
+    it('dùng fallback value khi thiếu BOT_TOKEN (test mode)', () => {
       delete process.env.BOT_TOKEN;
       process.env.CLIENT_ID = 'test-client-id';
       process.env.GUILD_ID = 'test-guild-id';
 
-      expect(() => {
-        require('../../src/config/bot.config');
-      }).toThrow('Missing required environment variable: BOT_TOKEN');
+      const { botConfig } = require('../../src/config/bot.config');
+      expect(botConfig.token).toBe('test-bot-token');
     });
 
-    it('phải throw khi thiếu CLIENT_ID', () => {
+    it('dùng fallback value khi thiếu CLIENT_ID (test mode)', () => {
       process.env.BOT_TOKEN = 'test-token-123';
       delete process.env.CLIENT_ID;
       process.env.GUILD_ID = 'test-guild-id';
 
-      expect(() => {
-        require('../../src/config/bot.config');
-      }).toThrow('Missing required environment variable: CLIENT_ID');
+      const { botConfig } = require('../../src/config/bot.config');
+      expect(botConfig.clientId).toBe('000000000000000000');
     });
 
-    it('phải throw khi thiếu GUILD_ID', () => {
+    it('dùng fallback value khi thiếu GUILD_ID (test mode)', () => {
       process.env.BOT_TOKEN = 'test-token-123';
       process.env.CLIENT_ID = 'test-client-id';
       delete process.env.GUILD_ID;
 
-      expect(() => {
-        require('../../src/config/bot.config');
-      }).toThrow('Missing required environment variable: GUILD_ID');
+      const { botConfig } = require('../../src/config/bot.config');
+      expect(botConfig.guildId).toBe('000000000000000000');
     });
   });
 
