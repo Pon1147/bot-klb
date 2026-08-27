@@ -2,35 +2,41 @@
 
 Discord bot cho server Delta Force, được phát triển bằng TypeScript và discord.js v14.
 
-## Tính năng
+## Slash Commands
 
-### Delta Force Commands
+### Delta Force (`/df-*`)
 
-- `/df-daily` — Báo cáo hoạt động hàng ngày (kill, reward, match history)
-- `/df-stats` — Thống kê tài khoản theo mùa (rank, combat, economy, team)
-- `/df-history` — Lịch sử trận đấu gần nhất
-- `/df-code` — Hệ thống redeem code tự động (cron job, webhook notification)
-- `/df-link start` — Liên kết tài khoản Garena với Discord
-- `/df-unlink` — Hủy liên kết tài khoản
-- `/df-team-find` — Tìm đồng đội theo bản đồ, độ khó, rank
+- `/df-daily` — Trạng thái chiến đấu hàng ngày (thương, số docs, số trận, K/D, tỉ lệ rút quân)
+- `/df-stats` — Thống kê tài khoản theo mùa (rank, combat, economy, team). Có select menu chọn season
+- `/df-history` — Lịch sử trận đấu gần nhất (map, operator, kết quả, kill, reward). Phân trang
+- `/df-code` — Mật khẩu hằng ngày của 6 map (Zero Dam, Layali, Brakkesh, AZ3, Space City, Tide Prison). Có subcommand `setchannel`, `setrole`, `toggle`, `status`, `settime`
+- `/df-link start` — Tạo claim code 6 ký tự, gửi script qua DM, hướng dẫn user link
+- `/df-link status` — Kiểm tra trạng thái link (mask identifier, last_ok_at)
+- `/df-link manual` — Fallback: user paste openid + token
+- `/df-unlink` — Hủy liên kết tài khoản Delta Force
+- `/df-team-find` — Tìm đồng đội theo bản đồ và chế độ (select menu flow)
 
-### Container Editor
+### Container (`/container`)
 
 - `/container edit` — Chỉnh sửa welcome/leave/booster container settings qua interactive UI
 - `/container reset` — Reset container về mặc định
-- Hỗ trợ 15 phút session, live preview, color picker, text line management
 
-### Server Management
+### Server Setup
 
-- `/welcome` — Thiết lập welcome message (channel, role, toggle, status)
-- `/booster` — Thiết lập booster message (channel, role, toggle, status)
-- `/set-role` — Phân quyền admin cho commands
+- `/welcome main` — Cấu hình hệ thống chào thành viên mới
+- `/welcome setchannel` — Chọn kênh gửi tin nhắn chào
+- `/welcome setrole` — Chọn role cấp khi thành viên join
+- `/welcome toggle` — Bật hoặc tắt hệ thống welcome
+- `/welcome status` — Xem cấu hình welcome hiện tại
+- `/booster main` — Cấu hình hệ thống cảm ơn booster
+- `/booster setchannel` — Chọn kênh gửi tin nhắn cảm ơn booster
+- `/booster setrole` — Chọn role cấp khi boost
+- `/booster toggle` — Bật hoặc tắt hệ thống booster
+- `/booster status` — Xem cấu hình booster hiện tại
 
-### Webhook API
+### Admin
 
-- `POST /api/df/claim` — Xử lý claim code từ extension
-- `POST /api/df/message` — Nhận message từ Discord webhook
-- Encrypted credential storage (AES-256-GCM)
+- `/set-role` — Cấu hình role IDs cho RBAC (owner, moderator, container)
 
 ## Công nghệ
 
@@ -40,7 +46,6 @@ Discord bot cho server Delta Force, được phát triển bằng TypeScript và
 | **Framework**     | discord.js v14                    |
 | **Node.js**       | >= 22.12.0                        |
 | **Database**      | SQLite3 (better-sqlite3)          |
-| **HTTP Server**   | Express (webhook endpoint)        |
 | **Testing**       | Jest                              |
 | **Package manager** | npm                            |
 
@@ -108,7 +113,6 @@ src/
 ├── events/                   # Discord event handlers
 ├── handlers/                 # Command/event loaders
 ├── services/                 # SettingsService, API, scraper, crypto
-├── server/                   # Express webhook server
 ├── utils/                    # Helpers, guards, container utils
 └── types/                    # TypeScript declarations
 ```
