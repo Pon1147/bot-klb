@@ -57,7 +57,7 @@ async function buildWorkshopContainer(
     for (let i = 0; i < recommendedItems.length; i++) {
       const item = recommendedItems[i];
       const incomeText = formatHourlyIncome(item.hourly_income);
-      lines.push(`• **${names[i]}** — ${incomeText}`);
+      lines.push(`• ${names[i]} — ${incomeText}`);
     }
   }
 
@@ -70,7 +70,7 @@ async function buildWorkshopContainer(
     for (let i = 0; i < currentItems.length; i++) {
       const item = currentItems[i];
       const timeText = formatRemainingTime(item.remaining_time);
-      lines.push(`• **${names[i]}** — Còn ${timeText}`);
+      lines.push(`• ${names[i]} — Còn ${timeText}`);
     }
   }
 
