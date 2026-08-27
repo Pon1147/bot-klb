@@ -1,3 +1,9 @@
+// ===== GUARD: kiểm tra AuthUtils đã load =====
+if (!window.AuthUtils) {
+  console.error('[Popup] AuthUtils chưa được load từ auth-utils.js');
+  document.body.innerHTML = '<div style="padding:20px;color:red;">Lỗi: AuthUtils không khả dụng</div>';
+}
+
 // ===== CONSTANTS =====
 const DEFAULT_CODES = [
   'DFSL2793',
@@ -326,7 +332,11 @@ async function initDynamicUI() {
 
 // ===== classifyCodes: delegate to AuthUtils =====
 function classifyCodes(state) {
-  return AuthUtils.classifyCodes(state);
+  if (!window.AuthUtils) {
+    console.error('[Popup] AuthUtils chưa được load!');
+    return { redeemed: [], dead: [], retryable: [], untested: [] };
+  }
+  return window.AuthUtils.classifyCodes(state);
 }
 
 // ===== Render redeem summary =====
@@ -549,46 +559,41 @@ function computeStatsFromEvents(events) {
   });
 
   // Identity mapping — delegate to AuthUtils
-  const identity = AuthUtils.computeIdentityMapping(events);
-  let garenaHash = identity.garenaHash;
-  let dfToolsHash = identity.dfToolsHash;
-  let identityMatch =
-    identity.match === 'MATCH'
-      ? 'MATCH'
-      : identity.match === 'DIFFERENT'
-        ? 'DIFFERENT'
-        : 'Chưa đủ dữ liệu';
-  let identityMatchClass =
-    identity.match === 'MATCH'
-      ? 'match-yes'
-      : identity.match === 'DIFFERENT'
-        ? 'match-no'
-        : 'match-pending';
+  let identity = { garenaHash: '—', dfToolsHash: '—', match: 'Chưa đủ dữ liệu' };
+  let garenaHash = '—';
+  let dfToolsHash = '—';
+  let identityMatch = 'Chưa đủ dữ liệu';
+  let identityMatchClass = 'match-pending';
+  let tokenState = { accessToken: 'NOT AVAILABLE', refreshToken: 'NOT AVAILABLE', expiresIn: null, lastIssued: null, lastIssuedTimestamp: null, expiresAt: null, remainingSeconds: null, isExpired: false, expiresAtFormatted: null };
+  let refreshFlow = { requestCount: 0, successCount: 0, failedCount: 0, steps: [], status: 'NOT DETECTED', supported: false };
+  let correlatedPairs = [];
 
-  // Token state — ưu tiên event có expiresIn > 0
-  const tokenEventsWithExpiry = responseEvents.filter((e) => {
-    const exp = e.auth?.expiresIn ?? e.expiresIn;
-    return (e.auth?.hasAccessToken || e.hasAccessToken) && exp != null && exp > 0;
-  });
+  try {
+    if (window.AuthUtils) {
+      identity = window.AuthUtils.computeIdentityMapping(events);
+      garenaHash = identity.garenaHash;
+      dfToolsHash = identity.dfToolsHash;
+      identityMatch =
+        identity.match === 'MATCH'
+          ? 'MATCH'
+          : identity.match === 'DIFFERENT'
+            ? 'DIFFERENT'
+            : 'Chưa đủ dữ liệu';
+      identityMatchClass =
+        identity.match === 'MATCH'
+          ? 'match-yes'
+          : identity.match === 'DIFFERENT'
+            ? 'match-no'
+            : 'match-pending';
 
-  const tokenEvents =
-    tokenEventsWithExpiry.length > 0
-      ? tokenEventsWithExpiry
-      : responseEvents.filter((e) => {
-          if (e.auth) return e.auth.hasAccessToken === true;
-          return e.hasAccessToken === true;
-        });
-
-  const latestTokenEvent = tokenEvents.length > 0 ? tokenEvents[tokenEvents.length - 1] : null;
-
-  // Delegate token state to AuthUtils
-  const tokenState = AuthUtils.computeTokenState(latestTokenEvent);
-
-  // Refresh flow — delegate to AuthUtils
-  const refreshFlow = AuthUtils.computeRefreshFlow(events);
-
-  // Refresh correlation — delegate to AuthUtils
-  const correlatedPairs = AuthUtils.buildRefreshCorrelation(events);
+      const latestTokenEvent = tokenEvents.length > 0 ? tokenEvents[tokenEvents.length - 1] : null;
+      tokenState = window.AuthUtils.computeTokenState(latestTokenEvent);
+      refreshFlow = window.AuthUtils.computeRefreshFlow(events);
+      correlatedPairs = window.AuthUtils.buildRefreshCorrelation(events);
+    }
+  } catch (err) {
+    console.error('[Popup] AuthUtils error:', err);
+  }
 
   // Collect domains
   const domains = new Set();
