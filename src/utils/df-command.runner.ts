@@ -4,7 +4,7 @@ import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { sendReply } from './reply.utils.js';
 import Database from 'better-sqlite3';
 import { getDfToken, touchDfToken } from '../database/df.token.db.js';
-import { getActiveBinding } from '../database/df-binding.db.js';
+import { getActiveBinding, touchLastOk } from '../database/df-binding.db.js';
 import { decryptCredential } from '../services/df-crypto.js';
 import { requireGuild } from './df-guards.js';
 import { buildErrorContainer } from './container.utils.js';
@@ -112,7 +112,13 @@ export async function runDfCommand(
       flags: result.flags,
       files: result.files,
     } as Parameters<typeof ctx.interaction.editReply>[0]);
-    touchDfToken(ctx.database, ctx.userId);
+    // Update last_used_at vào đúng bảng user đang dùng (binding mới hoặc legacy token)
+    const activeBinding = getActiveBinding(ctx.database, ctx.userId);
+    if (activeBinding) {
+      touchLastOk(ctx.database, ctx.userId);
+    } else {
+      touchDfToken(ctx.database, ctx.userId);
+    }
   } catch (error) {
     const err = buildErrorContainer(`Loi khi lay du lieu: ${(error as Error).message}`);
     await ctx.interaction.editReply({
