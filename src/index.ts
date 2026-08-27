@@ -8,7 +8,10 @@ import { join } from 'path';
 import { initializeDatabase } from './database/welcome.database.js';
 import { initializeSettingsTable } from './database/guild.settings.db.js';
 import { initializeDfTokensTable } from './database/df.token.db.js';
-import { initializeClaimSessionsTable } from './database/df-claim.db.js';
+import {
+  initializeClaimSessionsTable,
+  migrateClaimSessionsToNumeric,
+} from './database/df-claim.db.js';
 import { initializeAccountBindingsTable } from './database/df-binding.db.js';
 import { initializeCaptureEventsTable } from './database/df-telemetry.db.js';
 import { SettingsService, setSettingsService } from './services/settings.service.js';
@@ -48,6 +51,7 @@ async function main(): Promise<void> {
   // Step 2c: Initialize DF Link tables (claim sessions + account bindings + telemetry)
   logger.info('Initializing DF Link tables...');
   initializeClaimSessionsTable(database);
+  migrateClaimSessionsToNumeric(database);
   initializeAccountBindingsTable(database);
   initializeCaptureEventsTable(database);
   logger.info('DF Link tables ready');
