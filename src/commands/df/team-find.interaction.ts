@@ -185,7 +185,7 @@ export async function handleTeamFindInteraction(
 
     logger.info('Embed sent: ' + response.id);
     storeMessage(session.guildId, userId, response.id, interaction.channel!.id);
-    // Delete session after successful send
+    // Xóa session sau khi gửi thành công
     deleteSession(userId);
     return true;
   }

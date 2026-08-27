@@ -32,13 +32,13 @@ export async function execute(client: Client, message: Message): Promise<void> {
     return; // không phải JSON → bỏ qua
   }
 
-  // Validate type
+  // Kiểm tra type
   const obj = data as Record<string, unknown>;
   if (obj?.type !== 'df_claim') {
     return;
   }
 
-  // Validate secret
+  // Kiểm tra secret
   if (obj?.secret !== botConfig.dfWebhookSecret) {
     logger.warn('Webhook secret mismatch — dropping message from webhook ' + message.webhookId);
     return;

@@ -90,7 +90,7 @@ export async function execute(
     return;
   }
 
-  // Validate: không set @everyone (ID = guild ID)
+  // Kiểm tra: không set @everyone (ID = guild ID)
   if (role.id === interaction.guild!.id) {
     await sendReply(interaction, {
       components: buildErrorContainer('Không thể dùng @everyone làm role.').toJSON(),
@@ -98,7 +98,7 @@ export async function execute(
     return;
   }
 
-  // Validate: role name không rỗng
+  // Kiểm tra: role name không rỗng
   if (!role.name || role.name.trim() === '') {
     await sendReply(interaction, {
       components: buildErrorContainer('Role phải có tên hợp lệ.').toJSON(),

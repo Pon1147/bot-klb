@@ -191,7 +191,7 @@ export async function execute(
 
   if (subcommand === 'settime') {
     const timeStr = interaction.options.getString('time', true);
-    // Validate format HH:mm
+    // Kiểm tra định dạng HH:mm
     if (!/^\d{2}:\d{2}$/.test(timeStr)) {
       logger.warn(`Invalid time format from ${interaction.user.id}: ${timeStr}`);
       await sendReply(interaction, {

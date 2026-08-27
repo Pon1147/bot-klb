@@ -182,7 +182,7 @@ export function startDfCodesScheduler(client: Client, database: Database.Databas
     }
   });
 
-  // Cleanup khi bot disconnect
+  // Dọn dẹp khi bot disconnect
   client.once('disconnect', () => stopCronJob());
   process.once('SIGINT', () => stopCronJob());
   process.once('SIGTERM', () => stopCronJob());

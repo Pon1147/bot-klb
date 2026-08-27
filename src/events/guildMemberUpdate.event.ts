@@ -68,9 +68,9 @@ export async function execute(
   // Tránh trigger sai khi user join voice channel đầu tiên
   const changed = oldChannelId !== null && (!newChannelId || oldChannelId !== newChannelId);
   if (changed) {
-    // Delete embed message if exists
+    // Xóa embed message nếu tồn tại
     await cleanupOldEmbed(newMember.guild, newMember.user.id);
-    // Delete active session (select menu flow)
+    // Xóa session đang hoạt động (select menu flow)
     const session = getSession(newMember.user.id);
     if (session) {
       try {

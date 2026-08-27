@@ -112,7 +112,7 @@ export async function runDfCommand(
       flags: result.flags,
       files: result.files,
     } as Parameters<typeof ctx.interaction.editReply>[0]);
-    // Update last_used_at vào đúng bảng user đang dùng (binding mới hoặc legacy token)
+    // Cập nhật last_used_at vào đúng bảng user đang dùng (binding mới hoặc legacy token)
     const activeBinding = getActiveBinding(ctx.database, ctx.userId);
     if (activeBinding) {
       touchLastOk(ctx.database, ctx.userId);

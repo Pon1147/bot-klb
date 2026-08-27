@@ -69,7 +69,7 @@ export function generateCode(database: Database.Database, discordId: string): st
     expiresAt,
   });
 
-  // Luu vao DB de atomicConsumeClaim tim thay
+  // Lưu vào DB để atomicConsumeClaim tìm thấy
   createClaimSession(database, code, discordId, expiresAt);
 
   return code;

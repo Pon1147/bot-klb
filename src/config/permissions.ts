@@ -40,7 +40,7 @@ export function loadPermissions(config: PermissionsConfig): void {
     COMMAND_PERMISSIONS[cmd] = perm;
   });
 
-  // Validate: warn nếu command yêu cầu role chưa có ID
+  // Kiểm tra: warn nếu command yêu cầu role chưa có ID
   const unresolved: string[] = [];
   for (const [cmd, perm] of Object.entries(COMMAND_PERMISSIONS)) {
     for (const roleName of perm.requiredRoles) {

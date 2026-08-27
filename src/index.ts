@@ -133,7 +133,7 @@ async function main(): Promise<void> {
   logger.info('Logging in to Discord...');
   await client.login(botConfig.token);
 
-  // Start daily df-code scheduler
+  // Khởi động daily df-code scheduler
   logger.info('Starting daily df-code scheduler...');
   startDfCodesScheduler(client, database);
   logger.info('Daily df-code scheduler started');

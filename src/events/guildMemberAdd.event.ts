@@ -37,7 +37,7 @@ export async function execute(_client: Client, member: GuildMember): Promise<voi
       return;
     }
 
-    // Build welcome container V2 (Components V2)
+    // Xây welcome container V2 (Components V2)
     const welcomeContainer = settingsService.buildWelcomeContainer(member.guild.id, {
       member,
       guild: member.guild,

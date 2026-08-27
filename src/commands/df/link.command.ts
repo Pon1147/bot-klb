@@ -87,7 +87,7 @@ async function handleStart(
 
   const code = generateCode(database, interaction.user.id);
 
-  // Build button để reveal webhook URL (ephemeral reply, button disable sau click)
+  // Xây button để hiển thị webhook URL (ephemeral reply, button disable sau click)
   const revealButton = new ButtonBuilder()
     .setCustomId('df_link_show_webhook')
     .setLabel('Hiện Webhook URL')
@@ -173,7 +173,7 @@ async function handleManual(
   const openid = interaction.options.getString('openid')!;
   const token = interaction.options.getString('token')!;
 
-  // Validate format token
+  // Kiểm tra định dạng token
   if (!TOKEN_REGEX.test(token)) {
     await sendReply(interaction, {
       components: buildErrorContainer(INVALID_TOKEN_MESSAGE).toJSON(),
