@@ -4,27 +4,15 @@ import { mkdirSync, existsSync } from 'fs';
 import { botConfig } from '../config/bot.config.js';
 
 /**
- * Interface for welcome message configuration stored in database.
+ * Interface cho welcome message configuration lưu trong database.
  */
-interface WelcomeConfiguration {
+export interface WelcomeConfiguration {
   guildId: string;
   channelId: string | null;
   roleId: string | null;
   messageTemplate: string | null;
   embedImageUrl: string | null;
   isEnabled: boolean;
-}
-
-/**
- * Raw row shape returned from SQLite query.
- */
-interface RawWelcomeRow {
-  guild_id: string;
-  channel_id: string | null;
-  role_id: string | null;
-  message_template: string | null;
-  embed_image_url: string | null;
-  is_enabled: number;
 }
 
 /**
@@ -62,8 +50,7 @@ export function initializeDatabase(): Database.Database {
 }
 
 /**
- * Retrieve welcome configuration for a specific guild.
- * Returns default configuration if no custom config exists.
+ * Lấy welcome configuration cho guild. Trả về default nếu chưa có.
  */
 export function getWelcomeConfiguration(
   database: Database.Database,
@@ -71,7 +58,16 @@ export function getWelcomeConfiguration(
 ): WelcomeConfiguration {
   const result = database
     .prepare('SELECT * FROM welcome_configuration WHERE guild_id = ?')
-    .get(guildIdentifier) as RawWelcomeRow | undefined;
+    .get(guildIdentifier) as
+    | {
+        guild_id: string;
+        channel_id: string | null;
+        role_id: string | null;
+        message_template: string | null;
+        embed_image_url: string | null;
+        is_enabled: number;
+      }
+    | undefined;
 
   if (result) {
     return {
@@ -95,7 +91,7 @@ export function getWelcomeConfiguration(
 }
 
 /**
- * Save or update welcome configuration for a guild.
+ * Lưu hoặc cập nhật welcome configuration cho guild.
  */
 export function saveWelcomeConfiguration(
   database: Database.Database,
@@ -116,7 +112,7 @@ export function saveWelcomeConfiguration(
 }
 
 /**
- * Toggle welcome message enabled/disabled status for a guild.
+ * Bật/tắt welcome message cho guild.
  */
 export function toggleWelcomeEnabled(
   database: Database.Database,

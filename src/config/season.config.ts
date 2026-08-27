@@ -43,8 +43,3 @@ export function getSeasonLabel(seasonNo: string): string {
   if (seasonNo === 'overview') return 'Tổng Quan';
   return SEASON_LABEL_MAP[seasonNo] ?? `S?`;
 }
-
-/** Check if seasonNo is a valid season */
-export function isValidSeason(seasonNo: string): boolean {
-  return (SEASONS_MY_DATA as unknown as string[]).includes(seasonNo);
-}

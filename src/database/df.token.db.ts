@@ -65,23 +65,6 @@ export function saveDfToken(
   return info.changes > 0;
 }
 
-export function updateDfToken(
-  database: Database.Database,
-  discordId: string,
-  openid: string,
-  token: string,
-  ts?: string,
-  s?: string,
-  u?: string,
-): boolean {
-  const info = database
-    .prepare(
-      'UPDATE df_tokens SET openid = ?, token = ?, ts = ?, s = ?, u = ?, linked_at = CURRENT_TIMESTAMP WHERE discord_id = ?',
-    )
-    .run(openid, token, ts ?? null, s ?? null, u ?? null, discordId);
-  return info.changes > 0;
-}
-
 export function touchDfToken(database: Database.Database, discordId: string): void {
   database
     .prepare('UPDATE df_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE discord_id = ?')

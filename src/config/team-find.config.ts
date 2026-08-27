@@ -70,10 +70,6 @@ export const MAP_NAMES: Record<number, string> = {
   2208: 'Ridge',
 };
 
-/** Season ID của mùa mới nhất — update khi mùa mới ra */
-export const LATEST_SEASON = '10010';
-export const LATEST_SEASON_NAME = 'S10';
-
 /** SOL rank choices for /team-find — matches /df-stats display */
 export const TEAM_FIND_RANKS: { name: string; value: string }[] = [
   { name: 'Đồng III', value: 'Đồng III' },

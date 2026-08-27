@@ -121,19 +121,6 @@ export function atomicConsumeClaim(database: Database.Database, code: string): s
 }
 
 /**
- * Xóa các claim session hết hạn.
- * So sánh numeric timestamp (giây) → không phụ thuộc timezone.
- */
-export function cleanupExpiredClaims(database: Database.Database): number {
-  const result = database
-    .prepare(
-      "DELETE FROM df_claim_sessions WHERE status = 'pending' AND expires_at <= CAST(strftime('%s', 'now') AS REAL)",
-    )
-    .run();
-  return result.changes;
-}
-
-/**
  * Invalid tất cả pending claims của user (dùng khi user gọi /df-link start mới).
  */
 export function invalidateUserClaims(database: Database.Database, discordUserId: string): void {
@@ -142,13 +129,4 @@ export function invalidateUserClaims(database: Database.Database, discordUserId:
       "UPDATE df_claim_sessions SET status = 'expired' WHERE discord_user_id = ? AND status = 'pending'",
     )
     .run(discordUserId);
-}
-
-/**
- * Tăng fail count cho claim code.
- */
-export function incrementClaimFailCount(database: Database.Database, code: string): void {
-  database
-    .prepare('UPDATE df_claim_sessions SET fail_count = fail_count + 1 WHERE code = ?')
-    .run(code);
 }
