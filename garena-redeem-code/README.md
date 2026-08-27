@@ -1,164 +1,200 @@
-# Garena Redeem Code — Hướng dẫn sử dụng
+# DF Toolbox — Chrome Extension
 
-Extension giúp bạn tự động nhập và đổi nhiều code Delta Force trên trang Garena.
-
-> Lưu ý: Bạn chỉ cần làm theo từng bước bên dưới, không cần biết lập trình.
+A Chrome extension for Delta Force HQ that provides three main features: **redeem codes**, **Discord account linking**, and **auth state monitoring**.
 
 ---
 
-## 1. Cài đặt Extension
+## Features
 
-### Bước 1: Giải nén file
+### 1. Redeem Codes
 
-Bạn sẽ nhận được file: `garena-redeem-code-v2.0.0.zip`
+Auto-redeem codes on the [Garena Redeem Page](https://redeem.df.garena.sg).
 
-1. Chuột phải vào file `.zip`
-2. Chọn **Extract All... / Giải nén tất cả**
-3. Chọn nơi muốn lưu, ví dụ **Desktop**
-4. Mở thư mục vừa giải nén
+- Paste a list of codes (one per line)
+- Click **Save Codes** to store them
+- Open the redeem page — a dashboard panel appears at the bottom-right
+- Click **Start** to begin auto-redeeming
+- Monitor real-time results: Success, Failed, Used, Retryable, Untested
 
-> Quan trọng: Khi mở thư mục, bạn phải nhìn thấy ngay file: `manifest.json`
+### 2. Discord Account Linking
 
-Ví dụ đúng:
+Link your Garena Delta Force account to your Discord bot account.
 
-```text
+1. Run `/df-link start` on Discord → receive a 6-character claim code
+2. Open `playdeltaforce.com` — the **DF Toolbox — Link** panel appears
+3. Paste the claim code and click **Link Discord**
+4. Wait for the "Linked successfully" confirmation DM
+
+### 3. Auth State Engine
+
+Monitor your Garena authentication state in real-time.
+
+- Track session ID, token state, refresh support, and remaining time
+- View event timeline of auth-related network requests
+- Inspect refresh flow: requests, responses, token changes
+- Monitor network events: XHR, fetch, storage writes
+- View storage writes: keys, types, and values
+
+---
+
+## Installation
+
+### Step 1: Extract
+
+1. You will receive a file: `garena-redeem-code-v2.0.0.zip`
+2. Right-click → **Extract All**
+3. Choose a location (e.g., Desktop)
+4. Open the extracted folder
+
+> **Important:** You should see `manifest.json` immediately. If you need to open another folder first, go back one level.
+
+Correct structure:
+
+```
 garena-redeem-code/
 ├── manifest.json
 ├── background/
 ├── content/
-└── ...
+├── popup/
+└── assets/
 ```
 
-Nếu bạn phải mở thêm một thư mục nữa mới thấy `manifest.json` thì hãy chọn **thư mục bên trong**.
+### Step 2: Load in Chrome
 
-### Bước 2: Mở trang tiện ích của Chrome
+1. Open Chrome and navigate to `chrome://extensions`
+2. Enable **Developer mode** (top-right corner)
+3. Click **Load unpacked**
+4. Select the `garena-redeem-code` folder
+5. Click **Select Folder**
 
-Mở Chrome rồi nhập vào thanh địa chỉ: `chrome://extensions` → nhấn **Enter**.
-
-### Bước 3: Bật chế độ dành cho nhà phát triển
-
-Ở góc trên bên phải, bật: **Developer mode / Chế độ nhà phát triển**
-
-> Đừng lo, bạn chỉ cần bật nó để Chrome cho phép cài extension từ thư mục trên máy.
-
-### Bước 4: Cài Extension
-
-1. Bấm **Load unpacked / Tải tiện ích đã giải nén**
-2. Chọn thư mục chứa file `manifest.json`
-3. Bấm **Select Folder / Chọn thư mục**
-
-Nếu cài thành công, bạn sẽ thấy **Garena Redeem Code** trong danh sách Extension của Chrome.
-
-**Cài xong!**
+If installed successfully, you will see **DF Toolbox** in the extensions list.
 
 ---
 
-## 2. Cách sử dụng
+## Configuration
 
-### Bước 1: Nhập danh sách code
+### Webhook URL (Required for Discord Linking)
 
-1. Bấm vào icon **Garena Redeem Code** trên Chrome
-2. Dán các code vào ô nhập (mỗi dòng một code)
+The extension sends claim data to a Discord webhook.
 
-Ví dụ:
+1. Click the **DF Toolbox** extension icon
+2. Go to the **Config** tab
+3. In the **Webhook** section, paste your Discord webhook URL:
+   ```
+   https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN
+   ```
+4. Click **Save Webhook**
 
-```text
-DFSL9304
-DFSL6257
-DFCRAFT427
-DFWEEK237
-```
+> The webhook URL is stored locally and never leaves your browser.
 
-## 3. Bấm **Lưu codes**
+### Redeem Codes
 
-> Lưu ý: Bạn có thể dán hàng chục hoặc hàng trăm code cùng lúc.
-
-### Bước 2: Mở trang đổi code Garena
-
-Mở trang: [Trang đổi code Garena Delta Force](https://redeem.df.garena.sg/vi/cdkgarena.html)
-
-> Lưu ý: Không đóng trang này trong lúc extension đang chạy.
-
-### Bước 3: Bắt đầu đổi code
-
-Sau khi trang redeem mở xong:
-
-1. Nhìn xuống **góc dưới bên phải màn hình**
-2. Bạn sẽ thấy bảng **Garena Redeem**
-3. Bấm **Bắt đầu**
-
-Extension sẽ tự động nhập và đổi từng code. Theo dõi kết quả trên bảng:
-
-- Thành công — Đổi code thành công
-- Thất bại — Đổi code thất bại
-- Đã sử dụng — Code đã được nhận trước
-- Đang xử lý — Code đang được đổi
+1. Click the extension icon
+2. Go to the **Config** tab
+3. Paste codes into the **Redeem Codes** textarea (one per line)
+4. Click **Save Codes**
 
 ---
 
-## 3. Dừng hoặc tiếp tục
+## Usage
 
-- Bấm **Dừng** để tạm dừng quá trình đổi code
-- Bấm **Tiếp tục** để chạy lại từ điểm dừng
+### Redeem Codes
 
-> Lưu ý: Nếu đang chạy thì không nên đóng tab trang Garena Redeem.
+1. Click the **DF Toolbox** icon → paste codes → click **Save Codes**
+2. Open the [Garena Redeem Page](https://redeem.df.garena.sg)
+3. Look for the **Garena Redeem** dashboard panel at the bottom-right
+4. Click **Start** to begin auto-redeeming
+5. Monitor results on the panel:
 
----
+| Status | Meaning |
+|--------|---------|
+| Redeemed | Code redeemed successfully |
+| Dead | Code expired or already used |
+| Retryable | Temporary error — can retry |
+| Untested | Code not yet processed |
 
-## 4. Đổi danh sách code mới
+### Stop or Resume
 
-Nếu có danh sách code mới:
+- Click **Stop** to pause the redeem process
+- Click **Continue** to resume from where you left off
 
-1. Bấm icon **Garena Redeem Code**
-2. Xóa danh sách cũ → dán danh sách code mới
-3. Bấm **Lưu codes**
-4. Quay lại trang Garena Redeem → bấm **Bắt đầu**
+> **Note:** Do not close the redeem page while the process is running.
 
-> Lưu ý: Mỗi lần bấm "Lưu codes", danh sách mới sẽ được tính là một lần chạy mới. Thống kê của danh sách trước sẽ được reset.
+### Link Discord Account
 
----
+1. Run `/df-link start` on Discord → receive a claim code
+2. Open [playdeltaforce.com](https://www.playdeltaforce.com)
+3. The **DF Toolbox — Link** panel appears at the bottom-right
+4. Paste the claim code → click **Link Discord**
+5. Wait for the confirmation DM from the bot
 
-## 5. Lỗi thường gặp
+### Auth State Engine
 
-### Không thấy bảng "Garena Redeem"
+1. Click the extension icon → go to the **Auth Investigator** tab
+2. Navigate to sub-tabs:
 
-1. Kiểm tra bạn đang mở đúng trang Garena Redeem
-2. Nhấn **F5** để tải lại trang
-3. Kiểm tra Extension **Garena Redeem Code** đang được bật
-4. Đóng tab Garena rồi mở lại
-
-### Bấm "Bắt đầu" nhưng không chạy
-
-- Bạn đã **đăng nhập Garena** chưa?
-- Bạn đã **Lưu codes** chưa?
-- Code có được nhập **mỗi dòng một code** không?
-- Bạn có đang ở đúng trang redeem không?
-
-### Đang chạy nhưng bị dừng
-
-1. Chờ vài giây
-2. Nếu vẫn không chạy, bấm **Dừng**
-3. Tải lại trang bằng **F5**
-4. Bấm **Tiếp tục** hoặc chạy lại từ đầu
-
----
-
-## 6. Gỡ Extension
-
-1. Mở Chrome → nhập: `chrome://extensions`
-2. Tìm **Garena Redeem Code**
-3. Bấm **Remove / Xóa**
+| Tab | Shows |
+|-----|-------|
+| Overview | Session ID, token state, refresh support, remaining time |
+| Timeline | Chronological list of auth-related events |
+| Refresh | Refresh flow: requests, responses, token changes |
+| Network | XHR and fetch events with details |
+| Storage | LocalStorage write events |
 
 ---
 
-## 7. Cần hỗ trợ?
+## Troubleshooting
 
-Nếu gặp lỗi hoặc cần hỗ trợ, liên hệ Discord: [Discord hỗ trợ](https://discord.gg/vz6w6c3Xe3)
+### Dashboard panel not appearing
 
-**Tác giả:** Pon1147
+1. Make sure you are on the correct page (`redeem.df.garena.sg` or `playdeltaforce.com`)
+2. Refresh the page (F5)
+3. Check that the extension is enabled in `chrome://extensions`
+4. Close and reopen the tab
+
+### Redeem process not starting
+
+- Have you logged into Garena?
+- Have you saved codes?
+- Are codes entered one per line?
+- Are you on the correct redeem page?
+
+### Link panel not appearing
+
+- Make sure you are on `playdeltaforce.com`
+- Refresh the page
+- Check that the extension is enabled
+
+### Claim code rejected
+
+- Codes expire after **10 minutes** — generate a new one with `/df-link start`
+- Each code can only be used **once**
+
+### "Webhook not configured"
+
+- Go to extension popup → Config tab → Webhook section
+- Save a valid Discord webhook URL
+
+### Auth Investigator tab shows no data
+
+- Visit `playdeltaforce.com`, `sso.garena.com`, or `auth.garena.com`
+- The extension captures auth events automatically
+- Data appears in the Investigator tab after visiting these pages
 
 ---
 
-## Chúc bạn redeem code vui vẻ
+## Uninstall
 
-Nếu gặp lỗi, hãy **chụp màn hình lỗi + gửi lên Discord** để được hỗ trợ nhanh hơn.
+1. Open Chrome → navigate to `chrome://extensions`
+2. Find **DF Toolbox**
+3. Click **Remove**
+
+> This only removes the extension. Your redeem codes and webhook URL are stored in Chrome's local storage and will be cleared on removal.
+
+---
+
+## Support
+
+If you encounter issues or need help, join our Discord server: [Discord Support](https://discord.gg/vz6w6c3Xe3)
+
+**Author:** Pon1147
