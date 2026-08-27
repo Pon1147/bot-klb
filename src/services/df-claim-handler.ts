@@ -9,8 +9,13 @@
 import Database from 'better-sqlite3';
 import { Client } from 'discord.js';
 import { atomicConsumeClaim } from '../database/df-claim.db.js';
-import { upsertAccountBinding, getActiveBinding } from '../database/df-binding.db.js';
+import {
+  upsertAccountBinding,
+  getActiveBinding,
+  getActiveBindingByOpenid,
+} from '../database/df-binding.db.js';
 import { encryptCredential } from './df-crypto.js';
+import { validateToken } from './deltaforce.api.js';
 import { createLogger } from '../utils/logger.js';
 import { INVALID_CLAIM_MESSAGE } from '../config/app.constants.js';
 
@@ -137,14 +142,21 @@ export async function handleClaim(
   const discordId = atomicConsumeClaim(database, code);
   if (!discordId) {
     if (claimRow.status === 'consumed') {
-      // Code đã dùng rồi → check xem binding đã tồn tại chưa
+      // Code đã dùng rồi → check binding + validate token
       const binding = getActiveBinding(database, claimRow.discord_user_id);
       if (binding) {
-        logger.info('Claim already consumed but binding exists: code=' + code);
-        return {
-          status: 200,
-          body: { ok: true },
-        };
+        const isValid = await validateToken(
+          { openid, token, ts: parsed.ts, s: parsed.s, u: parsed.u },
+          openid,
+        );
+        if (isValid) {
+          logger.info('Claim already consumed, user already linked (token valid): code=' + code);
+          return {
+            status: 409,
+            body: { ok: false, error: 'already_linked' },
+          };
+        }
+        logger.info('Claim already consumed, binding exists but token expired: code=' + code);
       }
       logger.warn('Claim already consumed, no binding found: code=' + code);
     } else if (claimRow.status === 'expired') {
@@ -158,7 +170,24 @@ export async function handleClaim(
     };
   }
 
-  // 3. Encrypt credential (AES-256-GCM)
+  // 3. Check xem Garena account đã được link với Discord user nào chưa
+  const existingByOpenid = getActiveBindingByOpenid(database, openid);
+  if (existingByOpenid) {
+    logger.warn(
+      'Garena account already linked: openid=' +
+        openid +
+        ' discordId=' +
+        discordId +
+        ' existingDiscordId=' +
+        existingByOpenid.discord_user_id,
+    );
+    return {
+      status: 409,
+      body: { ok: false, error: 'account_linked_to_other_discord' },
+    };
+  }
+
+  // 4. Encrypt credential (AES-256-GCM)
   const credBlob = JSON.stringify({ token, ts: parsed.ts, s: parsed.s, u: parsed.u });
   let encrypted;
   try {
@@ -171,7 +200,7 @@ export async function handleClaim(
     };
   }
 
-  // 4. Upsert AccountBinding
+  // 5. Upsert AccountBinding
   try {
     upsertAccountBinding(
       database,

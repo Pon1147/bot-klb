@@ -67,6 +67,30 @@ function buildInstance(token: DfApiToken): AxiosInstance {
 }
 
 /**
+ * Validate token bằng cách gọi GetMyData.
+ * Trả về true nếu token còn hiệu lực, false nếu hết hạn hoặc invalid.
+ */
+export async function validateToken(token: DfApiToken, openid: string): Promise<boolean> {
+  try {
+    const instance = buildInstance(token);
+    const body = {
+      openid,
+      token: token.token,
+      game_id: GAME_ID,
+      channel: DF_CHANNEL,
+      account_type: Number(ACCOUNT_TYPE),
+      lang_type: LANG_TYPE,
+      needLogin: true,
+      report_type: 1,
+    };
+    const res = await instance.post<DfApiResponse<unknown>>('/GetMyData', body);
+    return res.data.code === 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Call DfTools/GetMyData to fetch player info, rank, and summary stats.
  */
 export async function getMyData(token: DfApiToken): Promise<DfMyDataResponse> {
