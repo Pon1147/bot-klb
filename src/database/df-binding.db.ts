@@ -58,6 +58,9 @@ export function initializeAccountBindingsTable(database: Database.Database): voi
     'CREATE INDEX IF NOT EXISTS idx_binding_user ON df_account_bindings(discord_user_id)',
   );
   database.exec('CREATE INDEX IF NOT EXISTS idx_binding_status ON df_account_bindings(status)');
+  database.exec(
+    'CREATE INDEX IF NOT EXISTS idx_binding_openid ON df_account_bindings(openid, status)',
+  );
 }
 
 /**
@@ -104,6 +107,19 @@ export function getActiveBinding(
   return database
     .prepare(`SELECT * FROM df_account_bindings WHERE discord_user_id = ? AND status = 'active'`)
     .get(discordUserId) as AccountBindingRow | undefined;
+}
+
+/**
+ * Lấy binding active theo Garena openid.
+ * Dùng để check xem account Garena đã được link với Discord user nào chưa.
+ */
+export function getActiveBindingByOpenid(
+  database: Database.Database,
+  openid: string,
+): AccountBindingRow | undefined {
+  return database
+    .prepare(`SELECT * FROM df_account_bindings WHERE openid = ? AND status = 'active'`)
+    .get(openid) as AccountBindingRow | undefined;
 }
 
 /**
