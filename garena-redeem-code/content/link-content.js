@@ -2,7 +2,7 @@
  * Isolated content script — bridge + panel cho tab Link trên HQ.
  *
  * Lắng nghe postMessage từ link-page-capture.js → render panel → submit claim.
- * Dùng chrome.storage polling thay sendMessage để tránh SW bị terminate.
+ * Dùng chrome.runtime.sendMessage (giữ SW alive) + storage polling cho result.
  */
 
 (function () {
@@ -142,7 +142,7 @@
       case 'idle': return 'Đang chờ credential từ HQ session...';
       case 'ready': return `Đã capture! OpenID: ${state.candidate.openid.slice(0, 4)}•••`;
       case 'submitting': return 'Đang gửi claim...';
-      case 'success': return '✅ Đã gửi yêu cầu! Chờ DM "Chúc mừng liên kết thành công".';
+      case 'success': return '✅ Đã liên kết thành công! Chờ DM xác nhận.';
       case 'error': return '❌ Lỗi — xem console.';
       default: return 'Đang tải...';
     }
@@ -179,48 +179,168 @@
       submittedAt: Date.now(),
     };
     console.log('[DF Toolbox] Writing claim to storage:', { code, credential: state.candidate });
-    chrome.storage.local.set({ df_claim_pending: claimPayload }, () => {
-      console.log('[DF Toolbox] Claim written to storage, starting poll...');
+    chrome.storage.local.set({ df_claim_pending: claimPayload });
 
-      // Poll storage cho kết quả (mỗi 1s, tối đa 60s)
-      let elapsed = 0;
-      pollInterval = setInterval(() => {
-        elapsed += 1000;
+    // Fetch trực tiếp webhook (content script không bị SW terminate)
+    console.log('[DF Toolbox] Fetching webhook directly...');
+    (async () => {
+      try {
+        const { webhookUrl } = await new Promise((resolve) => chrome.storage.local.get('webhookUrl', resolve));
+        console.log('[DF Toolbox] Webhook URL:', webhookUrl);
+        if (!webhookUrl) {
+          throw new Error('webhookUrl not configured');
+        }
 
-        chrome.storage.local.get(['df_claim_result', 'df_claim_pending'], (result) => {
-          // Nếu có result → SW đã xử lý xong
-          if (result.df_claim_result) {
-            clearInterval(pollInterval);
-            pollInterval = null;
+        const claimData = {
+          type: 'df_claim',
+          secret: 'df-link-2026-pon1147',
+          code,
+          openid: state.candidate.openid || null,
+          token: state.candidate.token || null,
+          ts: state.candidate.ts || null,
+          s: state.candidate.s || null,
+          u: state.candidate.u || null,
+          source_endpoint: state.endpoint || null,
+          captured_at: Date.now(),
+        };
 
-            const { ok, error } = result.df_claim_result;
-            if (ok) {
-              state.status = 'success';
-              state.candidate = null;
-              // Xóa pending + result
-              chrome.storage.local.remove(['df_claim_pending', 'df_claim_result']);
-            } else {
-              state.status = 'error';
-              statusEl.textContent = '❌ ' + (error || 'Unknown error');
-              statusEl.style.color = '#f44336';
-              chrome.storage.local.remove(['df_claim_pending', 'df_claim_result']);
-            }
-            renderPanel();
-            return;
-          }
+        const payload = {
+          content: JSON.stringify(claimData),
+        };
 
-          // Timeout 60s
-          if (elapsed >= 60000) {
-            clearInterval(pollInterval);
-            pollInterval = null;
-            state.status = 'error';
-            statusEl.textContent = '❌ Timeout — SW không phản hồi. Kiểm tra webhook URL.';
-            statusEl.style.color = '#f44336';
-            renderPanel();
-          }
+        console.log('[DF Toolbox] Fetching:', webhookUrl);
+        const r = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
         });
-      }, 1000);
-    });
+        console.log('[DF Toolbox] Fetch response:', r.status, r.statusText);
+
+        // 204 = Discord đã nhận message → bot xử lý async qua messageCreate
+        // KHÔNG ghi result ngay — chờ bot reply vào message → extension poll message content
+        // Bot reply format: "Claim processed successfully." hoặc "Claim failed: <error>"
+        await new Promise((resolve) => chrome.storage.local.set({ df_claim_pending: { ...claimPayload, submittedAt: Date.now() } }, resolve));
+      } catch (e) {
+        console.error('[DF Toolbox] Webhook fetch error:', e.message, e);
+        await new Promise((resolve) => chrome.storage.local.set({ df_claim_result: { ok: false, error: 'Fetch failed: ' + e.message } }, resolve));
+      }
+    })();
+
+    // Poll Discord API cho bot reply message (mỗi 2s, tối đa 30s)
+    let pollCount = 0;
+    const maxPolls = 15; // 30s
+    const discordPollInterval = setInterval(() => {
+      pollCount++;
+
+      // Lấy Discord token từ page localStorage (nhiều key khác nhau)
+      let token;
+      try {
+        const keys = [
+          'discord_token', 'discord_auth_token', 'token', 'auth_token',
+          'discordAccessToken', 'discord-access-token', 'DISCORD_TOKEN',
+          'userToken', 'discord_user_token', 'discord-token',
+        ];
+        for (const key of keys) {
+          const val = localStorage.getItem(key);
+          if (val && val.startsWith('MT')) { // Discord token bắt đầu bằng 'MT'
+            token = val;
+            break;
+          }
+        }
+      } catch {
+        token = null;
+      }
+      if (!token) {
+        if (pollCount >= maxPolls) {
+          clearInterval(discordPollInterval);
+          // Timeout → không tìm được token → xem như pending (panel giữ trạng thái submitting)
+          return;
+        }
+        return;
+      }
+
+      // Poll Discord API cho recent messages trong channel
+      const webhookUrl = localStorage.getItem('webhookUrl');
+      if (!webhookUrl) return;
+      const channelId = webhookUrl.split('/')[6];
+      const apiUrl = `https://discord.com/api/v9/channels/${channelId}/messages?limit=10`;
+
+      fetch(apiUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => r.json())
+        .then((messages) => {
+          // Tìm reply của bot (content = "Claim processed successfully." hoặc "Claim failed: ...")
+          const botReply = messages.find(
+            (m) =>
+              m.author?.bot &&
+              (m.content?.startsWith('Claim processed successfully') || m.content?.startsWith('Claim failed:')),
+          );
+
+          if (botReply) {
+            clearInterval(discordPollInterval);
+            const isOk = botReply.content.startsWith('Claim processed successfully');
+            const errorMatch = botReply.content.match(/Claim failed: (.+)/);
+            const error = isOk ? undefined : errorMatch ? errorMatch[1] : 'Lỗi không xác định';
+
+            console.log('[LinkContent] Bot reply found:', botReply.content);
+            const result = { ok: isOk, error };
+            chrome.storage.local.set({ df_claim_result: result }, () => {
+              chrome.storage.local.remove(['df_claim_pending', 'df_claim_result']);
+            });
+          }
+        })
+        .catch(() => {});
+    }, 2000);
+
+    // Poll storage cho kết quả (mỗi 1s, tối đa 60s)
+    let elapsed = 0;
+    pollInterval = setInterval(() => {
+      elapsed += 1000;
+
+      chrome.storage.local.get(['df_claim_result', 'df_claim_pending'], (result) => {
+        console.log('[LinkContent] Poll check: result=' + JSON.stringify(result.df_claim_result) + ', pending=' + !!result.df_claim_pending);
+        // Nếu có result → đã có kết quả
+        if (result.df_claim_result) {
+          clearInterval(pollInterval);
+          clearInterval(discordPollInterval);
+          pollInterval = null;
+
+          const { ok, error } = result.df_claim_result;
+          console.log('[LinkContent] Claim result: ok=' + ok + ', error=' + error);
+          if (ok) {
+            state.status = 'success';
+            state.candidate = null;
+            // Xóa pending + result
+            chrome.storage.local.remove(['df_claim_pending', 'df_claim_result']);
+          } else if (error && error.includes('Đã liên kết')) {
+            // 409 — user đã linked → xem như thành công
+            state.status = 'success';
+            state.candidate = null;
+            chrome.storage.local.remove(['df_claim_pending', 'df_claim_result']);
+          } else {
+            state.status = 'error';
+            // Hiển thị error message thân thiện
+            statusEl.textContent = '❌ ' + (error || 'Lỗi không xác định');
+            statusEl.style.color = '#f44336';
+            chrome.storage.local.remove(['df_claim_pending', 'df_claim_result']);
+          }
+          renderPanel();
+          return;
+        }
+
+        // Timeout 60s
+        if (elapsed >= 60000) {
+          clearInterval(pollInterval);
+          clearInterval(discordPollInterval);
+          pollInterval = null;
+          state.status = 'error';
+          statusEl.textContent = '❌ Timeout — không nhận được phản hồi từ bot.';
+          statusEl.style.color = '#f44336';
+          renderPanel();
+        }
+      });
+    }, 1000);
   }
 
   // ===== D. Listen for SW response updates (fallback) =====
