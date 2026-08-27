@@ -47,17 +47,46 @@ export async function execute(client: Client, message: Message): Promise<void> {
   logger.info('Webhook claim message received from webhook ' + message.webhookId);
 
   // Delegate to claim handler (atomic consume + encrypt + persist + DM)
+  let result: { status: number; body: { ok: boolean; error?: string } };
   try {
-    const result = await handleClaim(data, client.database, client);
+    result = await handleClaim(data, client.database, client);
     logger.info('Webhook claim processed: status=' + result.status);
   } catch (error) {
     logger.error(
       'Webhook claim handler error: ' + (error instanceof Error ? error.message : String(error)),
     );
-  } finally {
-    // Xóa webhook message khỏi channel (không hiển thị raw JSON cho user)
-    void message.delete().catch(() => {});
+    result = { status: 500, body: { ok: false, error: 'server_error' } };
   }
+
+  // Nếu fail → gửi DM thông báo cho Discord user (extension không nhận được 409 từ webhook)
+  if (!result.body.ok) {
+    const claimRow = client.database
+      .prepare('SELECT discord_user_id FROM df_claim_sessions WHERE code = ?')
+      .get(JSON.parse(message.content).code) as { discord_user_id: string } | undefined;
+    if (claimRow) {
+      const user = await client.users.fetch(claimRow.discord_user_id).catch(() => null);
+      if (user) {
+        const dm = await user.createDM().catch(() => null);
+        if (dm) {
+          const errorMessages: Record<string, string> = {
+            account_linked_to_other_discord:
+              'Account Garena này đã được link với Discord khác. Vui lòng dùng `/df-unlink` trước.',
+            already_linked: 'Account này đã được link. Vui lòng dùng `/df-unlink` trước.',
+          };
+          await dm
+            .send({
+              content:
+                '❌ **Liên kết thất bại:** ' +
+                (errorMessages[result.body.error || ''] || 'Lỗi không xác định. Thử lại sau.'),
+            })
+            .catch(() => {});
+        }
+      }
+    }
+  }
+
+  // Xóa webhook message khỏi channel (không hiển thị raw JSON cho user)
+  void message.delete().catch(() => {});
 }
 
 export default {
