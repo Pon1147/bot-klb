@@ -113,6 +113,20 @@ export interface DfDailyReportResponse {
   tag_id: number;
 }
 
+export interface DfWorkbenchItem {
+  hourly_income: string;
+  item_id: string;
+  recommended_recipe_id: string;
+  remaining_time: number;
+  status: number;
+  workbench_id: string;
+}
+
+export interface DfWorkshopRecommendationResponse {
+  timestamp: string;
+  workbench_list: DfWorkbenchItem[];
+}
+
 /** Generic API response wrapper */
 export interface DfApiResponse<T = unknown> {
   code: number;

@@ -6,6 +6,7 @@ import type {
   DfCollectionResponse,
   DfDailyReportResponse,
   DfApiToken,
+  DfWorkshopRecommendationResponse,
 } from '../types/deltaforce.types.js';
 import {
   BASE_API_URL,
@@ -237,6 +238,50 @@ export async function getDailyReport(token: DfApiToken): Promise<DfDailyReportRe
   if (res.data.code !== 0) {
     logger.info('GetDailyReport failed: code=' + res.data.code + ', msg=' + res.data.msg);
     throw new Error(`GetDailyReport failed: code=${res.data.code} msg=${res.data.msg}`);
+  }
+  return res.data.data;
+}
+
+/**
+ * Call DfTools/GetManufactureRecommendationList to fetch workshop production data.
+ * Returns workbench items with hourly income, remaining time, and status.
+ */
+export async function getWorkshopRecommendations(
+  token: DfApiToken,
+): Promise<DfWorkshopRecommendationResponse> {
+  const instance = buildInstance(token);
+
+  const res = await instance.post<DfApiResponse<DfWorkshopRecommendationResponse>>(
+    '/GetManufactureRecommendationList',
+    {},
+  );
+  if (res.data.code !== 0) {
+    logger.info(
+      'GetManufactureRecommendationList failed: code=' + res.data.code + ', msg=' + res.data.msg,
+    );
+    throw new Error(
+      `GetManufactureRecommendationList failed: code=${res.data.code} msg=${res.data.msg}`,
+    );
+  }
+  return res.data.data;
+}
+
+/**
+ * Call DfTools/GetWorkbenchList to fetch current production data.
+ * Returns workbench items with countdown timers (status >= 1).
+ */
+export async function getWorkbenchList(
+  token: DfApiToken,
+): Promise<DfWorkshopRecommendationResponse> {
+  const instance = buildInstance(token);
+
+  const res = await instance.post<DfApiResponse<DfWorkshopRecommendationResponse>>(
+    '/GetWorkbenchList',
+    {},
+  );
+  if (res.data.code !== 0) {
+    logger.info('GetWorkbenchList failed: code=' + res.data.code + ', msg=' + res.data.msg);
+    throw new Error(`GetWorkbenchList failed: code=${res.data.code} msg=${res.data.msg}`);
   }
   return res.data.data;
 }
