@@ -13,6 +13,39 @@ import { sendReply } from '../utils/reply.utils.js';
 
 const logger = createLogger('DfStatsSelect');
 
+// Cache kết quả API theo userId + season, TTL 30s
+const statsCache = new Map<
+  string,
+  { data: import('../types/deltaforce.types.js').DfMyDataResponse; timestamp: number }
+>();
+const CACHE_TTL_MS = 30_000;
+
+function getCacheKey(userId: string, season: string): string {
+  return userId + ':' + season;
+}
+
+function getCached(
+  userId: string,
+  season: string,
+): import('../types/deltaforce.types.js').DfMyDataResponse | null {
+  const key = getCacheKey(userId, season);
+  const entry = statsCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    statsCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCache(
+  userId: string,
+  season: string,
+  data: import('../types/deltaforce.types.js').DfMyDataResponse,
+): void {
+  statsCache.set(getCacheKey(userId, season), { data, timestamp: Date.now() });
+}
+
 export async function handleDfStatsSelect(
   interaction: StringSelectMenuInteraction,
   database: Database.Database,
@@ -61,17 +94,35 @@ export async function handleDfStatsSelect(
     return { handled: true };
   }
 
-  try {
-    // Rate limit: delay 500ms giữa các requests
-    await new Promise((resolve) => setTimeout(resolve, 500));
+  // Disable select menu ngay để tránh user click nhiều lần
+  const disabledMenu = buildSeasonSelectMenu(selectedSeason);
+  disabledMenu.components[0].setDisabled(true);
 
+  // Update message sau khi API call xong (select menu không cần deferReply)
+  try {
     const apiToken = buildDfApiToken(token);
+
+    // Kiểm tra cache trước khi gọi API
+    const cached = getCached(interaction.user.id, selectedSeason);
+    if (cached) {
+      const seasonLabel = getSeasonLabel(selectedSeason);
+      const result = buildStatsContainer(cached, seasonLabel);
+      const selectMenu = buildSeasonSelectMenu(selectedSeason);
+      await interaction.update({
+        components: [...result.components, selectMenu.toJSON()],
+      } as Parameters<typeof interaction.update>[0]);
+      return { handled: true };
+    }
+
     const data =
       selectedSeason === 'overview'
         ? await getOverviewData(apiToken)
         : await getSeasonData(apiToken, selectedSeason);
-    const seasonLabel = getSeasonLabel(selectedSeason);
 
+    // Lưu vào cache
+    setCache(interaction.user.id, selectedSeason, data);
+
+    const seasonLabel = getSeasonLabel(selectedSeason);
     const result = buildStatsContainer(data, seasonLabel);
     const selectMenu = buildSeasonSelectMenu(selectedSeason);
 
@@ -81,6 +132,10 @@ export async function handleDfStatsSelect(
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
     logger.error('df-stats select failed for user ' + interaction.user.id + ': ' + errMsg);
+    // Giữ menu disabled khi API fail — user không spam click thêm nữa
+    await interaction.update({
+      components: [disabledMenu.toJSON()],
+    } as Parameters<typeof interaction.update>[0]);
   }
 
   return { handled: true };
