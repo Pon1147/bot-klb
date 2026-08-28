@@ -3,6 +3,10 @@
  */
 
 jest.mock('discord.js', () => ({
+  AttachmentBuilder: class {
+    constructor() { this.name = 'test-attachment.png'; }
+    setName(n: string) { this.name = n; return this; }
+  },
   ComponentType: { TextDisplay: 10, Separator: 14, Container: 17, MediaGallery: 12 },
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
   SlashCommandBuilder: class { setName() { return this; } setDescription() { return this; } },

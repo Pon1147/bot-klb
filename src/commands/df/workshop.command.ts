@@ -1,6 +1,7 @@
 /** /df-workshop — Xưởng Căn Cứ Ngầm (Container V2 pattern) */
 
 import {
+  AttachmentBuilder,
   ChatInputCommandInteraction,
   ComponentType,
   MessageFlags,
@@ -38,6 +39,12 @@ async function buildWorkshopContainer(
   dateStr: string,
 ) {
   const containerInner: unknown[] = [];
+  const files: AttachmentBuilder[] = [];
+
+  // ── Fallback icon cho section thumbnail (dùng attachment Discord) ──
+  const FALLBACK_ICON_PATH = './src/assets/img/icon/icon_1.png';
+  const FALLBACK_ICON_NAME = 'workshop-fallback-icon.png';
+  let fallbackAttachment: AttachmentBuilder | null = null;
 
   // ── Phân loại: sản xuất hiện tại vs đề xuất ──
   const recommendedItems: typeof workbenchList = [];
@@ -70,9 +77,15 @@ async function buildWorkshopContainer(
       ),
     );
 
-    // Use first item's recipe image as section accessory
+    // Dùng ảnh recipe đầu tiên làm thumbnail section, fallback dùng ảnh local
     const firstImage = await getWorkshopItemImage(currentItems[0].recommended_recipe_id);
-    const accessoryUrl = firstImage || 'https://cdn.discordapp.com/embed/avatars/1.png';
+    const accessoryUrl = firstImage || `attachment://${FALLBACK_ICON_NAME}`;
+
+    // Tạo attachment fallback nếu chưa có (lazy init — chỉ cần 1 lần)
+    if (!fallbackAttachment) {
+      fallbackAttachment = new AttachmentBuilder(FALLBACK_ICON_PATH).setName(FALLBACK_ICON_NAME);
+      files.push(fallbackAttachment);
+    }
 
     containerInner.push(buildWorkshopSection('Chi Tiết Sản Xuất', '🔧', itemLines, accessoryUrl));
     containerInner.push({ type: ComponentType.Separator, accentColor: 0xff8c00 });
@@ -91,9 +104,15 @@ async function buildWorkshopContainer(
       ),
     );
 
-    // Use first item's recipe image as section accessory
+    // Dùng ảnh recipe đầu tiên làm thumbnail section, fallback dùng ảnh local
     const firstImage = await getWorkshopItemImage(recommendedItems[0].recommended_recipe_id);
-    const accessoryUrl = firstImage || 'https://cdn.discordapp.com/embed/avatars/2.png';
+    const accessoryUrl = firstImage || `attachment://${FALLBACK_ICON_NAME}`;
+
+    // Tạo attachment fallback nếu chưa có (lazy init — chỉ cần 1 lần)
+    if (!fallbackAttachment) {
+      fallbackAttachment = new AttachmentBuilder(FALLBACK_ICON_PATH).setName(FALLBACK_ICON_NAME);
+      files.push(fallbackAttachment);
+    }
 
     containerInner.push(buildWorkshopSection('Đề Xuất Sản Xuất', '⚡', itemLines, accessoryUrl));
   }
@@ -112,7 +131,7 @@ async function buildWorkshopContainer(
     accent_color: COLORS.DF,
   };
 
-  return makeResult([containerComponent], MessageFlags.IsComponentsV2, []);
+  return makeResult([containerComponent], MessageFlags.IsComponentsV2, files);
 }
 
 export async function execute(
@@ -168,6 +187,7 @@ export async function execute(
           },
         ],
         flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+        files: [],
       };
     }
 
@@ -176,6 +196,7 @@ export async function execute(
     return {
       components: container.toJSON(),
       flags: container.flags,
+      files: container.files,
     };
   });
 }
