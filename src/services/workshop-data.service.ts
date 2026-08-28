@@ -18,6 +18,13 @@ interface CacheEntry {
   loadedAt: number;
 }
 
+interface RecipeImageEntry {
+  images: Record<string, string>;
+  loadedAt: number;
+}
+
+let recipeImageCache: RecipeImageEntry | null = null;
+
 let cache: CacheEntry | null = null;
 
 /** Extract key-value pairs from a JS file that defines a variable assignment like `var name = [{prop_id: "123", language: {vi: "Name"}}, ...]` */
@@ -103,4 +110,57 @@ export async function getWorkshopItemName(itemId: string): Promise<string> {
 /** Clear cache — useful for testing or forcing reload */
 export function clearWorkshopDataCache(): void {
   cache = null;
+}
+
+/** Extract item image URLs from craft_recipes_vi.js content */
+function parseRecipeImages(text: string): Record<string, string> {
+  const result: Record<string, string> = {};
+
+  // Match recipe objects with recipe_id and item_image_url
+  const recipeRegex = /"recipe_id":"(\d+)".*?"item_image_url":"([^"]*)"/gs;
+  let match;
+  while ((match = recipeRegex.exec(text)) !== null) {
+    const recipeId = match[1];
+    const imageUrl = match[2];
+    if (imageUrl) {
+      result[recipeId] = imageUrl;
+    }
+  }
+
+  return result;
+}
+
+/** Fetch and parse recipe image URLs from the website */
+async function fetchRecipeImages(): Promise<Record<string, string>> {
+  try {
+    const res = await fetch(CRAFT_RECIPES_URL, { signal: AbortSignal.timeout(10_000) });
+    if (res.ok) {
+      const text = await res.text();
+      const images = parseRecipeImages(text);
+      logger.info(`Loaded ${Object.keys(images).length} recipe images from craft_recipes_vi.js`);
+      return images;
+    }
+  } catch (error) {
+    logger.warn(`Failed to fetch recipe images: ${(error as Error).message}`);
+  }
+  return {};
+}
+
+/** Get item image URL by recipe ID — loads from website if cache is stale */
+export async function getWorkshopItemImage(recipeId: string): Promise<string> {
+  const now = Date.now();
+
+  if (recipeImageCache && now - recipeImageCache.loadedAt < CACHE_TTL_MS) {
+    return recipeImageCache.images[recipeId] || '';
+  }
+
+  const images = await fetchRecipeImages();
+  recipeImageCache = { images, loadedAt: now };
+
+  return images[recipeId] || '';
+}
+
+/** Clear recipe image cache — useful for testing */
+export function clearRecipeImageCache(): void {
+  recipeImageCache = null;
 }

@@ -1,5 +1,6 @@
 /** Workshop (Xưởng Căn Cứ Ngầm) config — workbench sections & item mappings */
 
+import { ComponentType } from 'discord.js';
 import { COLORS } from './container.variables.js';
 
 /** Workbench ID → section display name & color */
@@ -116,4 +117,38 @@ export function detectWorkbenchSection(itemPrefix: string): string | null {
     }
   }
   return null;
+}
+
+/** Build a single item line for the workshop dashboard */
+export function buildWorkshopItemLine(
+  name: string,
+  formatFn: (item: { hourly_income: string; remaining_time: number }) => string,
+  item: { hourly_income: string; remaining_time: number },
+): string {
+  return `**${name}**\n${formatFn(item)}`;
+}
+
+/** Build a Section component for a group of workshop items */
+export function buildWorkshopSection(
+  title: string,
+  emoji: string,
+  items: string[],
+  accessoryUrl?: string,
+): Record<string, unknown> {
+  const section: Record<string, unknown> = {
+    type: ComponentType.Section,
+    components: [
+      {
+        type: ComponentType.TextDisplay,
+        content: `${emoji} **${title}**\n\n${items.join('\n\n')}`,
+      },
+    ],
+  };
+  if (accessoryUrl) {
+    section.accessory = {
+      type: ComponentType.Thumbnail,
+      media: { url: accessoryUrl },
+    };
+  }
+  return section;
 }

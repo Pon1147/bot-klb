@@ -12,8 +12,14 @@ import { getWorkbenchList, getWorkshopRecommendations } from '../../services/del
 import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { runDfCommand } from '../../utils/df-command.runner.js';
 import { makeResult } from '../../utils/container.utils.js';
-import { formatRemainingTime, formatHourlyIncome } from '../../config/workshop.config.js';
-import { getWorkshopItemName } from '../../services/workshop-data.service.js';
+import {
+  formatRemainingTime,
+  formatHourlyIncome,
+  buildWorkshopSection,
+  buildWorkshopItemLine,
+} from '../../config/workshop.config.js';
+import { getWorkshopItemName, getWorkshopItemImage } from '../../services/workshop-data.service.js';
+import { COLORS } from '../../config/container.variables.js';
 
 export const data = new SlashCommandBuilder()
   .setName('df-workshop')
@@ -45,47 +51,77 @@ async function buildWorkshopContainer(
     }
   }
 
-  // ── Gộp toàn bộ content vào 1 TextDisplay block ──
-  const lines: string[] = [`## Xưởng Căn Cứ Ngầm\n${dateStr}`];
+  // ── Header Section ──
+  containerInner.push({
+    type: ComponentType.Section,
+    components: [
+      {
+        type: ComponentType.TextDisplay,
+        content: `## Xưởng Căn Cứ Ngầm\n${dateStr}`,
+      },
+    ],
+    accessory: {
+      type: ComponentType.Thumbnail,
+      media: { url: 'https://cdn.discordapp.com/embed/avatars/0.png' },
+    },
+  });
 
-  if (recommendedItems.length > 0) {
-    const namePromises = recommendedItems.map((item) => getWorkshopItemName(item.item_id));
-    const names = await Promise.all(namePromises);
-
-    lines.push('');
-    lines.push('**Đề Xuất Sản Xuất**');
-    for (let i = 0; i < recommendedItems.length; i++) {
-      const item = recommendedItems[i];
-      const incomeText = formatHourlyIncome(item.hourly_income);
-      lines.push(`• ${names[i]} — ${incomeText}`);
-    }
-  }
-
+  // ── Current Production Section ──
   if (currentItems.length > 0) {
     const namePromises = currentItems.map((item) => getWorkshopItemName(item.item_id));
     const names = await Promise.all(namePromises);
 
-    lines.push('');
-    lines.push('**Chi Tiết Sản Xuất**');
-    for (let i = 0; i < currentItems.length; i++) {
-      const item = currentItems[i];
-      const timeText = formatRemainingTime(item.remaining_time);
-      lines.push(`• ${names[i]} — Còn ${timeText}`);
-    }
+    const itemLines = names.map((name, i) =>
+      buildWorkshopItemLine(
+        name,
+        (item) => `⏱ Còn ${formatRemainingTime(item.remaining_time)}`,
+        currentItems[i],
+      ),
+    );
+
+    // Use first item's recipe image as section accessory
+    const firstImage = await getWorkshopItemImage(currentItems[0].recommended_recipe_id);
+    const accessoryUrl = firstImage || 'https://cdn.discordapp.com/embed/avatars/1.png';
+
+    containerInner.push(buildWorkshopSection('Chi Tiết Sản Xuất', '🔧', itemLines, accessoryUrl));
+    containerInner.push({ type: ComponentType.Separator, accentColor: 0xff8c00 });
   }
 
-  lines.push('');
-  lines.push(
-    'Đến Căn Cứ Ngầm trong game để sản xuất vật phẩm nhằm kiếm lợi nhuận hoặc thu thập với chi phí thấp.',
-  );
+  // ── Recommended Production Section ──
+  if (recommendedItems.length > 0) {
+    const namePromises = recommendedItems.map((item) => getWorkshopItemName(item.item_id));
+    const names = await Promise.all(namePromises);
 
-  containerInner.push({ type: ComponentType.TextDisplay, content: lines.join('\n') });
+    const itemLines = names.map((name, i) =>
+      buildWorkshopItemLine(
+        name,
+        (item) => `${formatHourlyIncome(item.hourly_income)}`,
+        recommendedItems[i],
+      ),
+    );
 
-  return makeResult(
-    [{ type: ComponentType.Container, components: containerInner }],
-    MessageFlags.IsComponentsV2,
-    [],
-  );
+    // Use first item's recipe image as section accessory
+    const firstImage = await getWorkshopItemImage(recommendedItems[0].recommended_recipe_id);
+    const accessoryUrl = firstImage || 'https://cdn.discordapp.com/embed/avatars/2.png';
+
+    containerInner.push(buildWorkshopSection('Đề Xuất Sản Xuất', '⚡', itemLines, accessoryUrl));
+  }
+
+  // ── Footer ──
+  containerInner.push({
+    type: ComponentType.TextDisplay,
+    content:
+      'Đến Căn Cứ Ngầm trong game để sản xuất vật phẩm nhằm kiếm lợi nhuận hoặc thu thập với chi phí thấp.',
+  });
+
+  // ── Container-level accent color ──
+  const containerComponent: Record<string, unknown> = {
+    type: ComponentType.Container,
+    components: containerInner,
+    accent_color: COLORS.DF,
+  };
+
+  return makeResult([containerComponent], MessageFlags.IsComponentsV2, []);
 }
 
 export async function execute(
@@ -132,8 +168,12 @@ export async function execute(
           {
             type: ComponentType.Container,
             components: [
-              { type: ComponentType.TextDisplay, content: 'Không có dữ liệu sản xuất.' },
+              {
+                type: ComponentType.TextDisplay,
+                content: 'Không có dữ liệu sản xuất.',
+              },
             ],
+            accent_color: COLORS.DF,
           },
         ],
         flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,

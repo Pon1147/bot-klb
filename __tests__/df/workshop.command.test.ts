@@ -48,6 +48,7 @@ jest.mock('../../src/utils/reply.utils.js', () => ({
 
 jest.mock('../../src/services/workshop-data.service.js', () => ({
   getWorkshopItemName: jest.fn(),
+  getWorkshopItemImage: jest.fn(),
 }));
 
 import { execute } from '../../src/commands/df/workshop.command.js';
@@ -57,7 +58,7 @@ import { getWorkbenchList, getWorkshopRecommendations } from '../../src/services
 import { buildDfApiToken } from '../../src/utils/df-token.utils.js';
 import { buildErrorContainer } from '../../src/utils/container.utils.js';
 import { sendReply } from '../../src/utils/reply.utils.js';
-import { getWorkshopItemName } from '../../src/services/workshop-data.service.js';
+import { getWorkshopItemName, getWorkshopItemImage } from '../../src/services/workshop-data.service.js';
 import { MessageFlags } from 'discord.js'; // eslint-disable-line
 
 describe('workshop.command', () => {
@@ -83,6 +84,7 @@ describe('workshop.command', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getWorkshopItemName as jest.Mock).mockImplementation((id: string) => Promise.resolve(`San pham ${id}`));
+    (getWorkshopItemImage as jest.Mock).mockResolvedValue('');
   });
 
   // ── Case 1: Không có guild ──
