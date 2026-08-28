@@ -51,19 +51,10 @@ async function buildWorkshopContainer(
     }
   }
 
-  // ── Header Section ──
+  // ── Header ──
   containerInner.push({
-    type: ComponentType.Section,
-    components: [
-      {
-        type: ComponentType.TextDisplay,
-        content: `## Xưởng Căn Cứ Ngầm\n${dateStr}`,
-      },
-    ],
-    accessory: {
-      type: ComponentType.Thumbnail,
-      media: { url: 'https://cdn.discordapp.com/embed/avatars/0.png' },
-    },
+    type: ComponentType.TextDisplay,
+    content: `## Xưởng Căn Cứ Ngầm\n${dateStr}`,
   });
 
   // ── Current Production Section ──
