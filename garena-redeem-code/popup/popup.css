@@ -57,7 +57,8 @@
 
 /* --- Base --- */
 body {
-  width: 440px;
+  width: 440px !important;
+  min-width: 440px !important;
   min-height: 520px;
   max-height: 700px;
   font-family:
@@ -85,6 +86,10 @@ body {
 
 .app::-webkit-scrollbar {
   width: 5px;
+}
+
+.app::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .app::-webkit-scrollbar-thumb {

@@ -987,8 +987,8 @@ let tokenTickerInterval = null;
 function startTokenTicker() {
   if (tokenTickerInterval) clearInterval(tokenTickerInterval);
   tokenTickerInterval = setInterval(() => {
-    chrome.storage.local.get(null, (allStorage) => {
-      const events = allStorage.auth_events || [];
+    chrome.storage.local.get('auth_events', (result) => {
+      const events = result.auth_events || [];
       if (events.length === 0) return;
       const stats = computeStatsFromEvents(events);
       const ts = stats.tokenState;
