@@ -152,6 +152,22 @@
   // sendMessage không đáng tin trong MV3 — SW có thể terminate trước khi fetch xong.
   // Giải pháp: ghi claim vào storage → SW đọc + xử lý → ghi kết quả → content script poll.
   let pollInterval = null;
+  let discordAuthToken = null; // Token lưu tạm để poll Discord API
+
+  // ===== Đọc Discord auth token từ chrome.storage =====
+  // Token được capture bởi content script trên discord.com (discord-token-capture.js)
+  function loadDiscordToken() {
+    if (discordAuthToken) return;
+    chrome.storage.local.get('discord_auth_token', (result) => {
+      if (result.discord_auth_token) {
+        discordAuthToken = result.discord_auth_token;
+        console.log('[LinkContent] Loaded Discord auth token from chrome.storage');
+      } else {
+        console.warn('[LinkContent] No Discord auth token in chrome.storage — cần mở discord.com để capture');
+      }
+    });
+  }
+  loadDiscordToken();
 
   function handleSubmit() {
     const codeInput = document.querySelector('#df-link-code');
@@ -226,71 +242,67 @@
       }
     })();
 
-    // Poll Discord API cho bot reply message (mỗi 2s, tối đa 30s)
+    // Poll Discord API cho bot reply (dùng Discord auth token capture từ page)
     let pollCount = 0;
     const maxPolls = 15; // 30s
     const discordPollInterval = setInterval(() => {
       pollCount++;
 
-      // Lấy Discord token từ page localStorage (nhiều key khác nhau)
-      let token;
-      try {
-        const keys = [
-          'discord_token', 'discord_auth_token', 'token', 'auth_token',
-          'discordAccessToken', 'discord-access-token', 'DISCORD_TOKEN',
-          'userToken', 'discord_user_token', 'discord-token',
-        ];
-        for (const key of keys) {
-          const val = localStorage.getItem(key);
-          if (val && val.startsWith('MT')) { // Discord token bắt đầu bằng 'MT'
-            token = val;
-            break;
-          }
-        }
-      } catch {
-        token = null;
-      }
-      if (!token) {
+      // Lấy webhook URL từ localStorage (extension tự lưu khi user paste)
+      const webhookUrl = localStorage.getItem('webhookUrl');
+      if (!webhookUrl) {
         if (pollCount >= maxPolls) {
           clearInterval(discordPollInterval);
-          // Timeout → không tìm được token → xem như pending (panel giữ trạng thái submitting)
-          return;
+          console.warn('[LinkContent] Poll timeout — webhookUrl không có trong localStorage');
         }
         return;
       }
 
-      // Poll Discord API cho recent messages trong channel
-      const webhookUrl = localStorage.getItem('webhookUrl');
-      if (!webhookUrl) return;
-      const channelId = webhookUrl.split('/')[6];
-      const apiUrl = `https://discord.com/api/v9/channels/${channelId}/messages?limit=10`;
+      // Webhook URL: https://discord.com/api/webhooks/{id}/{token}
+      // 1. Lấy channel_id từ webhook info (dùng webhook token, không cần Discord auth)
+      const webhookPath = webhookUrl.replace('https://discord.com/api', ''); // /webhooks/{id}/{token}
+      const webhookInfoUrl = 'https://discord.com' + webhookPath;
 
-      fetch(apiUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      fetch(webhookInfoUrl)
         .then((r) => r.json())
-        .then((messages) => {
-          // Tìm reply của bot (content = "Claim processed successfully." hoặc "Claim failed: ...")
-          const botReply = messages.find(
-            (m) =>
-              m.author?.bot &&
-              (m.content?.startsWith('Claim processed successfully') || m.content?.startsWith('Claim failed:')),
-          );
+        .then((webhookInfo) => {
+          if (!webhookInfo?.channel_id) return;
 
-          if (botReply) {
-            clearInterval(discordPollInterval);
-            const isOk = botReply.content.startsWith('Claim processed successfully');
-            const errorMatch = botReply.content.match(/Claim failed: (.+)/);
-            const error = isOk ? undefined : errorMatch ? errorMatch[1] : 'Lỗi không xác định';
+          // 2. Poll channel messages (limit=5, tìm bot reply gần nhất)
+          const channelUrl = `https://discord.com/api/v10/channels/${webhookInfo.channel_id}/messages?limit=5`;
 
-            console.log('[LinkContent] Bot reply found:', botReply.content);
-            const result = { ok: isOk, error };
-            chrome.storage.local.set({ df_claim_result: result }, () => {
-              chrome.storage.local.remove(['df_claim_pending', 'df_claim_result']);
+          fetch(channelUrl, {
+            headers: { Authorization: `Bearer ${discordAuthToken}` },
+          })
+            .then((r) => r.json())
+            .then((messages) => {
+              // Tìm bot reply (content = "Claim processed successfully." hoặc "Claim failed: ...")
+              const botReply = messages?.find(
+                (m) =>
+                  m.author?.bot &&
+                  (m.content?.startsWith('Claim processed successfully') || m.content?.startsWith('Claim failed:')),
+              );
+
+              if (botReply) {
+                clearInterval(discordPollInterval);
+                const isOk = botReply.content.startsWith('Claim processed successfully');
+                const errorMatch = botReply.content.match(/Claim failed: (.+)/);
+                const error = isOk ? undefined : errorMatch ? errorMatch[1] : 'Lỗi không xác định';
+
+                console.log('[LinkContent] Bot reply found:', botReply.content);
+                const result = { ok: isOk, error };
+                chrome.storage.local.set({ df_claim_result: result }, () => {
+                  chrome.storage.local.remove(['df_claim_pending', 'df_claim_result']);
+                });
+              }
+            })
+            .catch((err) => {
+              console.warn('[LinkContent] Discord API poll error:', err?.message || err);
             });
-          }
         })
-        .catch(() => {});
+        .catch((err) => {
+          console.warn('[LinkContent] Webhook info fetch error:', err?.message || err);
+        });
     }, 2000);
 
     // Poll storage cho kết quả (mỗi 1s, tối đa 60s)

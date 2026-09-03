@@ -58,6 +58,12 @@ export async function execute(client: Client, message: Message): Promise<void> {
     result = { status: 500, body: { ok: false, error: 'server_error' } };
   }
 
+  // Map lỗi chung — DM và public reply dùng chung 1 nguồn
+  const claimErrorMap: Record<string, string> = {
+    account_linked_to_other_discord: 'Account Garena này đã được link với Discord khác.',
+    already_linked: 'Account này đã được link.',
+  };
+
   // Nếu fail → gửi DM thông báo cho Discord user (extension không nhận được 409 từ webhook)
   if (!result.body.ok) {
     const claimRow = client.database
@@ -68,16 +74,12 @@ export async function execute(client: Client, message: Message): Promise<void> {
       if (user) {
         const dm = await user.createDM().catch(() => null);
         if (dm) {
-          const errorMessages: Record<string, string> = {
-            account_linked_to_other_discord:
-              'Account Garena này đã được link với Discord khác. Vui lòng dùng `/df-unlink` trước.',
-            already_linked: 'Account này đã được link. Vui lòng dùng `/df-unlink` trước.',
-          };
+          const baseText =
+            claimErrorMap[result.body.error || ''] || 'Lỗi không xác định. Thử lại sau.';
           await dm
             .send({
               content:
-                '❌ **Liên kết thất bại:** ' +
-                (errorMessages[result.body.error || ''] || 'Lỗi không xác định. Thử lại sau.'),
+                '❌ **Liên kết thất bại:** ' + baseText + ' Vui lòng dùng `/df-unlink` trước.',
             })
             .catch(() => {});
         }
@@ -85,7 +87,31 @@ export async function execute(client: Client, message: Message): Promise<void> {
     }
   }
 
-  // Xóa webhook message khỏi channel (không hiển thị raw JSON cho user)
+  // Gửi follow-up message qua webhook endpoint → extension poll được bằng webhook token
+  const resultText = result.body.ok
+    ? 'Claim processed successfully.'
+    : 'Claim failed: ' +
+      (claimErrorMap[result.body.error || ''] || 'Lỗi không xác định. Thử lại sau.');
+
+  try {
+    // Fetch webhook để lấy token (Message object không expose webhookToken)
+    const webhookData = (await client.rest.get(`/webhooks/${message.webhookId}`)) as {
+      token: string;
+    };
+    const webhookUrl = `https://discord.com/api/webhooks/${message.webhookId}/${webhookData.token}`;
+
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: resultText }),
+    });
+  } catch (err) {
+    logger.warn(
+      'Failed to send webhook follow-up: ' + (err instanceof Error ? err.message : String(err)),
+    );
+  }
+
+  // Xóa webhook message gốc (không hiển thị raw JSON cho user)
   void message.delete().catch(() => {});
 }
 
