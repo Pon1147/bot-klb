@@ -68,7 +68,7 @@ export async function execute(client: Client, message: Message): Promise<void> {
   if (!result.body.ok) {
     const claimRow = client.database
       .prepare('SELECT discord_user_id FROM df_claim_sessions WHERE code = ?')
-      .get(JSON.parse(message.content).code) as { discord_user_id: string } | undefined;
+      .get((data as { code: string }).code) as { discord_user_id: string } | undefined;
     if (claimRow) {
       const user = await client.users.fetch(claimRow.discord_user_id).catch(() => null);
       if (user) {
@@ -76,10 +76,15 @@ export async function execute(client: Client, message: Message): Promise<void> {
         if (dm) {
           const baseText =
             claimErrorMap[result.body.error || ''] || 'Lỗi không xác định. Thử lại sau.';
+          const needsUnlinkAdvice =
+            result.body.error === 'account_linked_to_other_discord' ||
+            result.body.error === 'already_linked';
           await dm
             .send({
               content:
-                '❌ **Liên kết thất bại:** ' + baseText + ' Vui lòng dùng `/df-unlink` trước.',
+                '❌ **Liên kết thất bại:** ' +
+                baseText +
+                (needsUnlinkAdvice ? ' Vui lòng dùng `/df-unlink` trước.' : ''),
             })
             .catch(() => {});
         }
@@ -104,6 +109,7 @@ export async function execute(client: Client, message: Message): Promise<void> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: resultText }),
+      signal: AbortSignal.timeout(8000),
     });
   } catch (err) {
     logger.warn(

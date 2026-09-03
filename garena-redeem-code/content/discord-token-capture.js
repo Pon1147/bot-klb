@@ -31,7 +31,9 @@
     for (const key of TOKEN_KEYS) {
       try {
         const val = localStorage.getItem(key);
-        if (val && val.startsWith('MT')) {
+        // Kiểm tra token hợp lệ: chuỗi không rỗng, tối thiểu 10 ký tự
+        // Không dùng heuristic 'MT' — Discord có thể đổi format token
+        if (val && val.length >= 10) {
           chrome.storage.local.set({ discord_auth_token: val }, () => {
             console.log('[DF Toolbox] Captured Discord auth token from localStorage key:', key);
           });

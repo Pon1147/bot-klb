@@ -156,20 +156,29 @@
 
   // ===== Đọc Discord auth token từ chrome.storage =====
   // Token được capture bởi content script trên discord.com (discord-token-capture.js)
+  let tokenLoadPromise = null;
   function loadDiscordToken() {
-    if (discordAuthToken) return;
-    chrome.storage.local.get('discord_auth_token', (result) => {
-      if (result.discord_auth_token) {
-        discordAuthToken = result.discord_auth_token;
-        console.log('[LinkContent] Loaded Discord auth token from chrome.storage');
-      } else {
-        console.warn('[LinkContent] No Discord auth token in chrome.storage — cần mở discord.com để capture');
-      }
+    if (discordAuthToken) return Promise.resolve();
+    if (tokenLoadPromise) return tokenLoadPromise;
+    tokenLoadPromise = new Promise((resolve) => {
+      chrome.storage.local.get('discord_auth_token', (result) => {
+        if (result.discord_auth_token) {
+          discordAuthToken = result.discord_auth_token;
+          console.log('[LinkContent] Loaded Discord auth token from chrome.storage');
+        } else {
+          console.warn('[LinkContent] No Discord auth token in chrome.storage — cần mở discord.com để capture');
+        }
+        resolve();
+      });
     });
+    return tokenLoadPromise;
   }
   loadDiscordToken();
 
-  function handleSubmit() {
+  async function handleSubmit() {
+    // Đợi token load xong trước khi poll Discord API
+    await loadDiscordToken();
+
     const codeInput = document.querySelector('#df-link-code');
     const submitBtn = document.querySelector('#df-link-submit');
     const statusEl = document.querySelector('#df-link-status');
@@ -245,63 +254,64 @@
     // Poll Discord API cho bot reply (dùng Discord auth token capture từ page)
     let pollCount = 0;
     const maxPolls = 15; // 30s
+    let cachedChannelId = null;
+
+    // Fetch webhook info ONCE để lấy channel_id (không đổi qua session)
+    (async () => {
+      try {
+        const webhookUrl = localStorage.getItem('webhookUrl');
+        if (webhookUrl) {
+          const webhookPath = webhookUrl.replace('https://discord.com/api', '');
+          const webhookInfo = await fetch('https://discord.com' + webhookPath).then((r) => r.json());
+          if (webhookInfo?.channel_id) {
+            cachedChannelId = webhookInfo.channel_id;
+            console.log('[LinkContent] Cached channel_id:', cachedChannelId);
+          }
+        }
+      } catch (err) {
+        console.warn('[LinkContent] Failed to cache channel_id:', err?.message || err);
+      }
+    })();
+
     const discordPollInterval = setInterval(() => {
       pollCount++;
 
-      // Lấy webhook URL từ localStorage (extension tự lưu khi user paste)
-      const webhookUrl = localStorage.getItem('webhookUrl');
-      if (!webhookUrl) {
+      if (!cachedChannelId) {
         if (pollCount >= maxPolls) {
           clearInterval(discordPollInterval);
-          console.warn('[LinkContent] Poll timeout — webhookUrl không có trong localStorage');
+          console.warn('[LinkContent] Poll timeout — chưa lấy được channel_id');
         }
         return;
       }
 
-      // Webhook URL: https://discord.com/api/webhooks/{id}/{token}
-      // 1. Lấy channel_id từ webhook info (dùng webhook token, không cần Discord auth)
-      const webhookPath = webhookUrl.replace('https://discord.com/api', ''); // /webhooks/{id}/{token}
-      const webhookInfoUrl = 'https://discord.com' + webhookPath;
-
-      fetch(webhookInfoUrl)
+      // Poll channel messages (limit=5, tìm bot reply gần nhất)
+      fetch(`https://discord.com/api/v10/channels/${cachedChannelId}/messages?limit=5`, {
+        headers: { Authorization: `Bearer ${discordAuthToken}` },
+      })
         .then((r) => r.json())
-        .then((webhookInfo) => {
-          if (!webhookInfo?.channel_id) return;
+        .then((messages) => {
+          // Tìm bot reply (content = "Claim processed successfully." hoặc "Claim failed: ...")
+          const botReply = messages?.find(
+            (m) =>
+              m.author?.bot &&
+              (m.content?.startsWith('Claim processed successfully') || m.content?.startsWith('Claim failed:')),
+          );
 
-          // 2. Poll channel messages (limit=5, tìm bot reply gần nhất)
-          const channelUrl = `https://discord.com/api/v10/channels/${webhookInfo.channel_id}/messages?limit=5`;
+          if (botReply) {
+            clearInterval(discordPollInterval);
+            const isOk = botReply.content.startsWith('Claim processed successfully');
+            const errorMatch = botReply.content.match(/Claim failed: (.+)/);
+            const error = isOk ? undefined : errorMatch ? errorMatch[1] : 'Lỗi không xác định';
 
-          fetch(channelUrl, {
-            headers: { Authorization: `Bearer ${discordAuthToken}` },
-          })
-            .then((r) => r.json())
-            .then((messages) => {
-              // Tìm bot reply (content = "Claim processed successfully." hoặc "Claim failed: ...")
-              const botReply = messages?.find(
-                (m) =>
-                  m.author?.bot &&
-                  (m.content?.startsWith('Claim processed successfully') || m.content?.startsWith('Claim failed:')),
-              );
-
-              if (botReply) {
-                clearInterval(discordPollInterval);
-                const isOk = botReply.content.startsWith('Claim processed successfully');
-                const errorMatch = botReply.content.match(/Claim failed: (.+)/);
-                const error = isOk ? undefined : errorMatch ? errorMatch[1] : 'Lỗi không xác định';
-
-                console.log('[LinkContent] Bot reply found:', botReply.content);
-                const result = { ok: isOk, error };
-                chrome.storage.local.set({ df_claim_result: result }, () => {
-                  chrome.storage.local.remove(['df_claim_pending', 'df_claim_result']);
-                });
-              }
-            })
-            .catch((err) => {
-              console.warn('[LinkContent] Discord API poll error:', err?.message || err);
+            console.log('[LinkContent] Bot reply found:', botReply.content);
+            const result = { ok: isOk, error };
+            chrome.storage.local.set({ df_claim_result: result }, () => {
+              chrome.storage.local.remove(['df_claim_pending', 'df_claim_result']);
             });
+          }
         })
         .catch((err) => {
-          console.warn('[LinkContent] Webhook info fetch error:', err?.message || err);
+          console.warn('[LinkContent] Discord API poll error:', err?.message || err);
         });
     }, 2000);
 
