@@ -1,7 +1,6 @@
 /** /df-workshop — Xưởng Căn Cứ Ngầm (Container V2 pattern) */
 
 import {
-  AttachmentBuilder,
   ChatInputCommandInteraction,
   ComponentType,
   MessageFlags,
@@ -13,18 +12,65 @@ import { getWorkbenchList, getWorkshopRecommendations } from '../../services/del
 import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { runDfCommand } from '../../utils/df-command.runner.js';
 import { makeResult } from '../../utils/container.utils.js';
-import {
-  formatRemainingTime,
-  formatHourlyIncome,
-  buildWorkshopSection,
-  buildWorkshopItemLine,
-} from '../../config/workshop.config.js';
+import { formatRemainingTime, formatHourlyIncome } from '../../config/workshop.config.js';
 import { getWorkshopItemName, getWorkshopItemImage } from '../../services/workshop-data.service.js';
 import { COLORS } from '../../config/container.variables.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('WorkshopCmd');
 
 export const data = new SlashCommandBuilder()
   .setName('df-workshop')
   .setDescription('Xem thông tin sản xuất tại Xưởng Căn Cứ Ngầm.');
+
+/** Build a Section for a single workshop item (pattern giống df-history) */
+async function buildWorkshopItemSection(
+  item: {
+    hourly_income: string;
+    item_id: string;
+    recommended_recipe_id: string;
+    remaining_time: number;
+    status: number;
+    workbench_id: string;
+  },
+  formatFn: (item: { hourly_income: string; remaining_time: number }) => string,
+): Promise<Record<string, unknown>> {
+  const name = await getWorkshopItemName(item.item_id);
+  const imageUrl = await getWorkshopItemImage(item.item_id);
+  if (!imageUrl) {
+    logger.warn(`No image for itemId=${item.item_id} (name=${name})`);
+  }
+  const content = `**${name}**\n${formatFn(item)}`;
+
+  const section: Record<string, unknown> = {
+    type: ComponentType.Section,
+    components: [
+      {
+        type: ComponentType.TextDisplay,
+        content,
+      },
+    ],
+  };
+
+  // Thumbnail: ưu tiên ảnh recipe, fallback dùng ảnh local
+  if (imageUrl) {
+    section.accessory = {
+      type: ComponentType.Thumbnail,
+      media: { url: imageUrl },
+      description: name,
+    };
+  } else {
+    section.accessory = {
+      type: ComponentType.Thumbnail,
+      media: {
+        url: 'https://www.playdeltaforce.com/basic_info/collections_5e312fbc4c8d85fa279ca9f53b21d812.png',
+      },
+      description: name,
+    };
+  }
+
+  return section;
+}
 
 /** Build the full workshop container (async — fetches item names dynamically) */
 async function buildWorkshopContainer(
@@ -39,12 +85,6 @@ async function buildWorkshopContainer(
   dateStr: string,
 ) {
   const containerInner: unknown[] = [];
-  const files: AttachmentBuilder[] = [];
-
-  // ── Fallback icon cho section thumbnail (dùng attachment Discord) ──
-  const FALLBACK_ICON_PATH = './src/assets/img/icon/icon_1.png';
-  const FALLBACK_ICON_NAME = 'workshop-fallback-icon.png';
-  let fallbackAttachment: AttachmentBuilder | null = null;
 
   // ── Phân loại: sản xuất hiện tại vs đề xuất ──
   const recommendedItems: typeof workbenchList = [];
@@ -64,57 +104,44 @@ async function buildWorkshopContainer(
     content: `## Xưởng Căn Cứ Ngầm\n${dateStr}`,
   });
 
-  // ── Current Production Section ──
+  // ── Current Production — mỗi item 1 Section + Thumbnail ──
   if (currentItems.length > 0) {
-    const namePromises = currentItems.map((item) => getWorkshopItemName(item.item_id));
-    const names = await Promise.all(namePromises);
+    containerInner.push({
+      type: ComponentType.Separator,
+      accentColor: 0xff8c00,
+    });
+    containerInner.push({
+      type: ComponentType.TextDisplay,
+      content: '🔧 **Chi Tiết Sản Xuất**',
+    });
 
-    const itemLines = names.map((name, i) =>
-      buildWorkshopItemLine(
-        name,
-        (item) => `⏱ Còn ${formatRemainingTime(item.remaining_time)}`,
-        currentItems[i],
-      ),
-    );
-
-    // Dùng ảnh recipe đầu tiên làm thumbnail section, fallback dùng ảnh local
-    const firstImage = await getWorkshopItemImage(currentItems[0].recommended_recipe_id);
-    const accessoryUrl = firstImage || `attachment://${FALLBACK_ICON_NAME}`;
-
-    // Tạo attachment fallback nếu chưa có (lazy init — chỉ cần 1 lần)
-    if (!fallbackAttachment) {
-      fallbackAttachment = new AttachmentBuilder(FALLBACK_ICON_PATH).setName(FALLBACK_ICON_NAME);
-      files.push(fallbackAttachment);
+    for (const item of currentItems) {
+      const section = await buildWorkshopItemSection(
+        item,
+        (i) => `⏱ Còn ${formatRemainingTime(i.remaining_time)}`,
+      );
+      containerInner.push(section);
     }
-
-    containerInner.push(buildWorkshopSection('Chi Tiết Sản Xuất', '🔧', itemLines, accessoryUrl));
-    containerInner.push({ type: ComponentType.Separator, accentColor: 0xff8c00 });
   }
 
-  // ── Recommended Production Section ──
+  // ── Recommended Production — mỗi item 1 Section + Thumbnail ──
   if (recommendedItems.length > 0) {
-    const namePromises = recommendedItems.map((item) => getWorkshopItemName(item.item_id));
-    const names = await Promise.all(namePromises);
+    containerInner.push({
+      type: ComponentType.Separator,
+      accentColor: 0xff8c00,
+    });
+    containerInner.push({
+      type: ComponentType.TextDisplay,
+      content: '⚡ **Đề Xuất Sản Xuất**',
+    });
 
-    const itemLines = names.map((name, i) =>
-      buildWorkshopItemLine(
-        name,
-        (item) => `${formatHourlyIncome(item.hourly_income)}`,
-        recommendedItems[i],
-      ),
-    );
-
-    // Dùng ảnh recipe đầu tiên làm thumbnail section, fallback dùng ảnh local
-    const firstImage = await getWorkshopItemImage(recommendedItems[0].recommended_recipe_id);
-    const accessoryUrl = firstImage || `attachment://${FALLBACK_ICON_NAME}`;
-
-    // Tạo attachment fallback nếu chưa có (lazy init — chỉ cần 1 lần)
-    if (!fallbackAttachment) {
-      fallbackAttachment = new AttachmentBuilder(FALLBACK_ICON_PATH).setName(FALLBACK_ICON_NAME);
-      files.push(fallbackAttachment);
+    for (const item of recommendedItems) {
+      const section = await buildWorkshopItemSection(
+        item,
+        (i) => `${formatHourlyIncome(i.hourly_income)}`,
+      );
+      containerInner.push(section);
     }
-
-    containerInner.push(buildWorkshopSection('Đề Xuất Sản Xuất', '⚡', itemLines, accessoryUrl));
   }
 
   // ── Footer ──
@@ -131,7 +158,7 @@ async function buildWorkshopContainer(
     accent_color: COLORS.DF,
   };
 
-  return makeResult([containerComponent], MessageFlags.IsComponentsV2, files);
+  return makeResult([containerComponent], MessageFlags.IsComponentsV2, []);
 }
 
 export async function execute(

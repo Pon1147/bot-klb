@@ -113,17 +113,20 @@ export function clearWorkshopDataCache(): void {
 }
 
 /** Extract item image URLs from craft_recipes_vi.js content */
-function parseRecipeImages(text: string): Record<string, string> {
+export function parseRecipeImages(text: string): Record<string, string> {
   const result: Record<string, string> = {};
 
-  // Match recipe objects with recipe_id and item_image_url
-  const recipeRegex = /"recipe_id":"(\d+)".*?"item_image_url":"([^"]*)"/gs;
+  // Match recipe objects with item_id and item_image_url
+  // Supports both JSON ("key":"value") and JS (key: 'value') formats
+  // (?<!material_) lookbehind skips "material_image_url" inside materials[]
+  const recipeRegex =
+    /item_id["']?\s*:\s*["']?([\d]+)["']?[\s\S]*?(?<!material_)item_image_url["']?\s*:\s*["']([^"']*)["']/gs;
   let match;
   while ((match = recipeRegex.exec(text)) !== null) {
-    const recipeId = match[1];
+    const itemId = match[1];
     const imageUrl = match[2];
     if (imageUrl) {
-      result[recipeId] = imageUrl;
+      result[itemId] = imageUrl;
     }
   }
 
@@ -137,7 +140,11 @@ async function fetchRecipeImages(): Promise<Record<string, string>> {
     if (res.ok) {
       const text = await res.text();
       const images = parseRecipeImages(text);
-      logger.info(`Loaded ${Object.keys(images).length} recipe images from craft_recipes_vi.js`);
+      const keys = Object.keys(images);
+      logger.info(`Loaded ${keys.length} recipe images from craft_recipes_vi.js`);
+      if (keys.length > 0) {
+        logger.info(`Sample: ${keys[0]} -> ${images[keys[0]].substring(0, 60)}...`);
+      }
       return images;
     }
   } catch (error) {
@@ -146,18 +153,27 @@ async function fetchRecipeImages(): Promise<Record<string, string>> {
   return {};
 }
 
-/** Get item image URL by recipe ID — loads from website if cache is stale */
-export async function getWorkshopItemImage(recipeId: string): Promise<string> {
+/** Get item image URL by item ID — loads from website if cache is stale */
+export async function getWorkshopItemImage(itemId: string): Promise<string> {
   const now = Date.now();
 
   if (recipeImageCache && now - recipeImageCache.loadedAt < CACHE_TTL_MS) {
-    return recipeImageCache.images[recipeId] || '';
+    const url = recipeImageCache.images[itemId] || '';
+    if (!url) {
+      logger.debug(
+        `No image for itemId=${itemId}, cache has ${Object.keys(recipeImageCache.images).length} entries`,
+      );
+    }
+    return url;
   }
 
   const images = await fetchRecipeImages();
   recipeImageCache = { images, loadedAt: now };
+  logger.info(
+    `Item image cache refreshed: ${Object.keys(images).length} entries, itemId=${itemId} -> ${images[itemId] ? 'FOUND' : 'MISS'}`,
+  );
 
-  return images[recipeId] || '';
+  return images[itemId] || '';
 }
 
 /** Clear recipe image cache — useful for testing */
