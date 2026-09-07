@@ -110,7 +110,7 @@ describe('workshop.command', () => {
     // Runner gọi sendReply khi chưa có token
     expect(sendReply).toHaveBeenCalled();
     expect(buildErrorContainer).toHaveBeenCalledWith(
-      expect.stringMatching(/lien ket/i),
+      expect.stringContaining('chưa liên'),
     );
     expect(getWorkbenchList).not.toHaveBeenCalled();
     expect(getWorkshopRecommendations).not.toHaveBeenCalled();
@@ -244,7 +244,7 @@ describe('workshop.command', () => {
 
     expect(mockEditReply).toHaveBeenCalled();
     expect(buildErrorContainer).toHaveBeenCalledWith(
-      expect.stringContaining('Loi khi lay du lieu'),
+      expect.stringContaining('Lỗi khi lấy dữ liệu'),
     );
     expect(touchDfToken).not.toHaveBeenCalled();
   });
