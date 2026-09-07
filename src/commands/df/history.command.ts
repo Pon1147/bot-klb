@@ -88,7 +88,6 @@ export async function execute(
       interaction.options.getInteger('limit') || MAX_HISTORY_LIMIT,
       MAX_HISTORY_PAGE,
     );
-    // Fetch only needed matches from API (pagination)
     const matchData = await getMatchList(apiToken, { limit });
 
     // Cắt danh sách theo limit để đảm bảo message trả về đúng số trận user yêu cầu

@@ -92,7 +92,6 @@ export async function execute(client: Client, message: Message): Promise<void> {
     }
   }
 
-  // Gửi follow-up message qua webhook endpoint → extension poll được bằng webhook token
   // Chỉ gửi khi fail — success message không cần hiển thị trong channel
   if (!result.body.ok) {
     const resultText =

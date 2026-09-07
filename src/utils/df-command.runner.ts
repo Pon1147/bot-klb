@@ -137,12 +137,10 @@ export async function runDfCommand(
       touchDfToken(ctx.database, ctx.userId);
     }
   } catch (error) {
-    // Xử lý đặc biệt: token hết hạn → báo user link lại, tự động xóa binding/token
     if (isTokenExpiredError(error as Error)) {
       logger.info(
         `Token het han/invalid cho user ${ctx.userId} — xoa binding/token de user co the link lai.`,
       );
-      // Xóa binding (active hoặc expired) + legacy token
       revokeBinding(ctx.database, ctx.userId);
       deleteDfToken(ctx.database, ctx.userId);
       const err = buildErrorContainer(
