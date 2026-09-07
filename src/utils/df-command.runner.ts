@@ -9,8 +9,25 @@ import { decryptCredential } from '../services/df-crypto.js';
 import { requireGuild } from './df-guards.js';
 import { buildErrorContainer } from './container.utils.js';
 import { createLogger } from './logger.js';
+import { revokeBinding } from '../database/df-binding.db.js';
+import { deleteDfToken } from '../database/df.token.db.js';
 
 const logger = createLogger('DfRunner');
+
+/**
+ * Detect lỗi token hết hạn / invalid từ message API.
+ * Các pattern: "Inner token is invalid", "token expired", "token invalid", code 300001 + 11002
+ */
+function isTokenExpiredError(error: Error): boolean {
+  const msg = error.message.toLowerCase();
+  return (
+    msg.includes('inner token is invalid') ||
+    msg.includes('token expired') ||
+    msg.includes('token invalid') ||
+    msg.includes('ret=11002') ||
+    /code=300001/.test(msg)
+  );
+}
 
 /** Result returned by DF command callbacks */
 export interface DfCommandResult {
@@ -120,6 +137,23 @@ export async function runDfCommand(
       touchDfToken(ctx.database, ctx.userId);
     }
   } catch (error) {
+    // Xử lý đặc biệt: token hết hạn → báo user link lại, tự động xóa binding/token
+    if (isTokenExpiredError(error as Error)) {
+      logger.info(
+        `Token het han/invalid cho user ${ctx.userId} — xoa binding/token de user co the link lai.`,
+      );
+      // Xóa binding (active hoặc expired) + legacy token
+      revokeBinding(ctx.database, ctx.userId);
+      deleteDfToken(ctx.database, ctx.userId);
+      const err = buildErrorContainer(
+        'Token hien da het han. Vui long su dung `/df-link start` de lien ket lai.',
+      );
+      await ctx.interaction.editReply({
+        components: err.toJSON(),
+        flags: err.flags | MessageFlags.Ephemeral,
+      });
+      return true;
+    }
     const err = buildErrorContainer(`Loi khi lay du lieu: ${(error as Error).message}`);
     await ctx.interaction.editReply({
       components: err.toJSON(),
