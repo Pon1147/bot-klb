@@ -1,4 +1,4 @@
-﻿import {
+import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -9,8 +9,7 @@
   TextInputStyle,
 } from 'discord.js';
 import { ContainerSettings } from '../../types/settings.types.js';
-import { buildContainer, buildTextOnlyContainer } from '../../utils/container.utils.js';
-import { CONTAINER_COLOR_PRESETS, ContainerEditSession } from './container-session.js';
+import { buildContainer } from '../../utils/container.utils.js';
 import {
   MAX_CONTAINER_TEXT_LENGTH,
   MEDIA_URL_PLACEHOLDER,
@@ -23,50 +22,34 @@ import { ContainerIds, ContainerModalPrefix } from './container-ids.js';
 // ─── Button Row Builders ───────────────────────────────────────
 
 /**
- * Build hàng button 1: chỉnh sửa text & media.
+ * Build hàng button chính — tất cả property edit đều mở modal trực tiếp.
+ * Không cần submenu navigation.
  */
-export function buildEditRow1(): ActionRowBuilder<ButtonBuilder> {
+export function buildMainEditorRow(draft: ContainerSettings): ActionRowBuilder<ButtonBuilder> {
+  const linesLabel =
+    draft.contentLines.length > 0 ? `${draft.contentLines.length} dòng` : 'Thêm dòng';
+
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(ContainerIds.LINES)
-      .setLabel('📝 Text Lines')
+      .setLabel(`📝 ${linesLabel}`)
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(ContainerIds.HEADER)
+      .setLabel('📌 Header')
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId(ContainerIds.COLOR)
-      .setLabel('🎨 Accent Color')
+      .setLabel(`🎨 ${draft.accentColor.toString(16).padStart(6, '0')}`)
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId(ContainerIds.MEDIA)
-      .setLabel('🖼️ Media/GIF')
+      .setLabel(draft.mediaUrl ? '🖼️ Media ✓' : '🖼️ Media')
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId(ContainerIds.SEPARATOR)
-      .setLabel('➖ Separator')
+      .setLabel(draft.showSeparator ? '➖ Bỏ Sep' : '➖ Separator')
       .setStyle(ButtonStyle.Secondary),
-  );
-}
-
-/**
- * Build hàng button 2: text line management.
- */
-export function buildLinesRow(): ActionRowBuilder<ButtonBuilder> {
-  return new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId(ContainerIds.LINES_ADD)
-      .setLabel('➕ Add Line')
-      .setStyle(ButtonStyle.Success),
-    new ButtonBuilder()
-      .setCustomId(ContainerIds.LINES_EDIT)
-      .setLabel('✏️ Edit Line')
-      .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-      .setCustomId(ContainerIds.LINES_REMOVE)
-      .setLabel('➖ Remove Line')
-      .setStyle(ButtonStyle.Danger),
-    new ButtonBuilder()
-      .setCustomId(ContainerIds.LINES_CLEAR)
-      .setLabel('🗑️ Clear All')
-      .setStyle(ButtonStyle.Danger),
   );
 }
 
@@ -93,104 +76,11 @@ export function buildActionRow(): ActionRowBuilder<ButtonBuilder> {
 /**
  * Build toàn bộ rows buttons cho editor chính.
  */
-export function buildAllEditorRows(): ActionRowBuilder<ButtonBuilder>[] {
-  return [buildEditRow1(), buildActionRow()];
-}
-
-/**
- * Build hàng button color presets.
- */
-export function buildColorPresetRow(): ActionRowBuilder<ButtonBuilder> {
-  const buttons: ButtonBuilder[] = CONTAINER_COLOR_PRESETS.map(
-    (preset: { label: string; value: number }, index: number) =>
-      new ButtonBuilder()
-        .setCustomId(`${ContainerIds.COLOR_PRESET}${index}`)
-        .setLabel(preset.label)
-        .setStyle(ButtonStyle.Secondary),
-  );
-
-  buttons.push(
-    new ButtonBuilder()
-      .setCustomId(ContainerIds.COLOR_CUSTOM)
-      .setLabel('🎯 Custom')
-      .setStyle(ButtonStyle.Secondary),
-  );
-
-  return new ActionRowBuilder<ButtonBuilder>().addComponents(buttons);
-}
-
-/**
- * Build hàng button back (quay lại editor chính).
- */
-export function buildBackRow(): ActionRowBuilder<ButtonBuilder> {
-  return new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId(ContainerIds.BACK)
-      .setLabel('⬅️ Quay lại')
-      .setStyle(ButtonStyle.Primary),
-  );
-}
-
-/**
- * Build hàng buttons cho lines submenu + back.
- */
-export function buildLinesSubmenuRows(): ActionRowBuilder<ButtonBuilder>[] {
-  return [buildLinesRow(), buildBackRow()];
-}
-
-/**
- * Build hàng buttons cho color picker + back.
- */
-export function buildColorPickerRows(): ActionRowBuilder<ButtonBuilder>[] {
-  return [buildColorPresetRow(), buildBackRow()];
+export function buildAllEditorRows(draft: ContainerSettings): ActionRowBuilder<ButtonBuilder>[] {
+  return [buildMainEditorRow(draft), buildActionRow()];
 }
 
 // ─── Modal Builders ────────────────────────────────────────────
-
-/**
- * Build modal nhập text ngắn.
- */
-export function buildTextModal(
-  customId: string,
-  label: string,
-  placeholder: string,
-  value: string,
-): ModalBuilder {
-  const textInput = new TextInputBuilder()
-    .setCustomId(customId)
-    .setLabel(label)
-    .setStyle(TextInputStyle.Short)
-    .setPlaceholder(placeholder)
-    .setValue(value);
-
-  return new ModalBuilder()
-    .setCustomId(`${ContainerModalPrefix}${customId}`)
-    .setTitle(`Chỉnh sửa ${label}`)
-    .addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(textInput));
-}
-
-/**
- * Build modal nhập text dài (cho content line).
- */
-export function buildLongTextModal(
-  customId: string,
-  label: string,
-  placeholder: string,
-  value: string,
-): ModalBuilder {
-  const textInput = new TextInputBuilder()
-    .setCustomId(customId)
-    .setLabel(label)
-    .setStyle(TextInputStyle.Paragraph)
-    .setPlaceholder(placeholder)
-    .setMaxLength(MAX_CONTAINER_TEXT_LENGTH)
-    .setValue(value);
-
-  return new ModalBuilder()
-    .setCustomId(`${ContainerModalPrefix}${customId}`)
-    .setTitle(`Chỉnh sửa ${label}`)
-    .addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(textInput));
-}
 
 /**
  * Build modal nhập media URL + description.
@@ -210,7 +100,7 @@ export function buildMediaModal(
     .setCustomId('media_description')
     .setLabel('Mô tả (tùy chọn)')
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder('Alt text cho ảnh')
+    .setPlaceholder('Văn bản thay thế cho ảnh')
     .setValue(currentDesc || '');
 
   return new ModalBuilder()
@@ -223,31 +113,64 @@ export function buildMediaModal(
 }
 
 /**
- * Build modal edit line (nhập index + nội dung mới trong 1 modal).
+ * Build modal quản lý tất cả lines trong 1 modal duy nhất.
+ * Hiển thị textarea với tất cả lines, user có thể edit trực tiếp.
  */
-export function buildEditLineModal(lineCount: number): ModalBuilder {
-  const indexInput = new TextInputBuilder()
-    .setCustomId('edit_line_index')
-    .setLabel(`Index dòng muốn sửa (0-${lineCount - 1})`)
-    .setStyle(TextInputStyle.Short)
-    .setPlaceholder('Ví dụ: 0')
-    .setRequired(true);
+export function buildLinesModal(contentLines: string[]): ModalBuilder {
+  const preview =
+    contentLines.map((line, i) => `${i + 1}. ${line}`).join('\n') || '(chưa có dòng nào)';
 
-  const contentInput = new TextInputBuilder()
-    .setCustomId('edit_line_content')
-    .setLabel('Nội dung mới')
+  const textarea = new TextInputBuilder()
+    .setCustomId('lines_content')
+    .setLabel('Text Lines (mỗi dòng 1 entry)')
     .setStyle(TextInputStyle.Paragraph)
-    .setPlaceholder('Nhập nội dung mới cho dòng')
+    .setPlaceholder('Dòng 1\nDòng 2\nDòng 3')
     .setMaxLength(MAX_CONTAINER_TEXT_LENGTH)
-    .setRequired(true);
+    .setValue(preview)
+    .setRequired(false);
 
   return new ModalBuilder()
-    .setCustomId(`${ContainerModalPrefix}edit_line`)
-    .setTitle('Chỉnh sửa dòng text')
-    .addComponents(
-      new ActionRowBuilder<TextInputBuilder>().addComponents(indexInput),
-      new ActionRowBuilder<TextInputBuilder>().addComponents(contentInput),
-    );
+    .setCustomId(`${ContainerModalPrefix}lines`)
+    .setTitle('Chỉnh sửa Text Lines')
+    .addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(textarea));
+}
+
+/**
+ * Build modal chọn accent color với preset buttons + custom input.
+ */
+export function buildColorModal(currentColor: number): ModalBuilder {
+  const currentHex = '#' + currentColor.toString(16).padStart(6, '0');
+
+  const colorInput = new TextInputBuilder()
+    .setCustomId('color_value')
+    .setLabel('Nhập mã màu (hoặc giữ nguyên để không đổi)')
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder(currentHex)
+    .setValue(currentHex);
+
+  return new ModalBuilder()
+    .setCustomId(`${ContainerModalPrefix}color`)
+    .setTitle('Chọn Accent Color')
+    .addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(colorInput));
+}
+
+/**
+ * Build modal chỉnh sửa header template.
+ */
+export function buildHeaderModal(currentHeader: string | null): ModalBuilder {
+  const headerInput = new TextInputBuilder()
+    .setCustomId('header_value')
+    .setLabel('Header template')
+    .setStyle(TextInputStyle.Paragraph)
+    .setPlaceholder('Chào mừng {user} đến với {guild}!')
+    .setMaxLength(MAX_CONTAINER_TEXT_LENGTH)
+    .setValue(currentHeader || '')
+    .setRequired(false);
+
+  return new ModalBuilder()
+    .setCustomId(`${ContainerModalPrefix}header`)
+    .setTitle('Chỉnh sửa Header')
+    .addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(headerInput));
 }
 
 // ─── Preview Builder ───────────────────────────────────────────
@@ -280,33 +203,6 @@ export function buildLivePreviewContainer(
   return buildContainer(draft, mockContext);
 }
 
-// ─── Info Containers ───────────────────────────────────────────
-
-/**
- * Build info container cho lines submenu.
- */
-export function buildLinesInfoContainer(contentLines: string[]) {
-  const lineCount = contentLines.length;
-  const linesList =
-    contentLines.map((line, i) => `\`${i}\` ${line}`).join('\n') || '(không có dòng nào)';
-
-  return buildTextOnlyContainer(
-    `📝 Quản lý Text Lines\n\nSố dòng: **${lineCount}**\n\nDanh sách:\n${linesList}`,
-  );
-}
-
-/**
- * Build info container cho color picker.
- */
-export function buildColorPickerInfoContainer(accentColor: number) {
-  const currentHex = '#' + accentColor.toString(16).padStart(6, '0');
-
-  return buildTextOnlyContainer(
-    `🎨 Chọn Accent Color\n\nMàu hiện tại: \`${currentHex}\`\n\nNhấn vào màu muốn chọn, hoặc "Custom" để nhập mã màu tùy chỉnh.`,
-    accentColor,
-  );
-}
-
 // ─── Editor Utilities ──────────────────────────────────────────
 
 /**
@@ -317,12 +213,12 @@ export function buildColorPickerInfoContainer(accentColor: number) {
  */
 export async function updateEditorMessage(
   interaction: import('discord.js').ButtonInteraction,
-  session: ContainerEditSession,
+  draft: ContainerSettings,
 ): Promise<void> {
-  const preview = buildLivePreviewContainer(session.draft);
+  const preview = buildLivePreviewContainer(draft);
 
   await interaction.update({
-    components: [...preview.toJSON(), ...buildAllEditorRows()],
+    components: [...preview.toJSON(), ...buildAllEditorRows(draft)],
     flags: preview.flags,
     files: preview.files,
   });

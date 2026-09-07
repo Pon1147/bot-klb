@@ -63,7 +63,7 @@ export async function handleReset(
   const preview = buildLivePreviewContainer(session.draft);
 
   await interaction.update({
-    components: [...preview.toJSON(), ...buildAllEditorRows()],
+    components: [...preview.toJSON(), ...buildAllEditorRows(session.draft)],
     flags: preview.flags,
     files: preview.files,
   });

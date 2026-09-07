@@ -51,7 +51,7 @@ async function sendEditorMessage(
   // Gửi message editor với container preview + buttons
   // WHY: Không dùng ephemeral, dùng flags thuần túy (ephemeral param đã deprecated)
   await interaction.reply({
-    components: [...preview.toJSON(), ...buildAllEditorRows()],
+    components: [...preview.toJSON(), ...buildAllEditorRows(draft)],
     flags: preview.flags,
     files: preview.files,
   });

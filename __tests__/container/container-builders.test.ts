@@ -10,26 +10,18 @@ import {
   MessageFlags,
 } from 'discord.js';
 import {
-  buildEditRow1,
-  buildLinesRow,
+  buildMainEditorRow,
   buildActionRow,
   buildAllEditorRows,
-  buildColorPresetRow,
-  buildBackRow,
-  buildLinesSubmenuRows,
-  buildColorPickerRows,
-  buildTextModal,
-  buildLongTextModal,
   buildMediaModal,
-  buildEditLineModal,
+  buildLinesModal,
+  buildColorModal,
+  buildHeaderModal,
   buildLivePreviewContainer,
-  buildLinesInfoContainer,
-  buildColorPickerInfoContainer,
   updateEditorMessage,
 } from '../../src/commands/container/container-builders.js';
 import { ContainerSettings } from '../../src/types/settings.types.js';
-import { CONTAINER_COLOR_PRESETS, ContainerEditSession } from '../../src/commands/container/container-session.js';
-import { ButtonInteraction } from 'discord.js';
+import { ButtonInteraction, ModalSubmitInteraction } from 'discord.js';
 
 const mockContainerSettings: ContainerSettings = {
   accentColor: 0x5865f2,
@@ -43,35 +35,17 @@ const mockContainerSettings: ContainerSettings = {
 describe('Container Builders', () => {
   // ─── Button Row Builders ───────────────────────────────────
 
-  describe('buildEditRow1()', () => {
-    it('phải trả về ActionRow với 4 buttons chỉnh sửa', () => {
-      const row = buildEditRow1();
+  describe('buildMainEditorRow()', () => {
+    it('phải trả về ActionRow với 5 buttons', () => {
+      const row = buildMainEditorRow(mockContainerSettings);
 
       expect(row).toBeInstanceOf(ActionRowBuilder);
       const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
-      expect(components).toHaveLength(4);
+      expect(components).toHaveLength(5);
     });
 
     it('tất cả buttons phải là ButtonBuilder', () => {
-      const row = buildEditRow1();
-      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
-      components.forEach((comp) => {
-        expect(comp).toBeInstanceOf(ButtonBuilder);
-      });
-    });
-  });
-
-  describe('buildLinesRow()', () => {
-    it('phải trả về ActionRow với 4 buttons lines management', () => {
-      const row = buildLinesRow();
-
-      expect(row).toBeInstanceOf(ActionRowBuilder);
-      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
-      expect(components).toHaveLength(4);
-    });
-
-    it('tất cả buttons phải là ButtonBuilder', () => {
-      const row = buildLinesRow();
+      const row = buildMainEditorRow(mockContainerSettings);
       const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
       components.forEach((comp) => {
         expect(comp).toBeInstanceOf(ButtonBuilder);
@@ -98,166 +72,27 @@ describe('Container Builders', () => {
   });
 
   describe('buildAllEditorRows()', () => {
-    it('phải trả về array 2 rows (edit + action)', () => {
-      const rows = buildAllEditorRows();
+    it('phải trả về array 2 rows (main + action)', () => {
+      const rows = buildAllEditorRows(mockContainerSettings);
 
       expect(Array.isArray(rows)).toBe(true);
       expect(rows.length).toBe(2);
     });
 
-    it('row đầu tiên phải có 4 buttons (edit row)', () => {
-      const rows = buildAllEditorRows();
+    it('row đầu tiên phải có 5 buttons (main row)', () => {
+      const rows = buildAllEditorRows(mockContainerSettings);
       const components = (rows[0] as unknown as Record<string, unknown>).components as ButtonBuilder[];
-      expect(components).toHaveLength(4);
+      expect(components).toHaveLength(5);
     });
 
     it('row thứ hai phải có 3 buttons (action row)', () => {
-      const rows = buildAllEditorRows();
+      const rows = buildAllEditorRows(mockContainerSettings);
       const components = (rows[1] as unknown as Record<string, unknown>).components as ButtonBuilder[];
       expect(components).toHaveLength(3);
     });
   });
 
-  describe('buildColorPresetRow()', () => {
-    it('phải trả về ActionRow với presets + custom button', () => {
-      const row = buildColorPresetRow();
-
-      expect(row).toBeInstanceOf(ActionRowBuilder);
-      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
-      // 4 presets + 1 custom = 5 buttons
-      expect(components.length).toBe(CONTAINER_COLOR_PRESETS.length + 1);
-    });
-
-    it('tất cả components phải là ButtonBuilder', () => {
-      const row = buildColorPresetRow();
-      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
-      components.forEach((comp) => {
-        expect(comp).toBeInstanceOf(ButtonBuilder);
-      });
-    });
-
-    it('phải có đúng số lượng buttons (presets + 1 custom)', () => {
-      const row = buildColorPresetRow();
-      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
-      expect(components.length).toBe(5);
-    });
-  });
-
-  describe('buildBackRow()', () => {
-    it('phải trả về ActionRow với 1 button back', () => {
-      const row = buildBackRow();
-
-      expect(row).toBeInstanceOf(ActionRowBuilder);
-      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
-      expect(components).toHaveLength(1);
-    });
-
-    it('button phải là ButtonBuilder', () => {
-      const row = buildBackRow();
-      const components = (row as unknown as Record<string, unknown>).components as ButtonBuilder[];
-      expect(components[0]).toBeInstanceOf(ButtonBuilder);
-    });
-  });
-
-  describe('buildLinesSubmenuRows()', () => {
-    it('phải trả về array 2 rows (lines + back)', () => {
-      const rows = buildLinesSubmenuRows();
-
-      expect(Array.isArray(rows)).toBe(true);
-      expect(rows.length).toBe(2);
-    });
-
-    it('row đầu tiên phải có 4 buttons (lines row)', () => {
-      const rows = buildLinesSubmenuRows();
-      const components = (rows[0] as unknown as Record<string, unknown>).components as ButtonBuilder[];
-      expect(components).toHaveLength(4);
-    });
-
-    it('row thứ hai phải có 1 button (back row)', () => {
-      const rows = buildLinesSubmenuRows();
-      const components = (rows[1] as unknown as Record<string, unknown>).components as ButtonBuilder[];
-      expect(components).toHaveLength(1);
-    });
-  });
-
-  describe('buildColorPickerRows()', () => {
-    it('phải trả về array 2 rows (color presets + back)', () => {
-      const rows = buildColorPickerRows();
-
-      expect(Array.isArray(rows)).toBe(true);
-      expect(rows.length).toBe(2);
-    });
-
-    it('row đầu tiên phải có 5 buttons (4 presets + 1 custom)', () => {
-      const rows = buildColorPickerRows();
-      const components = (rows[0] as unknown as Record<string, unknown>).components as ButtonBuilder[];
-      expect(components).toHaveLength(5);
-    });
-
-    it('row thứ hai phải có 1 button (back row)', () => {
-      const rows = buildColorPickerRows();
-      const components = (rows[1] as unknown as Record<string, unknown>).components as ButtonBuilder[];
-      expect(components).toHaveLength(1);
-    });
-  });
-
   // ─── Modal Builders ────────────────────────────────────────
-
-  describe('buildTextModal()', () => {
-    it('phải trả về ModalBuilder', () => {
-      const modal = buildTextModal('test_id', 'Test Label', 'Placeholder', 'Value');
-
-      expect(modal).toBeInstanceOf(ModalBuilder);
-    });
-
-    it('phải có 1 ActionRow component', () => {
-      const modal = buildTextModal('test_id', 'Label', 'Placeholder', 'Value');
-
-      const components = (modal as unknown as Record<string, unknown>).components;
-      expect(components).toHaveLength(1);
-    });
-
-    it('phải xử lý value rỗng', () => {
-      const modal = buildTextModal('test_id', 'Label', 'Placeholder', '');
-
-      expect(modal).toBeInstanceOf(ModalBuilder);
-    });
-
-    it('phải có ActionRow với TextInput bên trong', () => {
-      const modal = buildTextModal('test_id', 'Label', 'Placeholder', 'Value');
-
-      const components = (modal as unknown as Record<string, unknown>).components;
-      expect(components[0]).toBeInstanceOf(ActionRowBuilder);
-    });
-  });
-
-  describe('buildLongTextModal()', () => {
-    it('phải trả về ModalBuilder', () => {
-      const modal = buildLongTextModal('test_id', 'Test Label', 'Placeholder', 'Value');
-
-      expect(modal).toBeInstanceOf(ModalBuilder);
-    });
-
-    it('phải có 1 ActionRow component', () => {
-      const modal = buildLongTextModal('test_id', 'Label', 'Placeholder', 'Value');
-
-      const components = (modal as unknown as Record<string, unknown>).components;
-      expect(components).toHaveLength(1);
-    });
-
-    it('phải xử lý value rỗng', () => {
-      const modal = buildLongTextModal('test_id', 'Label', 'Placeholder', '');
-
-      expect(modal).toBeInstanceOf(ModalBuilder);
-    });
-
-    it('phải có ActionRow với TextInput bên trong', () => {
-      const modal = buildLongTextModal('test_id', 'Label', 'Placeholder', 'Value');
-
-      const components = (modal as unknown as Record<string, unknown>).components;
-      expect(components[0]).toBeInstanceOf(ActionRowBuilder);
-    });
-  });
 
   describe('buildMediaModal()', () => {
     it('phải trả về ModalBuilder với 2 text inputs', () => {
@@ -292,29 +127,72 @@ describe('Container Builders', () => {
     });
   });
 
-  describe('buildEditLineModal()', () => {
-    it('phải trả về ModalBuilder với 2 text inputs', () => {
-      const modal = buildEditLineModal(5);
+  describe('buildLinesModal()', () => {
+    it('phải trả về ModalBuilder', () => {
+      const modal = buildLinesModal(['Line 1', 'Line 2']);
 
       expect(modal).toBeInstanceOf(ModalBuilder);
     });
 
-    it('phải có 2 ActionRows (index + content)', () => {
-      const modal = buildEditLineModal(3);
+    it('phải có 1 ActionRow component', () => {
+      const modal = buildLinesModal(['Line 1']);
 
       const components = (modal as unknown as Record<string, unknown>).components;
-      expect(components).toHaveLength(2);
+      expect(components).toHaveLength(1);
     });
 
-    it('phải xử lý lineCount = 1', () => {
-      const modal = buildEditLineModal(1);
+    it('phải hiển thị preview lines với index', () => {
+      const modal = buildLinesModal(['First', 'Second']);
+      expect(modal).toBeInstanceOf(ModalBuilder);
+    });
+
+    it('phải hiển thị "(chưa có dòng nào)" khi empty', () => {
+      const modal = buildLinesModal([]);
+      expect(modal).toBeInstanceOf(ModalBuilder);
+    });
+  });
+
+  describe('buildColorModal()', () => {
+    it('phải trả về ModalBuilder', () => {
+      const modal = buildColorModal(0x5865f2);
 
       expect(modal).toBeInstanceOf(ModalBuilder);
     });
 
-    it('phải xử lý lineCount = 0 (edge case)', () => {
-      const modal = buildEditLineModal(0);
+    it('phải có 1 ActionRow component', () => {
+      const modal = buildColorModal(0xff0000);
 
+      const components = (modal as unknown as Record<string, unknown>).components;
+      expect(components).toHaveLength(1);
+    });
+
+    it('phải hiển thị hex color đúng format', () => {
+      const modal = buildColorModal(0x5865f2);
+      expect(modal).toBeInstanceOf(ModalBuilder);
+    });
+
+    it('phải xử lý color = 0', () => {
+      const modal = buildColorModal(0);
+      expect(modal).toBeInstanceOf(ModalBuilder);
+    });
+  });
+
+  describe('buildHeaderModal()', () => {
+    it('phải trả về ModalBuilder', () => {
+      const modal = buildHeaderModal('**Welcome {user}!**');
+
+      expect(modal).toBeInstanceOf(ModalBuilder);
+    });
+
+    it('phải có 1 ActionRow component', () => {
+      const modal = buildHeaderModal('Header');
+
+      const components = (modal as unknown as Record<string, unknown>).components;
+      expect(components).toHaveLength(1);
+    });
+
+    it('phải set value mặc định khi headerTemplate = null', () => {
+      const modal = buildHeaderModal(null);
       expect(modal).toBeInstanceOf(ModalBuilder);
     });
   });
@@ -391,70 +269,13 @@ describe('Container Builders', () => {
       expect(result.components).toBeDefined();
     });
   });
-
-  // ─── Info Containers ───────────────────────────────────────
-
-  describe('buildLinesInfoContainer()', () => {
-    it('phải trả về container với danh sách lines', () => {
-      const result = buildLinesInfoContainer(['Line A', 'Line B', 'Line C']);
-
-      expect(result).toBeDefined();
-      expect(Array.isArray(result.components)).toBe(true);
-    });
-
-    it('phải xử lý mảng rỗng (không có dòng nào)', () => {
-      const result = buildLinesInfoContainer([]);
-
-      expect(result).toBeDefined();
-      expect(Array.isArray(result.components)).toBe(true);
-    });
-
-    it('phải có đúng số lượng lines trong content', () => {
-      const lines = ['First', 'Second'];
-      const result = buildLinesInfoContainer(lines);
-
-      expect(result).toBeDefined();
-    });
-  });
-
-  describe('buildColorPickerInfoContainer()', () => {
-    it('phải trả về container với accent color hex', () => {
-      const result = buildColorPickerInfoContainer(0x5865f2);
-
-      expect(result).toBeDefined();
-      expect(Array.isArray(result.components)).toBe(true);
-    });
-
-    it('phải convert number color thành hex string đúng format', () => {
-      const result = buildColorPickerInfoContainer(0xff0000);
-
-      expect(result).toBeDefined();
-    });
-
-    it('phải xử lý color = 0', () => {
-      const result = buildColorPickerInfoContainer(0);
-
-      expect(result).toBeDefined();
-    });
-  });
 });
 
-describe("updateEditorMessage", () => {
-  it("should update message with live preview", async () => {
+describe('updateEditorMessage', () => {
+  it('should update message with live preview', async () => {
     const mockUpdate = jest.fn().mockResolvedValue(undefined);
     const mockInteraction = { update: mockUpdate } as unknown as ButtonInteraction;
-    const session = {
-      draft: {
-        accentColor: 0x5865f2,
-        headerTemplate: "**Test Header**",
-        contentLines: ["Test content"],
-        mediaUrl: null,
-        mediaDescription: null,
-        showSeparator: false,
-        files: [],
-      },
-    } as unknown as ContainerEditSession;
-    await updateEditorMessage(mockInteraction, session);
+    await updateEditorMessage(mockInteraction, mockContainerSettings);
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 });

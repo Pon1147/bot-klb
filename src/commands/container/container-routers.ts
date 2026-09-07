@@ -1,4 +1,4 @@
-﻿import { ButtonInteraction, ModalSubmitInteraction, PermissionFlagsBits } from 'discord.js';
+import { ButtonInteraction, ModalSubmitInteraction, PermissionFlagsBits } from 'discord.js';
 import { ContainerSettings } from '../../types/settings.types.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { getSettingsService } from '../../services/settings.service.js';
@@ -9,20 +9,11 @@ import {
   cloneContainerSettings,
   createSession,
 } from './container-session.js';
+import { buildLivePreviewContainer, buildAllEditorRows } from './container-builders.js';
 import {
-  buildLivePreviewContainer,
-  buildAllEditorRows,
-  updateEditorMessage,
-} from './container-builders.js';
-import {
-  handleLinesSubmenu,
-  handleAddLine,
-  handleEditLine,
-  handleRemoveLine,
-  handleClearLines,
-  handleColorPicker,
-  handleColorPresetSelect,
-  handleCustomColorModal,
+  handleLinesModal,
+  handleColorModal,
+  handleHeaderModal,
   handleSeparatorToggle,
   handleMediaEdit,
 } from './handlers/property.handler.js';
@@ -38,7 +29,7 @@ const logger = createLogger('ContainerRouters');
  * Main handler cho tất cả button interactions trong container editor.
  */
 export async function handleEditorButtonInteraction(interaction: ButtonInteraction): Promise<void> {
-  // Pencil button: start editor from a live container message
+  // Pencil button: start editor từ live container message
   if (interaction.customId.startsWith(ContainerIds.EDIT_PENCIL)) {
     await handlePencilButtonClick(interaction);
     return;
@@ -57,12 +48,6 @@ export async function handleEditorButtonInteraction(interaction: ButtonInteracti
 
   const customId = interaction.customId;
 
-  // Navigation: quay lại từ submenu
-  if (customId === ContainerIds.BACK) {
-    await updateEditorMessage(interaction, session);
-    return;
-  }
-
   // Actions: Save, Reset, Cancel
   if (customId === ContainerIds.SAVE) {
     await handleSave(interaction, session);
@@ -77,13 +62,17 @@ export async function handleEditorButtonInteraction(interaction: ButtonInteracti
     return;
   }
 
-  // Property Editors: Lines, Color, Separator, Media
+  // Property Editors — mở modal trực tiếp, không cần submenu
   if (customId === ContainerIds.LINES) {
-    await handleLinesSubmenu(interaction, session);
+    await handleLinesModal(interaction, session);
     return;
   }
   if (customId === ContainerIds.COLOR) {
-    await handleColorPicker(interaction, session);
+    await handleColorModal(interaction, session);
+    return;
+  }
+  if (customId === ContainerIds.HEADER) {
+    await handleHeaderModal(interaction, session);
     return;
   }
   if (customId === ContainerIds.SEPARATOR) {
@@ -92,36 +81,6 @@ export async function handleEditorButtonInteraction(interaction: ButtonInteracti
   }
   if (customId === ContainerIds.MEDIA) {
     await handleMediaEdit(interaction, session);
-    return;
-  }
-
-  // Lines Submenu: Add, Edit, Remove, Clear
-  if (customId === ContainerIds.LINES_ADD) {
-    await handleAddLine(interaction);
-    return;
-  }
-  if (customId === ContainerIds.LINES_EDIT) {
-    await handleEditLine(interaction, session);
-    return;
-  }
-  if (customId === ContainerIds.LINES_REMOVE) {
-    await handleRemoveLine(interaction, session);
-    return;
-  }
-  if (customId === ContainerIds.LINES_CLEAR) {
-    await handleClearLines(interaction, session);
-    return;
-  }
-
-  // Color Picker
-  if (customId.startsWith(ContainerIds.COLOR_PRESET)) {
-    const index = parseInt(customId.replace(ContainerIds.COLOR_PRESET, ''), 10);
-    await handleColorPresetSelect(interaction, session, index);
-    return;
-  }
-
-  if (customId === ContainerIds.COLOR_CUSTOM) {
-    await handleCustomColorModal(interaction);
     return;
   }
 
@@ -144,39 +103,22 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
   touchSession(interaction.user.id);
   const modalId = interaction.customId.replace(ContainerModalPrefix, '');
 
-  if (modalId === 'new_line') {
-    const value = interaction.fields.getTextInputValue('new_line');
-    if (value) {
-      session.draft.contentLines.push(value);
-    }
-  } else if (modalId === 'edit_line') {
-    const indexValue = interaction.fields.getTextInputValue('edit_line_index');
-    const index = parseInt(indexValue, 10);
-    if (isNaN(index) || index < 0 || index >= session.draft.contentLines.length) {
-      await sendReply(interaction, {
-        components: buildErrorContainer(`Index không hợp lệ: "${indexValue}".`).toJSON(),
-      });
-      return;
-    }
-    const newContent = interaction.fields.getTextInputValue('edit_line_content');
-    session.draft.contentLines[index] = newContent;
-  } else if (modalId === 'line_remove_index') {
-    const value = interaction.fields.getTextInputValue('line_remove_index');
-    const index = parseInt(value, 10);
-    if (isNaN(index) || index < 0 || index >= session.draft.contentLines.length) {
-      await sendReply(interaction, {
-        components: buildErrorContainer(`Index không hợp lệ: "${value}".`).toJSON(),
-      });
-      return;
-    }
-    session.draft.contentLines.splice(index, 1);
-  } else if (modalId === 'custom_color') {
-    const value = interaction.fields.getTextInputValue('custom_color');
-    const hex = value.replace('#', '');
+  if (modalId === 'lines') {
+    // Parse lines từ textarea — mỗi dòng là 1 content line
+    const rawValue = interaction.fields.getTextInputValue('lines_content');
+    const lines = rawValue
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+    session.draft.contentLines = lines;
+  } else if (modalId === 'color') {
+    // Parse màu từ input — chấp nhận #RRGGBB hoặc RRGGBB
+    const rawValue = interaction.fields.getTextInputValue('color_value');
+    const hex = rawValue.replace('#', '').trim();
     if (hex.length !== 6) {
       await sendReply(interaction, {
         components: buildErrorContainer(
-          `Mã màu không hợp lệ: "${value}". Dùng định dạng #RRGGBB (6 ký tự hex).`,
+          `Mã màu không hợp lệ: "${rawValue}". Dùng định dạng #RRGGBB (6 ký tự hex).`,
         ).toJSON(),
       });
       return;
@@ -185,12 +127,16 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
     if (isNaN(parsed)) {
       await sendReply(interaction, {
         components: buildErrorContainer(
-          `Mã màu không hợp lệ: "${value}". Dùng định dạng #RRGGBB.`,
+          `Mã màu không hợp lệ: "${rawValue}". Dùng định dạng #RRGGBB.`,
         ).toJSON(),
       });
       return;
     }
     session.draft.accentColor = parsed;
+  } else if (modalId === 'header') {
+    // Cập nhật header template
+    const rawValue = interaction.fields.getTextInputValue('header_value');
+    session.draft.headerTemplate = rawValue.trim() || null;
   } else if (modalId === 'media') {
     const urlValue = interaction.fields.getTextInputValue('media_url');
     const descValue = interaction.fields.getTextInputValue('media_description');
@@ -208,10 +154,10 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
 }
 
 /**
- * Refresh editor preview after modal submission.
+ * Refresh editor preview sau modal submission.
  *
- * WHY: ModalSubmitInteraction doesn't have .update(), so we fetch the
- * original message by channelId + messageId and edit it.
+ * WHY: ModalSubmitInteraction không có .update(), nên fetch message gốc
+ * bằng channelId + messageId và edit lại.
  */
 async function updateModalEditorPreview(
   interaction: ModalSubmitInteraction,
@@ -228,20 +174,20 @@ async function updateModalEditorPreview(
 
     const preview = buildLivePreviewContainer(session.draft);
     await message.edit({
-      components: [...preview.toJSON(), ...buildAllEditorRows()],
+      components: [...preview.toJSON(), ...buildAllEditorRows(session.draft)],
       files: preview.files,
     });
   } catch (error) {
     logger.error(
-      'Error updating editor preview after modal: ' +
+      'Lỗi khi cập nhật preview sau modal: ' +
         (error instanceof Error ? error.message : String(error)),
     );
   }
 }
 
 /**
- * Handle pencil button click from a live container message.
- * Starts an interactive edit session without needing /container edit.
+ * Handle pencil button click từ live container message.
+ * Bắt đầu edit session mà không cần /container edit.
  */
 async function handlePencilButtonClick(interaction: ButtonInteraction): Promise<void> {
   const guild = interaction.guild;
@@ -283,7 +229,7 @@ async function handlePencilButtonClick(interaction: ButtonInteraction): Promise<
     const preview = buildLivePreviewContainer(draft);
 
     await interaction.update({
-      components: [...preview.toJSON(), ...buildAllEditorRows()],
+      components: [...preview.toJSON(), ...buildAllEditorRows(draft)],
       flags: preview.flags,
       files: preview.files,
     });
@@ -298,7 +244,7 @@ async function handlePencilButtonClick(interaction: ButtonInteraction): Promise<
     );
   } catch (error) {
     logger.error(
-      'Error starting container editor from pencil button: ' +
+      'Lỗi khi mở editor từ pencil button: ' +
         (error instanceof Error ? error.message : String(error)),
     );
     if (!interaction.replied) {
