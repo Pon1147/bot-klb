@@ -93,28 +93,29 @@ export async function execute(client: Client, message: Message): Promise<void> {
   }
 
   // Gửi follow-up message qua webhook endpoint → extension poll được bằng webhook token
-  const resultText = result.body.ok
-    ? 'Claim processed successfully.'
-    : 'Claim failed: ' +
+  // Chỉ gửi khi fail — success message không cần hiển thị trong channel
+  if (!result.body.ok) {
+    const resultText =
+      'Claim failed: ' +
       (claimErrorMap[result.body.error || ''] || 'Lỗi không xác định. Thử lại sau.');
+    try {
+      // Fetch webhook để lấy token (Message object không expose webhookToken)
+      const webhookData = (await client.rest.get(`/webhooks/${message.webhookId}`)) as {
+        token: string;
+      };
+      const webhookUrl = `https://discord.com/api/webhooks/${message.webhookId}/${webhookData.token}`;
 
-  try {
-    // Fetch webhook để lấy token (Message object không expose webhookToken)
-    const webhookData = (await client.rest.get(`/webhooks/${message.webhookId}`)) as {
-      token: string;
-    };
-    const webhookUrl = `https://discord.com/api/webhooks/${message.webhookId}/${webhookData.token}`;
-
-    await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: resultText }),
-      signal: AbortSignal.timeout(8000),
-    });
-  } catch (err) {
-    logger.warn(
-      'Failed to send webhook follow-up: ' + (err instanceof Error ? err.message : String(err)),
-    );
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: resultText }),
+        signal: AbortSignal.timeout(8000),
+      });
+    } catch (err) {
+      logger.warn(
+        'Failed to send webhook follow-up: ' + (err instanceof Error ? err.message : String(err)),
+      );
+    }
   }
 
   // Xóa webhook message gốc (không hiển thị raw JSON cho user)
