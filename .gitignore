@@ -1,52 +1,105 @@
+# =========================
 # Dependencies
+# =========================
 node_modules/
 
+# =========================
 # Build output
+# =========================
 dist/
+*.tsbuildinfo
 
-# Test coverage
+# =========================
+# Test coverage & reports
+# =========================
 coverage/
+playwright-report/
+test-results/
+blob-report/
 
+# =========================
 # Database
+# =========================
 data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
 
+# =========================
 # Environment
+# =========================
 .env
+.env.*
+!.env.example
 
-# Backlog
-backlog/
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
+# =========================
+# Cache & temporary files
+# =========================
+.cache/
+tmp/
+temp/
+.eslintcache
+*.swp
+*.swo
+*~
+
+# =========================
 # AI config
+# =========================
 .clinerules
 .claude
+
+# =========================
+# Backlog
+# =========================
+backlog/
+
+# =========================
 # Generated
+# =========================
 tree.js
 
-
+# =========================
 # IDE
+# =========================
 .vscode/
 .idea/
 
-#md
+# =========================
+# Documentation - local/generated
+# =========================
 tree.md
 PLAN.md
 REPORT.md
 judge.md
 diagrams.md
 
+# =========================
 # Scripts & outputs
+# =========================
 script.js
 codes-output.txt
 
-# Husky
-.husky/_
+# =========================
+# Husky generated files
+# =========================
+.husky/_/
 
+# =========================
 # OS
+# =========================
 Thumbs.db
 Desktop.ini
 .DS_Store
-
-# Logs
-logs/
-*.log
-npm-debug.log*
