@@ -14,6 +14,7 @@ jest.mock('discord.js', () => ({
 jest.mock('../../src/database/df.token.db.js', () => ({
   getDfToken: jest.fn(),
   touchDfToken: jest.fn(),
+  deleteDfToken: jest.fn(),
 }));
 
 jest.mock('../../src/services/deltaforce.api.js', () => ({

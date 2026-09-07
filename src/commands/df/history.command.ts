@@ -91,7 +91,9 @@ export async function execute(
     // Fetch only needed matches from API (pagination)
     const matchData = await getMatchList(apiToken, { limit });
 
-    const matches = matchData.list;
+    // Cắt danh sách theo limit để đảm bảo message trả về đúng số trận user yêu cầu
+    // (API có thể ignore limit param và trả về nhiều hơn)
+    const matches = matchData.list.slice(0, limit);
 
     if (!matches.length) {
       const err = buildErrorContainer('Không có trận đấu nào trong lịch sử.');
@@ -122,7 +124,7 @@ export async function execute(
     // ── 2. COUNT TEXT ──
     const countText: Record<string, unknown> = {
       type: ComponentType.TextDisplay,
-      content: `${matches.length} / ${matchData.list.length} trận`,
+      content: `${matches.length} trận`,
     };
 
     // ── 3. SEPARATOR ──
