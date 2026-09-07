@@ -105,16 +105,15 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
 
   if (modalId === 'lines') {
     // Parse lines từ textarea — mỗi dòng là 1 content line
+    // Giữ lại empty lines cho spacing, trim whitespace
     const rawValue = interaction.fields.getTextInputValue('lines_content');
-    const lines = rawValue
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
+    const lines = rawValue.split('\n').map((l) => l.trim());
     session.draft.contentLines = lines;
   } else if (modalId === 'color') {
     // Parse màu từ input — chấp nhận #RRGGBB hoặc RRGGBB
+    // Xóa TẤT CẢ # (chỉ first) để xử lý ##FF0000
     const rawValue = interaction.fields.getTextInputValue('color_value');
-    const hex = rawValue.replace('#', '').trim();
+    const hex = rawValue.replaceAll('#', '').trim();
     if (hex.length !== 6) {
       await sendReply(interaction, {
         components: buildErrorContainer(
@@ -124,7 +123,7 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
       return;
     }
     const parsed = parseInt(hex, 16);
-    if (isNaN(parsed)) {
+    if (isNaN(parsed) || parsed < 0) {
       await sendReply(interaction, {
         components: buildErrorContainer(
           `Mã màu không hợp lệ: "${rawValue}". Dùng định dạng #RRGGBB.`,

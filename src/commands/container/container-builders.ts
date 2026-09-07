@@ -117,8 +117,8 @@ export function buildMediaModal(
  * Hiển thị textarea với tất cả lines, user có thể edit trực tiếp.
  */
 export function buildLinesModal(contentLines: string[]): ModalBuilder {
-  const preview =
-    contentLines.map((line, i) => `${i + 1}. ${line}`).join('\n') || '(chưa có dòng nào)';
+  // Hiển thị raw lines — user sẽ submit raw lines, không có số prefix
+  const preview = contentLines.join('\n') || '(chưa có dòng nào)';
 
   const textarea = new TextInputBuilder()
     .setCustomId('lines_content')
