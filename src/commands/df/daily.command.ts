@@ -17,10 +17,10 @@ const logger = createLogger('DfDaily');
 
 export const data = new SlashCommandBuilder()
   .setName('df-daily')
-  .setDescription('Trang thai chien dau hang ngay Delta Force.');
+  .setDescription('Trạng thái chiến đấu hàng ngày Delta Force.');
 
 function formatOperations(battle: DfBattlefieldBattle | null): string {
-  if (!battle) return '  _Chua co du lieu (chua choi tran nao hom nay)_';
+  if (!battle) return '  _Chưa có dữ liệu (chưa chơi trận nào hôm nay)_';
 
   const lines: string[] = [];
   lines.push(`- **Thuong**: ${Number(battle.revenue).toLocaleString('vi-VN')}`);

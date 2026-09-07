@@ -110,7 +110,7 @@ export async function runDfCommand(
 
   if (!token) {
     const err = buildErrorContainer(
-      'Ban chua lien ket tai khoan. Dung `/df-link start` hoac `/df-link manual` de bat dau.',
+      'Bạn chưa liên kết tài khoản. Dùng `/df-link start` hoặc `/df-link manual` để bắt đầu.',
     );
     await sendReply(ctx.interaction, { components: err.toJSON() });
     return true;
@@ -139,12 +139,12 @@ export async function runDfCommand(
   } catch (error) {
     if (isTokenExpiredError(error as Error)) {
       logger.info(
-        `Token het han/invalid cho user ${ctx.userId} — xoa binding/token de user co the link lai.`,
+        `Token hết hạn/invalid cho user ${ctx.userId} — xóa binding/token để user có thể link lại.`,
       );
       revokeBinding(ctx.database, ctx.userId);
       deleteDfToken(ctx.database, ctx.userId);
       const err = buildErrorContainer(
-        'Token hien da het han. Vui long su dung `/df-link start` de lien ket lai.',
+        'Token hiện đã hết hạn. Vui lòng sử dụng `/df-link start` để liên kết lại.',
       );
       await ctx.interaction.editReply({
         components: err.toJSON(),
@@ -152,7 +152,7 @@ export async function runDfCommand(
       });
       return true;
     }
-    const err = buildErrorContainer(`Loi khi lay du lieu: ${(error as Error).message}`);
+    const err = buildErrorContainer(`Lỗi khi lấy dữ liệu: ${(error as Error).message}`);
     await ctx.interaction.editReply({
       components: err.toJSON(),
       flags: err.flags | MessageFlags.Ephemeral,

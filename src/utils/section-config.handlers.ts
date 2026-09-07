@@ -176,7 +176,7 @@ export async function executeSectionCommand(
     );
     if (!interaction.replied && !interaction.deferred) {
       await sendReply(interaction, {
-        components: buildErrorContainer('An error occurred. Check console logs.').toJSON(),
+        components: buildErrorContainer('Đã xảy ra lỗi. Vui lòng kiểm tra log console.').toJSON(),
       });
     }
   }

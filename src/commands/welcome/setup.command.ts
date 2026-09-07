@@ -7,7 +7,7 @@ import {
 } from '../../utils/section-config.handlers.js';
 
 export const data = buildSectionSubcommands('welcome', {
-  main: 'Cấu hình hệ thống chào thành viên mới.',
+  main: 'Cấu hình hệ thống chào mừng thành viên mới.',
   setChannel: 'Chọn kênh gửi tin nhắn chào.',
   setRole: 'Chọn role cấp khi thành viên join.',
   toggle: 'Bật hoặc tắt hệ thống welcome.',

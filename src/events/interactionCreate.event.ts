@@ -205,7 +205,7 @@ export async function execute(
     logger.error('Database not attached to client. Cannot execute command.');
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
-        content: 'Database is not available. Please contact an administrator.',
+        content: 'Cơ sở dữ liệu không khả dụng. Vui lòng liên hệ quản trị viên.',
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -230,7 +230,7 @@ export async function execute(
     if (!interaction.replied && !interaction.deferred) {
       try {
         await interaction.reply({
-          content: 'An error occurred while executing this command.',
+          content: 'Đã xảy ra lỗi khi thực thi lệnh này.',
           flags: MessageFlags.Ephemeral,
         });
       } catch {

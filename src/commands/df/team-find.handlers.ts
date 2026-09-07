@@ -101,7 +101,7 @@ async function handleJoinVoice(interaction: ButtonInteraction): Promise<TeamFind
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (channel as any).join();
   await interaction.reply({
-    content: 'Đã join phòng thành công!',
+    content: 'Đã tham gia phòng thành công!',
     flags: MessageFlags.Ephemeral,
   });
   return { handled: true };

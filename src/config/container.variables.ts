@@ -53,7 +53,7 @@ export const WELCOME_CONTAINER_DEFAULTS = {
     `• Những điều cần lưu ý khi mua hàng/đạo chơi tại <#${process.env.RULES_CHANNEL_ID}> <#${process.env.DIEU_KHOAN_CHANNEL_ID}>`,
     `• Những đợt tặng quà miễn phí tại <#${process.env.GIVEAWAY_CHANNEL_ID}>`,
     `• Nếu bạn cần hỗ trợ có thể tag <@&${process.env.CHU_SOP_ROLE_ID}>, <@&${process.env.STAFF_ROLE_ID}> tại <#${process.env.CHAT_CHANNEL_ID}> hoặc mở ticket hỗ trợ/mua hàng tại <#${process.env.MUA_HANG_CHANNEL_ID}>`,
-    `Cảm ơn bạn đã ghé qua {guild}, chúc bạn dạo chơi/mua sắm tại {guild} một cách vui vẻ`,
+    `Cảm ơn bạn đã ghé qua {guild}, chúc bạn dạo chơi/mua sắm vui vẻ tại {guild}!`,
   ],
 
   /** URL ảnh GIF Cherry Blossom (default welcome image) */
