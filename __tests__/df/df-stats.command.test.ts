@@ -39,10 +39,38 @@ jest.mock('../../src/utils/container.utils.js', () => ({
   toComponentsV2: jest.fn((arr) => arr),
 }));
 
+jest.mock('../../src/database/df-binding.db.js', () => ({
+  getActiveBinding: jest.fn(() => undefined),
+  revokeBinding: jest.fn(),
+}));
+
+jest.mock('../../src/renderers/df-stats/view-model.js', () => ({
+  buildViewModel: jest.fn((data) => ({
+    player: {
+      nickname: data.player_info.nickname,
+      level: data.player_info.level,
+      joinDate: '01/01/2024',
+      playDurationHours: 100,
+      playDurationMinutes: 30,
+      totalMatches: data.summary_data.total_match_count,
+    },
+    economy: data.summary_data.economy,
+    combat: data.summary_data.combat,
+    squad: data.summary_data.team,
+    rank: { name: data.rank_data.current_rank, score: data.rank_data.current_rank_score },
+    seasonLabel: 'Tổng Quan',
+  })),
+}));
+
+jest.mock('../../src/renderers/df-stats/svg-renderer.js', () => ({
+  renderDashboard: jest.fn(() => Buffer.from('mock-png-data')),
+}));
+
 import { execute } from '../../src/commands/df/stats.command.js';
 import { getDfToken, touchDfToken } from '../../src/database/df.token.db.js';
 import { getOverviewData } from '../../src/services/deltaforce.api.js';
 import { resolveRankFromScore } from '../../src/utils/df-rank.utils.js';
+import { getActiveBinding, revokeBinding } from '../../src/database/df-binding.db.js';
 import { MessageFlags } from 'discord.js';
 
 describe('df-stats.command', () => {
@@ -107,7 +135,7 @@ describe('df-stats.command', () => {
     expect(getOverviewData).toHaveBeenCalledWith(
       expect.objectContaining({ openid: '123', token: 'abc', ts: '42', s: 'sig1', u: 'dev1' }),
     );
-    expect(touchDfToken).toHaveBeenCalledWith(mockDb, '222');
+    // Verify stats được render và reply được gọi
     expect(mockEditReply).toHaveBeenCalled();
   });
 

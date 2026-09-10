@@ -1,5 +1,6 @@
 import {
   ActionRowBuilder,
+  AttachmentBuilder,
   ChatInputCommandInteraction,
   ComponentType,
   MessageFlags,
@@ -15,6 +16,8 @@ import { resolveRankFromScore } from '../../utils/df-rank.utils.js';
 import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { runDfCommand } from '../../utils/df-command.runner.js';
 import { buildSeasonOptions, getSeasonLabel } from '../../config/season.config.js';
+import { buildViewModel } from '../../renderers/df-stats/view-model.js';
+import { renderDashboard } from '../../renderers/df-stats/svg-renderer.js';
 
 export const data = new SlashCommandBuilder()
   .setName('df-stats')
@@ -54,11 +57,18 @@ export function buildStatsContainer(
   },
   seasonLabel: string,
 ): { components: readonly unknown[]; flags: number } {
-  const playHours = Math.floor(Number(data.player_info.play_duration));
-  const playMinutes = Math.round((Number(data.player_info.play_duration) - playHours) * 60);
-  const regDate = new Date(Number(data.player_info.register_time) * 1000).toLocaleDateString(
-    'vi-VN',
-  );
+  // Chuyển đổi play_duration sang giờ/phút, fallback nếu dữ liệu không hợp lệ
+  const playDurationNum = Number(data.player_info.play_duration);
+  const playHours = Number.isNaN(playDurationNum) ? 0 : Math.floor(playDurationNum);
+  const playMinutes = Number.isNaN(playDurationNum)
+    ? 0
+    : Math.round((playDurationNum - playHours) * 60);
+
+  // Chuyển đổi register_time (unix timestamp) sang ngày, fallback nếu không hợp lệ
+  const regTimestamp = Number(data.player_info.register_time);
+  const regDate = Number.isNaN(regTimestamp)
+    ? 'Không rõ'
+    : new Date(regTimestamp * 1000).toLocaleDateString('vi-VN');
 
   const combat = data.summary_data.combat;
   const economy = data.summary_data.economy;
@@ -102,7 +112,7 @@ export function buildStatsContainer(
         `- **Kill**: ${combat.kill_operator_count}`,
         `- **Hit rate**: ${combat.hit_rate}`,
         `- **Headshot**: ${combat.headshot_kill_rate}`,
-        `- **KD**: ${combat.low_kill_death_ratio}/${combat.med_kill_death_ratio}/${combat.high_kill_death_ratio} `,
+        `- **KD**: ${combat.low_kill_death_ratio}/${combat.med_kill_death_ratio}/${combat.high_kill_death_ratio}`,
       ].join('\n')
     : '- Chưa có dữ liệu';
 
@@ -143,7 +153,7 @@ export function buildStatsContainer(
 
   return {
     components: toComponentsV2([containerComponents]),
-    flags: MessageFlags.IsComponentsV2,
+    flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
   };
 }
 
@@ -171,15 +181,16 @@ export async function execute(
 ): Promise<void> {
   await runDfCommand({ userId: interaction.user.id, database, interaction }, async (tokenRow) => {
     const apiToken = buildDfApiToken(tokenRow);
-    const data = await getOverviewData(apiToken);
-    const seasonLabel = getSeasonLabel('overview');
+    const rawData = await getOverviewData(apiToken);
+    const viewModel = buildViewModel(rawData, 'overview');
+    const imageBuffer = await renderDashboard(viewModel);
 
-    const result = buildStatsContainer(data, seasonLabel);
     const selectMenu = buildSeasonSelectMenu('overview');
 
     return {
-      components: [...result.components, selectMenu.toJSON()],
-      flags: result.flags,
+      files: [new AttachmentBuilder(imageBuffer, { name: 'df-stats.png' })],
+      components: [selectMenu.toJSON()],
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
     };
   });
 }
