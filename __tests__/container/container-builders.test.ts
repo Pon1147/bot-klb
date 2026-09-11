@@ -141,7 +141,7 @@ describe('Container Builders', () => {
       expect(components).toHaveLength(1);
     });
 
-    it('phải hiển thị raw lines không có số prefix', () => {
+    it('phải hiển thị preview lines với index', () => {
       const modal = buildLinesModal(['First', 'Second']);
       expect(modal).toBeInstanceOf(ModalBuilder);
     });
