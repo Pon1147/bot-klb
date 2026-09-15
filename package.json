@@ -18,7 +18,9 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\""
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "dev:preview": "tsx scripts/dev-preview.ts",
+    "postinstall": "npx puppeteer browsers install chrome"
   },
   "lint-staged": {
     "src/**/*.ts": [
@@ -28,12 +30,13 @@
   },
   "dependencies": {
     "axios": "^1.17.0",
-    "better-sqlite3": "^11.10.0",
+    "better-sqlite3": "^13.0.3",
     "discord.js": "^14.27.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "node-cron": "^4.6.0",
-    "puppeteer": "^25.1.0"
+    "puppeteer": "^25.1.0",
+    "sharp": "^0.35.4"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

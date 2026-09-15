@@ -16,7 +16,9 @@ export default [
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: 'module',
-        project: './tsconfig.json',
+        parserOptions: {
+          project: './tsconfig.eslint.json',
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -26,7 +28,10 @@ export default [
     rules: {
       ...tsPlugin.configs.recommended.rules,
       // Cho phép underscore prefix cho params không dùng (common trong discord.js callbacks)
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       // Warn thay vì error để không block dev
       '@typescript-eslint/no-explicit-any': 'warn',
       // Cho phép index signatures (cần cho SettingsRecord pattern)
