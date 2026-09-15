@@ -54,5 +54,7 @@ export interface DFStatsViewModel {
   combat: DFCombatStats | null;
   squad: DFSquadStats | null;
   rank: DFRankInfo;
+  /** Badge icon URLs cho Operator Name Card */
+  nameCardBadges?: string[];
   seasonLabel: string;
 }

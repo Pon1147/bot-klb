@@ -1,6 +1,6 @@
 /**
  * SVG Dashboard Renderer — AAA military tactical shooter UI.
- * Layout: Left(dense stats) + Center(operator bg) + Right(rank).
+ * Rebuilt geometry: fixed-width left/right columns, center free space.
  *
  * Sharp/libvips SVG parser strict:
  * - KHÔNG HTML comments (<!-- -->)
@@ -11,24 +11,17 @@
 import path from 'path';
 import sharp from 'sharp';
 import type { DFStatsViewModel } from './types.js';
-import {
-  CANVAS,
-  LAYOUT,
-  COLORS,
-  TYPO,
-  SPACING,
-  RADIUS,
-  HEADER_LABELS,
-} from '../../config/df-stats-renderer.config.js';
-import { fitText, formatNumber, formatDuration } from './utils/text-fit.js';
+import { CANVAS, COLORS, TYPO, RADIUS, ASSETS } from '../../config/df-stats-renderer.config.js';
+import { fitText, formatAssets, formatHoursDecimal } from './utils/text-fit.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const BACKGROUND_PATH = path.join(__dirname, '../../assets/delta-force/backgrounds/stinger.png');
-const DARK_OVERLAY_COLOR = 'rgba(7,10,12,0.45)';
+const DARK_OVERLAY_COLOR = 'rgba(7,10,12,0.50)';
 
 /** Render dashboard image từ ViewModel. */
 export async function renderDashboard(viewModel: DFStatsViewModel): Promise<Buffer> {
   const svgContent = buildSVG(viewModel);
+
   const svgBuffer = Buffer.from(svgContent, 'utf-8');
 
   // Gradient overlay làm background fallback nếu ảnh không load được
@@ -99,16 +92,16 @@ export async function renderDashboard(viewModel: DFStatsViewModel): Promise<Buff
   // Rank emblem overlay — load ảnh thật từ Delta Force HQ
   if (viewModel.rank.imageUrl) {
     try {
-      const rankBuffer = await sharp(
-        Buffer.from(
-          await fetch(viewModel.rank.imageUrl).then((r) => r.arrayBuffer() as Promise<ArrayBuffer>),
-        ),
-      )
-        .resize(72, 72)
+      const rankArrayBuffer = await fetch(viewModel.rank.imageUrl).then((r) => r.arrayBuffer());
+      const rankBuffer = await sharp(Buffer.from(new Uint8Array(rankArrayBuffer)))
+        .resize(120, 120)
         .png()
         .toBuffer();
+      // Right column center X
+      const rkCx = RIGHT_COL.x + RIGHT_COL.w / 2;
+      // Emblem center matches SVG circle cy (rankSection.y + 80)
       composite = await sharp(composite)
-        .composite([{ input: rankBuffer, top: 69, left: 1014 }])
+        .composite([{ input: rankBuffer, top: 52, left: rkCx - 60 }])
         .png()
         .toBuffer();
     } catch {
@@ -119,18 +112,15 @@ export async function renderDashboard(viewModel: DFStatsViewModel): Promise<Buff
   // Avatar overlay (nếu có)
   if (viewModel.player.avatarUrl) {
     try {
-      const avatarBuffer = await sharp(
-        Buffer.from(
-          await fetch(viewModel.player.avatarUrl).then(
-            (r) => r.arrayBuffer() as Promise<ArrayBuffer>,
-          ),
-        ),
-      )
+      const avatarArrayBuffer = await fetch(viewModel.player.avatarUrl).then((r) =>
+        r.arrayBuffer(),
+      );
+      const avatarBuffer = await sharp(Buffer.from(new Uint8Array(avatarArrayBuffer)))
         .resize(40, 40)
         .png()
         .toBuffer();
       composite = await sharp(composite)
-        .composite([{ input: avatarBuffer, top: 44, left: 1216 }])
+        .composite([{ input: avatarBuffer, top: 8, left: 1180 }])
         .png()
         .toBuffer();
     } catch {
@@ -138,47 +128,115 @@ export async function renderDashboard(viewModel: DFStatsViewModel): Promise<Buff
     }
   }
 
+  // Operator portrait overlay (预留 — cần API data để populate)
+  // TODO: Khi có mostUsedOperator data, enable lại overlay này
+
   return composite;
 }
 
+// ============================================================================
+// LAYOUT DEFINITIONS — fixed column widths, content-driven section heights
+// ============================================================================
+
+/** Left column: PLAYER PROFILE + BASIC INFO + COMBAT STATS + SQUAD STATS */
+const LEFT_COL = { x: 20, w: 380 };
+
+/** Right column: CURRENT RANK + MOST USED OPERATOR + SEASON SUMMARY */
+const RIGHT_COL = { x: CANVAS.width - 20 - 380, w: 380 };
+
+/** Spacing between sections within a column */
+const GAP = 10;
+
+/** Top padding from canvas edge */
+const TOP_PAD = 20;
+
+/** Section heights (content-driven) — fit canvas 740px (right column constraint) */
+const PROFILE_H = 36;
+const BI_H = 280;
+const CB_H = 200;
+const SQ_H = 160;
+const RK_H = 160;
+const OP_H = 140;
+const SS_H = 158;
+
+/** Footer Y position — 4px từ cạnh dưới canvas 740px */
+const FOOTER_Y = 716;
+
+// ============================================================================
+// SECTION POSITIONS (derived from layout constants)
+// ============================================================================
+
+/** PLAYER PROFILE header bar */
+const PROFILE_SECTION = { y: TOP_PAD, h: PROFILE_H };
+
+/** BASIC INFO — left column, below profile */
+const BI_SECTION = { y: PROFILE_SECTION.y + PROFILE_SECTION.h + GAP, h: BI_H };
+
+/** COMBAT STATS — left column */
+const CB_SECTION = { y: BI_SECTION.y + BI_SECTION.h + GAP, h: CB_H };
+
+/** SQUAD STATS — left column */
+const SQ_SECTION = { y: CB_SECTION.y + CB_SECTION.h + GAP, h: SQ_H };
+
+/** CURRENT RANK — right column */
+const RK_SECTION = { y: TOP_PAD, h: RK_H };
+
+/** MOST USED OPERATOR — right column */
+const OP_SECTION = { y: RK_SECTION.y + RK_SECTION.h + GAP, h: OP_H };
+
+/** SEASON SUMMARY — right column */
+const SS_SECTION = { y: OP_SECTION.y + OP_SECTION.h + GAP, h: SS_H };
+
+// ============================================================================
+// INTERNAL GRID POSITIONS
+// ============================================================================
+
+/** Basic Info: 2-column grid, 5 rows — giảm gap để fit section height */
+const BI_PAD = 14;
+const BI_COL_X = [LEFT_COL.x + BI_PAD, LEFT_COL.x + LEFT_COL.w / 2 + BI_PAD];
+const BI_ROW_GAP = 44;
+const BI_BASE_Y = BI_SECTION.y + 28;
+const BI_LABEL_VAL_GAP = 10;
+
+/** Combat Stats: 2-column grid, 4 rows */
+const CB_PAD = 14;
+const CB_COL_X = [LEFT_COL.x + CB_PAD, LEFT_COL.x + LEFT_COL.w / 2 + CB_PAD];
+const CB_ROW_GAP = 36;
+const CB_BASE_Y = CB_SECTION.y + 26;
+const CB_LABEL_VAL_GAP = 10;
+
+/** Squad Stats: 2-column grid, 3 rows */
+const SQ_PAD = 14;
+const SQ_COL_X = [LEFT_COL.x + SQ_PAD, LEFT_COL.x + LEFT_COL.w / 2 + SQ_PAD];
+const SQ_ROW_GAP = 36;
+const SQ_BASE_Y = SQ_SECTION.y + 26;
+const SQ_LABEL_VAL_GAP = 10;
+
+/** Rank: centered emblem + name + score */
+const RK_CX = RIGHT_COL.x + RIGHT_COL.w / 2;
+const RK_EMBLEM_CY = RK_SECTION.y + 76;
+
+/** Most Used Operator: centered portrait + name */
+const OP_CX = RIGHT_COL.x + RIGHT_COL.w / 2;
+const OP_PORTRAIT_CY = OP_SECTION.y + 56;
+
+/** Season Summary: 3 rows, 2-column grid */
+const SS_PAD = 14;
+const SS_COL_X = [RIGHT_COL.x + SS_PAD, RIGHT_COL.x + RIGHT_COL.w / 2 + SS_PAD];
+const SS_ROW_GAP = 36;
+const SS_BASE_Y = SS_SECTION.y + 26;
+const SS_LABEL_VAL_GAP = 10;
+
+// ============================================================================
+// RENDER
+// ============================================================================
+
 /** Build SVG string — military game UI. */
 function buildSVG(vm: DFStatsViewModel): string {
-  const { nickname, level, joinDate, playDurationHours, playDurationMinutes, totalMatches } =
-    vm.player;
-  const displayNickname = fitText(nickname, 320, 14);
+  const { nickname, level, playDurationHours, playDurationMinutes, totalMatches } = vm.player;
   const { name: rankName, score: rankScore } = vm.rank;
-  const seasonLabel = HEADER_LABELS[vm.seasonLabel] || vm.seasonLabel;
 
-  const gap = SPACING.sm; // 4px — tighter inter-panel spacing
-  const cpad = LAYOUT.cardPad;
   const r = RADIUS.sm;
-
-  // Left panel
-  const lx = LAYOUT.leftPanel.x;
-  const lw = LAYOUT.leftPanel.width;
-
-  // Right panel
-  const rx = LAYOUT.rightPanel.x;
-  const rw = LAYOUT.rightPanel.width;
-
-  // === LEFT PANEL layout (tổng height ≈ 512, fit trong 720) ===
-  const hdrY = LAYOUT.padding;
-  const hdrH = 28;
-  const biY = hdrY + hdrH + gap;
-  const biH = 238; // 5 rows × 40px + title area
-  const cbY = biY + biH + gap;
-  const cbH = 126; // 2×2 grid + title, bớt khoảng trống so với 140
-  const sqY = cbY + cbH + gap;
-  const sqH = 106; // 2×2 grid + title, gọn
-  // Footer nằm ở LAYOUT.footer.y = 704, vừa fit
-
-  // === RIGHT PANEL layout (tổng height ≈ 508, fit trong 720) ===
-  const rkY = LAYOUT.padding;
-  const rkH = 185; // Emblem + title + score, fit trong 720
-  const opY = rkY + rkH + gap;
-  const opH = 110; // Portrait + label
-  const sumY = opY + opH + gap;
-  const sumH = 224; // 9 rows × 20px + title, clearance 16px
 
   // Build SVG
   let s = '';
@@ -195,74 +253,76 @@ function buildSVG(vm: DFStatsViewModel): string {
     CANVAS.height +
     '">';
 
-  // ===== HEADER =====
+  // ===== HEADER BAR =====
+  // Delta Force logo (left)
+  s += imageTag(ASSETS.logos.deltaForce, 20, 8, 120, 28);
+  // "OPERATIONS" label (hardcoded, accent green)
+  s +=
+    '<text x="150" y="28" fill="' +
+    COLORS.accent +
+    '" font-size="18" font-weight="700" font-family="' +
+    TYPO.primary +
+    '">OPERATIONS</text>';
+  // TIMI + Team Jade logos (right)
+  s += imageTag(ASSETS.logos.timi, CANVAS.width - 140, 10, 60, 24);
+  s += imageTag(ASSETS.logos.teamJade, CANVAS.width - 70, 10, 60, 24);
+  // Username (right-aligned, below header)
   s +=
     '<text x="' +
-    LAYOUT.header.x +
+    (CANVAS.width - 30) +
+    '" y="44" fill="' +
+    COLORS.textPrimary +
+    '" font-size="11" font-weight="600" font-family="' +
+    TYPO.primary +
+    '" text-anchor="end">' +
+    fitText(nickname, 100, 11) +
+    '</text>';
+
+  // ===== LEFT COLUMN =====
+
+  // --- PLAYER PROFILE header bar ---
+  s += panelRect(LEFT_COL.x, PROFILE_SECTION.y, LEFT_COL.w, PROFILE_SECTION.h, r);
+  s +=
+    '<text x="' +
+    (LEFT_COL.x + BI_PAD) +
     '" y="' +
-    (LAYOUT.header.y + 18) +
+    (PROFILE_SECTION.y + 24) +
     '" fill="' +
-    COLORS.accent +
+    COLORS.textPrimary +
     '" font-size="' +
     TYPO.sectionSize +
     '" font-weight="' +
     TYPO.sectionWeight +
     '" font-family="' +
     TYPO.primary +
-    '" letter-spacing="4">' +
-    seasonLabel +
-    '</text>';
-  s +=
-    '<text x="' +
-    (CANVAS.width - LAYOUT.padding - cpad) +
-    '" y="' +
-    (LAYOUT.header.y + 18) +
-    '" fill="' +
-    COLORS.textSecondary +
-    '" font-size="10" font-family="' +
-    TYPO.primary +
-    '" text-anchor="end">ID: ' +
-    String(Math.floor(Math.random() * 999999999)) +
-    '</text>';
+    '" letter-spacing="3">PLAYER PROFILE</text>';
+  // Accent line under title
   s +=
     '<line x1="' +
-    LAYOUT.header.x +
+    (LEFT_COL.x + BI_PAD) +
     '" y1="' +
-    (LAYOUT.header.y + 22) +
+    (PROFILE_SECTION.y + 30) +
     '" x2="' +
-    (LAYOUT.header.x + 160) +
+    (LEFT_COL.x + LEFT_COL.w - BI_PAD) +
     '" y2="' +
-    (LAYOUT.header.y + 22) +
+    (PROFILE_SECTION.y + 30) +
     '" stroke="' +
     COLORS.accent +
-    '" stroke-width="1.5" stroke-linecap="round"/>';
+    '" stroke-width="1.5"/>';
+  // Corner markers
+  s += cornerMark(LEFT_COL.x + 4, PROFILE_SECTION.y + 4, 8, 8);
+  s += cornerMark(LEFT_COL.x + LEFT_COL.w - 12, PROFILE_SECTION.y + 4, 4, 8, -1, 1);
 
-  // ===== LEFT PANEL =====
-
-  // Header bar
-  s += panelRect(lx, hdrY, lw, hdrH, r);
-  s += cornerMark(lx + 4, hdrY + 4, 8, 8);
-  s += cornerMark(lx + lw - 12, hdrY + 4, 4, 8, -1, 1);
+  // --- BASIC INFO ---
+  s += panelRect(LEFT_COL.x, BI_SECTION.y, LEFT_COL.w, BI_SECTION.h, r);
+  s += cornerMark(LEFT_COL.x + 4, BI_SECTION.y + 4, 8, 8);
+  s += cornerMark(LEFT_COL.x + LEFT_COL.w - 12, BI_SECTION.y + 4, 4, 8, -1, 1);
+  // Title
   s +=
     '<text x="' +
-    (lx + cpad + 16) +
+    (LEFT_COL.x + BI_PAD) +
     '" y="' +
-    (hdrY + 19) +
-    '" fill="' +
-    COLORS.textMuted +
-    '" font-size="9" font-weight="600" font-family="' +
-    TYPO.primary +
-    '" letter-spacing="2">PLAYER PROFILE</text>';
-
-  // --- Basic Info panel ---
-  s += panelRect(lx, biY, lw, biH, r);
-  s += cornerMark(lx + 4, biY + 4, 6, 6);
-  s += cornerMark(lx + lw - 10, biY + 4, 4, 6, -1, 1);
-  s +=
-    '<text x="' +
-    (lx + cpad) +
-    '" y="' +
-    (biY + 18) +
+    (BI_SECTION.y + 20) +
     '" fill="' +
     COLORS.textMuted +
     '" font-size="' +
@@ -271,112 +331,267 @@ function buildSVG(vm: DFStatsViewModel): string {
     TYPO.panelTitleWeight +
     '" font-family="' +
     TYPO.primary +
-    '" letter-spacing="1">BASIC INFO</text>';
+    '" stroke="rgba(0,0,0,0.6)" stroke-width="0.5" stroke-opacity="0.6" paint-order="stroke fill">' +
+    'BASIC INFO</text>';
   s +=
     '<line x1="' +
-    (lx + cpad) +
+    (LEFT_COL.x + BI_PAD) +
     '" y1="' +
-    (biY + 24) +
+    (BI_SECTION.y + 26) +
     '" x2="' +
-    (lx + lw - cpad) +
+    (LEFT_COL.x + LEFT_COL.w - BI_PAD) +
     '" y2="' +
-    (biY + 24) +
+    (BI_SECTION.y + 26) +
     '" stroke="' +
     COLORS.borderDivider +
     '" stroke-width="1"/>';
 
-  // 2-column grid: 5 rows
-  const biRows = [
-    { label: 'OPERATION LEVEL', value: String(level), col: 0, row: 0 },
-    { label: 'TOTAL MATCHES', value: String(totalMatches), col: 1, row: 0 },
-    {
-      label: 'CURRENT ASSETS',
-      value: formatNumber(vm.economy ? vm.economy.totalReward : '0'),
-      col: 0,
-      row: 1,
-    },
-    {
-      label: 'TOTAL MODE DURATION',
-      value: formatDuration(playDurationHours, playDurationMinutes),
-      col: 1,
-      row: 1,
-    },
-    { label: 'EXTRACTION RATE', value: vm.combat ? vm.combat.hitRate : '0%', col: 0, row: 2 },
-    { label: 'EXTRACTIONS', value: String(vm.squad ? vm.squad.rescue : 0), col: 1, row: 2 },
-    {
-      label: 'AVG ASSETS / MATCH',
-      value: formatNumber(vm.economy ? vm.economy.extractValue : '0'),
-      col: 0,
-      row: 3,
-    },
-    { label: 'COLLECTION QTY', value: String(totalMatches), col: 1, row: 3 },
-    { label: 'OPERATORS KILLED', value: String(vm.combat ? vm.combat.kills : 0), col: 0, row: 4 },
-  ];
+  // Row 1: Operation Level + icon | Total Matches Played
+  const b1y = BI_BASE_Y;
+  s += mutedTextLine(BI_COL_X[0], b1y, 'OPERATION LEVEL', TYPO.labelSize, TYPO.labelWeight);
+  s += textLine(
+    BI_COL_X[0],
+    b1y + BI_LABEL_VAL_GAP,
+    String(level),
+    COLORS.textPrimary,
+    TYPO.valueSize,
+    TYPO.valueWeight,
+  );
+  s += imageTag(
+    ASSETS.icons.level,
+    BI_COL_X[0] + getTextWidth(String(level), TYPO.valueSize) + 3,
+    b1y + 4,
+    18,
+    18,
+  );
+  s += mutedTextLine(BI_COL_X[1], b1y, 'TOTAL MATCHES PLAYED', TYPO.labelSize, TYPO.labelWeight);
+  s += textLine(
+    BI_COL_X[1],
+    b1y + BI_LABEL_VAL_GAP,
+    String(totalMatches),
+    COLORS.textPrimary,
+    TYPO.valueSize,
+    TYPO.valueWeight,
+  );
 
-  const biColX = [lx + cpad, lx + lw / 2 + cpad];
-  const biRowGap = 40; // 5 rows fit trong 228px
-  const biBaseY = biY + 36;
+  // Row 2: Current Assets | Total Mode Duration
+  const b2y = b1y + BI_ROW_GAP;
+  const totalAssets = vm.economy ? vm.economy.totalReward : '0';
+  const totalHours = playDurationHours + playDurationMinutes / 60;
+  s += mutedTextLine(BI_COL_X[0], b2y, 'CURRENT ASSETS', TYPO.labelSize, TYPO.labelWeight);
+  s += textLine(
+    BI_COL_X[0],
+    b2y + BI_LABEL_VAL_GAP,
+    formatAssets(totalAssets),
+    COLORS.textPrimary,
+    TYPO.valueSize,
+    TYPO.valueWeight,
+  );
+  s += mutedTextLine(BI_COL_X[1], b2y, 'TOTAL MODE DURATION', TYPO.labelSize, TYPO.labelWeight);
+  s += textLine(
+    BI_COL_X[1],
+    b2y + BI_LABEL_VAL_GAP,
+    formatHoursDecimal(totalHours),
+    COLORS.textPrimary,
+    TYPO.valueSize,
+    TYPO.valueWeight,
+  );
 
-  for (const row of biRows) {
-    const baseY = biBaseY + row.row * biRowGap;
-    const x = biColX[row.col];
-    s +=
-      '<text x="' +
-      x +
-      '" y="' +
-      baseY +
-      '" fill="' +
-      COLORS.textMuted +
-      '" font-size="' +
-      TYPO.labelSize +
-      '" font-weight="' +
-      TYPO.labelWeight +
-      '" font-family="' +
-      TYPO.primary +
-      '">' +
-      row.label +
-      '</text>';
-    s +=
-      '<text x="' +
-      x +
-      '" y="' +
-      (baseY + 20) +
-      '" fill="' +
-      COLORS.textPrimary +
-      '" font-size="' +
-      TYPO.valueSize +
-      '" font-weight="' +
-      TYPO.valueWeight +
-      '" font-family="' +
-      TYPO.primary +
-      '">' +
-      row.value +
-      '</text>';
-    if (row.col === 0 && row.row < 4) {
-      s +=
-        '<line x1="' +
-        (lx + lw / 2) +
-        '" y1="' +
-        (baseY - 14) +
-        '" x2="' +
-        (lx + lw / 2) +
-        '" y2="' +
-        (baseY + 28) +
-        '" stroke="' +
-        COLORS.borderDivider +
-        '" stroke-width="1"/>';
-    }
+  // Row 3: Extraction Rate | Number of Extractions
+  const b3y = b2y + BI_ROW_GAP;
+  const hitRate = vm.combat ? vm.combat.hitRate : '0%';
+  const rescue = vm.squad ? vm.squad.rescue : 0;
+  s += mutedTextLine(BI_COL_X[0], b3y, 'HIT RATE', TYPO.labelSize, TYPO.labelWeight);
+  s += textLine(
+    BI_COL_X[0],
+    b3y + BI_LABEL_VAL_GAP,
+    hitRate,
+    COLORS.accent,
+    TYPO.valueSize,
+    TYPO.valueWeight,
+  );
+  s += mutedTextLine(BI_COL_X[1], b3y, 'NUMBER OF EXTRACTIONS', TYPO.labelSize, TYPO.labelWeight);
+  s += textLine(
+    BI_COL_X[1],
+    b3y + BI_LABEL_VAL_GAP,
+    String(rescue),
+    COLORS.textPrimary,
+    TYPO.valueSize,
+    TYPO.valueWeight,
+  );
+
+  // Row 4: Avg Assets/Match | Total Matches
+  const b4y = b3y + BI_ROW_GAP;
+  const extractValue = vm.economy ? vm.economy.extractValue : '0';
+  s += mutedTextLine(BI_COL_X[0], b4y, 'AVG ASSETS / MATCH', TYPO.labelSize, TYPO.labelWeight);
+  s += textLine(
+    BI_COL_X[0],
+    b4y + BI_LABEL_VAL_GAP,
+    formatAssets(extractValue),
+    COLORS.textPrimary,
+    TYPO.valueSize,
+    TYPO.valueWeight,
+  );
+  s += mutedTextLine(BI_COL_X[1], b4y, 'TOTAL MATCHES', TYPO.labelSize, TYPO.labelWeight);
+  s += textLine(
+    BI_COL_X[1],
+    b4y + BI_LABEL_VAL_GAP,
+    String(totalMatches),
+    COLORS.textPrimary,
+    TYPO.valueSize,
+    TYPO.valueWeight,
+  );
+
+  // Row 5: Operators Killed (full-width, centered)
+  const b5y = b4y + BI_ROW_GAP;
+  const kills = vm.combat ? vm.combat.kills : 0;
+  s += mutedTextLine(
+    LEFT_COL.x + LEFT_COL.w / 2,
+    b5y,
+    'OPERATORS KILLED',
+    TYPO.labelSize,
+    TYPO.labelWeight,
+    'middle',
+  );
+  s += textLine(
+    LEFT_COL.x + LEFT_COL.w / 2,
+    b5y + BI_LABEL_VAL_GAP,
+    String(kills),
+    COLORS.accent,
+    TYPO.valueSizeLarge,
+    TYPO.valueWeight,
+    'middle',
+  );
+
+  // --- COMBAT STATS ---
+  s += panelRect(LEFT_COL.x, CB_SECTION.y, LEFT_COL.w, CB_SECTION.h, r);
+  s += cornerMark(LEFT_COL.x + 4, CB_SECTION.y + 4, 8, 8);
+  s += cornerMark(LEFT_COL.x + LEFT_COL.w - 12, CB_SECTION.y + 4, 4, 8, -1, 1);
+  // Title
+  s +=
+    '<text x="' +
+    (LEFT_COL.x + CB_PAD) +
+    '" y="' +
+    (CB_SECTION.y + 20) +
+    '" fill="' +
+    COLORS.textMuted +
+    '" font-size="' +
+    TYPO.panelTitleSize +
+    '" font-weight="' +
+    TYPO.panelTitleWeight +
+    '" font-family="' +
+    TYPO.primary +
+    '" stroke="rgba(0,0,0,0.6)" stroke-width="0.5" stroke-opacity="0.6" paint-order="stroke fill">' +
+    'COMBAT STATS</text>';
+  s +=
+    '<line x1="' +
+    (LEFT_COL.x + CB_PAD) +
+    '" y1="' +
+    (CB_SECTION.y + 26) +
+    '" x2="' +
+    (LEFT_COL.x + LEFT_COL.w - CB_PAD) +
+    '" y2="' +
+    (CB_SECTION.y + 26) +
+    '" stroke="' +
+    COLORS.borderDivider +
+    '" stroke-width="1"/>';
+
+  const combat = vm.combat;
+  if (combat) {
+    // Row 1: Kills | Hit Rate
+    const c1y = CB_BASE_Y;
+    s += mutedTextLine(CB_COL_X[0], c1y, 'KILLS', TYPO.labelSize, TYPO.labelWeight);
+    s += textLine(
+      CB_COL_X[0],
+      c1y + CB_LABEL_VAL_GAP,
+      String(combat.kills),
+      COLORS.textPrimary,
+      TYPO.valueSize,
+      TYPO.valueWeight,
+    );
+    s += mutedTextLine(CB_COL_X[1], c1y, 'HIT RATE', TYPO.labelSize, TYPO.labelWeight);
+    s += textLine(
+      CB_COL_X[1],
+      c1y + CB_LABEL_VAL_GAP,
+      combat.hitRate,
+      COLORS.textPrimary,
+      TYPO.valueSize,
+      TYPO.valueWeight,
+    );
+
+    // Row 2: Headshot Rate | KD (Low)
+    const c2y = c1y + CB_ROW_GAP;
+    s += mutedTextLine(CB_COL_X[0], c2y, 'HEADSHOT RATE', TYPO.labelSize, TYPO.labelWeight);
+    s += textLine(
+      CB_COL_X[0],
+      c2y + CB_LABEL_VAL_GAP,
+      combat.headshotRate,
+      COLORS.textPrimary,
+      TYPO.valueSize,
+      TYPO.valueWeight,
+    );
+    s += mutedTextLine(CB_COL_X[1], c2y, 'KD RATIO (LOW)', TYPO.labelSize, TYPO.labelWeight);
+    s += textLine(
+      CB_COL_X[1],
+      c2y + CB_LABEL_VAL_GAP,
+      combat.kdLow,
+      COLORS.accent,
+      TYPO.valueSize,
+      TYPO.valueWeight,
+    );
+
+    // Row 3: KD Ratio (Med) | KD Ratio (High)
+    const c3y = c2y + CB_ROW_GAP;
+    s += mutedTextLine(CB_COL_X[0], c3y, 'KD RATIO (MED)', TYPO.labelSize, TYPO.labelWeight);
+    s += textLine(
+      CB_COL_X[0],
+      c3y + CB_LABEL_VAL_GAP,
+      combat.kdMed,
+      COLORS.accent,
+      TYPO.valueSize,
+      TYPO.valueWeight,
+    );
+    s += mutedTextLine(CB_COL_X[1], c3y, 'KD RATIO (HIGH)', TYPO.labelSize, TYPO.labelWeight);
+    s += textLine(
+      CB_COL_X[1],
+      c3y + CB_LABEL_VAL_GAP,
+      combat.kdHigh,
+      COLORS.accent,
+      TYPO.valueSize,
+      TYPO.valueWeight,
+    );
+
+    // Row 4: Operators Killed (full-width, accent)
+    const c4y = c3y + CB_ROW_GAP;
+    s += mutedTextLine(
+      LEFT_COL.x + LEFT_COL.w / 2,
+      c4y,
+      'OPERATORS KILLED',
+      TYPO.labelSize,
+      TYPO.labelWeight,
+      'middle',
+    );
+    s += textLine(
+      LEFT_COL.x + LEFT_COL.w / 2,
+      c4y + CB_LABEL_VAL_GAP,
+      String(combat.kills),
+      COLORS.accent,
+      TYPO.valueSizeLarge,
+      TYPO.valueWeight,
+      'middle',
+    );
   }
 
-  // --- Combat panel ---
-  s += panelRect(lx, cbY, lw, cbH, r);
-  s += cornerMark(lx + 4, cbY + 4, 6, 6);
-  s += cornerMark(lx + lw - 10, cbY + 4, 4, 6, -1, 1);
+  // --- SQUAD STATS ---
+  s += panelRect(LEFT_COL.x, SQ_SECTION.y, LEFT_COL.w, SQ_SECTION.h, r);
+  s += cornerMark(LEFT_COL.x + 4, SQ_SECTION.y + 4, 8, 8);
+  s += cornerMark(LEFT_COL.x + LEFT_COL.w - 12, SQ_SECTION.y + 4, 4, 8, -1, 1);
+  // Title
   s +=
     '<text x="' +
-    (lx + cpad) +
+    (LEFT_COL.x + SQ_PAD) +
     '" y="' +
-    (cbY + 18) +
+    (SQ_SECTION.y + 20) +
     '" fill="' +
     COLORS.textMuted +
     '" font-size="' +
@@ -385,94 +600,99 @@ function buildSVG(vm: DFStatsViewModel): string {
     TYPO.panelTitleWeight +
     '" font-family="' +
     TYPO.primary +
-    '" letter-spacing="1">COMBAT STATS</text>';
+    '" stroke="rgba(0,0,0,0.6)" stroke-width="0.5" stroke-opacity="0.6" paint-order="stroke fill">' +
+    'SQUAD STATS</text>';
   s +=
     '<line x1="' +
-    (lx + cpad) +
+    (LEFT_COL.x + SQ_PAD) +
     '" y1="' +
-    (cbY + 24) +
+    (SQ_SECTION.y + 26) +
     '" x2="' +
-    (lx + lw - cpad) +
+    (LEFT_COL.x + LEFT_COL.w - SQ_PAD) +
     '" y2="' +
-    (cbY + 24) +
+    (SQ_SECTION.y + 26) +
     '" stroke="' +
     COLORS.borderDivider +
     '" stroke-width="1"/>';
 
-  const cbRows = vm.combat
-    ? [
-        { label: 'KILLS', value: String(vm.combat.kills) },
-        { label: 'HIT RATE', value: vm.combat.hitRate },
-        { label: 'HEADSHOT RATE', value: vm.combat.headshotRate },
-        {
-          label: 'KD RATIO',
-          value: vm.combat.kdLow + '/' + vm.combat.kdMed + '/' + vm.combat.kdHigh,
-        },
-      ]
-    : [{ label: 'NO DATA', value: '' }];
+  const squad = vm.squad;
+  if (squad) {
+    // Row 1: Revives | Rescue Teammates
+    const q1y = SQ_BASE_Y;
+    s += mutedTextLine(SQ_COL_X[0], q1y, 'REVIVES', TYPO.labelSize, TYPO.labelWeight);
+    s += textLine(
+      SQ_COL_X[0],
+      q1y + SQ_LABEL_VAL_GAP,
+      String(squad.revive),
+      COLORS.textPrimary,
+      TYPO.valueSize,
+      TYPO.valueWeight,
+    );
+    s += mutedTextLine(SQ_COL_X[1], q1y, 'RESCUE TEAMMATES', TYPO.labelSize, TYPO.labelWeight);
+    s += textLine(
+      SQ_COL_X[1],
+      q1y + SQ_LABEL_VAL_GAP,
+      String(squad.rescue),
+      COLORS.textPrimary,
+      TYPO.valueSize,
+      TYPO.valueWeight,
+    );
 
-  const cbBaseY = cbY + 36;
-  const cbColX = [lx + cpad, lx + lw / 2 + cpad];
-  const cbRowGap = 28; // 2×2 grid fit trong 128px
+    // Row 2: Retreat Rate | Team Extract Value
+    const q2y = q1y + SQ_ROW_GAP;
+    s += mutedTextLine(SQ_COL_X[0], q2y, 'RETREAT RATE', TYPO.labelSize, TYPO.labelWeight);
+    s += textLine(
+      SQ_COL_X[0],
+      q2y + SQ_LABEL_VAL_GAP,
+      squad.retreatRate,
+      COLORS.textPrimary,
+      TYPO.valueSize,
+      TYPO.valueWeight,
+    );
+    s += mutedTextLine(SQ_COL_X[1], q2y, 'TEAM EXTRACT', TYPO.labelSize, TYPO.labelWeight);
+    s += textLine(
+      SQ_COL_X[1],
+      q2y + SQ_LABEL_VAL_GAP,
+      formatAssets(squad.teamExtract),
+      COLORS.textPrimary,
+      TYPO.valueSize,
+      TYPO.valueWeight,
+    );
 
-  for (let i = 0; i < cbRows.length; i++) {
-    const col = i < 2 ? 0 : 1;
-    const row = i % 2;
-    const x = cbColX[col];
-    const baseY = cbBaseY + row * cbRowGap;
-    s +=
-      '<text x="' +
-      x +
-      '" y="' +
-      baseY +
-      '" fill="' +
-      COLORS.textMuted +
-      '" font-size="' +
-      TYPO.labelSize +
-      '" font-weight="' +
-      TYPO.labelWeight +
-      '" font-family="' +
-      TYPO.primary +
-      '">' +
-      cbRows[i].label +
-      '</text>';
-    s +=
-      '<text x="' +
-      x +
-      '" y="' +
-      (baseY + 20) +
-      '" fill="' +
-      (i === 3 ? COLORS.accent : COLORS.textPrimary) +
-      '" font-size="18" font-weight="700" font-family="' +
-      TYPO.primary +
-      '">' +
-      cbRows[i].value +
-      '</text>';
-    if (col === 0 && row < 1) {
-      s +=
-        '<line x1="' +
-        (lx + lw / 2) +
-        '" y1="' +
-        (baseY - 10) +
-        '" x2="' +
-        (lx + lw / 2) +
-        '" y2="' +
-        (baseY + 22) +
-        '" stroke="' +
-        COLORS.borderDivider +
-        '" stroke-width="1"/>';
-    }
+    // Row 3: Play Duration (full-width)
+    const q3y = q2y + SQ_ROW_GAP;
+    const totalH = playDurationHours + playDurationMinutes / 60;
+    s += mutedTextLine(
+      LEFT_COL.x + LEFT_COL.w / 2,
+      q3y,
+      'TOTAL PLAY TIME',
+      TYPO.labelSize,
+      TYPO.labelWeight,
+      'middle',
+    );
+    s += textLine(
+      LEFT_COL.x + LEFT_COL.w / 2,
+      q3y + SQ_LABEL_VAL_GAP,
+      formatHoursDecimal(totalH),
+      COLORS.textPrimary,
+      TYPO.valueSize,
+      TYPO.valueWeight,
+      'middle',
+    );
   }
 
-  // --- Squad panel ---
-  s += panelRect(lx, sqY, lw, sqH, r);
-  s += cornerMark(lx + 4, sqY + 4, 6, 6);
-  s += cornerMark(lx + lw - 10, sqY + 4, 4, 6, -1, 1);
+  // ===== RIGHT COLUMN =====
+
+  // --- CURRENT RANK ---
+  s += panelRect(RIGHT_COL.x, RK_SECTION.y, RIGHT_COL.w, RK_SECTION.h, r);
+  s += cornerMark(RIGHT_COL.x + 4, RK_SECTION.y + 4, 8, 8);
+  s += cornerMark(RIGHT_COL.x + RIGHT_COL.w - 12, RK_SECTION.y + 4, 4, 8, -1, 1);
+  // Title
   s +=
     '<text x="' +
-    (lx + cpad) +
+    (RIGHT_COL.x + BI_PAD) +
     '" y="' +
-    (sqY + 18) +
+    (RK_SECTION.y + 20) +
     '" fill="' +
     COLORS.textMuted +
     '" font-size="' +
@@ -481,164 +701,73 @@ function buildSVG(vm: DFStatsViewModel): string {
     TYPO.panelTitleWeight +
     '" font-family="' +
     TYPO.primary +
-    '" letter-spacing="1">SQUAD STATS</text>';
+    '" stroke="rgba(0,0,0,0.6)" stroke-width="0.5" stroke-opacity="0.6" paint-order="stroke fill">' +
+    'CURRENT RANK</text>';
   s +=
     '<line x1="' +
-    (lx + cpad) +
+    (RIGHT_COL.x + BI_PAD) +
     '" y1="' +
-    (sqY + 24) +
+    (RK_SECTION.y + 26) +
     '" x2="' +
-    (lx + lw - cpad) +
+    (RIGHT_COL.x + RIGHT_COL.w - BI_PAD) +
     '" y2="' +
-    (sqY + 24) +
+    (RK_SECTION.y + 26) +
     '" stroke="' +
     COLORS.borderDivider +
     '" stroke-width="1"/>';
 
-  const sqRows = vm.squad
-    ? [
-        { label: 'REVIVE', value: String(vm.squad.revive) },
-        { label: 'RESCUE', value: String(vm.squad.rescue) },
-        { label: 'RETREAT RATE', value: vm.squad.retreatRate },
-        { label: 'TEAM EXTRACT', value: formatNumber(vm.squad.teamExtract) },
-      ]
-    : [{ label: 'NO DATA', value: '' }];
-
-  const sqBaseY = sqY + 36;
-  const sqColX = [lx + cpad, lx + lw / 2 + cpad];
-  const sqRowGap = 28; // 2×2 grid fit trong 106px
-
-  for (let i = 0; i < sqRows.length; i++) {
-    const col = i < 2 ? 0 : 1;
-    const row = i % 2;
-    const x = sqColX[col];
-    const baseY = sqBaseY + row * sqRowGap;
-    s +=
-      '<text x="' +
-      x +
-      '" y="' +
-      baseY +
-      '" fill="' +
-      COLORS.textMuted +
-      '" font-size="' +
-      TYPO.labelSize +
-      '" font-weight="' +
-      TYPO.labelWeight +
-      '" font-family="' +
-      TYPO.primary +
-      '">' +
-      sqRows[i].label +
-      '</text>';
-    s +=
-      '<text x="' +
-      x +
-      '" y="' +
-      (baseY + 20) +
-      '" fill="' +
-      COLORS.textPrimary +
-      '" font-size="18" font-weight="700" font-family="' +
-      TYPO.primary +
-      '">' +
-      sqRows[i].value +
-      '</text>';
-    if (col === 0 && row < 1) {
-      s +=
-        '<line x1="' +
-        (lx + lw / 2) +
-        '" y1="' +
-        (baseY - 10) +
-        '" x2="' +
-        (lx + lw / 2) +
-        '" y2="' +
-        (baseY + 22) +
-        '" stroke="' +
-        COLORS.borderDivider +
-        '" stroke-width="1"/>';
-    }
-  }
-
-  // ===== RIGHT PANEL =====
-
-  // --- Rank panel ---
-  s += panelRect(rx, rkY, rw, rkH, r);
-  s += cornerMark(rx + 4, rkY + 4, 6, 6);
-  s += cornerMark(rx + rw - 10, rkY + 4, 4, 6, -1, 1);
-  s +=
-    '<text x="' +
-    (rx + cpad) +
-    '" y="' +
-    (rkY + 20) +
-    '" fill="' +
-    COLORS.textMuted +
-    '" font-size="' +
-    TYPO.panelTitleSize +
-    '" font-weight="' +
-    TYPO.panelTitleWeight +
-    '" font-family="' +
-    TYPO.primary +
-    '" letter-spacing="1">CURRENT RANK</text>';
-  s +=
-    '<line x1="' +
-    (rx + cpad) +
-    '" y1="' +
-    (rkY + 26) +
-    '" x2="' +
-    (rx + rw - cpad) +
-    '" y2="' +
-    (rkY + 26) +
-    '" stroke="' +
-    COLORS.borderDivider +
-    '" stroke-width="1"/>';
-
-  // Rank emblem placeholder (circle) — Sharp sẽ overlay ảnh thật lên trên
-  const rkCx = rx + rw / 2;
-  const rkCy = rkY + 85;
+  // Rank emblem placeholder (circle) — Sharp overlay ảnh thật lên trên
   s +=
     '<circle cx="' +
-    rkCx +
+    RK_CX +
     '" cy="' +
-    rkCy +
-    '" r="36" fill="' +
+    RK_EMBLEM_CY +
+    '" r="44" fill="' +
     COLORS.bgPanelLight +
     '" stroke="' +
     COLORS.borderPanel +
     '" stroke-width="1"/>';
-  // Rank title (dưới emblem)
+  // Rank name
   s +=
     '<text x="' +
-    rkCx +
+    RK_CX +
     '" y="' +
-    (rkCy + 56) +
+    (RK_EMBLEM_CY + 64) +
     '" fill="' +
     COLORS.textPrimary +
-    '" font-size="12" font-weight="600" font-family="' +
+    '" font-size="' +
+    TYPO.panelTitleSize +
+    '" font-weight="' +
+    TYPO.panelTitleWeight +
+    '" font-family="' +
     TYPO.primary +
     '" text-anchor="middle">' +
     rankName +
     '</text>';
-  // Rank score (dưới title)
+  // Rank score
   s +=
     '<text x="' +
-    rkCx +
+    RK_CX +
     '" y="' +
-    (rkY + 175) +
+    (RK_EMBLEM_CY + 80) +
     '" fill="' +
-    COLORS.textMuted +
-    '" font-size="9" font-family="' +
+    COLORS.accent +
+    '" font-size="10" font-weight="600" font-family="' +
     TYPO.primary +
-    '" text-anchor="middle">' +
+    '" text-anchor="middle" stroke="rgba(0,0,0,0.6)" stroke-width="0.5" stroke-opacity="0.6" paint-order="stroke fill">' +
     rankScore.toLocaleString('vi-VN') +
     ' PTS</text>';
 
-  // --- Operator panel ---
-  s += panelRect(rx, opY, rw, opH, r);
-  s += cornerMark(rx + 4, opY + 4, 6, 6);
-  s += cornerMark(rx + rw - 10, opY + 4, 4, 6, -1, 1);
+  // --- MOST USED OPERATOR ---
+  s += panelRect(RIGHT_COL.x, OP_SECTION.y, RIGHT_COL.w, OP_SECTION.h, r);
+  s += cornerMark(RIGHT_COL.x + 4, OP_SECTION.y + 4, 8, 8);
+  s += cornerMark(RIGHT_COL.x + RIGHT_COL.w - 12, OP_SECTION.y + 4, 4, 8, -1, 1);
+  // Title
   s +=
     '<text x="' +
-    (rx + cpad) +
+    (RIGHT_COL.x + BI_PAD) +
     '" y="' +
-    (opY + 18) +
+    (OP_SECTION.y + 20) +
     '" fill="' +
     COLORS.textMuted +
     '" font-size="' +
@@ -647,63 +776,68 @@ function buildSVG(vm: DFStatsViewModel): string {
     TYPO.panelTitleWeight +
     '" font-family="' +
     TYPO.primary +
-    '" letter-spacing="1">MOST USED OPERATOR</text>';
+    '" stroke="rgba(0,0,0,0.6)" stroke-width="0.5" stroke-opacity="0.6" paint-order="stroke fill">' +
+    'MOST USED OPERATOR</text>';
   s +=
     '<line x1="' +
-    (rx + cpad) +
+    (RIGHT_COL.x + BI_PAD) +
     '" y1="' +
-    (opY + 24) +
+    (OP_SECTION.y + 26) +
     '" x2="' +
-    (rx + rw - cpad) +
+    (RIGHT_COL.x + RIGHT_COL.w - BI_PAD) +
     '" y2="' +
-    (opY + 24) +
+    (OP_SECTION.y + 26) +
     '" stroke="' +
     COLORS.borderDivider +
     '" stroke-width="1"/>';
 
   // Operator portrait placeholder
-  const opCx = rx + rw / 2;
-  const opCy = opY + 60;
+  const opName = 'N/A';
   s +=
     '<rect x="' +
-    (opCx - 30) +
+    (OP_CX - 25) +
     '" y="' +
-    (opCy - 30) +
-    '" width="60" height="60" rx="2" fill="' +
+    (OP_PORTRAIT_CY - 25) +
+    '" width="50" height="50" rx="2" fill="' +
     COLORS.bgPanelLight +
     '" stroke="' +
     COLORS.borderPanel +
     '" stroke-width="1"/>';
   s +=
     '<text x="' +
-    opCx +
+    OP_CX +
     '" y="' +
-    (opCy + 4) +
+    (OP_PORTRAIT_CY + 4) +
     '" fill="' +
     COLORS.textMuted +
-    '" font-size="10" font-family="' +
+    '" font-size="9" font-family="' +
     TYPO.primary +
-    '" text-anchor="middle">OP</text>';
+    '" text-anchor="middle" stroke="rgba(0,0,0,0.6)" stroke-width="0.5" stroke-opacity="0.6" paint-order="stroke fill">' +
+    'OP</text>';
+  // Operator name
   s +=
     '<text x="' +
-    opCx +
+    OP_CX +
     '" y="' +
-    (opY + 108) +
+    (OP_SECTION.y + 100) +
     '" fill="' +
-    COLORS.textSecondary +
-    '" font-size="10" font-weight="500" font-family="' +
+    COLORS.textPrimary +
+    '" font-size="12" font-weight="600" font-family="' +
     TYPO.primary +
-    '" text-anchor="middle">D-wolf</text>';
+    '" text-anchor="middle">' +
+    fitText(opName, 100, 12) +
+    '</text>';
 
-  // --- Summary panel ---
-  s += panelRect(rx, sumY, rw, sumH, r);
-  s += cornerMark(rx + 4, sumY + 4, 6, 6);
-  s += cornerMark(rx + rw - 10, sumY + 4, 4, 6, -1, 1);
+  // --- SEASON SUMMARY ---
+  s += panelRect(RIGHT_COL.x, SS_SECTION.y, RIGHT_COL.w, SS_SECTION.h, r);
+  s += cornerMark(RIGHT_COL.x + 4, SS_SECTION.y + 4, 8, 8);
+  s += cornerMark(RIGHT_COL.x + RIGHT_COL.w - 12, SS_SECTION.y + 4, 4, 8, -1, 1);
+  // Title
   s +=
     '<text x="' +
-    (rx + cpad) +
+    (RIGHT_COL.x + SS_PAD) +
     '" y="' +
-    (sumY + 18) +
+    (SS_SECTION.y + 20) +
     '" fill="' +
     COLORS.textMuted +
     '" font-size="' +
@@ -712,80 +846,99 @@ function buildSVG(vm: DFStatsViewModel): string {
     TYPO.panelTitleWeight +
     '" font-family="' +
     TYPO.primary +
-    '" letter-spacing="1">SEASON SUMMARY</text>';
+    '" stroke="rgba(0,0,0,0.6)" stroke-width="0.5" stroke-opacity="0.6" paint-order="stroke fill">' +
+    'SEASON SUMMARY</text>';
   s +=
     '<line x1="' +
-    (rx + cpad) +
+    (RIGHT_COL.x + SS_PAD) +
     '" y1="' +
-    (sumY + 24) +
+    (SS_SECTION.y + 26) +
     '" x2="' +
-    (rx + rw - cpad) +
+    (RIGHT_COL.x + RIGHT_COL.w - SS_PAD) +
     '" y2="' +
-    (sumY + 24) +
+    (SS_SECTION.y + 26) +
     '" stroke="' +
     COLORS.borderDivider +
     '" stroke-width="1"/>';
 
-  const sumRows = [
-    { label: 'TOTAL MATCHES', value: String(totalMatches), y: sumY + 40 },
-    {
-      label: 'PLAY TIME',
-      value: formatDuration(playDurationHours, playDurationMinutes),
-      y: sumY + 60,
-    },
-    { label: 'NICKNAME', value: displayNickname, y: sumY + 80 },
-    { label: 'LEVEL', value: String(level), y: sumY + 100 },
-    { label: 'OVERALL POINTS', value: String(rankScore), y: sumY + 120 },
-    { label: 'JOIN DATE', value: joinDate, y: sumY + 140 },
-    { label: 'KILLS', value: String(vm.combat ? vm.combat.kills : 0), y: sumY + 160 },
-    { label: 'WIN RATE', value: '39%', y: sumY + 180 },
-    { label: 'HEADSHOT RATE', value: vm.combat ? vm.combat.headshotRate : '0%', y: sumY + 200 },
-  ];
+  // Row 1: Total Matches | Total Reward
+  const s1y = SS_BASE_Y;
+  const totalReward = vm.economy ? vm.economy.totalReward : '0';
+  s += mutedTextLine(SS_COL_X[0], s1y, 'TOTAL MATCHES', TYPO.labelSize, TYPO.labelWeight);
+  s += textLine(
+    SS_COL_X[0],
+    s1y + SS_LABEL_VAL_GAP,
+    String(totalMatches),
+    COLORS.textPrimary,
+    TYPO.valueSize,
+    TYPO.valueWeight,
+  );
+  s += mutedTextLine(SS_COL_X[1], s1y, 'TOTAL REWARD', TYPO.labelSize, TYPO.labelWeight);
+  s += textLine(
+    SS_COL_X[1],
+    s1y + SS_LABEL_VAL_GAP,
+    formatAssets(totalReward),
+    COLORS.textPrimary,
+    TYPO.valueSize,
+    TYPO.valueWeight,
+  );
 
-  for (const row of sumRows) {
-    s +=
-      '<text x="' +
-      (rx + cpad) +
-      '" y="' +
-      row.y +
-      '" fill="' +
-      COLORS.textMuted +
-      '" font-size="8" font-weight="' +
-      TYPO.labelWeight +
-      '" font-family="' +
-      TYPO.primary +
-      '">' +
-      row.label +
-      '</text>';
-    s +=
-      '<text x="' +
-      (rx + rw - cpad) +
-      '" y="' +
-      row.y +
-      '" fill="' +
-      COLORS.textPrimary +
-      '" font-size="10" font-weight="600" font-family="' +
-      TYPO.primary +
-      '" text-anchor="end">' +
-      row.value +
-      '</text>';
-  }
+  // Row 2: Total Extract Value | Mandel Brick
+  const s2y = s1y + SS_ROW_GAP;
+  const extractVal = vm.economy ? vm.economy.extractValue : '0';
+  const mandel = vm.economy ? vm.economy.mandelBrick : 0;
+  s += mutedTextLine(SS_COL_X[0], s2y, 'EXTRACT VALUE', TYPO.labelSize, TYPO.labelWeight);
+  s += textLine(
+    SS_COL_X[0],
+    s2y + SS_LABEL_VAL_GAP,
+    formatAssets(extractVal),
+    COLORS.textPrimary,
+    TYPO.valueSize,
+    TYPO.valueWeight,
+  );
+  s += mutedTextLine(SS_COL_X[1], s2y, 'MANDEL BRICK', TYPO.labelSize, TYPO.labelWeight);
+  s += textLine(
+    SS_COL_X[1],
+    s2y + SS_LABEL_VAL_GAP,
+    mandel.toLocaleString('vi-VN'),
+    COLORS.textPrimary,
+    TYPO.valueSize,
+    TYPO.valueWeight,
+  );
+
+  // Row 3: Profit/Loss Ratio (full-width)
+  const s3y = s2y + SS_ROW_GAP;
+  const profitLoss = vm.economy ? vm.economy.profitLoss : '0';
+  s += mutedTextLine(
+    RIGHT_COL.x + RIGHT_COL.w / 2,
+    s3y,
+    'PROFIT / LOSS RATIO',
+    TYPO.labelSize,
+    TYPO.labelWeight,
+    'middle',
+  );
+  s += textLine(
+    RIGHT_COL.x + RIGHT_COL.w / 2,
+    s3y + SS_LABEL_VAL_GAP,
+    profitLoss,
+    COLORS.textPrimary,
+    TYPO.valueSize,
+    TYPO.valueWeight,
+    'middle',
+  );
 
   // ===== FOOTER =====
   s +=
     '<text x="' +
-    LAYOUT.footer.x +
+    (FOOTER_Y - 20) +
     '" y="' +
-    (LAYOUT.footer.y + 12) +
+    (FOOTER_Y + 10) +
     '" fill="' +
     COLORS.textMuted +
-    '" font-size="' +
-    TYPO.footerSize +
-    '" font-weight="' +
-    TYPO.footerWeight +
-    '" font-family="' +
+    '" font-size="7" font-weight="400" font-family="' +
     TYPO.primary +
-    '" letter-spacing="1">DELTA FORCE STATS · POWERED BY KLB BOT</text>';
+    '" text-anchor="end" stroke="rgba(0,0,0,0.6)" stroke-width="0.5" stroke-opacity="0.6" paint-order="stroke fill">' +
+    'DELTA FORCE STATS · POWERED BY KLB BOT</text>';
 
   s += '</svg>';
   return s;
@@ -860,4 +1013,81 @@ function cornerMark(
     thickness +
     '" stroke-linecap="round"/>'
   );
+}
+
+/** Convert local path → file:// URI cho SVG <image> (Sharp parser). */
+function toFileUri(filePath: string): string {
+  const resolved = path.resolve(filePath);
+  return 'file://' + resolved.replace(/\\/g, '/');
+}
+
+/** SVG <image> tag với error handling. */
+function imageTag(href: string, x: number, y: number, w: number, h: number): string {
+  return (
+    '<image href="' +
+    toFileUri(href) +
+    '" x="' +
+    x +
+    '" y="' +
+    y +
+    '" width="' +
+    w +
+    '" height="' +
+    h +
+    '" preserveAspectRatio="none"/>'
+  );
+}
+
+/** Text line helper — label/value với màu và font nhất quán. */
+function textLine(
+  x: number,
+  y: number,
+  value: string,
+  fill: string,
+  size: number,
+  weight: number,
+  anchor?: 'start' | 'middle' | 'end',
+  stroke?: string,
+): string {
+  const anchorAttr = anchor ? ' text-anchor="' + anchor + '"' : '';
+  const strokeAttr = stroke
+    ? ' stroke="' + stroke + '" stroke-width="0.5" stroke-opacity="0.6" paint-order="stroke fill"'
+    : '';
+  return (
+    '<text x="' +
+    x +
+    '" y="' +
+    y +
+    '" fill="' +
+    fill +
+    '" font-size="' +
+    size +
+    '" font-weight="' +
+    weight +
+    '" font-family="' +
+    TYPO.primary +
+    '"' +
+    anchorAttr +
+    strokeAttr +
+    '>' +
+    value +
+    '</text>'
+  );
+}
+
+/** Muted text với dark stroke — tăng readability cho labels trên panel dark. */
+function mutedTextLine(
+  x: number,
+  y: number,
+  value: string,
+  size: number,
+  weight: number,
+  anchor?: 'start' | 'middle' | 'end',
+): string {
+  return textLine(x, y, value, COLORS.textMuted, size, weight, anchor, 'rgba(0,0,0,0.6)');
+}
+
+/** Ước lượng chiều rộng text (px) — dùng cho icon positioning. */
+function getTextWidth(text: string, fontSize: number): number {
+  return text.length * fontSize * 0.6;
 }

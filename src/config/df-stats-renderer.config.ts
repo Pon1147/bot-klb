@@ -79,10 +79,38 @@
  * ============================================================================
  */
 
+import path from 'path';
+
 /** Canvas 16:9 — tỷ lệ game UI */
 export const CANVAS = {
   width: 1280,
-  height: 720,
+  height: 740,
+};
+
+/** Asset paths — logos, icons, operator portraits */
+export const ASSETS = {
+  logos: {
+    deltaForce: path.join(__dirname, '../../assets/delta-force/logos/delta-force.png'),
+    timi: path.join(__dirname, '../../assets/delta-force/logos/timi.png'),
+    teamJade: path.join(__dirname, '../../assets/delta-force/logos/team-jade.png'),
+  },
+  icons: {
+    level: path.join(__dirname, '../../assets/delta-force/icons/level.png'),
+    badges: [
+      path.join(__dirname, '../../assets/delta-force/icons/badge-1.png'),
+      path.join(__dirname, '../../assets/delta-force/icons/badge-2.png'),
+      path.join(__dirname, '../../assets/delta-force/icons/badge-3.png'),
+    ],
+  },
+  /** Operator portraits — map operator name to portrait image */
+  operatorPortraits: {
+    stinger: path.join(__dirname, '../../assets/delta-force/backgrounds/stinger.png'),
+    luna: path.join(__dirname, '../../assets/delta-force/backgrounds/luna.png'),
+    vyron: path.join(__dirname, '../../assets/delta-force/backgrounds/vyron.png'),
+    hackclaw: path.join(__dirname, '../../assets/delta-force/backgrounds/hackclaw.png'),
+    sineva: path.join(__dirname, '../../assets/delta-force/backgrounds/sineva.png'),
+    nox: path.join(__dirname, '../../assets/delta-force/backgrounds/nox.png'),
+  },
 };
 
 /** Spacing tokens — tight, dense */
@@ -103,26 +131,26 @@ export const RADIUS = {
 /** Layout 3-panel: Left(stats) + Center(operator) + Right(rank) */
 export const LAYOUT = {
   padding: 20,
-  cardGap: 4, // 4px — compact inter-panel spacing
+  cardGap: 4,
   cardPad: 10,
-  /** Panel trái: dense stats grid (hdr:28 + bi:238 + cb:126 + sq:106 + gaps) */
+  /** Panel trái: Basic Info — 1 panel, 5 rows (tighter spacing) */
   leftPanel: {
     x: 20,
     y: 20,
     width: 420,
-    height: 512,
+    height: 380,
   },
-  /** Panel phải: rank + secondary (rk:185 + op:110 + sum:224 + gaps) */
+  /** Panel phải: Rank + Bottom Cards — khớp left panel height */
   rightPanel: {
     x: 840,
     y: 20,
     width: 420,
-    height: 527,
+    height: 380,
   },
   /** Header season label — baseline Y = padding + 18 */
   header: {
     x: 20,
-    y: 20,
+    y: 8,
     width: 1240,
     height: 24,
   },
@@ -133,36 +161,52 @@ export const LAYOUT = {
     width: 1240,
     height: 16,
   },
+  /** Bottom cards area (right panel, below rank) */
+  bottomCards: {
+    y: 270,
+    h: 120,
+    gap: 15,
+    cardW: 200,
+  },
 };
 
 /** Color system — military dark */
 export const COLORS = {
   bgCanvas: '#070A0C',
-  bgPanel: 'rgba(11,16,19,0.82)',
+  bgPanel: 'rgba(11,16,19,0.93)',
   bgPanelLight: 'rgba(17,22,25,0.75)',
-  borderPanel: 'rgba(146,153,155,0.25)',
-  borderDivider: 'rgba(146,153,155,0.12)',
-  textPrimary: '#E5E9E8',
-  textSecondary: '#A8B0B2',
-  textMuted: '#7A8587',
+  /** Border panel — tăng opacity để panel/corner markers rõ hơn */
+  borderPanel: 'rgba(146,153,155,0.50)',
+  /** Divider trong panel — tăng nhẹ cho separator rõ hơn */
+  borderDivider: 'rgba(146,153,155,0.20)',
+  /** Text primary — trắng thuần để values "pop" tối đa */
+  textPrimary: '#FFFFFF',
+  textSecondary: '#D0D6D8',
+  /** Text muted — sáng hơn để labels readable trên panel dark */
+  textMuted: '#D8DEE0',
   /** Tactical green — CHỈ dùng cho OPERATIONS, indicators, key values */
   accent: '#00E58A',
   accentDim: 'rgba(0,229,138,0.3)',
+  /** Background fallback nếu ảnh load thất bại */
+  bgFallback: '#0D1114',
 };
 
-/** Typography — condensed military fonts */
+/** Typography — condensed military fonts ( ưu tiên font có sẵn trên Windows/Linux) */
 export const TYPO = {
-  primary: "'Rajdhani', 'Roboto Condensed', 'DIN Condensed', sans-serif",
+  primary: "'Arial Narrow', Arial, 'Helvetica Neue', Helvetica, sans-serif",
   sectionSize: 14,
   sectionWeight: 700,
   panelTitleSize: 11,
   panelTitleWeight: 600,
-  labelSize: 8,
-  labelWeight: 400,
-  valueSize: 20,
+  labelSize: 9,
+  labelWeight: 500,
+  valueSize: 22,
   valueWeight: 700,
+  valueSizeLarge: 24,
   rankValueSize: 32,
   rankValueWeight: 700,
+  bottomCardTitleSize: 8,
+  bottomCardTitleWeight: 400,
   footerSize: 8,
   footerWeight: 400,
 };

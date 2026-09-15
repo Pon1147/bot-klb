@@ -20,8 +20,8 @@ import { TTLStore } from '../utils/ttl-store.js';
 
 const logger = createLogger('DfStatsSelect');
 
-// Cache kết quả API theo userId + season, TTL 5 phút (thay vì 30s raw Map)
-// TTLStore tự động cleanup định kỳ, tránh memory leak
+// Cache kết quả API theo userId + season, TTL 5 phút
+// KHÔNG gọi startCleanup() — cache chỉ dùng khi có interaction, không cần cleanup định kỳ
 const statsCache = new TTLStore<
   string,
   { data: import('../types/deltaforce.types.js').DfMyDataResponse; expiresAt: number }
@@ -30,7 +30,6 @@ const statsCache = new TTLStore<
   cleanupIntervalMs: 60 * 1000,
   name: 'DfStatsCache',
 });
-statsCache.startCleanup();
 
 export async function handleDfStatsSelect(
   interaction: StringSelectMenuInteraction,
