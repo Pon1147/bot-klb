@@ -105,11 +105,9 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
 
   if (modalId === 'lines') {
     // Parse lines từ textarea — mỗi dòng là 1 content line
+    // GIỮ LẠI blank lines — user có thể cố ý dùng cho spacing
     const rawValue = interaction.fields.getTextInputValue('lines_content');
-    const lines = rawValue
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
+    const lines = rawValue.split('\n').map((l) => l.trim());
     session.draft.contentLines = lines;
   } else if (modalId === 'color') {
     // Parse màu từ input — chấp nhận #RRGGBB hoặc RRGGBB

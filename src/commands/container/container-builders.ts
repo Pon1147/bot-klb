@@ -115,10 +115,10 @@ export function buildMediaModal(
 /**
  * Build modal quản lý tất cả lines trong 1 modal duy nhất.
  * Hiển thị textarea với tất cả lines, user có thể edit trực tiếp.
+ * KHÔNG thêm prefix số — user submit raw content, tránh corrupt stored data.
  */
 export function buildLinesModal(contentLines: string[]): ModalBuilder {
-  const preview =
-    contentLines.map((line, i) => `${i + 1}. ${line}`).join('\n') || '(chưa có dòng nào)';
+  const preview = contentLines.join('\n') || '(chưa có dòng nào)';
 
   const textarea = new TextInputBuilder()
     .setCustomId('lines_content')
