@@ -84,7 +84,7 @@ import path from 'path';
 /** Canvas 16:9 — tỷ lệ game UI */
 export const CANVAS = {
   width: 1280,
-  height: 740,
+  height: 720,
 };
 
 /** Asset paths — logos, icons, operator portraits */
@@ -137,15 +137,15 @@ export const LAYOUT = {
   leftPanel: {
     x: 20,
     y: 20,
-    width: 420,
-    height: 380,
+    width: 260,
+    height: 310,
   },
-  /** Panel phải: Rank + Bottom Cards — khớp left panel height */
+  /** Panel phải: CURRENT RANK + MOST USED OPERATOR + SEASON SUMMARY */
   rightPanel: {
     x: 840,
     y: 20,
-    width: 420,
-    height: 380,
+    width: 240,
+    height: 450,
   },
   /** Header season label — baseline Y = padding + 18 */
   header: {
@@ -193,14 +193,14 @@ export const COLORS = {
 
 /** Typography — condensed military fonts ( ưu tiên font có sẵn trên Windows/Linux) */
 export const TYPO = {
-  primary: "'Arial Narrow', Arial, 'Helvetica Neue', Helvetica, sans-serif",
+  primary: "Arial, 'Helvetica Neue', Helvetica, sans-serif",
   sectionSize: 14,
   sectionWeight: 700,
   panelTitleSize: 11,
   panelTitleWeight: 600,
   labelSize: 9,
   labelWeight: 500,
-  valueSize: 22,
+  valueSize: 14,
   valueWeight: 700,
   valueSizeLarge: 24,
   rankValueSize: 32,

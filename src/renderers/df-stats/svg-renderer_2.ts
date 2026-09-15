@@ -32,7 +32,7 @@
  *   │ SYSTEM STATUS                                      BRANDING       │
  *   └────────────────────────────────────────────────────────────────────┘
  *
- * Uses SVG for text/UI rendering và Sharp cho image compositing.
+ * Uses SVG for text/UI rendering and Sharp for image compositing.
  */
 
 import path from 'path';
@@ -46,10 +46,10 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const BACKGROUND_PATH = path.join(__dirname, '../../assets/delta-force/backgrounds/stinger.png');
 
 /**
- * Giữ operator/background visible.
+ * Keep the operator/background visible.
  *
- * Overlay 0.50 cũ khá nặng.
- * Các panel cạnh đã đủ tạo separation thị giác.
+ * The previous 0.50 overlay was relatively heavy.
+ * The side panels themselves provide enough visual separation.
  */
 const DARK_OVERLAY_COLOR = 'rgba(7,10,12,0.38)';
 
@@ -58,22 +58,22 @@ const DARK_OVERLAY_COLOR = 'rgba(7,10,12,0.38)';
  * ========================================================================== */
 
 /**
- * Tọa độ cố định có chủ đích.
+ * These coordinates are intentionally explicit.
  *
- * Không tính right column từ canvas width.
- * Background composition cố định, nên UI safe zones cũng cố định.
+ * Do NOT calculate the right column from canvas width.
+ * The background composition is fixed, so the UI safe zones are fixed too.
  *
- * Canvas kỳ vọng 1280px dựa trên renderer config hiện tại.
+ * Canvas is expected to be 1280px wide based on the current renderer config.
  */
 
-/** Khoảng trống bên trái background. */
+/** Left empty area of the background. */
 const LEFT_COL = {
   x: 24,
   y: 78,
   w: 226,
 };
 
-/** Khoảng trống bên phải background. */
+/** Right empty area of the background. */
 const RIGHT_COL = {
   x: CANVAS.width - 24 - 226,
   y: 78,
@@ -84,10 +84,10 @@ const GAP = 12;
 
 const HEADER_H = 56;
 
-/* Panel trái */
+/* Left panel */
 const BASIC_INFO_H = 270;
 
-/* Panel phải */
+/* Right panels */
 const RANK_H = 176;
 const OPERATOR_H = 108;
 const SEASON_H = 144;
@@ -117,7 +117,7 @@ const SS_ROW_H = 29;
  * RENDER ENTRY
  * ========================================================================== */
 
-/** Render dashboard image từ ViewModel. */
+/** Render dashboard image from ViewModel. */
 export async function renderDashboard(viewModel: DFStatsViewModel): Promise<Buffer> {
   const svgContent = buildSVG(viewModel);
   const svgBuffer = Buffer.from(svgContent, 'utf-8');
@@ -213,8 +213,8 @@ export async function renderDashboard(viewModel: DFStatsViewModel): Promise<Buff
   /* --------------------------------------------------------------------------
    * Rank emblem
    *
-   * SVG có placeholder circle.
-   * Ảnh rank thật được composite cùng tọa độ chính xác.
+   * The SVG contains a placeholder circle.
+   * The real rank image is composited at the exact same coordinates.
    * ------------------------------------------------------------------------ */
 
   if (viewModel.rank.imageUrl) {
@@ -246,7 +246,7 @@ export async function renderDashboard(viewModel: DFStatsViewModel): Promise<Buff
         .toBuffer();
     } catch {
       /*
-       * Giữ SVG placeholder.
+       * Keep SVG placeholder.
        */
     }
   }
@@ -254,8 +254,8 @@ export async function renderDashboard(viewModel: DFStatsViewModel): Promise<Buff
   /* --------------------------------------------------------------------------
    * Player avatar
    *
-   * Avatar nằm ở header, không can thiệp vào
-   * operator centered trong background.
+   * The avatar is kept in the header and does not interfere with
+   * the centered operator in the background.
    * ------------------------------------------------------------------------ */
 
   if (viewModel.player.avatarUrl) {
@@ -281,15 +281,15 @@ export async function renderDashboard(viewModel: DFStatsViewModel): Promise<Buff
         .toBuffer();
     } catch {
       /*
-       * Bỏ qua nếu avatar fail.
+       * Ignore avatar failure.
        */
     }
   }
 
   /*
-   * Operator portrait không render ở đây.
+   * Operator portrait is intentionally NOT rendered here.
    *
-   * Operator center đã là phần của BACKGROUND_PATH.
+   * The center operator is already part of BACKGROUND_PATH.
    */
 
   return composite;
@@ -392,7 +392,7 @@ function renderHeader(nickname: string): string {
     '" stroke-width="1" opacity="0.55"/>';
 
   /*
-   * Accent tactical xanh lá ngắn.
+   * Short green tactical accent.
    */
   s +=
     '<line x1="20" y1="' +
@@ -404,12 +404,12 @@ function renderHeader(nickname: string): string {
     '" stroke-width="2" opacity="0.75"/>';
 
   /*
-   * Logo Delta Force.
+   * Delta Force logo.
    */
   s += imageTag(ASSETS.logos.deltaForce, 24, 10, 112, 26);
 
   /*
-   * Nhãn Operations.
+   * Operations label.
    */
   s +=
     '<text x="148" y="27" fill="' +
@@ -421,7 +421,7 @@ function renderHeader(nickname: string): string {
     '</text>';
 
   /*
-   * Nhãn phụ nhỏ.
+   * Small secondary label.
    */
   s +=
     '<text x="148" y="42" fill="' +
@@ -433,17 +433,17 @@ function renderHeader(nickname: string): string {
     '</text>';
 
   /*
-   * Logo publisher.
+   * Publisher logos.
    */
   s += imageTag(ASSETS.logos.timi, CANVAS.width - 126, 10, 44, 20);
 
   s += imageTag(ASSETS.logos.teamJade, CANVAS.width - 74, 10, 46, 20);
 
   /*
-   * Tên người chơi.
+   * Username.
    *
-   * Đặt dưới logos để dễ đọc và không
-   * cạnh tranh với operator center composition.
+   * Positioned below the logos so it remains readable and does not
+   * compete with the main operator composition.
    */
   s +=
     '<text x="' +
@@ -489,7 +489,7 @@ function renderBasicInfo(data: {
   s += metricRow(x + PANEL_PAD, my, 'OPERATION LEVEL', String(data.level));
 
   /*
-   * Icon level.
+   * Level icon.
    */
   s += imageTag(
     ASSETS.icons.level,
@@ -547,10 +547,10 @@ function renderRank(rankName: string): string {
   s += panelTitle(x, y, w, 'CURRENT RANK');
 
   /*
-   * Placeholder cho ảnh rank thật.
+   * Placeholder for the real rank emblem.
    *
-   * Ảnh thật được composite sau SVG render
-   * với cùng tọa độ top/left.
+   * Real image is composited after SVG rendering using exactly
+   * the same top/left coordinates.
    */
   const cx = RANK_CENTER_X;
 
@@ -568,7 +568,7 @@ function renderRank(rankName: string): string {
     '" stroke-width="1" opacity="0.75"/>';
 
   /*
-   * Vòng tròn trang trí inner.
+   * Decorative inner ring.
    */
   s +=
     '<circle cx="' +
@@ -582,7 +582,7 @@ function renderRank(rankName: string): string {
     '" stroke-width="1" stroke-dasharray="2 6" opacity="0.28"/>';
 
   /*
-   * Tên rank.
+   * Rank name.
    */
   s +=
     '<text x="' +
@@ -618,9 +618,9 @@ function renderOperator(): string {
   s += panelTitle(x, y, w, 'MOST USED OPERATOR');
 
   /*
-   * ViewModel hiện tại chưa expose operator portrait/name.
+   * Current ViewModel does not expose operator portrait/name.
    *
-   * Giữ section compact thay vì tạo card trống lớn.
+   * Keep this section compact instead of creating a large empty card.
    */
   const cx = x + w / 2;
   const portraitTop = y + 40;
@@ -641,7 +641,7 @@ function renderOperator(): string {
     '" stroke-width="1"/>';
 
   /*
-   * Cross tactical placeholder.
+   * Placeholder tactical cross.
    */
   s +=
     '<line x1="' +
@@ -755,7 +755,7 @@ function renderFooter(): string {
     '" stroke-width="1" opacity="0.32"/>';
 
   /*
-   * Status trái.
+   * Left status.
    */
   s +=
     '<text x="24" y="' +
@@ -769,7 +769,7 @@ function renderFooter(): string {
     '</text>';
 
   /*
-   * Branding phải.
+   * Right branding.
    */
   s +=
     '<text x="' +
@@ -794,7 +794,7 @@ function renderFooter(): string {
 /**
  * HUD panel.
  *
- * Translucent đủ để giữ background trong khi text vẫn readable.
+ * Transparent enough to preserve the background while keeping text readable.
  */
 function panelRect(x: number, y: number, w: number, h: number): string {
   return (
@@ -815,9 +815,9 @@ function panelRect(x: number, y: number, w: number, h: number): string {
 }
 
 /**
- * Góc tactical brackets.
+ * Tactical corner brackets.
  *
- * Các góc cố ý tinh tế.
+ * The corners are intentionally subtle.
  */
 function tacticalCorners(x: number, y: number, w: number, h: number): string {
   const accent = COLORS.accent;
@@ -908,7 +908,7 @@ function tacticalCorners(x: number, y: number, w: number, h: number): string {
 }
 
 /**
- * Panel title và divider.
+ * Panel title and divider.
  */
 function panelTitle(x: number, y: number, w: number, title: string): string {
   let s = '';
@@ -931,7 +931,7 @@ function panelTitle(x: number, y: number, w: number, title: string): string {
     '</text>';
 
   /*
-   * Divider đầy đủ.
+   * Full divider.
    */
   s +=
     '<line x1="' +
@@ -947,7 +947,7 @@ function panelTitle(x: number, y: number, w: number, title: string): string {
     '" stroke-width="1" opacity="0.62"/>';
 
   /*
-   * Segment accent.
+   * Accent segment.
    */
   s +=
     '<line x1="' +
@@ -966,7 +966,7 @@ function panelTitle(x: number, y: number, w: number, title: string): string {
 }
 
 /**
- * Metric dọc tiêu chuẩn.
+ * Standard vertical metric.
  *
  * Label
  * Value
@@ -1018,7 +1018,7 @@ function metricRow(
 }
 
 /**
- * Metric ngang compact.
+ * Compact horizontal metric.
  *
  * LABEL                    VALUE
  */
@@ -1068,7 +1068,7 @@ function compactMetric(
     '</text>';
 
   /*
-   * Separator tinh tế.
+   * Subtle separator.
    */
   s +=
     '<line x1="' +
@@ -1087,7 +1087,7 @@ function compactMetric(
 }
 
 /**
- * Convert local path → file:// URI cho SVG <image>.
+ * Convert local path → file:// URI for SVG <image>.
  */
 function toFileUri(filePath: string): string {
   const resolved = path.resolve(filePath);
@@ -1115,9 +1115,9 @@ function imageTag(href: string, x: number, y: number, w: number, h: number): str
 }
 
 /**
- * Ước lượng chiều rộng text (px).
+ * Approximate text width.
  *
- * Chỉ dùng cho positioning icon level.
+ * Only used for positioning the level icon.
  */
 function getTextWidth(text: string, fontSize: number): number {
   return text.length * fontSize * 0.6;

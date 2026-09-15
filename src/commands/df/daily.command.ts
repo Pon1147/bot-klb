@@ -23,11 +23,11 @@ function formatOperations(battle: DfBattlefieldBattle | null): string {
   if (!battle) return '  _Chưa có dữ liệu (chưa chơi trận nào hôm nay)_';
 
   const lines: string[] = [];
-  lines.push(`- **Thuong**: ${Number(battle.revenue).toLocaleString('vi-VN')}`);
-  lines.push(`- **So Doc Vu Ha Guc**: ${battle.kill_count}`);
-  lines.push(`- **So Tran Dau**: ${battle.match_count}`);
+  lines.push(`- **Thưởng**: ${Number(battle.revenue).toLocaleString('vi-VN')}`);
+  lines.push(`- **Số Đặc Vụ Hạ Gục**: ${battle.kill_count}`);
+  lines.push(`- **Số Trận Đấu**: ${battle.match_count}`);
   lines.push(`- **K/D**: ${battle.kd_ratio}`);
-  lines.push(`- **Ti Le Rut Quan**: ${battle.retreat_rate}%`);
+  lines.push(`- **Tỷ Lệ Rút Quân**: ${battle.retreat_rate}%`);
   return lines.join('\n');
 }
 

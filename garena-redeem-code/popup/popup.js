@@ -7,6 +7,9 @@ if (!window.AuthUtils) {
 
 // ===== CONSTANTS =====
 const DEFAULT_CODES = [
+  'ANIMALCUPTANK',
+  'ANIMALCUPGUN',
+  'DFANIMALCUP',
   '10KSUBSYOUTUBEDFRTNK',
   '30KSUBSYOUTUBEDFESPNP',
   '85ewN4xYbJfncPKbADR',
