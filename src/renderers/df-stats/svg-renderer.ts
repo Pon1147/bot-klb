@@ -484,20 +484,9 @@ function renderBasicInfo(data: {
   let my = y + BI_START_Y;
 
   /*
-   * Operation Level.
+   * Operation Level — CSS accent làm nổi bật value.
    */
-  s += metricRow(x + PANEL_PAD, my, 'OPERATION LEVEL', String(data.level));
-
-  /*
-   * Icon level.
-   */
-  s += imageTag(
-    ASSETS.icons.level,
-    x + PANEL_PAD + getTextWidth(String(data.level), TYPO.valueSize) + 20,
-    my + 3,
-    15,
-    15,
-  );
+  s += metricRow(x + PANEL_PAD, my, 'OPERATION LEVEL', String(data.level), COLORS.accent);
 
   my += BI_ROW_H;
 
@@ -1112,13 +1101,4 @@ function imageTag(href: string, x: number, y: number, w: number, h: number): str
     h +
     '" preserveAspectRatio="none"/>'
   );
-}
-
-/**
- * Ước lượng chiều rộng text (px).
- *
- * Chỉ dùng cho positioning icon level.
- */
-function getTextWidth(text: string, fontSize: number): number {
-  return text.length * fontSize * 0.6;
 }

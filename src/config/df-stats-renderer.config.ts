@@ -87,29 +87,21 @@ export const CANVAS = {
   height: 720,
 };
 
-/** Asset paths — logos, icons, operator portraits */
+/** Asset paths — logos, operator portraits */
 export const ASSETS = {
   logos: {
-    deltaForce: path.join(__dirname, '../../assets/delta-force/logos/delta-force.png'),
-    timi: path.join(__dirname, '../../assets/delta-force/logos/timi.png'),
-    teamJade: path.join(__dirname, '../../assets/delta-force/logos/team-jade.png'),
-  },
-  icons: {
-    level: path.join(__dirname, '../../assets/delta-force/icons/level.png'),
-    badges: [
-      path.join(__dirname, '../../assets/delta-force/icons/badge-1.png'),
-      path.join(__dirname, '../../assets/delta-force/icons/badge-2.png'),
-      path.join(__dirname, '../../assets/delta-force/icons/badge-3.png'),
-    ],
+    deltaForce: path.resolve(path.join(__dirname, '../assets/logos/delta-force.png')),
+    timi: path.resolve(path.join(__dirname, '../assets/delta-force/logos/timi.png')),
+    teamJade: path.resolve(path.join(__dirname, '../assets/delta-force/logos/team-jade.png')),
   },
   /** Operator portraits — map operator name to portrait image */
   operatorPortraits: {
-    stinger: path.join(__dirname, '../../assets/delta-force/backgrounds/stinger.png'),
-    luna: path.join(__dirname, '../../assets/delta-force/backgrounds/luna.png'),
-    vyron: path.join(__dirname, '../../assets/delta-force/backgrounds/vyron.png'),
-    hackclaw: path.join(__dirname, '../../assets/delta-force/backgrounds/hackclaw.png'),
-    sineva: path.join(__dirname, '../../assets/delta-force/backgrounds/sineva.png'),
-    nox: path.join(__dirname, '../../assets/delta-force/backgrounds/nox.png'),
+    stinger: path.resolve(path.join(__dirname, '../assets/delta-force/backgrounds/stinger.png')),
+    luna: path.resolve(path.join(__dirname, '../assets/delta-force/backgrounds/luna.png')),
+    vyron: path.resolve(path.join(__dirname, '../assets/delta-force/backgrounds/vyron.png')),
+    hackclaw: path.resolve(path.join(__dirname, '../assets/delta-force/backgrounds/hackclaw.png')),
+    sineva: path.resolve(path.join(__dirname, '../assets/delta-force/backgrounds/sineva.png')),
+    nox: path.resolve(path.join(__dirname, '../assets/delta-force/backgrounds/nox.png')),
   },
 };
 
