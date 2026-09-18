@@ -19,8 +19,8 @@ import {
   EMOJI_DEFEAT,
   EMOJI_MONEY,
   EMOJI_KILL,
-  MAP_NAMES,
   MAX_HISTORY_LIMIT,
+  MAP_NAMES,
 } from '../../config/team-find.config.js';
 import { MAX_HISTORY_PAGE } from '../../config/app.constants.js';
 import type { DfMatchEntry } from '../../types/deltaforce.types.js';
@@ -44,13 +44,16 @@ function buildMatchItemSection(match: DfMatchEntry): Record<string, unknown> {
     hour: '2-digit',
     minute: '2-digit',
   });
-  const mapName = MAP_NAMES[match.map_id] || `Map ${match.map_id}`;
+  const mapName = MAP_NAMES[Number(match.map_id)] ?? `Map ${match.map_id}`;
   const result = match.result === 1 ? `${EMOJI_WIN} Win` : `${EMOJI_DEFEAT} Defeat`;
   const extract = Number(match.carry_out_value).toLocaleString('vi-VN');
 
   const content =
-    `**${operator.name}**\n` +
-    `Chiến Dịch Sinh Tồn | ${mapName} • ${time}\n` +
+    `## **${operator.name}**\n` +
+    `**Chế độ**: Chiến Dịch Sinh Tồn\n` +
+    `**Map**: ${mapName}\n` +
+    `**Thời gian**: ${time}\n` +
+    `\n` +
     `${result}  ·  ${EMOJI_MONEY} ${extract}  ·  ${EMOJI_KILL} ${match.kill_count}`;
 
   return {

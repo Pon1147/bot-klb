@@ -58,7 +58,7 @@ export interface DfMatchEntry {
   carry_out_value: string;
   is_leave: number;
   kill_count: number;
-  map_id: number;
+  map_id: number | string;
   match_time: string;
   net_income: string;
   operator_icon: string;
