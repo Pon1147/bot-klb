@@ -11,6 +11,12 @@ export interface DfOperator {
 
 const OPERATORS: DfOperator[] = [
   {
+    operatorId: '20006',
+    name: 'Rover',
+    avatarUrl:
+      'https://www.playdeltaforce.com/basic_info/operators_00578ceeacd2ef787efcef468dd3f6d9.png',
+  },
+  {
     operatorId: '20003',
     name: 'Stinger',
     avatarUrl:

@@ -28,6 +28,27 @@ export function buildViewModel(data: DfMyDataResponse, seasonNo: string): DFStat
   // Season label
   const seasonLabel = HEADER_LABELS[seasonNo] ?? 'SEASON ?';
 
+  // Total matches
+  const totalMatches = summary_data.total_match_count;
+
+  // Tính toán các metrics từ data có sẵn
+  const totalReward = summary_data.economy?.total_reward ?? '0';
+  const totalRewardNum = Number(totalReward);
+  const averageAssetsPerMatch =
+    totalMatches > 0 && totalRewardNum > 0 ? formatAssets(totalRewardNum / totalMatches) : '0';
+
+  // Extraction rate: numberOfExtractions / totalMatches * 100
+  // Reference: 1337 / 2493 = 53.63%
+  const numberOfExtractions = summary_data.team?.rescue_teammate_count ?? 0;
+  const extractionRate =
+    totalMatches > 0 ? ((numberOfExtractions / totalMatches) * 100).toFixed(2) + '%' : '0%';
+
+  // Collection quantity: total_mandel_brick
+  const collectionQuantity = summary_data.economy?.total_mandel_brick ?? 0;
+
+  // Operators killed: kill_operator_count
+  const operatorsKilled = summary_data.combat?.kill_operator_count ?? 0;
+
   return {
     player: {
       nickname: player_info.nickname,
@@ -36,7 +57,7 @@ export function buildViewModel(data: DfMyDataResponse, seasonNo: string): DFStat
       joinDate,
       playDurationHours: playHours,
       playDurationMinutes: playMinutes,
-      totalMatches: summary_data.total_match_count,
+      totalMatches,
     },
     economy: summary_data.economy
       ? {
@@ -44,6 +65,10 @@ export function buildViewModel(data: DfMyDataResponse, seasonNo: string): DFStat
           extractValue: summary_data.economy.extract_value,
           profitLoss: summary_data.economy.profit_loss_ratio,
           mandelBrick: summary_data.economy.total_mandel_brick,
+          extractionRate,
+          numberOfExtractions,
+          averageAssetsPerMatch,
+          collectionQuantity,
         }
       : null,
     combat: summary_data.combat
@@ -54,6 +79,7 @@ export function buildViewModel(data: DfMyDataResponse, seasonNo: string): DFStat
           kdLow: summary_data.combat.low_kill_death_ratio,
           kdMed: summary_data.combat.med_kill_death_ratio,
           kdHigh: summary_data.combat.high_kill_death_ratio,
+          operatorsKilled,
         }
       : null,
     squad: summary_data.team
@@ -75,4 +101,18 @@ export function buildViewModel(data: DfMyDataResponse, seasonNo: string): DFStat
     })(),
     seasonLabel,
   };
+}
+
+/** Format số với suffix K/M/B */
+function formatAssets(value: number): string {
+  if (value >= 1_000_000_000) {
+    return (value / 1_000_000_000).toFixed(2).replace(/\.?0+$/, '') + 'B';
+  }
+  if (value >= 1_000_000) {
+    return (value / 1_000_000).toFixed(2).replace(/\.?0+$/, '') + 'M';
+  }
+  if (value >= 1_000) {
+    return (value / 1_000).toFixed(1).replace(/\.?0+$/, '') + 'K';
+  }
+  return value.toLocaleString('vi-VN');
 }

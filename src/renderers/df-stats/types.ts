@@ -9,6 +9,14 @@ export interface DFEconomyStats {
   extractValue: string;
   profitLoss: string;
   mandelBrick: number;
+  /** Tỷ lệ rút thành công (%) */
+  extractionRate?: string;
+  /** Số lần rút thành công */
+  numberOfExtractions?: number;
+  /** Tài sản trung bình mỗi match */
+  averageAssetsPerMatch?: string;
+  /** Tổng số lượng thu thập */
+  collectionQuantity?: number;
 }
 
 /** Thống kê chiến đấu */
@@ -19,6 +27,8 @@ export interface DFCombatStats {
   kdLow: string;
   kdMed: string;
   kdHigh: string;
+  /** Số operator đã kill */
+  operatorsKilled?: number;
 }
 
 /** Thống kê tiểu đội */
@@ -38,6 +48,10 @@ export interface DFPlayerInfo {
   playDurationHours: number;
   playDurationMinutes: number;
   totalMatches: number;
+  /** Operator name card — most used operator in mode */
+  mostUsedOperator?: string;
+  /** Operator portrait URL */
+  operatorPortraitUrl?: string;
 }
 
 /** Thông tin rank */

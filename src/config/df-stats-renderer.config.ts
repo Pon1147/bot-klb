@@ -81,7 +81,7 @@
 
 import path from 'path';
 
-/** Canvas 16:9 — tỷ lệ game UI */
+/** Canvas 16:9 — tỷ lệ game UI (reference 512×288 → scale 2.5x) */
 export const CANVAS = {
   width: 1280,
   height: 720,
@@ -105,13 +105,13 @@ export const ASSETS = {
   },
 };
 
-/** Spacing tokens — tight, dense */
+/** Spacing tokens — tight, dense (tactical HUD, compact v2) */
 export const SPACING = {
   xs: 2,
-  sm: 4,
-  md: 6,
-  lg: 8,
-  xl: 10,
+  sm: 3,
+  md: 5,
+  lg: 7,
+  xl: 9,
 };
 
 /** Border radius tokens — sharp/nearly-square */
@@ -125,32 +125,28 @@ export const LAYOUT = {
   padding: 20,
   cardGap: 4,
   cardPad: 10,
-  /** Panel trái: Basic Info — 1 panel, 5 rows (tighter spacing) */
+  /** Panel trái: Basic Info — 1 panel, 9 metrics (2-column grid) */
   leftPanel: {
-    x: 20,
-    y: 20,
-    width: 260,
-    height: 310,
+    x: 24,
+    y: 78,
+    width: 226,
+    height: 270,
   },
   /** Panel phải: CURRENT RANK + MOST USED OPERATOR + SEASON SUMMARY */
   rightPanel: {
-    x: 840,
-    y: 20,
-    width: 240,
-    height: 450,
+    x: 1280 - 24 - 226,
+    y: 78,
+    width: 226,
+    height: 432,
   },
-  /** Header season label — baseline Y = padding + 18 */
+  /** Header baseline Y */
   header: {
-    x: 20,
-    y: 8,
-    width: 1240,
-    height: 24,
+    y: 56,
+    height: 22,
   },
-  /** Footer baseline — cách cạnh dưới canvas 4px */
+  /** Footer baseline — cách cạnh dưới canvas 28px */
   footer: {
-    x: 20,
-    y: 704,
-    width: 1240,
+    y: 692,
     height: 16,
   },
   /** Bottom cards area (right panel, below rank) */
@@ -162,44 +158,59 @@ export const LAYOUT = {
   },
 };
 
-/** Color system — military dark */
+/** Color system — military dark (reference: #080D0E, #101617, #151B1C) */
 export const COLORS = {
   bgCanvas: '#070A0C',
-  bgPanel: 'rgba(11,16,19,0.93)',
+  /** Panel dark charcoal — semi-transparent (0.70-0.90 opacity) */
+  bgPanel: 'rgba(10,16,19,0.85)',
+  /** Panel light — accent panels, rank emblem bg */
   bgPanelLight: 'rgba(17,22,25,0.75)',
-  /** Border panel — tăng opacity để panel/corner markers rõ hơn */
-  borderPanel: 'rgba(146,153,155,0.50)',
-  /** Divider trong panel — tăng nhẹ cho separator rõ hơn */
-  borderDivider: 'rgba(146,153,155,0.20)',
-  /** Text primary — trắng thuần để values "pop" tối đa */
-  textPrimary: '#FFFFFF',
-  textSecondary: '#D0D6D8',
-  /** Text muted — sáng hơn để labels readable trên panel dark */
-  textMuted: '#D8DEE0',
+  /** Border panel — subtle translucent gray */
+  borderPanel: 'rgba(146,153,155,0.25)',
+  /** Divider trong panel — thin separator */
+  borderDivider: 'rgba(146,153,155,0.12)',
+  /** Text primary — off-white for values */
+  textPrimary: '#E6E8E5',
+  /** Text secondary — slightly dimmer */
+  textSecondary: '#92999B',
+  /** Text muted — dark gray for labels (reference #59605E) */
+  textMuted: '#59605E',
   /** Tactical green — CHỈ dùng cho OPERATIONS, indicators, key values */
-  accent: '#00E58A',
-  accentDim: 'rgba(0,229,138,0.3)',
+  accent: '#00D9A6',
+  accentDim: 'rgba(0,217,166,0.3)',
+  /** Gold/bronze — CHỈ dùng cho rank/achievement visuals */
+  rankGold: '#C9A84C',
+  rankGoldDim: 'rgba(201,168,76,0.3)',
   /** Background fallback nếu ảnh load thất bại */
   bgFallback: '#0D1114',
 };
 
-/** Typography — condensed military fonts ( ưu tiên font có sẵn trên Windows/Linux) */
+/** Typography — condensed military (reference: Rajdhani, Roboto Condensed) */
 export const TYPO = {
-  primary: "Arial, 'Helvetica Neue', Helvetica, sans-serif",
+  /** Ưu tiên Rajdhani, fallback Arial (Windows default) */
+  primary: "'Rajdhani', 'Roboto Condensed', Arial, 'Helvetica Neue', Helvetica, sans-serif",
+  /** Section title: uppercase, condensed, bold, tactical accent */
   sectionSize: 14,
   sectionWeight: 700,
+  /** Panel title: uppercase, condensed, muted */
   panelTitleSize: 11,
   panelTitleWeight: 600,
-  labelSize: 9,
-  labelWeight: 500,
-  valueSize: 14,
+  /** Label: small, uppercase, muted gray */
+  labelSize: 8,
+  labelWeight: 400,
+  /** Value: bold, bright, visual anchor */
+  valueSize: 20,
   valueWeight: 700,
+  /** Large value: Operation Level, Rank score */
   valueSizeLarge: 24,
+  /** Rank value: large, gold */
   rankValueSize: 32,
   rankValueWeight: 700,
+  /** Bottom card title: small, muted */
   bottomCardTitleSize: 8,
   bottomCardTitleWeight: 400,
-  footerSize: 8,
+  /** Footer: tiny, muted */
+  footerSize: 6,
   footerWeight: 400,
 };
 
