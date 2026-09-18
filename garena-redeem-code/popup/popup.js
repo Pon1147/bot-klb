@@ -7,6 +7,8 @@ if (!window.AuthUtils) {
 
 // ===== CONSTANTS =====
 const DEFAULT_CODES = [
+  'DFSL9108',
+  'DFSL7183',
   'ANIMALCUPTANK',
   'ANIMALCUPGUN',
   'DFANIMALCUP',
