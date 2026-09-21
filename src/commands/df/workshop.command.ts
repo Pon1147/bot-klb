@@ -15,6 +15,7 @@ import { makeResult } from '../../utils/container.utils.js';
 import { formatRemainingTime, formatHourlyIncome } from '../../config/workshop.config.js';
 import { getWorkshopItemName, getWorkshopItemImage } from '../../services/workshop-data.service.js';
 import { COLORS } from '../../config/container.variables.js';
+import { WORKSHOP_FALLBACK_IMAGE_URL } from '../../config/app.constants.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('WorkshopCmd');
@@ -63,7 +64,7 @@ async function buildWorkshopItemSection(
     section.accessory = {
       type: ComponentType.Thumbnail,
       media: {
-        url: 'https://www.playdeltaforce.com/basic_info/collections_5e312fbc4c8d85fa279ca9f53b21d812.png',
+        url: WORKSHOP_FALLBACK_IMAGE_URL,
       },
       description: name,
     };

@@ -18,7 +18,7 @@ import {
 } from '../../utils/section-config.handlers.js';
 import { buildErrorContainer, buildSuccessContainer } from '../../utils/container.utils.js';
 import { COLORS } from '../../config/container.variables.js';
-import { requireAdministrator } from '../../utils/df-guards.js';
+import { requireAdministrator, requireGuild } from '../../utils/df-guards.js';
 import { sendReply } from '../../utils/reply.utils.js';
 import { getSettingsService } from '../../services/settings.service.js';
 import { createLogger } from '../../utils/logger.js';
@@ -126,13 +126,10 @@ export async function execute(
   _database: Database.Database,
 ): Promise<void> {
   // Guard: chỉ dùng trong guild
-  if (!interaction.guild) {
-    await sendReply(interaction, { content: 'Lệnh này chỉ dùng được trong server.' });
-    return;
-  }
+  if (await requireGuild(interaction)) return;
 
   const subcommand = interaction.options.getSubcommand();
-  const guildId = interaction.guild.id;
+  const guildId = interaction.guild!.id;
   logger.info(`/df-code ${subcommand} called by ${interaction.user.id}`);
 
   if (subcommand === 'show') {

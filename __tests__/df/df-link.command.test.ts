@@ -7,30 +7,69 @@
 jest.mock('discord.js', () => ({
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
   ActionRowBuilder: class {
-    constructor() { this._components = []; }
-    addComponents(...c: any[]) { this._components = c; return this; }
-    toJSON() { return { type: 1, components: this._components.map((c: any) => c.toJSON()) }; }
+    constructor() {
+      this._components = [];
+    }
+    addComponents(...c: any[]) {
+      this._components = c;
+      return this;
+    }
+    toJSON() {
+      return { type: 1, components: this._components.map((c: any) => c.toJSON()) };
+    }
   },
   ButtonBuilder: class {
-    constructor() { this._data = {}; }
-    setCustomId(v: string) { this._data.customId = v; return this; }
-    setLabel(v: string) { this._data.label = v; return this; }
-    setStyle(v: any) { this._data.style = v; return this; }
-    toJSON() { return { type: 2, custom_id: this._data.customId, label: this._data.label, style: this._data.style }; }
+    constructor() {
+      this._data = {};
+    }
+    setCustomId(v: string) {
+      this._data.customId = v;
+      return this;
+    }
+    setLabel(v: string) {
+      this._data.label = v;
+      return this;
+    }
+    setStyle(v: any) {
+      this._data.style = v;
+      return this;
+    }
+    toJSON() {
+      return {
+        type: 2,
+        custom_id: this._data.customId,
+        label: this._data.label,
+        style: this._data.style,
+      };
+    }
   },
   ButtonStyle: { Primary: 1, Secondary: 2 },
   SlashCommandBuilder: class {
-    setName() { return this; }
-    setDescription() { return this; }
+    setName() {
+      return this;
+    }
+    setDescription() {
+      return this;
+    }
     addSubcommand(fn: (sub: any) => any) {
       const sub: any = {
-        setName() { return this; },
-        setDescription() { return this; },
+        setName() {
+          return this;
+        },
+        setDescription() {
+          return this;
+        },
         addStringOption(cb: any) {
           const opt: any = {
-            setName() { return this; },
-            setDescription() { return this; },
-            setRequired() { return this; },
+            setName() {
+              return this;
+            },
+            setDescription() {
+              return this;
+            },
+            setRequired() {
+              return this;
+            },
           };
           cb(opt);
           return this;
@@ -72,19 +111,25 @@ jest.mock('../../src/utils/container.utils.js', () => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
     flags: 65536,
     files: [],
-    toJSON() { return this.components; },
+    toJSON() {
+      return this.components;
+    },
   })),
   buildInfoContainer: jest.fn((msg) => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
     flags: 65536,
     files: [],
-    toJSON() { return this.components; },
+    toJSON() {
+      return this.components;
+    },
   })),
   buildSuccessContainer: jest.fn((msg) => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
     flags: 65536,
     files: [],
-    toJSON() { return this.components; },
+    toJSON() {
+      return this.components;
+    },
   })),
 }));
 
@@ -130,7 +175,10 @@ describe('df-link.command', () => {
       const interaction = createMockInteraction({ guild: null });
       await execute(interaction, mockDb);
       expect(mockReply).toHaveBeenCalledWith(
-        expect.objectContaining({ content: expect.stringContaining('server'), flags: MessageFlags.Ephemeral }),
+        expect.objectContaining({
+          content: expect.stringContaining('server'),
+          flags: MessageFlags.Ephemeral,
+        }),
       );
     });
   });
@@ -206,22 +254,6 @@ describe('df-link.command', () => {
       await execute(interaction, mockDb);
 
       expect(mockReply).toHaveBeenCalled();
-    });
-  });
-
-  describe('subcommand: unlink', () => {
-    it('nên hiển thị deprecation message thay vì revoke', async () => {
-      const { revokeBinding } = require('../../src/database/df-binding.db.js');
-
-      const interaction = createMockInteraction({
-        options: { getSubcommand: jest.fn(() => 'unlink') },
-      });
-      await execute(interaction, mockDb);
-
-      expect(revokeBinding).not.toHaveBeenCalled();
-      expect(mockReply).toHaveBeenCalled();
-      const replyArgs = mockReply.mock.calls[0][0];
-      expect(replyArgs.components[0].components[0].content).toContain('deprecated');
     });
   });
 

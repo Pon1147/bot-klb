@@ -41,3 +41,7 @@ export const MEDIA_URL_PLACEHOLDER = 'https://example.com/image.gif hoặc attac
 
 // ===== Token Validation =====
 export const TOKEN_REGEX = /^[0-9a-f]{40,64}$/i;
+
+// ===== Fallback Media URLs =====
+export const WORKSHOP_FALLBACK_IMAGE_URL =
+  'https://www.playdeltaforce.com/basic_info/collections_5e312fbc4c8d85fa279ca9f53b21d812.png';

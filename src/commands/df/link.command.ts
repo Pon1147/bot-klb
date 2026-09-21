@@ -4,7 +4,6 @@
  * Subcommands:
  * - start: Tạo claim code, gửi script qua DM, hướng dẫn user
  * - status: Kiểm tra trạng thái link (mask identifier, last_ok_at)
- * - unlink: Hủy liên kết (revoked binding)
  * - manual: Fallback tech — user paste openid + token
  */
 
@@ -46,9 +45,6 @@ export const data = new SlashCommandBuilder()
     sub.setName('status').setDescription('Kiểm tra trạng thái liên kết hiện tại.'),
   )
   .addSubcommand((sub) =>
-    sub.setName('unlink').setDescription('Hủy liên kết tài khoản Delta Force.'),
-  )
-  .addSubcommand((sub) =>
     sub
       .setName('manual')
       .setDescription('Liên kết bằng cách nhập openid + token (fallback).')
@@ -71,8 +67,6 @@ export async function execute(
       return handleStart(interaction, database);
     case 'status':
       return handleStatus(interaction, database);
-    case 'unlink':
-      return handleUnlink(interaction, database);
     case 'manual':
       return handleManual(interaction, database);
   }
@@ -149,17 +143,6 @@ async function handleStatus(
 
   // Chưa link
   const info = buildInfoContainer('Bạn chưa liên kết tài khoản Delta Force.');
-  await sendReply(interaction, { components: info.toJSON() });
-}
-
-/** Subcommand `unlink` — deprecate, redirect sang /df-unlink */
-async function handleUnlink(
-  interaction: ChatInputCommandInteraction,
-  _database: Database.Database,
-): Promise<void> {
-  const info = buildInfoContainer(
-    'Subcommand này đã được deprecated. Vui lòng dùng `/df-unlink` để hủy liên kết.',
-  );
   await sendReply(interaction, { components: info.toJSON() });
 }
 

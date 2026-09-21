@@ -9,8 +9,6 @@ import { decryptCredential } from '../services/df-crypto.js';
 import { requireGuild } from './df-guards.js';
 import { buildErrorContainer } from './container.utils.js';
 import { createLogger } from './logger.js';
-import { revokeBinding } from '../database/df-binding.db.js';
-import { deleteDfToken } from '../database/df.token.db.js';
 
 const logger = createLogger('DfRunner');
 
@@ -64,10 +62,12 @@ export async function runDfCommand(
 
   // Step 2: Binding validation (new encrypted binding first, fallback legacy)
   let token: import('../database/df.token.db.js').DfTokenRow | undefined | null = null;
+  let usingBinding = false;
 
   try {
     const binding = getActiveBinding(ctx.database, ctx.userId);
     if (binding) {
+      usingBinding = true;
       // Decrypt credential from binding
       try {
         const decrypted = decryptCredential(
@@ -130,19 +130,15 @@ export async function runDfCommand(
       files: result.files,
     } as Parameters<typeof ctx.interaction.editReply>[0]);
     // Cập nhật last_used_at vào đúng bảng user đang dùng (binding mới hoặc legacy token)
-    const activeBinding = getActiveBinding(ctx.database, ctx.userId);
-    if (activeBinding) {
+    // Cache result từ bước 2, không query lại
+    if (usingBinding) {
       touchLastOk(ctx.database, ctx.userId);
     } else {
       touchDfToken(ctx.database, ctx.userId);
     }
   } catch (error) {
     if (isTokenExpiredError(error as Error)) {
-      logger.info(
-        `Token hết hạn/invalid cho user ${ctx.userId} — xóa binding/token để user có thể link lại.`,
-      );
-      revokeBinding(ctx.database, ctx.userId);
-      deleteDfToken(ctx.database, ctx.userId);
+      logger.info(`Token hết hạn/invalid cho user ${ctx.userId} — chỉ warn, không tự xóa binding.`);
       const err = buildErrorContainer(
         'Token hiện đã hết hạn. Vui lòng sử dụng `/df-link start` để liên kết lại.',
       );

@@ -29,7 +29,11 @@ export const data = new SlashCommandBuilder()
   .setName('df-history')
   .setDescription('Xem lich su tran dau Delta Force.')
   .addIntegerOption((opt) =>
-    opt.setName('limit').setDescription('So tran hien thi (1-20)').setMinValue(1).setMaxValue(20),
+    opt
+      .setName('limit')
+      .setDescription('So tran hien thi (1-20)')
+      .setMinValue(1)
+      .setMaxValue(MAX_HISTORY_PAGE),
   );
 
 function buildMatchItemSection(match: DfMatchEntry): Record<string, unknown> {
