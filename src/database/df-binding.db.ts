@@ -137,6 +137,7 @@ export function expireBinding(database: Database.Database, discordUserId: string
 
 /**
  * Revoke binding (unlink).
+ * Đồng bộ xóa legacy token để đảm bảo cleanup toàn bộ.
  */
 export function revokeBinding(database: Database.Database, discordUserId: string): void {
   database
@@ -144,6 +145,8 @@ export function revokeBinding(database: Database.Database, discordUserId: string
       "UPDATE df_account_bindings SET status = 'revoked', updated_at = CURRENT_TIMESTAMP WHERE discord_user_id = ?",
     )
     .run(discordUserId);
+  // Xóa legacy token đồng bộ (như expireBinding)
+  deleteDfToken(database, discordUserId);
 }
 
 /**
