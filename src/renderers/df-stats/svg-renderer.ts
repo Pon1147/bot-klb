@@ -85,28 +85,31 @@ const GAP = 12; // 16 → 12 (tighter gap between right panels)
 
 const HEADER_H = 56;
 
-/* Panel trái — 9 metrics, 2-column grid (v3: larger) */
-const BASIC_INFO_H = 430; // 379 → 430 (taller panels)
+/* Panel trái — 9 metrics, 2-column grid (v22: fit content tightly) */
+const BASIC_INFO_H = 180; // 200 → 180 (fit 5 rows × 34px = 170px + title area)
 
-/* Panel phải (v3: larger panels) */
-const RANK_H = 310; // 279 → 310 (more rank prominence)
-const OPERATOR_H = 165; // 148 → 165 (secondary but readable)
-const SEASON_H = 200; // 180 → 200 (secondary but spacious)
+/* Panel phải (v7: compact stack — 614px available, 2 gaps = 24px) */
+const RANK_H = 260; // 240 → 260 (emblem 200 + title + score + name fit)
+const OPERATOR_H = 100; // 110 → 100 (portrait 65 + title + name, compact N/A)
+const SEASON_H = 160; // 180 → 160 (3 rows + title, compact)
+/* Total: 260 + 12 + 100 + 12 + 160 = 544px — 70px clearance from footer */
 
 /* Panel internals (v3: more spacious) */
 const PANEL_PAD = 18; // 14 → 18 (more breathing room)
 const TITLE_Y = 26; // 22 → 26
 const DIVIDER_Y = 38; // 34 → 38
 
-/* Basic info — 2-column grid layout (v3: wider cols) */
-const BI_START_Y = 57;
+/* Basic info — 2-column grid layout (v21: fit 200px panel) */
+const BI_START_Y = 38; // 40 → 38 (content starts after divider)
 const BI_COL_W = 155; // 121 → 155 (wider cols for larger panels)
-const BI_ROW_H = 50; // 44 → 50 (more breathing room)
+const BI_ROW_H = 34; // 40 → 34 (5 rows × 34 = 170px + start 38 = 208px ≈ 200px)
 
-/* Rank (v3: larger emblem for bigger panel) */
-const RANK_EMBLEM_SIZE = 200; // 174 → 200 (prominent rank)
-const RANK_EMBLEM_TOP = RIGHT_COL.y + 65; // 55 → 65 (re-center)
-const RANK_CENTER_X = RIGHT_COL.x + RIGHT_COL.w / 2;
+/* Rank (v8: vertically stacked, centered) */
+const RANK_EMBLEM_SIZE = 100; // giữ nguyên
+const RANK_EMBLEM_CX = RIGHT_COL.x + RIGHT_COL.w / 2; // centered
+const RANK_EMBLEM_CY = RIGHT_COL.y + 48 + RANK_EMBLEM_SIZE / 2; // below title
+const RANK_NAME_Y = RIGHT_COL.y + 48 + RANK_EMBLEM_SIZE + 24; // below emblem
+const RANK_SCORE_Y = RANK_NAME_Y + 24; // below name
 
 /* Operator (v3: larger portrait) */
 const OPERATOR_PORTRAIT_SIZE = 65; // 51 → 65 (more visible)
@@ -232,9 +235,9 @@ export async function renderDashboard(viewModel: DFStatsViewModel): Promise<Buff
         .png()
         .toBuffer();
 
-      const rankLeft = Math.round(RANK_CENTER_X - RANK_EMBLEM_SIZE / 2);
+      const rankLeft = RANK_EMBLEM_CX - RANK_EMBLEM_SIZE / 2;
 
-      const rankTop = RANK_EMBLEM_TOP;
+      const rankTop = RANK_EMBLEM_CY - RANK_EMBLEM_SIZE / 2;
 
       composite = await sharp(composite)
         .composite([
@@ -391,7 +394,7 @@ function renderHeader(nickname: string): string {
   let s = '';
 
   /*
-   * Header baseline.
+   * Header baseline — thin, subtle.
    */
   s +=
     '<line x1="20" y1="' +
@@ -402,19 +405,19 @@ function renderHeader(nickname: string): string {
     HEADER_H +
     '" stroke="' +
     COLORS.borderPanel +
-    '" stroke-width="1" opacity="0.55"/>';
+    '" stroke-width="0.5" opacity="0.35"/>';
 
   /*
-   * Accent tactical xanh lá ngắn.
+   * Accent tactical xanh lá ngắn — thin, restrained.
    */
   s +=
     '<line x1="20" y1="' +
     HEADER_H +
-    '" x2="185" y2="' +
+    '" x2="160" y2="' +
     HEADER_H +
     '" stroke="' +
     COLORS.accent +
-    '" stroke-width="2" opacity="0.75"/>';
+    '" stroke-width="1" opacity="0.50"/>';
 
   /*
    * Logo Delta Force.
@@ -422,12 +425,12 @@ function renderHeader(nickname: string): string {
   s += imageTag(ASSETS.logos.deltaForce, 24, 10, 112, 26);
 
   /*
-   * Nhãn Operations — tactical green accent.
+   * Nhãn Operations — tactical green accent, smaller.
    */
   s +=
-    '<text x="148" y="27" fill="' +
+    '<text x="148" y="26" fill="' +
     COLORS.accent +
-    '" font-size="16" font-weight="700" letter-spacing="1.6" font-family="' +
+    '" font-size="14" font-weight="700" letter-spacing="1.4" font-family="' +
     TYPO.primary +
     '">' +
     'OPERATIONS' +
@@ -437,9 +440,9 @@ function renderHeader(nickname: string): string {
    * Nhãn phụ nhỏ — muted.
    */
   s +=
-    '<text x="148" y="42" fill="' +
+    '<text x="148" y="40" fill="' +
     COLORS.textMuted +
-    '" font-size="7" font-weight="400" letter-spacing="1.4" font-family="' +
+    '" font-size="7" font-weight="400" letter-spacing="1.2" font-family="' +
     TYPO.primary +
     '">' +
     'PERSONNEL // FIELD RECORD' +
@@ -461,9 +464,9 @@ function renderHeader(nickname: string): string {
   s +=
     '<text x="' +
     (CANVAS.width - 30) +
-    '" y="43" fill="' +
+    '" y="42" fill="' +
     COLORS.textPrimary +
-    '" font-size="9" font-weight="700" letter-spacing="0.7" font-family="' +
+    '" font-size="9" font-weight="600" letter-spacing="0.6" font-family="' +
     TYPO.primary +
     '" text-anchor="end">' +
     fitText(nickname, 125, 9) +
@@ -604,22 +607,21 @@ function renderRank(rankName: string, rankScore: number): string {
   s += panelTitle(x, y, w, 'CURRENT RANK');
 
   /*
-   * Placeholder cho ảnh rank thật.
+   * Hierarchy: title → emblem → rank name → score
    *
+   * Vertically stacked, centered in panel.
    * Ảnh thật được composite sau SVG render
-   * với cùng tọa độ top/left.
+   * với cùng tọa độ cx/cy.
    */
-  const cx = RANK_CENTER_X;
-  const cy = RANK_EMBLEM_TOP + RANK_EMBLEM_SIZE / 2;
 
   /*
-   * Outer circle — dark bg for rank emblem (thicker border, v2)
+   * Outer circle — dark bg for rank emblem
    */
   s +=
     '<circle cx="' +
-    cx +
+    RANK_EMBLEM_CX +
     '" cy="' +
-    cy +
+    RANK_EMBLEM_CY +
     '" r="' +
     (RANK_EMBLEM_SIZE / 2 - 3) +
     '" fill="rgba(7,10,12,0.55)" stroke="' +
@@ -627,13 +629,13 @@ function renderRank(rankName: string, rankScore: number): string {
     '" stroke-width="2" opacity="0.9"/>';
 
   /*
-   * Inner decorative circle — gold accent (stronger, double ring)
+   * Inner decorative circle — gold accent
    */
   s +=
     '<circle cx="' +
-    cx +
+    RANK_EMBLEM_CX +
     '" cy="' +
-    cy +
+    RANK_EMBLEM_CY +
     '" r="' +
     (RANK_EMBLEM_SIZE / 2 - 10) +
     '" fill="none" stroke="' +
@@ -645,9 +647,9 @@ function renderRank(rankName: string, rankScore: number): string {
    */
   s +=
     '<circle cx="' +
-    cx +
+    RANK_EMBLEM_CX +
     '" cy="' +
-    cy +
+    RANK_EMBLEM_CY +
     '" r="' +
     (RANK_EMBLEM_SIZE / 2 + 2) +
     '" fill="none" stroke="' +
@@ -655,36 +657,35 @@ function renderRank(rankName: string, rankScore: number): string {
     '" stroke-width="0.5" opacity="0.3"/>';
 
   /*
-   * Rank score — numeric value below emblem (larger, bold).
-   * Dùng textSecondary (sáng) để readable trên panel tối.
+   * Rank name — centered below emblem (white, not gold)
    */
   s +=
     '<text x="' +
-    cx +
+    RANK_EMBLEM_CX +
     '" y="' +
-    (RANK_EMBLEM_TOP + RANK_EMBLEM_SIZE + 22) +
+    RANK_NAME_Y +
     '" fill="' +
-    COLORS.rankGold +
-    '" font-size="14" font-weight="700" letter-spacing="0.6" font-family="' +
+    COLORS.textPrimary +
+    '" font-size="13" font-weight="700" letter-spacing="0.6" font-family="' +
     TYPO.primary +
     '" text-anchor="middle">' +
-    rankScore.toLocaleString('vi-VN') +
+    fitText(rankName, w - 30, 13) +
     '</text>';
 
   /*
-   * Rank name — centered, bold, gold accent
+   * Rank score — ONCE, centered below name (gold, comma separator)
    */
   s +=
     '<text x="' +
-    cx +
+    RANK_EMBLEM_CX +
     '" y="' +
-    (y + h - 14) +
+    RANK_SCORE_Y +
     '" fill="' +
     COLORS.rankGold +
-    '" font-size="12" font-weight="700" letter-spacing="1.0" font-family="' +
+    '" font-size="12" font-weight="600" letter-spacing="0.5" font-family="' +
     TYPO.primary +
     '" text-anchor="middle">' +
-    fitText(rankName, w - 30, 12) +
+    rankScore.toLocaleString('en-US') +
     '</text>';
 
   return s;
@@ -833,7 +834,7 @@ function renderFooter(): string {
   const y = CANVAS.height - 28;
 
   /*
-   * Footer separator.
+   * Footer separator — thin, very subtle.
    */
   s +=
     '<line x1="20" y1="' +
@@ -844,24 +845,24 @@ function renderFooter(): string {
     y +
     '" stroke="' +
     COLORS.borderPanel +
-    '" stroke-width="1" opacity="0.32"/>';
+    '" stroke-width="0.5" opacity="0.20"/>';
 
   /*
-   * Status trái.
+   * Status trái — muted, low weight.
    */
   s +=
     '<text x="24" y="' +
     (CANVAS.height - 14) +
     '" fill="' +
     COLORS.textMuted +
-    '" font-size="6" font-weight="500" letter-spacing="1.1" font-family="' +
+    '" font-size="6" font-weight="400" letter-spacing="1.0" font-family="' +
     TYPO.primary +
     '">' +
     'SYSTEM STATUS // OPERATIONAL' +
     '</text>';
 
   /*
-   * Branding phải.
+   * Branding phải — muted, low weight.
    */
   s +=
     '<text x="' +
@@ -888,7 +889,7 @@ function renderFooter(): string {
  *
  * Reference: rgba(10-25,25-35,25-35,0.70-0.90)
  *
- * v2: Giảm border weight để giảm "card" feel.
+ * v3: Giảm opacity để poster chiếm ưu thế, panels hòa vào poster.
  */
 function panelRect(x: number, y: number, w: number, h: number): string {
   return (
@@ -906,7 +907,7 @@ function panelRect(x: number, y: number, w: number, h: number): string {
     COLORS.bgPanel +
     '" stroke="' +
     COLORS.borderPanel +
-    '" stroke-width="0.5" opacity="0.6"/>'
+    '" stroke-width="0.5" opacity="0.45"/>'
   );
 }
 
@@ -921,7 +922,7 @@ function tacticalCorners(x: number, y: number, w: number, h: number): string {
   let s = '';
 
   /*
-   * Top-left (v2: reduced opacity for less card feel).
+   * Top-left (v3: reduced opacity for subtle tactical feel).
    */
   s +=
     '<path d="M ' +
@@ -938,10 +939,10 @@ function tacticalCorners(x: number, y: number, w: number, h: number): string {
     (y + 2) +
     '" fill="none" stroke="' +
     accent +
-    '" stroke-width="1" opacity="0.45"/>';
+    '" stroke-width="1" opacity="0.30"/>';
 
   /*
-   * Top-right (v2: reduced opacity).
+   * Top-right (v3: reduced opacity).
    */
   s +=
     '<path d="M ' +
@@ -958,10 +959,10 @@ function tacticalCorners(x: number, y: number, w: number, h: number): string {
     (y + 12) +
     '" fill="none" stroke="' +
     accent +
-    '" stroke-width="1" opacity="0.45"/>';
+    '" stroke-width="1" opacity="0.30"/>';
 
   /*
-   * Bottom-left (v2: reduced opacity).
+   * Bottom-left (v3: reduced opacity).
    */
   s +=
     '<path d="M ' +
@@ -978,10 +979,10 @@ function tacticalCorners(x: number, y: number, w: number, h: number): string {
     (y + h - 2) +
     '" fill="none" stroke="' +
     accent +
-    '" stroke-width="1" opacity="0.25"/>';
+    '" stroke-width="1" opacity="0.20"/>';
 
   /*
-   * Bottom-right (v2: reduced opacity).
+   * Bottom-right (v3: reduced opacity).
    */
   s +=
     '<path d="M ' +
@@ -998,7 +999,7 @@ function tacticalCorners(x: number, y: number, w: number, h: number): string {
     (y + h - 12) +
     '" fill="none" stroke="' +
     accent +
-    '" stroke-width="1" opacity="0.25"/>';
+    '" stroke-width="1" opacity="0.20"/>';
 
   return s;
 }
