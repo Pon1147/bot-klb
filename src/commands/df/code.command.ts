@@ -150,7 +150,7 @@ export async function execute(
       }
     }
 
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       const codes = await fetchDailyCodes().catch(() => null);
