@@ -48,10 +48,10 @@ async function sendEditorMessage(
   const draft = cloneContainerSettings(settings);
   const preview = buildLivePreviewContainer(draft);
 
-  // Gửi message editor với container preview + buttons (public — ai cũng thấy)
+  // Gửi message editor với container preview + buttons (ephemeral — chỉ user mới thấy)
   await interaction.reply({
     components: [...preview.toJSON(), ...buildAllEditorRows(draft)],
-    flags: preview.flags,
+    flags: preview.flags | MessageFlags.Ephemeral,
     files: preview.files,
   });
 
