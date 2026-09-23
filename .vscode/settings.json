@@ -1,0 +1,21 @@
+{
+  // TypeScript Auto Compiler: Use local TypeScript binary from node_modules
+  "typescript-auto-compiler.tscPath": "./node_modules/.bin/tsc",
+
+  // TypeScript: Use workspace TypeScript version
+  "typescript.tsdk": "./node_modules/typescript/lib",
+
+  // General TypeScript settings
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.suggest.autoImports": true,
+  "typescript.suggest.completeJSDocs": true,
+
+  // Format on save
+  "editor.formatOnSave": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  }
+}

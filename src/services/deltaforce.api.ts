@@ -1,0 +1,287 @@
+import axios, { AxiosInstance } from 'axios';
+import type {
+  DfApiResponse,
+  DfMyDataResponse,
+  DfMatchListResponse,
+  DfCollectionResponse,
+  DfDailyReportResponse,
+  DfApiToken,
+  DfWorkshopRecommendationResponse,
+} from '../types/deltaforce.types.js';
+import {
+  BASE_API_URL,
+  GAME_ID,
+  DF_CHANNEL,
+  ACCOUNT_TYPE,
+  ACCOUNT_A_PARAM,
+  LANG_TYPE,
+  DF_ORIGIN,
+  DF_REFERER,
+  API_TIMEOUT_MS,
+  SEASONS_MY_DATA,
+  SEASON_LATEST,
+} from '../config/deltaforce.config.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('DfApi');
+
+const FIXED_PARAMS = new URLSearchParams({
+  game_id: GAME_ID,
+  channel: DF_CHANNEL,
+  account_type: ACCOUNT_TYPE,
+  lang_type: LANG_TYPE,
+  a: ACCOUNT_A_PARAM,
+});
+
+const HEADERS = {
+  'content-type': 'application/json',
+  origin: DF_ORIGIN,
+  referer: DF_REFERER,
+};
+
+function buildInstance(token: DfApiToken): AxiosInstance {
+  logger.info(
+    'buildInstance: openid=' +
+      token.openid +
+      ', token_len=' +
+      token.token.length +
+      ', ts=' +
+      (token.ts || '0') +
+      ', s=' +
+      (token.s || '0') +
+      ', u=' +
+      (token.u || crypto.randomUUID()),
+  );
+  return axios.create({
+    baseURL: BASE_API_URL,
+    params: {
+      openid: token.openid,
+      token: token.token,
+      ts: token.ts || '0',
+      s: token.s || '0',
+      u: token.u || crypto.randomUUID(),
+      ...Object.fromEntries(FIXED_PARAMS),
+    },
+    headers: HEADERS,
+    timeout: API_TIMEOUT_MS,
+  });
+}
+
+/**
+ * Validate token bằng cách gọi GetMyData.
+ * Trả về true nếu token còn hiệu lực, false nếu hết hạn hoặc invalid.
+ */
+export async function validateToken(token: DfApiToken, openid: string): Promise<boolean> {
+  try {
+    const instance = buildInstance(token);
+    const body = {
+      openid,
+      token: token.token,
+      game_id: GAME_ID,
+      channel: DF_CHANNEL,
+      account_type: Number(ACCOUNT_TYPE),
+      lang_type: LANG_TYPE,
+      needLogin: true,
+      report_type: 1,
+    };
+    const res = await instance.post<DfApiResponse<unknown>>('/GetMyData', body);
+    return res.data.code === 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Call DfTools/GetMyData to fetch player info, rank, and summary stats.
+ */
+export async function getMyData(token: DfApiToken): Promise<DfMyDataResponse> {
+  const instance = buildInstance(token);
+  const body = {
+    openid: token.openid,
+    token: token.token,
+    game_id: GAME_ID,
+    channel: DF_CHANNEL,
+    account_type: Number(ACCOUNT_TYPE),
+    lang_type: LANG_TYPE,
+    needLogin: true,
+    report_type: 1,
+    seasonno: SEASONS_MY_DATA,
+  };
+
+  const res = await instance.post<DfApiResponse<DfMyDataResponse>>('/GetMyData', body);
+  if (res.data.code !== 0) {
+    logger.info('GetMyData failed: code=' + res.data.code + ', msg=' + res.data.msg);
+    throw new Error(`GetMyData failed: code=${res.data.code} msg=${res.data.msg}`);
+  }
+  return res.data.data;
+}
+
+/**
+ * Call GetMyData with a single season → returns stats for that season only.
+ */
+export async function getSeasonData(
+  token: DfApiToken,
+  seasonNo: string,
+): Promise<DfMyDataResponse> {
+  const instance = buildInstance(token);
+  const body = {
+    openid: token.openid,
+    token: token.token,
+    game_id: GAME_ID,
+    channel: DF_CHANNEL,
+    account_type: Number(ACCOUNT_TYPE),
+    lang_type: LANG_TYPE,
+    needLogin: true,
+    report_type: 1,
+    seasonno: [seasonNo],
+  };
+
+  const res = await instance.post<DfApiResponse<DfMyDataResponse>>('/GetMyData', body);
+  if (res.data.code !== 0) {
+    logger.info(
+      'GetMyData(season=' + seasonNo + ') failed: code=' + res.data.code + ', msg=' + res.data.msg,
+    );
+    throw new Error(
+      `GetMyData (season ${seasonNo}) failed: code=${res.data.code} msg=${res.data.msg}`,
+    );
+  }
+  return res.data.data;
+}
+
+/**
+ * Call GetMyData without season → returns latest/overview data.
+ */
+export async function getOverviewData(token: DfApiToken): Promise<DfMyDataResponse> {
+  const instance = buildInstance(token);
+  const body = {
+    openid: token.openid,
+    token: token.token,
+    game_id: GAME_ID,
+    channel: DF_CHANNEL,
+    account_type: Number(ACCOUNT_TYPE),
+    lang_type: LANG_TYPE,
+    needLogin: true,
+    report_type: 1,
+  };
+
+  const res = await instance.post<DfApiResponse<DfMyDataResponse>>('/GetMyData', body);
+  if (res.data.code !== 0) {
+    logger.info('GetMyData(overview) failed: code=' + res.data.code + ', msg=' + res.data.msg);
+    throw new Error(`GetMyData (overview) failed: code=${res.data.code} msg=${res.data.msg}`);
+  }
+  return res.data.data;
+}
+
+/**
+ * Call DfTools/GetMatchList to fetch recent match history.
+ * Hỗ trợ pagination với offset và limit.
+ */
+export async function getMatchList(
+  token: DfApiToken,
+  options?: { offset?: number; limit?: number },
+): Promise<DfMatchListResponse> {
+  const instance = buildInstance(token);
+  const body = {
+    openid: token.openid,
+    token: token.token,
+    game_id: GAME_ID,
+    channel: DF_CHANNEL,
+    account_type: Number(ACCOUNT_TYPE),
+    lang_type: LANG_TYPE,
+    needLogin: true,
+    report_type: 1,
+    seasonno: [SEASON_LATEST],
+    ...(options?.offset !== undefined ? { offset: options.offset } : {}),
+    ...(options?.limit !== undefined ? { limit: options.limit } : {}),
+  };
+
+  const res = await instance.post<DfApiResponse<DfMatchListResponse>>('/GetMatchList', body);
+  if (res.data.code !== 0) {
+    logger.info('GetMatchList failed: code=' + res.data.code + ', msg=' + res.data.msg);
+    throw new Error(`GetMatchList failed: code=${res.data.code} msg=${res.data.msg}`);
+  }
+  return res.data.data;
+}
+
+/**
+ * Call DfTools/GetDahongCollection to fetch item collection.
+ */
+export async function getCollection(token: DfApiToken): Promise<DfCollectionResponse> {
+  const instance = buildInstance(token);
+
+  const res = await instance.post<DfApiResponse<DfCollectionResponse>>('/GetDahongCollection', {});
+  if (res.data.code !== 0) {
+    logger.info('GetDahongCollection failed: code=' + res.data.code + ', msg=' + res.data.msg);
+    throw new Error(`GetDahongCollection failed: code=${res.data.code} msg=${res.data.msg}`);
+  }
+  return res.data.data;
+}
+
+/**
+ * Call DfTools/GetDailyReport to fetch daily operations stats (earnings, killed, etc.)
+ * Returns data for the current day's operations.
+ */
+export async function getDailyReport(token: DfApiToken): Promise<DfDailyReportResponse> {
+  const instance = buildInstance(token);
+  const body = {
+    openid: token.openid,
+    token: token.token,
+    game_id: GAME_ID,
+    channel: DF_CHANNEL,
+    account_type: Number(ACCOUNT_TYPE),
+    lang_type: LANG_TYPE,
+    needLogin: true,
+    report_type: 1,
+  };
+
+  const res = await instance.post<DfApiResponse<DfDailyReportResponse>>('/GetDailyReport', body);
+  if (res.data.code !== 0) {
+    logger.info('GetDailyReport failed: code=' + res.data.code + ', msg=' + res.data.msg);
+    throw new Error(`GetDailyReport failed: code=${res.data.code} msg=${res.data.msg}`);
+  }
+  return res.data.data;
+}
+
+/**
+ * Call DfTools/GetManufactureRecommendationList to fetch workshop production data.
+ * Returns workbench items with hourly income, remaining time, and status.
+ */
+export async function getWorkshopRecommendations(
+  token: DfApiToken,
+): Promise<DfWorkshopRecommendationResponse> {
+  const instance = buildInstance(token);
+
+  const res = await instance.post<DfApiResponse<DfWorkshopRecommendationResponse>>(
+    '/GetManufactureRecommendationList',
+    {},
+  );
+  if (res.data.code !== 0) {
+    logger.info(
+      'GetManufactureRecommendationList failed: code=' + res.data.code + ', msg=' + res.data.msg,
+    );
+    throw new Error(
+      `GetManufactureRecommendationList failed: code=${res.data.code} msg=${res.data.msg}`,
+    );
+  }
+  return res.data.data;
+}
+
+/**
+ * Call DfTools/GetWorkbenchList to fetch current production data.
+ * Returns workbench items with countdown timers (status >= 1).
+ */
+export async function getWorkbenchList(
+  token: DfApiToken,
+): Promise<DfWorkshopRecommendationResponse> {
+  const instance = buildInstance(token);
+
+  const res = await instance.post<DfApiResponse<DfWorkshopRecommendationResponse>>(
+    '/GetWorkbenchList',
+    {},
+  );
+  if (res.data.code !== 0) {
+    logger.info('GetWorkbenchList failed: code=' + res.data.code + ', msg=' + res.data.msg);
+    throw new Error(`GetWorkbenchList failed: code=${res.data.code} msg=${res.data.msg}`);
+  }
+  return res.data.data;
+}
