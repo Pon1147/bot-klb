@@ -1,6 +1,6 @@
 /** Shared DF command runner — eliminates boilerplate across stats/daily/history */
 
-import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+import { ChatInputCommandInteraction } from 'discord.js';
 import { sendReply } from './reply.utils.js';
 import Database from 'better-sqlite3';
 import { getDfToken, touchDfToken } from '../database/df.token.db.js';
@@ -116,8 +116,8 @@ export async function runDfCommand(
     return true;
   }
 
-  // Step 3: Defer reply
-  await ctx.interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  // Step 3: Defer reply (public — ai cũng thấy)
+  await ctx.interaction.deferReply();
 
   try {
     // Step 4: Execute command callback (passes full DfTokenRow)
@@ -144,14 +144,14 @@ export async function runDfCommand(
       );
       await ctx.interaction.editReply({
         components: err.toJSON(),
-        flags: err.flags | MessageFlags.Ephemeral,
+        flags: err.flags,
       });
       return true;
     }
     const err = buildErrorContainer(`Lỗi khi lấy dữ liệu: ${(error as Error).message}`);
     await ctx.interaction.editReply({
       components: err.toJSON(),
-      flags: err.flags | MessageFlags.Ephemeral,
+      flags: err.flags,
     });
   }
 
