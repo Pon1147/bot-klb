@@ -55,7 +55,7 @@ export async function execute(
     return {
       files: [new AttachmentBuilder(imageBuffer, { name: 'df-stats.png' })],
       components: [selectMenu.toJSON()],
-      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+      flags: MessageFlags.IsComponentsV2,
     };
   });
 }
