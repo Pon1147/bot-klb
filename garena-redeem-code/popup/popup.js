@@ -678,9 +678,6 @@ document.querySelectorAll('.segment-btn').forEach((tab) => {
     if (tabId === 'investigator') {
       titleEl.textContent = 'Auth State Engine';
       loadAuthStateData();
-      // Pre-load TẤT CẢ sub-tab data ngay khi mở investigator tab
-      // Tránh user thấy "Chưa có events" mặc dù events đã có trong storage
-      loadAllInvestigatorData();
       startAuthStateRefresh();
     } else {
       titleEl.textContent = 'Garena Redeem';
@@ -757,59 +754,21 @@ function getCachedEvents() {
   return cachedEvents;
 }
 
-// ===== Pre-load ALL investigator sub-tab data =====
-// Gọi khi mở investigator tab để tránh "Chưa có events"
-function loadAllInvestigatorData() {
-  chrome.storage.local.get('auth_events', (result) => {
-    const events = result.auth_events || [];
-    cachedEvents = events;
-    if (events.length === 0) return;
-
-    // Render Overview
-    const stats = computeStatsFromEvents(events);
-    renderAuthStateOverview(stats);
-    renderTokenState(stats.tokenState);
-
-    // Render Timeline
-    renderTimeline(events);
-
-    // Render Refresh
-    renderRefreshFlow(stats.refreshFlow);
-    renderRefreshCorrelation(stats.correlatedPairs || []);
-
-    // Render Network
-    renderNetworkEvents(events, 'all');
-
-    // Render Storage
-    const storageEvents = events.filter(
-      (e) => e.type === 'auth_storage_write' || e.type === 'auth_storage',
-    );
-    renderStorageEvents(storageEvents);
-  });
-}
-
 // ===== AUTH STATE ENGINE DATA LOADING =====
 function loadAuthStateData() {
   // Load auth state directly from storage (popup cannot message content script)
   chrome.storage.local.get(['auth_state', 'auth_events'], (result) => {
     const state = result.auth_state;
-    const events = result.auth_events || [];
-
-    // Update banner nếu có state
     if (state) {
       updateAuthStateBanner(state);
       renderAuthStateOverviewFromState(state);
     }
 
-    // Render token state từ events (ngay cả khi chưa có state)
-    if (events.length > 0) {
-      const stats = computeStatsFromEvents(events);
-      renderTokenState(stats.tokenState);
-      // Render Overview từ stats (fallback khi chưa có state)
-      if (!state) {
-        renderAuthStateOverview(stats);
-      }
-    }
+    // Also render token state from events
+    const events = result.auth_events || [];
+    if (events.length === 0) return;
+    const stats = computeStatsFromEvents(events);
+    renderTokenState(stats.tokenState);
   });
 }
 
@@ -1017,7 +976,6 @@ if (btnClearNotifs) {
 // formatRemaining / formatLifetime loaded from auth-utils.js
 
 // ===== Countdown ticker =====
-// Giảm tần suất polling từ 1s → 5s để tránh heavy load
 let tokenTickerInterval = null;
 
 function startTokenTicker() {
@@ -1039,7 +997,7 @@ function startTokenTicker() {
         el.textContent = formatRemaining(ts.remainingSeconds);
       }
     });
-  }, 5000);
+  }, 1000);
 }
 
 // ===== Load & Render Timeline =====

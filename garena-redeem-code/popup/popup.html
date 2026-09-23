@@ -6,8 +6,9 @@
     <title>Config — Garena Redeem</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
-  <body style="width: 440px; min-height: 520px; max-height: 700px; overflow-x: hidden">
+  <body style="width: 440px; min-height: 520px; max-height: 700px; overflow-x: hidden;">
     <div class="app">
+
       <!-- Header -->
       <header class="header">
         <img class="header-icon" src="../assets/icon_16.png" alt="icon" />
@@ -35,6 +36,7 @@
 
       <!-- ===== CONFIG TAB ===== -->
       <main class="tab-content active" id="tab-config">
+
         <!-- Redeem Summary -->
         <section class="card summary-card" id="summaryGrid">
           <div class="summary-item">
@@ -65,7 +67,7 @@
         </section>
 
         <!-- Redeemed Codes -->
-        <section class="card code-list-section" id="redeemedCodesSection" style="display: none">
+        <section class="card code-list-section" id="redeemedCodesSection" style="display: none;">
           <div class="section-header">
             <h3 class="section-title">Redeemed Codes</h3>
           </div>
@@ -73,7 +75,7 @@
         </section>
 
         <!-- Dead Codes -->
-        <section class="card code-list-section" id="deadCodesSection" style="display: none">
+        <section class="card code-list-section" id="deadCodesSection" style="display: none;">
           <div class="section-header">
             <h3 class="section-title">Dead Codes</h3>
           </div>
@@ -81,11 +83,33 @@
         </section>
 
         <!-- Retryable Codes -->
-        <section class="card code-list-section" id="retryableCodesSection" style="display: none">
+        <section class="card code-list-section" id="retryableCodesSection" style="display: none;">
           <div class="section-header">
             <h3 class="section-title">Retryable Codes</h3>
           </div>
           <pre class="code-list" id="retryableCodesList"></pre>
+        </section>
+
+        <!-- Webhook Section -->
+        <section class="card input-section" data-site="playdeltaforce">
+          <div class="section-header">
+            <h3 class="section-title">Webhook</h3>
+            <span class="section-subtitle">Used for DF Link notifications</span>
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="webhookUrlInput">Discord Webhook URL</label>
+            <div class="input-wrapper">
+              <input
+                class="input-field"
+                id="webhookUrlInput"
+                type="url"
+                placeholder="https://discord.com/api/webhooks/.../..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+            <button class="btn btn-primary btn-block" id="btnSaveWebhook">Save Webhook</button>
+          </div>
         </section>
 
         <!-- Codes Section -->
@@ -110,11 +134,13 @@
             </div>
           </div>
         </section>
+
       </main>
       <!-- Config tab end -->
 
       <!-- ===== AUTH STATE ENGINE TAB ===== -->
       <main class="tab-content" id="tab-investigator">
+
         <!-- Auth State Banner -->
         <div class="auth-state-banner" id="authStateBanner">
           <span class="banner-icon" id="bannerIcon">🔒</span>
@@ -123,27 +149,7 @@
             <div class="banner-subtitle" id="bannerSubtitle">Chưa có dữ liệu auth</div>
           </div>
         </div>
-        <!-- Webhook Section -->
-        <section class="card input-section" data-site="playdeltaforce">
-          <div class="section-header">
-            <h3 class="section-title">Webhook</h3>
-            <span class="section-subtitle">Used for DF Link notifications</span>
-          </div>
-          <div class="input-group">
-            <label class="input-label" for="webhookUrlInput">Discord Webhook URL</label>
-            <div class="input-wrapper">
-              <input
-                class="input-field"
-                id="webhookUrlInput"
-                type="url"
-                placeholder="https://discord.com/api/webhooks/.../..."
-                autocomplete="off"
-                spellcheck="false"
-              />
-            </div>
-            <button class="btn btn-primary btn-block" id="btnSaveWebhook">Save Webhook</button>
-          </div>
-        </section>
+
         <!-- Sub-tab Navigation -->
         <nav class="sub-tab-nav" id="subTabNav">
           <button class="sub-tab-btn active" data-subtab="overview">Overview</button>
@@ -258,19 +264,20 @@
               <h3 class="modal-title" id="modalTitle">Event Details</h3>
               <button class="modal-close" id="modalClose">&times;</button>
             </div>
-            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-body" id="modalBody">
+            </div>
           </div>
         </div>
+
       </main>
       <!-- Auth State Engine tab end -->
 
       <!-- Footer -->
       <footer class="footer">
         <span>Garena Redeem — Pon1147</span>
-        <a href="https://discord.gg/vz6w6c3Xe3" target="_blank" rel="noopener noreferrer"
-          >Discord</a
-        >
+        <a href="https://discord.gg/vz6w6c3Xe3" target="_blank" rel="noopener noreferrer">Discord</a>
       </footer>
+
     </div>
 
     <script src="../content/auth-utils.js"></script>

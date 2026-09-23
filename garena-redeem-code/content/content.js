@@ -664,22 +664,14 @@
       }
 
       if (!clicked) {
-        return {
-          result: CODE_STATES.FAILED,
-          reason: 'PRESENT_ERROR',
-          message: 'Không tìm thấy nút redeem',
-        };
+        return { result: CODE_STATES.FAILED, reason: 'PRESENT_ERROR', message: 'Không tìm thấy nút redeem' };
       }
 
       console.log('[Redeem] Waiting for response (timeout:', CONFIG.timeoutMs, 'ms)...');
       const response = await waiter;
       if (!response) {
         console.warn('[Redeem] TIMEOUT — capture.responses.length =', capture.responses.length);
-        return {
-          result: CODE_STATES.TIMEOUT,
-          reason: 'TIMEOUT',
-          message: 'Timeout không nhận response',
-        };
+        return { result: CODE_STATES.TIMEOUT, reason: 'TIMEOUT', message: 'Timeout không nhận response' };
       }
       console.log('[Redeem] Response received:', JSON.stringify(response).slice(0, 200));
       return parseRedeemResponse(response);
@@ -756,59 +748,17 @@
   }
 
   function findInput() {
-    // Thử selector chính trước
     const direct = document.querySelector('.exc-input');
     if (visible(direct)) return direct;
-    // Fallback: input đầu tiên visible, không disabled, không readonly
     const inputs = [...document.querySelectorAll('input')];
-    const fallback = inputs.find((el) => visible(el) && !el.disabled && !el.readOnly);
-    if (fallback) {
-      console.log('[UI] Found input via fallback selector');
-      return fallback;
-    }
-    // Fallback thêm: input có placeholder chứa "code" hoặc "nhập"
-    const codeInputs = [...document.querySelectorAll('input')];
-    const codeInput = codeInputs.find((el) => {
-      if (!visible(el) || el.disabled || el.readOnly) return false;
-      const ph = (el.placeholder || '').toLowerCase();
-      return ph.includes('code') || ph.includes('nhập') || ph.includes('đổi');
-    });
-    if (codeInput) {
-      console.log('[UI] Found input via placeholder match');
-      return codeInput;
-    }
-    console.warn('[UI] No input found for redeem');
-    return null;
+    return inputs.find((el) => visible(el) && !el.disabled && !el.readOnly);
   }
 
   function findButton() {
-    // Thử selector chính trước
     const direct = document.querySelector('.btn-exchange');
     if (visible(direct)) return direct;
-    // Fallback: button có text "Đổi" hoặc "Redeem"
-    const btns = [...document.querySelectorAll('button,a,[role=button]')];
-    const found = btns.find((el) => {
-      if (!visible(el)) return false;
-      const text = el.innerText.trim();
-      return text === 'Đổi' || text === 'Redeem' || text === 'Đổi ngay';
-    });
-    if (found) {
-      console.log('[UI] Found button via fallback selector');
-      return found;
-    }
-    // Fallback thêm: button có class chứa "exchange" hoặc "redeem"
-    const classBtns = [...document.querySelectorAll('button,a,[role=button]')];
-    const classBtn = classBtns.find((el) => {
-      if (!visible(el)) return false;
-      const cls = (el.className || '').toLowerCase();
-      return cls.includes('exchange') || cls.includes('redeem');
-    });
-    if (classBtn) {
-      console.log('[UI] Found button via class match');
-      return classBtn;
-    }
-    console.warn('[UI] No button found for redeem');
-    return null;
+    const btns = [...document.querySelectorAll('a,button')];
+    return btns.find((el) => visible(el) && el.innerText.trim() === 'Đổi');
   }
 
   function setValue(input, value) {

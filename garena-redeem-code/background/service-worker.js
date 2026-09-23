@@ -9,19 +9,14 @@ const DF_CLAIM_PROCESSING_KEY = 'df_claim_processing';
 // ===== DF_CLAIM deduplication: check nếu đang xử lý =====
 // Content script gửi DF_CLAIM message trực tiếp → SW xử lý
 // Deduplication vẫn cần để tránh user click nhanh 2 lần
-// Lưu ý: listener chỉ attach một lần khi SW khởi động — không cần cleanup vì SW terminate sẽ xóa listener
-let storageListenerAttached = false;
-if (!storageListenerAttached) {
-  storageListenerAttached = true;
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local') return;
-    // Chỉ dùng để cleanup processing lock nếu content script crash
-    if (changes[DF_CLAIM_PROCESSING_KEY]) {
-      console.log('[Service Worker] Processing lock changed, cleaning up');
-      chrome.storage.local.remove(DF_CLAIM_PROCESSING_KEY);
-    }
-  });
-}
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local') return;
+  // Chỉ dùng để cleanup processing lock nếu content script crash
+  if (changes[DF_CLAIM_PROCESSING_KEY]) {
+    console.log('[Service Worker] Processing lock changed, cleaning up');
+    chrome.storage.local.remove(DF_CLAIM_PROCESSING_KEY);
+  }
+});
 
 // ===== Lifecycle: init storage + onboarding =====
 chrome.runtime.onInstalled.addListener((details) => {
@@ -129,21 +124,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           return;
         }
 
-        const {
-          type,
-          reason,
-          sessionId,
-          shortSessionId,
-          details,
-          timestamp: notifTs,
-        } = msg.notification;
+        const { type, reason, sessionId, shortSessionId, details, timestamp: notifTs } = msg.notification;
 
         // Deduplication: skip nếu đã gửi notification cùng session+type trong 5 phút
         const dedupKey = `${sessionId}:${type}`;
         const { lastNotifSent } = await chrome.storage.local.get('lastNotifSent');
         const lastSent = lastNotifSent || {};
         const lastSentForThis = lastSent[dedupKey];
-        if (lastSentForThis && Date.now() - lastSentForThis < 5 * 60 * 1000) {
+        if (lastSentForThis && (Date.now() - lastSentForThis) < 5 * 60 * 1000) {
           console.log(`[Service Worker] Deduplicated: ${dedupKey}`);
           sendResponse({ ok: true, deduplicated: true });
           return;
@@ -212,4 +200,5 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
     return true; // async sendResponse
   }
+
 });

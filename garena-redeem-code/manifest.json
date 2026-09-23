@@ -29,7 +29,10 @@
     },
     {
       "matches": ["https://www.playdeltaforce.com/*"],
-      "js": ["content/link-page-capture.js", "content/link-content.js"],
+      "js": [
+        "content/link-page-capture.js",
+        "content/link-content.js"
+      ],
       "run_at": "document_idle"
     },
     {
@@ -59,9 +62,9 @@
     }
   ],
   "icons": {
-    "16": "assets/image.png",
-    "48": "assets/image.png",
-    "128": "assets/image.png"
+    "16": "assets/icon_16.png",
+    "48": "assets/icon_48.png",
+    "128": "assets/icon_128.png"
   },
   "web_accessible_resources": [
     {
@@ -79,27 +82,15 @@
       "matches": ["https://www.playdeltaforce.com/*"]
     },
     {
-      "resources": [
-        "content/auth-utils.js",
-        "content/auth-investigator.js",
-        "content/auth-state-engine.js"
-      ],
+      "resources": ["content/auth-utils.js", "content/auth-investigator.js", "content/auth-state-engine.js"],
       "matches": ["https://sso.garena.com/*"]
     },
     {
-      "resources": [
-        "content/auth-utils.js",
-        "content/auth-investigator.js",
-        "content/auth-state-engine.js"
-      ],
+      "resources": ["content/auth-utils.js", "content/auth-investigator.js", "content/auth-state-engine.js"],
       "matches": ["https://auth.garena.com/*"]
     },
     {
-      "resources": [
-        "content/auth-utils.js",
-        "content/auth-investigator.js",
-        "content/auth-state-engine.js"
-      ],
+      "resources": ["content/auth-utils.js", "content/auth-investigator.js", "content/auth-state-engine.js"],
       "matches": ["https://common-web.intlgame.com/*"]
     }
   ]

@@ -139,18 +139,12 @@
 
   function getStatusText() {
     switch (state.status) {
-      case 'idle':
-        return 'Đang chờ credential từ HQ session...';
-      case 'ready':
-        return `Đã capture! OpenID: ${state.candidate.openid.slice(0, 4)}•••`;
-      case 'submitting':
-        return 'Đang gửi claim...';
-      case 'success':
-        return '✅ Đã liên kết thành công! Chờ DM xác nhận.';
-      case 'error':
-        return '❌ Lỗi — xem console.';
-      default:
-        return 'Đang tải...';
+      case 'idle': return 'Đang chờ credential từ HQ session...';
+      case 'ready': return `Đã capture! OpenID: ${state.candidate.openid.slice(0, 4)}•••`;
+      case 'submitting': return 'Đang gửi claim...';
+      case 'success': return '✅ Đã liên kết thành công! Chờ DM xác nhận.';
+      case 'error': return '❌ Lỗi — xem console.';
+      default: return 'Đang tải...';
     }
   }
 
@@ -172,9 +166,7 @@
           discordAuthToken = result.discord_auth_token;
           console.log('[LinkContent] Loaded Discord auth token from chrome.storage');
         } else {
-          console.warn(
-            '[LinkContent] No Discord auth token in chrome.storage — cần mở discord.com để capture',
-          );
+          console.warn('[LinkContent] No Discord auth token in chrome.storage — cần mở discord.com để capture');
         }
         resolve();
       });
@@ -218,9 +210,7 @@
     console.log('[DF Toolbox] Fetching webhook directly...');
     (async () => {
       try {
-        const { webhookUrl } = await new Promise((resolve) =>
-          chrome.storage.local.get('webhookUrl', resolve),
-        );
+        const { webhookUrl } = await new Promise((resolve) => chrome.storage.local.get('webhookUrl', resolve));
         console.log('[DF Toolbox] Webhook URL:', webhookUrl);
         if (!webhookUrl) {
           throw new Error('webhookUrl not configured');
@@ -254,20 +244,10 @@
         // 204 = Discord đã nhận message → bot xử lý async qua messageCreate
         // KHÔNG ghi result ngay — chờ bot reply vào message → extension poll message content
         // Bot reply format: "Claim processed successfully." hoặc "Claim failed: <error>"
-        await new Promise((resolve) =>
-          chrome.storage.local.set(
-            { df_claim_pending: { ...claimPayload, submittedAt: Date.now() } },
-            resolve,
-          ),
-        );
+        await new Promise((resolve) => chrome.storage.local.set({ df_claim_pending: { ...claimPayload, submittedAt: Date.now() } }, resolve));
       } catch (e) {
         console.error('[DF Toolbox] Webhook fetch error:', e.message, e);
-        await new Promise((resolve) =>
-          chrome.storage.local.set(
-            { df_claim_result: { ok: false, error: 'Fetch failed: ' + e.message } },
-            resolve,
-          ),
-        );
+        await new Promise((resolve) => chrome.storage.local.set({ df_claim_result: { ok: false, error: 'Fetch failed: ' + e.message } }, resolve));
       }
     })();
 
@@ -277,17 +257,12 @@
     let cachedChannelId = null;
 
     // Fetch webhook info ONCE để lấy channel_id (không đổi qua session)
-    // Lưu ý: webhookUrl được lưu trong chrome.storage.local, KHÔNG phải localStorage
     (async () => {
       try {
-        const { webhookUrl } = await new Promise((resolve) =>
-          chrome.storage.local.get('webhookUrl', resolve),
-        );
+        const webhookUrl = localStorage.getItem('webhookUrl');
         if (webhookUrl) {
           const webhookPath = webhookUrl.replace('https://discord.com/api', '');
-          const webhookInfo = await fetch('https://discord.com' + webhookPath).then((r) =>
-            r.json(),
-          );
+          const webhookInfo = await fetch('https://discord.com' + webhookPath).then((r) => r.json());
           if (webhookInfo?.channel_id) {
             cachedChannelId = webhookInfo.channel_id;
             console.log('[LinkContent] Cached channel_id:', cachedChannelId);
@@ -319,8 +294,7 @@
           const botReply = messages?.find(
             (m) =>
               m.author?.bot &&
-              (m.content?.startsWith('Claim processed successfully') ||
-                m.content?.startsWith('Claim failed:')),
+              (m.content?.startsWith('Claim processed successfully') || m.content?.startsWith('Claim failed:')),
           );
 
           if (botReply) {
@@ -347,12 +321,7 @@
       elapsed += 1000;
 
       chrome.storage.local.get(['df_claim_result', 'df_claim_pending'], (result) => {
-        console.log(
-          '[LinkContent] Poll check: result=' +
-            JSON.stringify(result.df_claim_result) +
-            ', pending=' +
-            !!result.df_claim_pending,
-        );
+        console.log('[LinkContent] Poll check: result=' + JSON.stringify(result.df_claim_result) + ', pending=' + !!result.df_claim_pending);
         // Nếu có result → đã có kết quả
         if (result.df_claim_result) {
           clearInterval(pollInterval);
@@ -413,4 +382,5 @@
       if (submitBtn) submitBtn.disabled = false;
     }
   });
+
 })();

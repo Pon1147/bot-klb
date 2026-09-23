@@ -14,11 +14,7 @@
   function isRedeemUrl(url) {
     if (!url) return false;
     if (url.includes('redeem.df.garena.sg')) return true;
-    if (
-      url.includes('playerinfinite.com') &&
-      (url.includes('RedeemCDKey') || url.includes('CdkV2'))
-    )
-      return true;
+    if (url.includes('playerinfinite.com') && (url.includes('RedeemCDKey') || url.includes('CdkV2'))) return true;
     return false;
   }
 
@@ -69,13 +65,11 @@
                 // Gửi normalized event với requestId
                 window.postMessage(
                   createNetworkEvent(requestId, url, method, this.status, data),
-                  window.location.origin,
+                  window.location.origin
                 );
               }
             }
-          } catch {
-            /* not JSON */
-          }
+          } catch { /* not JSON */ }
         };
         this.addEventListener('load', onload, { once: true });
       }
@@ -93,7 +87,6 @@
     if (isRedeemUrl(url)) {
       try {
         const response = await originalFetch.apply(this, args);
-        // Clone response ĐỂ ĐỌC text — response gốc vẫn còn nguyên cho page
         const clone = response.clone();
         const text = await clone.text();
         try {
@@ -102,20 +95,14 @@
             // Gửi normalized event với requestId
             window.postMessage(
               createNetworkEvent(requestId, url, method, response.status, jsonData),
-              window.location.origin,
+              window.location.origin
             );
           }
-        } catch {
-          /* not JSON — bỏ qua */
-        }
-        // Trả lại response gốc cho page (response chưa bị đọc)
+        } catch { /* not JSON */ }
         return response;
-      } catch (fetchErr) {
-        // Fetch thất bại (network error, timeout) — không postMessage
-        console.warn('[PageCapture] Fetch failed for', url, fetchErr?.message || fetchErr);
-        throw fetchErr; // quan trọng: rethrow để page biết lỗi
-      }
+      } catch { /* fetch failed */ }
     }
     return originalFetch.apply(this, args);
   };
+
 })();
