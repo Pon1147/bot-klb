@@ -8,6 +8,9 @@ if (!window.AuthUtils) {
 // ===== CONSTANTS =====
 const DEFAULT_CODES = [
   'WELCOMETODF',
+  'DFUZIRAT47',
+  'DFVITRAT63',
+  'DFCARRAT52',
   'DFVNHackclaw1',
   'DFVNVyron2',
   'DFVNUluru3',
