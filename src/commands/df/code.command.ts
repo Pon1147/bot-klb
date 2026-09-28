@@ -153,7 +153,14 @@ export async function execute(
     await interaction.deferReply();
 
     try {
-      const codes = await fetchDailyCodes().catch(() => null);
+      let codes: DailyCodes | null = null;
+      try {
+        codes = await fetchDailyCodes();
+      } catch (scrapeError: unknown) {
+        // Log lỗi chi tiết để debug (Puppeteer thiếu deps, timeout, network fail...)
+        logger.error(`Scrape daily codes failed: ${(scrapeError as Error).message}`);
+        codes = null;
+      }
       const hasCodes = hasAnyCodes(codes);
       const container = buildCodesContainer(codes, hasCodes);
 
