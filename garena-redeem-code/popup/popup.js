@@ -7,6 +7,13 @@ if (!window.AuthUtils) {
 
 // ===== CONSTANTS =====
 const DEFAULT_CODES = [
+  'WELCOMETODF',
+  'DFVNHackclaw1',
+  'DFVNVyron2',
+  'DFVNUluru3',
+  'DFVNToxik4',
+  'DFVNNox5',
+  'DFVNSineva6',
   'DFSL9108',
   'DFSL7183',
   'ANIMALCUPTANK',
