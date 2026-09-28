@@ -1,4 +1,4 @@
-﻿import { ChatInputCommandInteraction } from 'discord.js';
+﻿import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { ContainerSettings } from '../../types/settings.types.js';
 import { getSettingsService } from '../../services/settings.service.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
