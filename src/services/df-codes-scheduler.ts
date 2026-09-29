@@ -100,87 +100,95 @@ export function startDfCodesScheduler(client: Client, database: Database.Databas
     `[init] Starting cron job | expr="${cronExpr}" | scheduleTime=${scheduleTime} (UTC+7) | utc=${utcTime} | systemTz=${systemTz} | channel=${channelId}`,
   );
 
-  cronJob = cron.schedule(cronExpr, async () => {
-    const fireTime = new Date().toISOString();
-    logger.info(`[cron] FIRED at ${fireTime} (cronExpr=${cronExpr})`);
+  cronJob = cron.schedule(
+    cronExpr,
+    async () => {
+      const fireTime = new Date().toISOString();
+      logger.info(`[cron] FIRED at ${fireTime} (cronExpr=${cronExpr})`);
 
-    try {
-      logger.info(`[cron] Step 1/4: Scraping daily codes...`);
-      const codes = await fetchDailyCodes().catch((e) => {
-        logger.error(`[cron] Step 1/4 FAILED: scrape error = ${(e as Error).message}`);
-        return null;
-      });
-      logger.info(`[cron] Step 1/4: scrape result = ${JSON.stringify(codes)}`);
+      try {
+        logger.info(`[cron] Step 1/4: Scraping daily codes...`);
+        const codes = await fetchDailyCodes().catch((e) => {
+          logger.error(`[cron] Step 1/4 FAILED: scrape error = ${(e as Error).message}`);
+          return null;
+        });
+        logger.info(`[cron] Step 1/4: scrape result = ${JSON.stringify(codes)}`);
 
-      const hasCodes = hasAnyCodes(codes);
-      logger.info(`[cron] Step 1/4: hasCodes=${hasCodes}`);
-      if (!hasCodes) {
-        logger.warn('[cron] Step 1/4: No codes to send (scrape returned null or all null)');
-        return;
-      }
-
-      logger.info(`[cron] Step 2/4: Building codes container...`);
-      const result = buildCodesContainer(codes, hasCodes);
-      if (!result.components || result.components.length === 0) {
-        logger.warn('[cron] Step 2/4: buildCodesContainer returned empty components');
-        return;
-      }
-      logger.info(`[cron] Step 2/4: Container built with ${result.components.length} component(s)`);
-
-      logger.info(`[cron] Step 3/4: Fetching channel ${channelId}...`);
-      const channel = await client.channels.fetch(channelId!);
-      if (!channel?.isTextBased()) {
-        logger.warn(
-          `[cron] Step 3/4: Channel ${channelId} is not a text channel (type=${channel?.type ?? 'null'}) — skipping`,
-        );
-        return;
-      }
-      const channelName = 'name' in channel ? (channel as { name: string }).name : channelId;
-      logger.info(`[cron] Step 3/4: Channel found = #${channelName} (id=${channel.id})`);
-
-      logger.info(`[cron] Step 4/4: Sending message to #${channelName}...`);
-      await (channel as { send: (data: unknown) => Promise<unknown> }).send({
-        components: result.toJSON(),
-        flags: result.flags,
-      });
-
-      logger.info(
-        `[cron] SUCCESS — Daily df-codes sent to #${channelName} (${channelId}) at ${fireTime}`,
-      );
-    } catch (error) {
-      const errorMsg = (error as Error).message;
-      const errorStack = (error as Error).stack || '';
-      logger.error(`[cron] FAILED: ${errorMsg}`);
-      logger.error(`[cron] Stack: ${errorStack}`);
-
-      // Gửi thông báo vào admin channel nếu có
-      const adminChannelId = configuredGuildId
-        ? settingsService.get(configuredGuildId)?.dfCodes?.adminChannelId
-        : undefined;
-      if (adminChannelId) {
-        logger.info(`[cron] Sending admin notification to ${adminChannelId}...`);
-        try {
-          const adminChannel = await client.channels.fetch(adminChannelId);
-          if (adminChannel?.isTextBased()) {
-            await (adminChannel as { send: (data: unknown) => Promise<unknown> }).send({
-              content: `⚠️ **DF Codes scheduler lỗi:** ${errorMsg}`,
-            });
-            const adminChannelName =
-              'name' in adminChannel ? (adminChannel as { name: string }).name : adminChannelId;
-            logger.info(`[cron] Admin notification sent to #${adminChannelName}`);
-          } else {
-            logger.warn(`[cron] Admin channel ${adminChannelId} is not a text channel`);
-          }
-        } catch (adminError) {
-          logger.error(
-            `[cron] Failed to send admin notification: ${(adminError as Error).message}`,
-          );
+        const hasCodes = hasAnyCodes(codes);
+        logger.info(`[cron] Step 1/4: hasCodes=${hasCodes}`);
+        if (!hasCodes) {
+          logger.warn('[cron] Step 1/4: No codes to send (scrape returned null or all null)');
+          return;
         }
-      } else {
-        logger.warn('[cron] No adminChannelId configured — cannot send error notification');
+
+        logger.info(`[cron] Step 2/4: Building codes container...`);
+        const result = buildCodesContainer(codes, hasCodes);
+        if (!result.components || result.components.length === 0) {
+          logger.warn('[cron] Step 2/4: buildCodesContainer returned empty components');
+          return;
+        }
+        logger.info(
+          `[cron] Step 2/4: Container built with ${result.components.length} component(s)`,
+        );
+
+        logger.info(`[cron] Step 3/4: Fetching channel ${channelId}...`);
+        const channel = await client.channels.fetch(channelId!);
+        if (!channel?.isTextBased()) {
+          logger.warn(
+            `[cron] Step 3/4: Channel ${channelId} is not a text channel (type=${channel?.type ?? 'null'}) — skipping`,
+          );
+          return;
+        }
+        const channelName = 'name' in channel ? (channel as { name: string }).name : channelId;
+        logger.info(`[cron] Step 3/4: Channel found = #${channelName} (id=${channel.id})`);
+
+        logger.info(`[cron] Step 4/4: Sending message to #${channelName}...`);
+        await (channel as { send: (data: unknown) => Promise<unknown> }).send({
+          components: result.toJSON(),
+          flags: result.flags,
+        });
+
+        logger.info(
+          `[cron] SUCCESS — Daily df-codes sent to #${channelName} (${channelId}) at ${fireTime}`,
+        );
+      } catch (error) {
+        const errorMsg = (error as Error).message;
+        const errorStack = (error as Error).stack || '';
+        logger.error(`[cron] FAILED: ${errorMsg}`);
+        logger.error(`[cron] Stack: ${errorStack}`);
+
+        // Gửi thông báo vào admin channel nếu có
+        const adminChannelId = configuredGuildId
+          ? settingsService.get(configuredGuildId)?.dfCodes?.adminChannelId
+          : undefined;
+        if (adminChannelId) {
+          logger.info(`[cron] Sending admin notification to ${adminChannelId}...`);
+          try {
+            const adminChannel = await client.channels.fetch(adminChannelId);
+            if (adminChannel?.isTextBased()) {
+              await (adminChannel as { send: (data: unknown) => Promise<unknown> }).send({
+                content: `⚠️ **DF Codes scheduler lỗi:** ${errorMsg}`,
+              });
+              const adminChannelName =
+                'name' in adminChannel ? (adminChannel as { name: string }).name : adminChannelId;
+              logger.info(`[cron] Admin notification sent to #${adminChannelName}`);
+            } else {
+              logger.warn(`[cron] Admin channel ${adminChannelId} is not a text channel`);
+            }
+          } catch (adminError) {
+            logger.error(
+              `[cron] Failed to send admin notification: ${(adminError as Error).message}`,
+            );
+          }
+        } else {
+          logger.warn('[cron] No adminChannelId configured — cannot send error notification');
+        }
       }
-    }
-  });
+    },
+    {
+      timezone: 'Asia/Ho_Chi_Minh', // node-cron v3+ supports timezone option
+    },
+  );
 
   // Dọn dẹp khi bot disconnect
   client.once('disconnect', () => stopCronJob());
