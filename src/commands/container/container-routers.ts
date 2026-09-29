@@ -168,7 +168,19 @@ async function updateModalEditorPreview(
     if (!channel?.isTextBased()) return;
 
     const message = await channel.messages.fetch(session.messageId).catch(() => null);
-    if (!message) return;
+    if (!message) {
+      // Message gốc đã bị delete/expired → cleanup session để tránh lỗi lặp
+      logger.warn(
+        `Preview message không tồn tại (channel=${session.channelId}, msg=${session.messageId}) — cleanup session`,
+      );
+      editSessions.delete(interaction.user.id);
+      await sendReply(interaction, {
+        components: buildErrorContainer(
+          'Message preview đã hết hạn. Vui lòng bắt đầu lại editor bằng `/container edit`.',
+        ).toJSON(),
+      });
+      return;
+    }
 
     const preview = buildLivePreviewContainer(session.draft);
     await message.edit({
@@ -176,10 +188,19 @@ async function updateModalEditorPreview(
       files: preview.files,
     });
   } catch (error) {
-    logger.error(
-      'Lỗi khi cập nhật preview sau modal: ' +
-        (error instanceof Error ? error.message : String(error)),
-    );
+    const errMsg = error instanceof Error ? error.message : String(error);
+    // Unknown Message (404) hoặc Unknown Interaction (403/429) → cleanup session
+    if (errMsg.includes('Unknown Message') || errMsg.includes('Unknown Interaction')) {
+      logger.warn(`Preview failed (${errMsg}) — cleanup session`);
+      editSessions.delete(interaction.user.id);
+      await sendReply(interaction, {
+        components: buildErrorContainer(
+          'Session đã hết hạn do message không còn tồn tại. Vui lòng `/container edit` lại.',
+        ).toJSON(),
+      });
+      return;
+    }
+    logger.error('Lỗi khi cập nhật preview sau modal: ' + errMsg);
   }
 }
 
