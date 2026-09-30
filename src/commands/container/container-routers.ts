@@ -213,7 +213,8 @@ async function updateModalEditorPreview(
       logger.warn(`⚠ [ContainerRouters] ${debugInfo.join(' | ')}`);
       return;
     }
-    debugInfo.push(`[DEBUG] Channel fetched: ${channel.name} (${channel.id})`);
+    const channelName = 'name' in channel ? channel.name : 'N/A';
+    debugInfo.push(`[DEBUG] Channel fetched: ${channelName} (${channel.id})`);
 
     debugInfo.push(`[DEBUG] Attempting to fetch message ${session.messageId}...`);
     const message = await channel.messages.fetch(session.messageId).catch((err) => {
