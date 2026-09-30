@@ -11,6 +11,14 @@ const logger = createLogger('ContainerEdit');
 
 /**
  * Entry point: bắt đầu session edit container mới.
+ *
+ * WORKFLOW CHUẨN:
+ * 1. interaction.reply() (ephemeral) — tạo editor message duy nhất
+ * 2. fetchReply() — lấy messageId thật
+ * 3. createSession() — lưu session với messageId hợp lệ
+ *
+ * WHY: Không dùng deferReply() vì reply() đã đủ giữ interaction alive.
+ * deferReply() + reply() tạo 2 messages → lãng phí + phức tạp không cần thiết.
  */
 export async function startInteractiveEdit(
   interaction: ChatInputCommandInteraction,
@@ -38,7 +46,10 @@ export async function startInteractiveEdit(
 }
 
 /**
- * Gửi message editor ban đầu với preview + buttons.
+ * Gửi editor message với preview + buttons.
+ *
+ * WHY: Dùng interaction.reply() trực tiếp — không cần deferReply().
+ * Reply() giữ interaction alive cho đến khi hết 15 phút.
  */
 async function sendEditorMessage(
   interaction: ChatInputCommandInteraction,
@@ -48,16 +59,14 @@ async function sendEditorMessage(
   const draft = cloneContainerSettings(settings);
   const preview = buildLivePreviewContainer(draft);
 
-  // Gửi message editor với container preview + buttons (ephemeral — chỉ user mới thấy)
+  // Gửi editor message (ephemeral — chỉ user mới thấy)
   await interaction.reply({
     components: [...preview.toJSON(), ...buildAllEditorRows(draft)],
     flags: preview.flags | MessageFlags.Ephemeral,
     files: preview.files,
   });
 
-  // WHY: interaction.reply() trả về ChatInputCommandInteraction, không phải Message
-  // Cần dùng fetchReply() để lấy message ID thật
-  // WHY: Wrap try-catch vì fetchReply() có thể fail nếu Discord rate-limit hoặc network error
+  // Lấy messageId thật từ reply
   let messageId: string;
   try {
     const message = await interaction.fetchReply();

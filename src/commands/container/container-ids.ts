@@ -3,8 +3,6 @@
 export const ContainerIds = {
   /** Prefix cho tất cả container-related custom IDs */
   PREFIX: 'container_',
-  /** Pencil button prefix — bắt đầu editor từ live container message */
-  EDIT_PENCIL: 'container_edit_pencil_',
   /** Actions: lưu, reset, hủy */
   SAVE: 'container_edit_save',
   RESET: 'container_edit_reset',

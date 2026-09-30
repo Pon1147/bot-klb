@@ -92,6 +92,13 @@ async function buildWorkshopContainer(
   const currentItems: typeof workbenchList = [];
 
   for (const item of workbenchList) {
+    // Skip items với item_id rỗng — API có thể trả về entries không hợp lệ
+    if (!item.item_id || item.item_id.trim() === '') {
+      logger.debug(
+        `Skipping workshop item with empty item_id (status=${item.status}, workbench_id=${item.workbench_id})`,
+      );
+      continue;
+    }
     if (item.status === 0 && item.remaining_time === 0) {
       recommendedItems.push(item);
     } else {

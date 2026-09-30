@@ -28,8 +28,6 @@ export async function handleSave(
       },
     });
 
-    deleteSession(interaction.user.id);
-
     const successContainer = buildSuccessContainer(
       `Đã lưu container "${session.type}" thành công!`,
     );
@@ -37,16 +35,28 @@ export async function handleSave(
       components: successContainer.toJSON(),
       flags: successContainer.flags,
     });
+
+    // Delete session SAU khi update thành công để tránh race condition với updateModalEditorPreview
+    deleteSession(interaction.user.id);
   } catch (error) {
     logger.error(
       'Error saving container settings: ' +
         (error instanceof Error ? error.message : String(error)),
     );
-    const errorContainer = buildErrorContainer(`Lỗi khi lưu: ${(error as Error).message}`);
-    await interaction.reply({
-      components: errorContainer.toJSON(),
-      flags: errorContainer.flags | MessageFlags.Ephemeral,
-    });
+    // interaction.update() đã được gọi → không thể reply thêm
+    // Nếu update fail vì message expired → ignore
+    const errMsg = error instanceof Error ? error.message : String(error);
+    if (!errMsg.includes('Unknown Message') && !errMsg.includes('Unknown Interaction')) {
+      try {
+        const errorContainer = buildErrorContainer(`Lỗi khi lưu: ${(error as Error).message}`);
+        await interaction.reply({
+          components: errorContainer.toJSON(),
+          flags: errorContainer.flags | MessageFlags.Ephemeral,
+        });
+      } catch {
+        // ignore — interaction đã expired
+      }
+    }
   }
 }
 

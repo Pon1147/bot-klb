@@ -1,12 +1,5 @@
 import type { APIMessageTopLevelComponent } from 'discord-api-types/v10';
-import {
-  ActionRowBuilder,
-  AttachmentBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ComponentType,
-  MessageFlags,
-} from 'discord.js';
+import { AttachmentBuilder, ComponentType, MessageFlags } from 'discord.js';
 import { ContainerSettings, TemplateContext } from '../types/settings.types.js';
 import { resolveTemplate } from './template.utils.js';
 import { COLORS } from '../config/container.variables.js';
@@ -19,23 +12,10 @@ const MAX_TEXT_DISPLAY_LENGTH = MAX_CONTAINER_TEXT_LENGTH;
 
 /**
  * Tùy chọn bổ sung cho buildContainer.
+ * Hiện tại không có options nào — giữ lại để mở rộng tương lai.
  */
 export interface BuildContainerOptions {
-  /** Type container để thêm nút chỉnh sửa (pencil button). null = không hiển thị. */
-  editType?: 'welcome' | 'leave' | 'booster' | null;
-}
-
-/**
- * Build hàng nút bút chì để mở container editor.
- * CustomId encode guildId + type để router có thể extract khi click.
- */
-function buildPencilButtonRow(editType: string, guildId: string): ActionRowBuilder<ButtonBuilder> {
-  return new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`container_edit_pencil_${guildId}_${editType}`)
-      .setLabel('✏️ Chỉnh sửa')
-      .setStyle(ButtonStyle.Secondary),
-  );
+  // Không có options nào hiện tại
 }
 
 /**
@@ -133,7 +113,7 @@ function resolveContentLines(lines: string[], context: TemplateContext): string[
 export function buildContainer(
   settings: ContainerSettings,
   context: TemplateContext,
-  options?: BuildContainerOptions & { guildId?: string },
+  _options?: BuildContainerOptions & { guildId?: string },
 ): BuildContainerResult {
   const {
     accentColor,
@@ -145,8 +125,7 @@ export function buildContainer(
     files,
   } = settings;
   const { member, guild } = context;
-  const editType = options?.editType ?? null;
-  const guildId = options?.guildId;
+  // _options hiện tại không có field nào — giữ lại để mở rộng tương lai
 
   // Resolve & trim text
   const resolvedLines = resolveContentLines(contentLines, context);
@@ -224,11 +203,6 @@ export function buildContainer(
   const attachmentFiles = files ? buildAttachments(files) : [];
 
   const resultComponents: unknown[] = [containerComponents];
-
-  // Append pencil button row if editType is provided
-  if (editType && guildId) {
-    resultComponents.push(buildPencilButtonRow(editType, guildId));
-  }
 
   return makeResult(resultComponents, MessageFlags.IsComponentsV2, attachmentFiles);
 }

@@ -1,14 +1,7 @@
-import { ButtonInteraction, ModalSubmitInteraction, PermissionFlagsBits } from 'discord.js';
+import { ButtonInteraction, ModalSubmitInteraction } from 'discord.js';
 import { ContainerSettings } from '../../types/settings.types.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
-import { getSettingsService } from '../../services/settings.service.js';
-import {
-  editSessions,
-  isSessionValid,
-  touchSession,
-  cloneContainerSettings,
-  createSession,
-} from './container-session.js';
+import { editSessions, isSessionValid, touchSession } from './container-session.js';
 import { buildLivePreviewContainer, buildAllEditorRows } from './container-builders.js';
 import {
   handleLinesModal,
@@ -27,14 +20,10 @@ const logger = createLogger('ContainerRouters');
 
 /**
  * Main handler cho tất cả button interactions trong container editor.
+ *
+ * NOTE: Pencil button đã bị loại bỏ — workflow chuẩn: /container edit command.
  */
 export async function handleEditorButtonInteraction(interaction: ButtonInteraction): Promise<void> {
-  // Pencil button: start editor từ live container message
-  if (interaction.customId.startsWith(ContainerIds.EDIT_PENCIL)) {
-    await handlePencilButtonClick(interaction);
-    return;
-  }
-
   const session = editSessions.get(interaction.user.id);
 
   if (!isSessionValid(session)) {
@@ -164,21 +153,35 @@ async function updateModalEditorPreview(
   try {
     await interaction.deferUpdate();
 
+    // Check session validity BEFORE doing expensive operations
+    // If session was deleted (e.g., by Save button), skip update to avoid race condition
+    const currentSession = editSessions.get(interaction.user.id);
+    if (!isSessionValid(currentSession)) {
+      logger.info(
+        `Session expired during modal processing — skipping preview update for user ${interaction.user.id}`,
+      );
+      return;
+    }
+
     const channel = await interaction.client.channels.fetch(session.channelId);
     if (!channel?.isTextBased()) return;
 
     const message = await channel.messages.fetch(session.messageId).catch(() => null);
     if (!message) {
       // Message gốc đã bị delete/expired → cleanup session để tránh lỗi lặp
-      logger.warn(
-        `Preview message không tồn tại (channel=${session.channelId}, msg=${session.messageId}) — cleanup session`,
+      logger.info(
+        `Preview message expired (channel=${session.channelId}, msg=${session.messageId}) — cleanup session`,
       );
       editSessions.delete(interaction.user.id);
-      await sendReply(interaction, {
-        components: buildErrorContainer(
-          'Message preview đã hết hạn. Vui lòng bắt đầu lại editor bằng `/container edit`.',
-        ).toJSON(),
-      });
+      try {
+        await sendReply(interaction, {
+          components: buildErrorContainer(
+            'Message preview đã hết hạn. Vui lòng bắt đầu lại editor bằng `/container edit`.',
+          ).toJSON(),
+        });
+      } catch {
+        // sendReply có thể fail nếu interaction đã expired → ignore
+      }
       return;
     }
 
@@ -191,85 +194,21 @@ async function updateModalEditorPreview(
     const errMsg = error instanceof Error ? error.message : String(error);
     // Unknown Message (404) hoặc Unknown Interaction (403/429) → cleanup session
     if (errMsg.includes('Unknown Message') || errMsg.includes('Unknown Interaction')) {
-      logger.warn(`Preview failed (${errMsg}) — cleanup session`);
+      logger.info(`Preview message expired — cleanup session for user ${interaction.user.id}`);
       editSessions.delete(interaction.user.id);
-      await sendReply(interaction, {
-        components: buildErrorContainer(
-          'Session đã hết hạn do message không còn tồn tại. Vui lòng `/container edit` lại.',
-        ).toJSON(),
-      });
+      try {
+        await sendReply(interaction, {
+          components: buildErrorContainer(
+            'Session đã hết hạn do message không còn tồn tại. Vui lòng `/container edit` lại.',
+          ).toJSON(),
+        });
+      } catch {
+        // sendReply có thể fail nếu interaction đã expired → ignore
+      }
       return;
     }
     logger.error('Lỗi khi cập nhật preview sau modal: ' + errMsg);
   }
 }
 
-/**
- * Handle pencil button click từ live container message.
- * Bắt đầu edit session mà không cần /container edit.
- */
-async function handlePencilButtonClick(interaction: ButtonInteraction): Promise<void> {
-  const guild = interaction.guild;
-
-  if (!guild) {
-    await sendReply(interaction, { content: 'Lệnh này chỉ dùng được trong server.' });
-    return;
-  }
-
-  // Guard: yêu cầu Administrator permission
-  const member = interaction.member;
-  if (
-    !member ||
-    !('permissions' in (member as object)) ||
-    !(member as { permissions: { has: (p: unknown) => boolean } }).permissions.has(
-      PermissionFlagsBits.Administrator,
-    )
-  ) {
-    await sendReply(interaction, {
-      content: 'Bạn cần quyền Administrator để chỉnh sửa container.',
-    });
-    return;
-  }
-
-  const parts = interaction.customId.replace(ContainerIds.EDIT_PENCIL, '').split('_');
-  const editType = parts[parts.length - 1] as 'welcome' | 'leave' | 'booster';
-
-  if (!editType || !['welcome', 'leave', 'booster'].includes(editType)) {
-    logger.warn('Invalid pencil button customId: ' + interaction.customId);
-    return;
-  }
-
-  try {
-    const settingsService = getSettingsService();
-    const currentSettings = settingsService.get(guild.id);
-    const containerSettings = currentSettings[editType].container;
-
-    const draft = cloneContainerSettings(containerSettings);
-    const preview = buildLivePreviewContainer(draft);
-
-    await interaction.update({
-      components: [...preview.toJSON(), ...buildAllEditorRows(draft)],
-      flags: preview.flags,
-      files: preview.files,
-    });
-
-    createSession(
-      interaction.user.id,
-      guild.id,
-      editType,
-      draft,
-      interaction.message.id,
-      interaction.channel!.id,
-    );
-  } catch (error) {
-    logger.error(
-      'Lỗi khi mở editor từ pencil button: ' +
-        (error instanceof Error ? error.message : String(error)),
-    );
-    if (!interaction.replied) {
-      await sendReply(interaction, {
-        components: buildErrorContainer(`Lỗi khi mở editor: ${(error as Error).message}`).toJSON(),
-      });
-    }
-  }
-}
+// Pencil button handler đã bị loại bỏ — workflow chuẩn: /container edit command
