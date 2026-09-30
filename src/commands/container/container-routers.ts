@@ -80,9 +80,29 @@ export async function handleEditorButtonInteraction(interaction: ButtonInteracti
  * Handler cho modal submissions trong container editor.
  */
 export async function handleEditorModalSubmit(interaction: ModalSubmitInteraction): Promise<void> {
+  const modalDebug: string[] = [];
+  modalDebug.push(
+    `[MODAL_ENTRY] user=${interaction.user.id} (${interaction.user.username})`,
+    `[MODAL_ENTRY] customId=${interaction.customId}`,
+    `[MODAL_ENTRY] guildId=${interaction.guildId}`,
+    `[MODAL_ENTRY] channelId=${interaction.channelId}`,
+  );
+  logger.info(`✅ [ContainerRouters] ${modalDebug.join(' | ')}`);
+
   const session = editSessions.get(interaction.user.id);
+  modalDebug.push(`[MODAL_SESSION] session=${session ? 'found' : 'NOT_FOUND'}`);
+  if (session) {
+    modalDebug.push(
+      `[MODAL_SESSION] session.messageId=${session.messageId}`,
+      `[MODAL_SESSION] session.channelId=${session.channelId}`,
+      `[MODAL_SESSION] session.type=${session.type}`,
+      `[MODAL_SESSION] session.draft.mediaUrl=${JSON.stringify(session.draft.mediaUrl)}`,
+    );
+  }
 
   if (!isSessionValid(session)) {
+    modalDebug.push('[MODAL_SESSION] ❌ Session invalid — returning early');
+    logger.warn(`⚠ [ContainerRouters] ${modalDebug.join(' | ')}`);
     await sendReply(interaction, {
       components: buildErrorContainer('Session edit đã hết hạn.').toJSON(),
     });
@@ -91,6 +111,7 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
 
   touchSession(interaction.user.id);
   const modalId = interaction.customId.replace(ContainerModalPrefix, '');
+  modalDebug.push(`[MODAL_ID] modalId=${modalId}`);
 
   if (modalId === 'lines') {
     // Parse lines từ textarea — mỗi dòng là 1 content line
@@ -98,6 +119,7 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
     const rawValue = interaction.fields.getTextInputValue('lines_content');
     const lines = rawValue.split('\n').map((l) => l.trim());
     session.draft.contentLines = lines;
+    modalDebug.push(`[MODAL_LINES] updated ${lines.length} lines`);
   } else if (modalId === 'color') {
     // Parse màu từ input — chấp nhận #RRGGBB hoặc RRGGBB
     const rawValue = interaction.fields.getTextInputValue('color_value');
@@ -120,15 +142,23 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
       return;
     }
     session.draft.accentColor = parsed;
+    modalDebug.push(`[MODAL_COLOR] updated color=${parsed}`);
   } else if (modalId === 'header') {
     // Cập nhật header template
     const rawValue = interaction.fields.getTextInputValue('header_value');
     session.draft.headerTemplate = rawValue.trim() || null;
+    modalDebug.push(
+      `[MODAL_HEADER] updated header=${JSON.stringify(session.draft.headerTemplate)}`,
+    );
   } else if (modalId === 'media') {
     const urlValue = interaction.fields.getTextInputValue('media_url');
     const descValue = interaction.fields.getTextInputValue('media_description');
     session.draft.mediaUrl = urlValue.trim() || null;
     session.draft.mediaDescription = descValue.trim() || null;
+    modalDebug.push(
+      `[MODAL_MEDIA] updated url=${JSON.stringify(session.draft.mediaUrl)}`,
+      `[MODAL_MEDIA] updated desc=${JSON.stringify(session.draft.mediaDescription)}`,
+    );
   } else {
     logger.warn('Unknown container modal submission: ' + modalId);
     await sendReply(interaction, {
@@ -137,6 +167,7 @@ export async function handleEditorModalSubmit(interaction: ModalSubmitInteractio
     return;
   }
 
+  logger.info(`✅ [ContainerRouters] ${modalDebug.join(' | ')}`);
   await updateModalEditorPreview(interaction, session);
 }
 
