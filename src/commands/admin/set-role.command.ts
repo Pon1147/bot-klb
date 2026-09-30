@@ -18,10 +18,13 @@ import {
 } from 'discord.js';
 import Database from 'better-sqlite3';
 import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import type { PermissionsConfig } from '../../config/permissions.js';
-import { loadPermissions } from '../../config/permissions.js';
+import {
+  loadPermissions,
+  getPermissionsFilePath,
+  DEFAULT_PERMISSIONS,
+} from '../../config/permissions.js';
 import { requireAdministrator } from '../../utils/df-guards.js';
 import { sendReply } from '../../utils/reply.utils.js';
 
@@ -109,9 +112,14 @@ export async function execute(
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
-    // 1. Đọc permissions.json
-    const permPath = join(__dirname, '..', '..', '..', 'src', 'config', 'permissions.json');
-    const permData = JSON.parse(readFileSync(permPath, 'utf8')) as Record<string, unknown>;
+    // 1. Đọc permissions.json (fallback DEFAULT_PERMISSIONS nếu chưa có file)
+    const permPath = getPermissionsFilePath();
+    let permData: Record<string, unknown>;
+    try {
+      permData = JSON.parse(readFileSync(permPath, 'utf8')) as Record<string, unknown>;
+    } catch {
+      permData = JSON.parse(JSON.stringify(DEFAULT_PERMISSIONS)) as Record<string, unknown>;
+    }
 
     // 2. Update role ID
     if (typeof permData.roles === 'object' && permData.roles !== null) {

@@ -54,6 +54,80 @@ export function loadPermissions(config: PermissionsConfig): void {
   }
 }
 
+import { existsSync } from 'fs';
+import { join } from 'path';
+
+/**
+ * Default fallback permissions config.
+ * Dùng khi permissions.json bị thiếu hoặc không đọc được trên production.
+ */
+export const DEFAULT_PERMISSIONS: PermissionsConfig = {
+  roles: {
+    Owner: '1536596880157446144',
+    Moderator: '1504374050779303936',
+    Member: '1513800432214872145',
+  },
+  commands: {
+    container: {
+      requiredRoles: ['Owner', 'Moderator'],
+    },
+    'df-link': {
+      requiredRoles: ['Member'],
+    },
+    'df-unlink': {
+      requiredRoles: ['Member'],
+    },
+    'df-daily': {
+      requiredRoles: ['Member'],
+    },
+    'df-stats': {
+      requiredRoles: ['Member'],
+    },
+    'df-history': {
+      requiredRoles: ['Member'],
+    },
+    'df-code': {
+      requiredRoles: ['Member'],
+    },
+    'team-find': {
+      requiredRoles: ['Member'],
+    },
+    booster: {
+      requiredRoles: ['Owner', 'Moderator'],
+    },
+    welcome: {
+      requiredRoles: ['Owner', 'Moderator'],
+    },
+  },
+};
+
+/**
+ * Tìm đường dẫn file permissions.json qua nhiều ứng viên (environment, cwd, dist, src).
+ */
+export function getPermissionsFilePath(): string {
+  if (process.env.PERMISSIONS_PATH) {
+    return process.env.PERMISSIONS_PATH;
+  }
+
+  const candidatePaths = [
+    join(process.cwd(), 'data', 'permissions.json'),
+    join(process.cwd(), 'src', 'config', 'permissions.json'),
+    join(process.cwd(), 'dist', 'config', 'permissions.json'),
+    join(process.cwd(), 'config', 'permissions.json'),
+    join(__dirname, '..', 'src', 'config', 'permissions.json'),
+    join(__dirname, '..', 'config', 'permissions.json'),
+    join(__dirname, 'permissions.json'),
+  ];
+
+  for (const candidate of candidatePaths) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return join(process.cwd(), 'src', 'config', 'permissions.json');
+}
+
 /**
  * Check xem user có ít nhất 1 role được yêu cầu không.
  */

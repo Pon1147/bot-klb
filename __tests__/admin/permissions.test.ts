@@ -3,14 +3,21 @@
  * Verify loadPermissions(), hasRequiredRole(), và runtime cache.
  */
 
-import { ROLE_IDS, COMMAND_PERMISSIONS, loadPermissions, hasRequiredRole } from '../../src/config/permissions.js';
+import {
+  ROLE_IDS,
+  COMMAND_PERMISSIONS,
+  loadPermissions,
+  hasRequiredRole,
+  DEFAULT_PERMISSIONS,
+  getPermissionsFilePath,
+} from '../../src/config/permissions.js';
 
 describe('RBAC — loadPermissions()', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset runtime cache
-    Object.keys(ROLE_IDS).forEach(k => delete ROLE_IDS[k]);
-    Object.keys(COMMAND_PERMISSIONS).forEach(k => delete COMMAND_PERMISSIONS[k]);
+    Object.keys(ROLE_IDS).forEach((k) => delete ROLE_IDS[k]);
+    Object.keys(COMMAND_PERMISSIONS).forEach((k) => delete COMMAND_PERMISSIONS[k]);
   });
 
   it('phải load role IDs vào cache', () => {
@@ -81,5 +88,30 @@ describe('RBAC — hasRequiredRole()', () => {
     expect(hasRequiredRole(['111'], ['1111'])).toBe(false);
     expect(hasRequiredRole(['111'], ['0111'])).toBe(false);
     expect(hasRequiredRole(['111'], ['111'])).toBe(true);
+  });
+});
+
+describe('RBAC — DEFAULT_PERMISSIONS & getPermissionsFilePath()', () => {
+  it('phải có default permissions hợp lệ', () => {
+    expect(DEFAULT_PERMISSIONS).toBeDefined();
+    expect(DEFAULT_PERMISSIONS.roles.Owner).toBeDefined();
+    expect(DEFAULT_PERMISSIONS.roles.Moderator).toBeDefined();
+    expect(DEFAULT_PERMISSIONS.roles.Member).toBeDefined();
+    expect(DEFAULT_PERMISSIONS.commands['container']).toBeDefined();
+  });
+
+  it('phải trả về permissions file path', () => {
+    const filePath = getPermissionsFilePath();
+    expect(typeof filePath).toBe('string');
+    expect(filePath.endsWith('permissions.json')).toBe(true);
+  });
+
+  it('phải tôn trọng env variable PERMISSIONS_PATH nếu có', () => {
+    process.env.PERMISSIONS_PATH = '/custom/path/permissions.json';
+    try {
+      expect(getPermissionsFilePath()).toBe('/custom/path/permissions.json');
+    } finally {
+      delete process.env.PERMISSIONS_PATH;
+    }
   });
 });

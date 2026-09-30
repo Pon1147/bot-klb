@@ -19,6 +19,11 @@ jest.mock('path', () => ({
 
 jest.mock('../../src/config/permissions.js', () => ({
   loadPermissions: jest.fn(),
+  getPermissionsFilePath: jest.fn(() => 'src/config/permissions.json'),
+  DEFAULT_PERMISSIONS: {
+    roles: { Owner: '418779992290492416', Moderator: '1504374050779303936', Member: '1513800432214872145' },
+    commands: {},
+  },
 }));
 
 jest.mock('discord.js', () => ({

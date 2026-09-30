@@ -2,9 +2,13 @@ import { Client, Collection } from 'discord.js';
 import { botConfig } from './config/bot.config.js';
 import { initCryptoKey } from './services/df-crypto.js';
 import { BOT_INTENTS } from './config/intents.js';
-import { loadPermissions, PermissionsConfig } from './config/permissions.js';
+import {
+  loadPermissions,
+  PermissionsConfig,
+  getPermissionsFilePath,
+  DEFAULT_PERMISSIONS,
+} from './config/permissions.js';
 import { readFileSync } from 'fs';
-import { join } from 'path';
 import { initializeDatabase } from './database/welcome.database.js';
 import { initializeSettingsTable } from './database/guild.settings.db.js';
 import { initializeDfTokensTable } from './database/df.token.db.js';
@@ -78,13 +82,19 @@ async function main(): Promise<void> {
   // Step 3b: Load RBAC permissions
   logger.info('Loading RBAC permissions...');
   try {
-    const permPath = join(__dirname, '..', 'src', 'config', 'permissions.json');
+    const permPath = getPermissionsFilePath();
     const permData = JSON.parse(readFileSync(permPath, 'utf8')) as PermissionsConfig;
     loadPermissions(permData);
-    logger.info(`RBAC permissions loaded: ${Object.keys(permData.commands).length} command(s)`);
+    logger.info(
+      `RBAC permissions loaded from ${permPath}: ${Object.keys(permData.commands).length} command(s)`,
+    );
   } catch (err) {
     logger.warn(
-      `RBAC permissions load failed: ${(err as Error).message}. Commands will have no role restrictions.`,
+      `RBAC permissions load from file failed: ${(err as Error).message}. Falling back to default permissions.`,
+    );
+    loadPermissions(DEFAULT_PERMISSIONS);
+    logger.info(
+      `RBAC default permissions loaded: ${Object.keys(DEFAULT_PERMISSIONS.commands).length} command(s)`,
     );
   }
 

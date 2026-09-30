@@ -1,4 +1,7 @@
 import { HQ_URL_BASE, HQ_PAGE_TIMEOUT, HQ_SELECTOR_TIMEOUT } from '../config/deltaforce.config.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('Scraper');
 
 interface PuppeteerPage {
   setUserAgent(ua: string): Promise<void>;
@@ -50,6 +53,39 @@ export async function fetchDailyCodes(): Promise<DailyCodes> {
   return result.codes;
 }
 
+/**
+ * Retry wrapper cho Puppeteer operations.
+ * Retry lên đến 3 lần với exponential backoff (1s, 2s, 4s).
+ */
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      const isLastAttempt = attempt === maxRetries;
+
+      if (isLastAttempt) {
+        logger.error(
+          `[Scraper] Retry exhausted after ${maxRetries} attempts: ${(error as Error).message}`,
+        );
+        throw error;
+      }
+
+      const delayMs = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
+      logger.warn(
+        `[Scraper] Attempt ${attempt}/${maxRetries} failed: ${(error as Error).message}. Retrying in ${delayMs}ms...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  // Should never reach here, but TypeScript needs it
+  throw lastError!;
+}
+
 export async function fetchDailyAll(): Promise<DailyData> {
   const puppeteer = await loadPuppeteer();
   let browser: PuppeteerBrowser | null = null;
@@ -57,7 +93,7 @@ export async function fetchDailyAll(): Promise<DailyData> {
   try {
     browser = (await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
     })) as PuppeteerBrowser;
 
     const page = await browser.newPage();
@@ -65,8 +101,18 @@ export async function fetchDailyAll(): Promise<DailyData> {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     );
 
-    await page.goto(HQ_URL, { waitUntil: 'networkidle2', timeout: HQ_PAGE_TIMEOUT });
-    await page.waitForSelector('span[data-info^="operations-"]', { timeout: HQ_SELECTOR_TIMEOUT });
+    // Dùng 'domcontentloaded' thay vì 'networkidle2' để tránh timeout
+    // khi website có background requests (WebSocket, analytics) không bao giờ idle
+    await withRetry(async () => {
+      await page.goto(HQ_URL, { waitUntil: 'domcontentloaded', timeout: HQ_PAGE_TIMEOUT });
+    });
+
+    // Thử waitForSelector với retry
+    await withRetry(async () => {
+      await page.waitForSelector('span[data-info^="operations-"]', {
+        timeout: HQ_SELECTOR_TIMEOUT,
+      });
+    });
 
     const result = await page.evaluate(() => {
       // puppeteer evaluate chạy trong browser context, globalThis là Document
