@@ -150,28 +150,62 @@ async function updateModalEditorPreview(
   interaction: ModalSubmitInteraction,
   session: { channelId: string; messageId: string; draft: ContainerSettings },
 ): Promise<void> {
+  const debugInfo: string[] = [];
+  debugInfo.push(
+    `[DEBUG updateModalEditorPreview] user=${interaction.user.id} (${interaction.user.username})`,
+    `[DEBUG] session.channelId=${session.channelId}`,
+    `[DEBUG] session.messageId=${session.messageId}`,
+    `[DEBUG] session.draft.mediaUrl=${JSON.stringify(session.draft.mediaUrl)}`,
+    `[DEBUG] session.draft.mediaDescription=${JSON.stringify(session.draft.mediaDescription)}`,
+  );
+
   try {
     await interaction.deferUpdate();
+    debugInfo.push('[DEBUG] deferUpdate() OK');
 
     // Check session validity BEFORE doing expensive operations
     // If session was deleted (e.g., by Save button), skip update to avoid race condition
     const currentSession = editSessions.get(interaction.user.id);
     if (!isSessionValid(currentSession)) {
+      debugInfo.push('[DEBUG] Session expired during check — skipping preview update');
+      logger.warn(`⚠ [ContainerRouters] ${debugInfo.join(' | ')}`);
       logger.info(
         `Session expired during modal processing — skipping preview update for user ${interaction.user.id}`,
       );
       return;
     }
+    debugInfo.push('[DEBUG] Session valid');
 
     const channel = await interaction.client.channels.fetch(session.channelId);
-    if (!channel?.isTextBased()) return;
+    if (!channel?.isTextBased()) {
+      debugInfo.push(`[DEBUG] Channel not found or not text-based: ${channel}`);
+      logger.warn(`⚠ [ContainerRouters] ${debugInfo.join(' | ')}`);
+      return;
+    }
+    debugInfo.push(`[DEBUG] Channel fetched: ${channel.name} (${channel.id})`);
 
-    const message = await channel.messages.fetch(session.messageId).catch(() => null);
+    debugInfo.push(`[DEBUG] Attempting to fetch message ${session.messageId}...`);
+    const message = await channel.messages.fetch(session.messageId).catch((err) => {
+      debugInfo.push(
+        `[DEBUG] ❌ channel.messages.fetch() threw: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      logger.warn(`⚠ [ContainerRouters] ${debugInfo.join(' | ')}`);
+      return null;
+    });
+
     if (!message) {
       // Message gốc đã bị delete/expired → cleanup session để tránh lỗi lặp
-      logger.info(
-        `Preview message expired (channel=${session.channelId}, msg=${session.messageId}) — cleanup session`,
+      debugInfo.push('[DEBUG] ❌ Message is null');
+      debugInfo.push('[DEBUG] Editor message was sent as PUBLIC (no Ephemeral flag)');
+      debugInfo.push('[DEBUG] Possible causes:');
+      debugInfo.push('  1. Message was manually deleted');
+      debugInfo.push('  2. Bot was kicked/readded from guild');
+      debugInfo.push('  3. Message expired (Discord auto-delete after ~30 days)');
+      debugInfo.push('  4. channelId/messageId mismatch (bug in session creation)');
+      debugInfo.push(
+        `[DEBUG] session.channelId=${session.channelId} (current guild: ${interaction.guildId})`,
       );
+      logger.warn(`⚠ [ContainerRouters] ${debugInfo.join(' | ')}`);
       editSessions.delete(interaction.user.id);
       try {
         await sendReply(interaction, {
@@ -184,16 +218,25 @@ async function updateModalEditorPreview(
       }
       return;
     }
+    debugInfo.push(`[DEBUG] ✅ Message fetched successfully: ${message.id}`);
 
     const preview = buildLivePreviewContainer(session.draft);
+    debugInfo.push(`[DEBUG] Building preview with ${preview.files.length} files...`);
     await message.edit({
       components: [...preview.toJSON(), ...buildAllEditorRows(session.draft)],
       files: preview.files,
     });
+    debugInfo.push('[DEBUG] ✅ message.edit() OK — preview updated');
+    logger.info(`✅ [ContainerRouters] ${debugInfo.join(' | ')}`);
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
+    debugInfo.push(`[DEBUG] ❌ Exception caught: ${errMsg}`);
+    debugInfo.push(`[DEBUG] Error stack: ${error instanceof Error ? error.stack : 'N/A'}`);
+
     // Unknown Message (404) hoặc Unknown Interaction (403/429) → cleanup session
     if (errMsg.includes('Unknown Message') || errMsg.includes('Unknown Interaction')) {
+      debugInfo.push('[DEBUG] ❌ Unknown Message/Interaction — cleanup session');
+      logger.warn(`⚠ [ContainerRouters] ${debugInfo.join(' | ')}`);
       logger.info(`Preview message expired — cleanup session for user ${interaction.user.id}`);
       editSessions.delete(interaction.user.id);
       try {
@@ -207,6 +250,7 @@ async function updateModalEditorPreview(
       }
       return;
     }
+    logger.error(`❌ [ContainerRouters] ${debugInfo.join(' | ')}`);
     logger.error('Lỗi khi cập nhật preview sau modal: ' + errMsg);
   }
 }
