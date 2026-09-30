@@ -1,4 +1,4 @@
-﻿import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+﻿import { ChatInputCommandInteraction } from 'discord.js';
 import { ContainerSettings } from '../../types/settings.types.js';
 import { getSettingsService } from '../../services/settings.service.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
@@ -48,8 +48,16 @@ export async function startInteractiveEdit(
 /**
  * Gửi editor message với preview + buttons.
  *
- * WHY: Dùng interaction.reply() trực tiếp — không cần deferReply().
- * Reply() giữ interaction alive cho đến khi hết 15 phút.
+ * WORKFLOW:
+ * 1. interaction.reply() (public) — tạo editor message duy nhất
+ * 2. fetchReply() — lấy messageId thật
+ * 3. createSession() — lưu session với messageId hợp lệ
+ *
+ * WHY: KHÔNG dùng ephemeral — ephemeral messages không thể fetch qua
+ * channel.messages.fetch() (Discord API limitation). Modal submit cần
+ * fetch message để update preview → phải dùng public message.
+ *
+ * Buttons được bảo vệ bằng session check (user ID trong handleEditorButtonInteraction).
  */
 async function sendEditorMessage(
   interaction: ChatInputCommandInteraction,
@@ -59,10 +67,10 @@ async function sendEditorMessage(
   const draft = cloneContainerSettings(settings);
   const preview = buildLivePreviewContainer(draft);
 
-  // Gửi editor message (ephemeral — chỉ user mới thấy)
+  // Gửi editor message (public — cần fetch được cho live preview update)
   await interaction.reply({
     components: [...preview.toJSON(), ...buildAllEditorRows(draft)],
-    flags: preview.flags | MessageFlags.Ephemeral,
+    flags: preview.flags,
     files: preview.files,
   });
 
