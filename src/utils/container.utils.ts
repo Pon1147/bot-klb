@@ -141,12 +141,6 @@ export function buildContainer(
   if (headerTemplate && headerTemplate.trim().length > 0) {
     const avatarUrl = member.user.displayAvatarURL({ extension: 'png', size: DEFAULT_AVATAR_SIZE });
 
-    const thumbnailAccessory: Record<string, unknown> = {
-      type: ComponentType.Thumbnail,
-      media: { url: avatarUrl },
-      description: `${member.user.username} (mới tham gia)`,
-    };
-
     // Resolve template variables trong header
     const resolvedHeader = resolveTemplate(headerTemplate, { member, guild });
 
@@ -158,10 +152,19 @@ export function buildContainer(
           content: resolvedHeader,
         },
       ],
-      accessory: thumbnailAccessory,
+      accessory: {
+        type: ComponentType.Thumbnail,
+        media: { url: avatarUrl },
+      },
     };
 
     containerInnerComponents.push(headerSection);
+
+    // Thêm spacing sau header
+    containerInnerComponents.push({
+      type: ComponentType.TextDisplay,
+      content: '\u200B', // Zero-width space tạo khoảng trống
+    });
   }
 
   // ==================== 2. TextDisplay chính (nội dung bullet) ====================
@@ -170,6 +173,12 @@ export function buildContainer(
       type: ComponentType.TextDisplay,
       content: textContent,
     });
+
+    // Thêm spacing sau content
+    containerInnerComponents.push({
+      type: ComponentType.TextDisplay,
+      content: '\u200B',
+    });
   }
 
   // ==================== 3. Separator (tùy chọn) ====================
@@ -177,6 +186,12 @@ export function buildContainer(
     const separator: Record<string, unknown> = { type: ComponentType.Separator };
     if (accentColor) separator.accentColor = accentColor;
     containerInnerComponents.push(separator);
+
+    // Thêm spacing sau separator
+    containerInnerComponents.push({
+      type: ComponentType.TextDisplay,
+      content: '\u200B',
+    });
   }
 
   // ==================== 4. MediaGallery - Ảnh lớn Welcome ====================

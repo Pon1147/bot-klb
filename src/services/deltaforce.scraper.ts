@@ -165,8 +165,15 @@ export async function fetchDailyAll(): Promise<DailyData> {
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
     // Chụp screenshot để debug UI
+    // Dùng path tuyệt đối + tạo thư mục nếu chưa có (production cần /tmp hoặc ./data/)
     try {
-      const screenshotPath = `./scraper-debug-${Date.now()}.png`;
+      const fs = await import('fs');
+      const path = await import('path');
+      const debugDir = path.join(process.cwd(), 'data', 'scraper-debug');
+      if (!fs.existsSync(debugDir)) {
+        fs.mkdirSync(debugDir, { recursive: true });
+      }
+      const screenshotPath = path.join(debugDir, `scraper-${Date.now()}.png`);
       const screenshotData = await (page as any).screenshot({ path: screenshotPath });
       scrapeDebug.push(
         `[SCRAPER_DEBUG] Screenshot saved: ${screenshotPath} (${screenshotData.length} bytes)`,
