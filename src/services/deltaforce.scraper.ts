@@ -11,6 +11,7 @@ interface PuppeteerPage {
   setRequestInterception(enabled: boolean): void;
   on(event: string, handler: (req: { url: () => string; continue: () => void }) => void): void;
   url(): string;
+  screenshot(opts: { path: string }): Promise<string>;
 }
 
 interface PuppeteerBrowser {
@@ -158,6 +159,58 @@ export async function fetchDailyAll(): Promise<DailyData> {
         }));
     });
     scrapeDebug.push(`[SCRAPER_DEBUG] First 50 spans: ${JSON.stringify(allSpans)}`);
+
+    // Chờ thêm 3 giây để async data load xong (nếu có)
+    scrapeDebug.push('[SCRAPER_WAIT] Waiting 3s for async data load...');
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    // Chụp screenshot để debug UI
+    try {
+      const screenshotPath = `./scraper-debug-${Date.now()}.png`;
+      const screenshotData = await (page as any).screenshot({ path: screenshotPath });
+      scrapeDebug.push(
+        `[SCRAPER_DEBUG] Screenshot saved: ${screenshotPath} (${screenshotData.length} bytes)`,
+      );
+    } catch (ssError) {
+      scrapeDebug.push(`[SCRAPER_DEBUG] Screenshot failed: ${(ssError as Error).message}`);
+    }
+
+    // Log HTML của password section
+    const passwordSectionHtml = await page.evaluate(() => {
+      const q = (sel: string) => {
+        const el = document.querySelector(sel);
+        return el ? el.outerHTML.substring(0, 500) : 'NOT_FOUND';
+      };
+      return {
+        zeroDam: q('span[data-info="operations-zero-dam"]'),
+        layaliGrove: q('span[data-info="operations-layali-grove"]'),
+        brakkesh: q('span[data-info="operations-layali-brakkesh"]'),
+        spaceCity: q('span[data-info="operations-layali-space-city"]'),
+        tidePrison: q('span[data-info="operations-layali-tide-prison"]'),
+        az3: q('span[data-info="operations-layali-az3"]'),
+        hasNoData: q('[data-info="operations-nodata"]'),
+        loadingIndicator: q('[data-info*="loading"]'),
+        emptyState: q('[data-info*="empty"]'),
+      };
+    });
+    scrapeDebug.push(
+      `[SCRAPER_DEBUG] Password section HTML: ${JSON.stringify(passwordSectionHtml)}`,
+    );
+
+    // Log tất cả [data-info] có textContent khác rỗng
+    const nonEmptyDataInfo = await page.evaluate(() => {
+      const allDataInfo = document.querySelectorAll('[data-info]');
+      return Array.from(allDataInfo)
+        .filter((el) => el.textContent?.trim().length > 0)
+        .map((el) => ({
+          dataInfo: el.getAttribute('data-info'),
+          textContent: el.textContent?.trim().substring(0, 100),
+          className: el.className,
+        }));
+    });
+    scrapeDebug.push(
+      `[SCRAPER_DEBUG] Non-empty [data-info] elements (${nonEmptyDataInfo.length}): ${JSON.stringify(nonEmptyDataInfo)}`,
+    );
 
     const result = await page.evaluate(() => {
       // puppeteer evaluate chạy trong browser context, globalThis là Document
