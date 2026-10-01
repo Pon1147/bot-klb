@@ -10,6 +10,7 @@ interface PuppeteerPage {
   evaluate<T>(fn: () => T): Promise<T>;
   setRequestInterception(enabled: boolean): void;
   on(event: string, handler: (req: { url: () => string; continue: () => void }) => void): void;
+  url(): string;
 }
 
 interface PuppeteerBrowser {
@@ -87,10 +88,15 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
 }
 
 export async function fetchDailyAll(): Promise<DailyData> {
+  const scrapeDebug: string[] = [];
+  const startTime = Date.now();
+  scrapeDebug.push(`[SCRAPER_START] url=${HQ_URL} time=${new Date().toISOString()}`);
+
   const puppeteer = await loadPuppeteer();
   let browser: PuppeteerBrowser | null = null;
 
   try {
+    logger.info(`✅ [Scraper] ${scrapeDebug.join(' | ')}`);
     browser = (await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
@@ -103,16 +109,55 @@ export async function fetchDailyAll(): Promise<DailyData> {
 
     // Dùng 'domcontentloaded' thay vì 'networkidle2' để tránh timeout
     // khi website có background requests (WebSocket, analytics) không bao giờ idle
+    scrapeDebug.push('[SCRAPER_GOTO] Navigating to HQ_URL...');
     await withRetry(async () => {
       await page.goto(HQ_URL, { waitUntil: 'domcontentloaded', timeout: HQ_PAGE_TIMEOUT });
+      scrapeDebug.push('[SCRAPER_GOTO] ✅ Navigation completed');
+    }, 3);
+
+    // Lấy URL hiện tại để kiểm tra
+    const currentUrl = page.url();
+    scrapeDebug.push(`[SCRAPER_URL] currentUrl=${currentUrl}`);
+
+    // Lấy nội dung page để debug
+    const pageContent = await page.evaluate(() => {
+      return document.documentElement.outerHTML.substring(0, 5000);
     });
+    scrapeDebug.push(`[SCRAPER_PAGE] contentLength=${pageContent.length}`);
 
     // Thử waitForSelector với retry
-    await withRetry(async () => {
-      await page.waitForSelector('span[data-info^="operations-"]', {
-        timeout: HQ_SELECTOR_TIMEOUT,
+    scrapeDebug.push('[SCRAPER_WAIT] Waiting for selector span[data-info^="operations-"]...');
+    try {
+      await withRetry(async () => {
+        await page.waitForSelector('span[data-info^="operations-"]', {
+          timeout: HQ_SELECTOR_TIMEOUT,
+        });
+        scrapeDebug.push('[SCRAPER_WAIT] ✅ Selector found');
+      }, 3);
+    } catch (waitError) {
+      scrapeDebug.push(`[SCRAPER_WAIT] ❌ Selector NOT found: ${(waitError as Error).message}`);
+      // Log các selector có trong page để debug
+      const availableSelectors = await page.evaluate(() => {
+        const allDataInfo = document.querySelectorAll('[data-info]');
+        return Array.from(allDataInfo).map((el) => el.getAttribute('data-info'));
       });
+      scrapeDebug.push(
+        `[SCRAPER_DEBUG] Available [data-info] selectors (${availableSelectors.length}): ${JSON.stringify(availableSelectors.slice(0, 20))}`,
+      );
+    }
+
+    // Log tất cả span elements để debug
+    const allSpans = await page.evaluate(() => {
+      const spans = document.querySelectorAll('span');
+      return Array.from(spans)
+        .slice(0, 50)
+        .map((el) => ({
+          dataInfo: el.getAttribute('data-info'),
+          textContent: el.textContent?.trim().substring(0, 100),
+          className: el.className,
+        }));
     });
+    scrapeDebug.push(`[SCRAPER_DEBUG] First 50 spans: ${JSON.stringify(allSpans)}`);
 
     const result = await page.evaluate(() => {
       // puppeteer evaluate chạy trong browser context, globalThis là Document
@@ -166,7 +211,17 @@ export async function fetchDailyAll(): Promise<DailyData> {
       return { codes, operations };
     });
 
+    const elapsed = Date.now() - startTime;
+    scrapeDebug.push(`[SCRAPER_RESULT] codes=${JSON.stringify(result.codes)}`);
+    scrapeDebug.push(`[SCRAPER_RESULT] elapsed=${elapsed}ms`);
+    logger.info(`✅ [Scraper] ${scrapeDebug.join(' | ')}`);
+
     return result as unknown as DailyData;
+  } catch (error) {
+    const elapsed = Date.now() - startTime;
+    scrapeDebug.push(`[SCRAPER_ERROR] elapsed=${elapsed}ms error=${(error as Error).message}`);
+    logger.error(`❌ [Scraper] ${scrapeDebug.join(' | ')}`);
+    throw error;
   } finally {
     if (browser) {
       await browser.close();
