@@ -9,8 +9,8 @@ import {
   editSessions,
   isSessionValid,
   cloneContainerSettings,
-} from '../../src/commands/container/container-session.js';
-import { buildEditTypeOptionCallback, buildResetTypeOptionCallback } from '../../src/commands/container/container.command.js';
+} from '../../src/features/container/container-session.js';
+import { buildEditTypeOptionCallback, buildResetTypeOptionCallback } from '../../src/features/container/container.command.js';
 import { defaultGuildSettings } from '../../src/config/default.settings.js';
 
 // Mock ContainerSettings cho test

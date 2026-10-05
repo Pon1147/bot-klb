@@ -10,7 +10,7 @@ jest.mock('../../src/services/deltaforce.scraper.js', () => ({
   fetchDailyCodes: jest.fn(),
 }));
 
-jest.mock('../../src/commands/df/code.command.js', () => ({
+jest.mock('../../src/features/delta-force/code.command.js', () => ({
   buildCodesContainer: jest.fn((_codes: any, hasCodes: boolean) => ({
     components: [{ type: 17, components: [] }],
     flags: 65536,
@@ -29,7 +29,7 @@ jest.mock('../../src/utils/logger.js', () => ({
 }));
 
 import { fetchDailyCodes } from '../../src/services/deltaforce.scraper.js';
-import { buildCodesContainer, hasAnyCodes } from '../../src/commands/df/code.command.js';
+import { buildCodesContainer, hasAnyCodes } from '../../src/features/delta-force/code.command.js';
 
 describe('df-codes-scheduler', () => {
   beforeEach(() => {

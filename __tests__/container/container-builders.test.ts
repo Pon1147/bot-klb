@@ -19,7 +19,7 @@ import {
   buildHeaderModal,
   buildLivePreviewContainer,
   updateEditorMessage,
-} from '../../src/commands/container/container-builders.js';
+} from '../../src/features/container/container-builders.js';
 import { ContainerSettings } from '../../src/types/settings.types.js';
 import { ButtonInteraction, ModalSubmitInteraction } from 'discord.js';
 

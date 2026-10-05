@@ -66,7 +66,7 @@ jest.mock('../../src/renderers/df-stats/svg-renderer.js', () => ({
   renderDashboard: jest.fn(() => Buffer.from('mock-png-data')),
 }));
 
-import { execute } from '../../src/commands/df/stats.command.js';
+import { execute } from '../../src/features/delta-force/stats.command.js';
 import { getDfToken, touchDfToken } from '../../src/database/df.token.db.js';
 import { getOverviewData } from '../../src/services/deltaforce.api.js';
 import { resolveRankFromScore } from '../../src/utils/df-rank.utils.js';

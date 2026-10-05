@@ -51,7 +51,7 @@ jest.mock('../../src/utils/container.utils.js', () => ({
   })),
 }));
 
-import { execute } from '../../src/commands/df/unlink.command.js';
+import { execute } from '../../src/features/delta-force/unlink.command.js';
 import { getActiveBinding, revokeBinding } from '../../src/database/df-binding.db.js';
 import { MessageFlags } from 'discord.js';
 

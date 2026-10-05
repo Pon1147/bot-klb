@@ -2,7 +2,7 @@ import cron from 'node-cron';
 import type { Client } from 'discord.js';
 import type Database from 'better-sqlite3';
 import { fetchDailyCodes } from './deltaforce.scraper.js';
-import { buildCodesContainer, hasAnyCodes } from '../commands/df/code.command.js';
+import { buildCodesContainer, hasAnyCodes } from '../features/delta-force/code.command.js';
 import { getSettingsService } from './settings.service.js';
 import { createLogger } from '../utils/logger.js';
 

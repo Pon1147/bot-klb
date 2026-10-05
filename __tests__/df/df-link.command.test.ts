@@ -133,7 +133,7 @@ jest.mock('../../src/utils/container.utils.js', () => ({
   })),
 }));
 
-import { execute } from '../../src/commands/df/link.command.js';
+import { execute } from '../../src/features/delta-force/link.command.js';
 import { generateCode } from '../../src/services/df-claim-store.js';
 import { saveDfToken } from '../../src/database/df.token.db.js';
 import { getActiveBinding } from '../../src/database/df-binding.db.js';

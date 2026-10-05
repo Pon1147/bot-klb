@@ -34,7 +34,10 @@ function collectCommandFiles(dirPath: string): string[] {
         // Đệ quy vào subdirectories
         const nestedFiles = collectCommandFiles(fullPath);
         files.push(...nestedFiles.map((f) => path.join(entry, f)));
-      } else if ((entry.endsWith('.js') || entry.endsWith('.ts')) && !entry.endsWith('.d.ts')) {
+      } else if (
+        (entry.endsWith('.command.js') || entry.endsWith('.command.ts')) &&
+        !entry.endsWith('.d.ts')
+      ) {
         files.push(entry);
       }
     }
@@ -68,7 +71,7 @@ export function loadCommands(
   collection: Collection<string, CommandModule>,
   customCommandsPath?: string,
 ): void {
-  const commandsPath = customCommandsPath ?? path.join(__dirname, '..', '..', 'commands');
+  const commandsPath = customCommandsPath ?? path.join(__dirname, '..', '..', 'features');
 
   logger.debug(`Scanning directory: ${commandsPath}`);
 

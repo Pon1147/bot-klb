@@ -26,7 +26,7 @@ import {
   stopSessionCleanup,
   cloneContainerSettings,
   ContainerEditSession,
-} from '../../src/commands/container/container-session.js';
+} from '../../src/features/container/container-session.js';
 
 import type { ContainerSettings } from '../../src/types/settings.types.js';
 

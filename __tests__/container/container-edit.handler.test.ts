@@ -49,14 +49,14 @@ jest.mock('../../src/config/default.settings.js', () => ({
 }));
 
 // Mock container-session
-jest.mock('../../src/commands/container/container-session.js', () => ({
+jest.mock('../../src/features/container/container-session.js', () => ({
   cloneContainerSettings: jest.fn((s: any) => JSON.parse(JSON.stringify(s))),
   createSession: jest.fn(),
   CONTAINER_COLOR_PRESETS: [],
 }));
 
 // Mock container-builders
-jest.mock('../../src/commands/container/container-builders.js', () => ({
+jest.mock('../../src/features/container/container-builders.js', () => ({
   buildLivePreviewContainer: jest.fn(() => ({
     components: [{ type: 17, components: [] }],
     flags: MessageFlags.IsComponentsV2,
@@ -66,8 +66,8 @@ jest.mock('../../src/commands/container/container-builders.js', () => ({
   buildAllEditorRows: jest.fn(() => []),
 }));
 
-import { startInteractiveEdit } from '../../src/commands/container/container-edit.handler.js';
-import { handleContainerReset } from '../../src/commands/container/container-reset.handler.js';
+import { startInteractiveEdit } from '../../src/features/container/container-edit.handler.js';
+import { handleContainerReset } from '../../src/features/container/container-reset.handler.js';
 
 // Access mock via jest.requireMock
 const { mockSettingsService } = jest.requireMock('../../src/services/settings.service.js');

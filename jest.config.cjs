@@ -51,7 +51,7 @@ module.exports = {
       lines: 96,
       statements: 96,
     },
-    'src/commands/df/code.command.ts': {
+    'src/features/delta-force/code.command.ts': {
       branches: 81,
       functions: 100,
       lines: 85,
@@ -75,13 +75,13 @@ module.exports = {
       lines: 56,
       statements: 66,
     },
-    'src/commands/df/history.command.ts': {
+    'src/features/delta-force/history.command.ts': {
       branches: 81,
       functions: 75,
       lines: 98,
       statements: 98,
     },
-    'src/commands/df/link.command.ts': {
+    'src/features/delta-force/link.command.ts': {
       branches: 66,
       functions: 76,
       lines: 91,

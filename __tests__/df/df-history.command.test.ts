@@ -49,7 +49,7 @@ jest.mock('../../src/utils/container.utils.js', () => ({
   toComponentsV2: jest.fn((arr) => arr),
 }));
 
-import { execute } from '../../src/commands/df/history.command.js';
+import { execute } from '../../src/features/delta-force/history.command.js';
 import { getDfToken, touchDfToken } from '../../src/database/df.token.db.js';
 import { getMatchList } from '../../src/services/deltaforce.api.js';
 import { MessageFlags } from 'discord.js';

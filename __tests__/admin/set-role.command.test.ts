@@ -6,7 +6,7 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { loadPermissions } from '../../src/config/permissions.js';
-import { execute, data } from '../../src/commands/admin/set-role.command.js';
+import { execute, data } from '../../src/features/admin/set-role.command.js';
 
 jest.mock('fs', () => ({
   readFileSync: jest.fn(),
