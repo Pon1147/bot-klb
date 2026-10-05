@@ -62,9 +62,9 @@
     }
   ],
   "icons": {
-    "16": "assets/icon_16.png",
-    "48": "assets/icon_48.png",
-    "128": "assets/icon_128.png"
+    "16": "assets/image.png",
+    "48": "assets/image.png",
+    "128": "assets/image.png"
   },
   "web_accessible_resources": [
     {
