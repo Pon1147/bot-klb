@@ -18,17 +18,17 @@ jest.mock('../../src/utils/container.utils.js', () => ({
   })),
 }));
 
-jest.mock('../../src/commands/container/container-edit.handler.js', () => ({
+jest.mock('../../src/features/container/container-edit.handler.js', () => ({
   startInteractiveEdit: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('../../src/commands/container/container-reset.handler.js', () => ({
+jest.mock('../../src/features/container/container-reset.handler.js', () => ({
   handleContainerReset: jest.fn().mockResolvedValue(undefined),
 }));
 
-import { startInteractiveEdit } from '../../src/commands/container/container-edit.handler.js';
-import { handleContainerReset } from '../../src/commands/container/container-reset.handler.js';
-import { data, execute, buildEditSubcommand, buildResetSubcommand } from '../../src/commands/container/container.command.js';
+import { startInteractiveEdit } from '../../src/features/container/container-edit.handler.js';
+import { handleContainerReset } from '../../src/features/container/container-reset.handler.js';
+import { data, execute, buildEditSubcommand, buildResetSubcommand } from '../../src/features/container/container.command.js';
 
 // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

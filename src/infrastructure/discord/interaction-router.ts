@@ -12,7 +12,12 @@ import {
 } from 'discord.js';
 import { createLogger } from '../../utils/logger.js';
 import { botConfig } from '../../config/bot.config.js';
-import { ContainerIds, ContainerModalPrefix } from '../../commands/container/container-ids.js';
+import {
+  ContainerIds,
+  ContainerModalPrefix,
+  handleEditorButtonInteraction as handleContainerEditorButtonInteraction,
+  handleEditorModalSubmit as handleContainerEditorModalSubmit,
+} from '../../features/container/index.js';
 import { TeamFindIds } from '../../commands/df/team-find-ids.js';
 import {
   handleTeamFindButton,
@@ -20,10 +25,6 @@ import {
 } from '../../commands/df/team-find.handlers.js';
 import { handleDfStatsSelect } from '../../events/dfStatsSelect.handler.js';
 import { COMMAND_PERMISSIONS, hasRequiredRole, ROLE_IDS } from '../../config/permissions.js';
-import {
-  handleEditorButtonInteraction as handleContainerEditorButtonInteraction,
-  handleEditorModalSubmit as handleContainerEditorModalSubmit,
-} from '../../commands/container/container-routers.js';
 
 const logger = createLogger('InteractionRouter');
 

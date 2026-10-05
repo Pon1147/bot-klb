@@ -26,7 +26,7 @@ import {
 } from '../infrastructure/discord/command-loader.js';
 import { loadEvents } from '../infrastructure/discord/event-loader.js';
 import { createLogger } from '../utils/logger.js';
-import { startSessionCleanup } from '../commands/container/container-session.js';
+import { startSessionCleanup } from '../features/container/index.js';
 import { cleanup as cleanupTeamFindSessions } from '../services/team-find-session.js';
 import { startCleanup as startClaimCleanup } from '../services/df-claim-store.js';
 import { startDfCodesScheduler } from '../services/df-codes-scheduler.js';
