@@ -1,14 +1,11 @@
 import { Guild, GuildMember } from 'discord.js';
-import { getSettingsService } from '../services/settings.service.js';
-import { createLogger } from '../utils/logger.js';
-
-const logger = createLogger('GuildMemberUpdate');
+import { handleBoosterMemberUpdate } from '../features/booster/booster.event.js';
 import { getMessageRef, deleteMessageRef } from '../services/team-find-message-store.js';
 import { getSession, deleteSession } from '../services/team-find-session.js';
 
 /**
  * Handle guildMemberUpdate event:
- * - Detect khi member Server Boost
+ * - Detect khi member Server Boost (uỷ quyền cho feature booster)
  * - Tự động xóa team-find embed khi user rời/chuyển phòng thoại
  */
 export async function execute(
@@ -21,44 +18,8 @@ export async function execute(
     return;
   }
 
-  // ── 1. Booster detection ──
-  const wasBoosting = oldMember.premiumSince !== null;
-  const isNowBoosting = newMember.premiumSince !== null;
-
-  if (!wasBoosting && isNowBoosting) {
-    try {
-      const settingsService = getSettingsService();
-      const booster = settingsService.getBooster(newMember.guild.id);
-
-      if (!booster.enabled) return;
-      if (!booster.channelId) return;
-
-      const boosterChannel = newMember.guild.channels.cache.get(booster.channelId);
-      if (!boosterChannel || !boosterChannel.isTextBased()) return;
-
-      const boosterContainer = settingsService.buildBoosterContainer(newMember.guild.id, {
-        member: newMember,
-        guild: newMember.guild,
-      });
-
-      await boosterChannel.send({
-        components: boosterContainer.toJSON(),
-        flags: boosterContainer.flags,
-        files: boosterContainer.files,
-      });
-
-      if (booster.roleId) {
-        await assignBoosterRole(newMember, booster.roleId);
-      }
-    } catch (error) {
-      logger.error(
-        'Error sending booster message for ' +
-          newMember.user.tag +
-          ': ' +
-          (error instanceof Error ? error.message : String(error)),
-      );
-    }
-  }
+  // ── 1. Booster detection (Feature Booster) ──
+  await handleBoosterMemberUpdate(oldMember, newMember);
 
   // ── 2. Voice channel change → cleanup team-find ──
   const oldChannelId = oldMember.voice?.channelId;
@@ -102,24 +63,6 @@ async function cleanupOldEmbed(guild: Guild, userId: string): Promise<void> {
     // Message already gone
   }
   deleteMessageRef(guild.id, userId);
-}
-
-async function assignBoosterRole(member: GuildMember, roleId: string): Promise<void> {
-  const role = member.guild.roles.cache.get(roleId);
-  if (!role) return;
-
-  try {
-    await member.roles.add(role);
-  } catch (error) {
-    logger.error(
-      'Failed to assign booster role ' +
-        role.name +
-        ' to ' +
-        member.user.tag +
-        ': ' +
-        (error instanceof Error ? error.message : String(error)),
-    );
-  }
 }
 
 export default {
