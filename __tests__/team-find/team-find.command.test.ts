@@ -12,6 +12,7 @@ jest.mock('discord.js', () => {
   }
 
   return {
+    ButtonStyle: { Primary: 1, Secondary: 2, Success: 3, Danger: 4 },
     MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
     SlashCommandBuilder,
   };
@@ -25,7 +26,7 @@ jest.mock('../../src/utils/df-voice.utils.js', () => ({
   checkVoiceForTeamFind: jest.fn(),
 }));
 
-jest.mock('../../src/commands/df/team-find.menu.js', () => ({
+jest.mock('../../src/features/delta-force/team-find.menu.js', () => ({
   buildSelectMenuMessage: jest.fn().mockReturnValue({
     content: 'Select menu content',
     components: [],
@@ -43,10 +44,10 @@ jest.mock('../../src/services/team-find-session.js', () => ({
   createSession: jest.fn(),
 }));
 
-import { data, execute } from '../../src/commands/df/team-find.command.js';
+import { data, execute } from '../../src/features/delta-force/team-find.command.js';
 import { requireGuild } from '../../src/utils/df-guards.js';
 import { checkVoiceForTeamFind } from '../../src/utils/df-voice.utils.js';
-import { buildSelectMenuMessage } from '../../src/commands/df/team-find.menu.js';
+import { buildSelectMenuMessage } from '../../src/features/delta-force/team-find.menu.js';
 import { createSession } from '../../src/services/team-find-session.js';
 
 describe('team-find.command — data', () => {

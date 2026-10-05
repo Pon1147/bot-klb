@@ -18,12 +18,12 @@ import {
   handleEditorButtonInteraction as handleContainerEditorButtonInteraction,
   handleEditorModalSubmit as handleContainerEditorModalSubmit,
 } from '../../features/container/index.js';
-import { TeamFindIds } from '../../commands/df/team-find-ids.js';
 import {
+  TeamFindIds,
   handleTeamFindButton,
   handleTeamFindSelect,
-} from '../../commands/df/team-find.handlers.js';
-import { handleDfStatsSelect } from '../../events/dfStatsSelect.handler.js';
+  handleDfStatsSelect,
+} from '../../features/delta-force/index.js';
 import { COMMAND_PERMISSIONS, hasRequiredRole, ROLE_IDS } from '../../config/permissions.js';
 
 const logger = createLogger('InteractionRouter');
