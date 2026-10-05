@@ -17,29 +17,17 @@ function requireEnvVariable(variableName: string, fallback?: string): string {
 }
 
 /**
- * Resolve database path — dùng path tuyệt đối dựa trên file location.
+ * Resolve database path.
  *
- * WHY: Path tương đối './data/bot.db' gây mất settings khi:
- * - Bot chạy từ systemd service (cwd khác project root)
- * - Bot chạy từ dist/ (cwd có thể là / hoặc /app)
- * - Docker container restart (cwd không guaranteed)
- *
- * Giải pháp: Dùng __dirname (CommonJS native) để xác định
- * path tuyệt đối của file config, sau đó build path tương đối từ đó.
- * Không phụ thuộc vào cwd — luôn trỏ đúng data/bot.db.
+ * Nếu DATABASE_PATH được set → dùng giá trị đó (absolute hoặc relative).
+ * Nếu không → trả về default relative path './data/bot.db'.
  */
 function resolveDatabasePath(): string {
   const envPath = process.env.DATABASE_PATH;
   if (envPath && path.isAbsolute(envPath)) {
-    // Nếu user cung cấp absolute path, dùng trực tiếp
     return envPath;
   }
-  // __dirname là CommonJS native — available khi compile sang dist/
-  // Config file nằm ở src/config/bot.config.ts → dist/config/bot.config.js
-  // Database cần ở data/bot.db (cùng cấp với dist/)
-  // → Cần go up 2 levels từ dist/config/ → project root
-  const projectRoot = path.resolve(__dirname, '..', '..');
-  return path.join(projectRoot, 'data', 'bot.db');
+  return envPath || './data/bot.db';
 }
 
 /**
