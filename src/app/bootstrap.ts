@@ -17,7 +17,6 @@ import {
 } from '../database/df-claim.db.js';
 import { initializeAccountBindingsTable } from '../database/df-binding.db.js';
 import { initializeCaptureEventsTable } from '../database/df-telemetry.db.js';
-import { initCryptoKey } from '../services/df-crypto.js';
 import { SettingsService, setSettingsService } from '../services/settings.service.js';
 import {
   CommandModule,
@@ -27,9 +26,12 @@ import {
 import { loadEvents } from '../infrastructure/discord/event-loader.js';
 import { createLogger } from '../utils/logger.js';
 import { startSessionCleanup } from '../features/container/index.js';
-import { cleanup as cleanupTeamFindSessions } from '../services/team-find-session.js';
-import { startCleanup as startClaimCleanup } from '../services/df-claim-store.js';
-import { startDfCodesScheduler } from '../services/df-codes-scheduler.js';
+import {
+  initCryptoKey,
+  cleanupTeamFindSessions,
+  startClaimCleanup,
+  startDfCodesScheduler,
+} from '../features/delta-force/index.js';
 import { TEAM_FIND_CLEANUP_INTERVAL_MS } from '../config/app.constants.js';
 
 const logger = createLogger('Bootstrap');

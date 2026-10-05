@@ -1,6 +1,6 @@
 import { Client, Message } from 'discord.js';
 import { botConfig } from '../config/bot.config.js';
-import { handleClaim } from '../services/df-claim-handler.js';
+import { handleClaim } from '../features/delta-force/index.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('MessageCreate');

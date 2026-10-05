@@ -21,3 +21,10 @@ export * from './team-find.interaction.js';
 export * from './team-find.embed.js';
 export * from './team-find.menu.js';
 export * from './stats-select.handler.js';
+
+// Services, Schedulers & Crypto
+export * from '../../services/df-codes-scheduler.js';
+export * from '../../services/df-crypto.js';
+export * from '../../services/df-claim-handler.js';
+export { cleanup as cleanupTeamFindSessions } from '../../services/team-find-session.js';
+export { startCleanup as startClaimCleanup } from '../../services/df-claim-store.js';
