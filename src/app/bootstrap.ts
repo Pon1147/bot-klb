@@ -15,8 +15,12 @@ import {
   initializeClaimSessionsTable,
   migrateClaimSessionsToNumeric,
 } from '../database/df-claim.db.js';
-import { initializeAccountBindingsTable } from '../database/df-binding.db.js';
+import {
+  initializeAccountBindingsTable,
+  syncBindingsFromMongoToSqlite,
+} from '../database/df-binding.db.js';
 import { initializeCaptureEventsTable } from '../database/df-telemetry.db.js';
+import { connectMongo, initMongoIndexes } from '../database/mongo/mongo.client.js';
 import { SettingsService, setSettingsService } from '../services/settings.service.js';
 import {
   CommandModule,
@@ -73,7 +77,25 @@ export async function bootstrap(): Promise<Client> {
   initializeCaptureEventsTable(database);
   logger.info('DF Link tables ready');
 
-  // Step 2d: Initialize crypto key (AES-256-GCM)
+  // Step 2d: Kết nối MongoDB (nếu MONGODB_URI / MONGO_URL được cấu hình trên Railway)
+  if (botConfig.mongoUri) {
+    logger.info('Connecting to MongoDB...');
+    try {
+      await connectMongo(botConfig.mongoUri);
+      await initMongoIndexes();
+      logger.info('MongoDB connected and indexes initialized');
+
+      // Đồng bộ account bindings từ MongoDB sang SQLite
+      const syncedBindings = await syncBindingsFromMongoToSqlite(database);
+      logger.info(`Synced ${syncedBindings} account binding(s) from MongoDB to local SQLite`);
+    } catch (err) {
+      logger.error(
+        'Failed to connect to MongoDB, falling back to local SQLite: ' + (err as Error).message,
+      );
+    }
+  }
+
+  // Step 2e: Initialize crypto key (AES-256-GCM)
   if (botConfig.dfCredKeyV1) {
     try {
       initCryptoKey('v1');
@@ -89,6 +111,9 @@ export async function bootstrap(): Promise<Client> {
   logger.info('Initializing SettingsService...');
   const settingsService = new SettingsService(database);
   setSettingsService(settingsService);
+  if (botConfig.mongoUri) {
+    await settingsService.initMongo();
+  }
   logger.info('SettingsService ready');
 
   // Step 3b: Load RBAC permissions

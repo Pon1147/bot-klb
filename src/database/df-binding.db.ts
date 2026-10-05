@@ -10,6 +10,13 @@
 
 import Database from 'better-sqlite3';
 import { deleteDfToken } from './df.token.db.js';
+import {
+  upsertAccountBindingToMongo,
+  revokeAccountBindingInMongo,
+  touchLastOkInMongo,
+  loadAllActiveBindingsFromMongo,
+} from './mongo/repositories/df-binding.repo.js';
+import { isMongoConnected } from './mongo/mongo.client.js';
 
 interface AccountBindingRow {
   id: number;
@@ -94,6 +101,17 @@ export function upsertAccountBinding(
     )
     .run(discordUserId, openid, credNonce, credCiphertext, credTag, keyVersion);
 
+  if (isMongoConnected()) {
+    void upsertAccountBindingToMongo({
+      discord_user_id: discordUserId,
+      openid,
+      cred_nonce: credNonce,
+      cred_ciphertext: credCiphertext,
+      cred_tag: credTag,
+      key_version: keyVersion,
+    });
+  }
+
   return result.changes > 0;
 }
 
@@ -147,6 +165,10 @@ export function revokeBinding(database: Database.Database, discordUserId: string
     .run(discordUserId);
   // Xóa legacy token đồng bộ (như expireBinding)
   deleteDfToken(database, discordUserId);
+
+  if (isMongoConnected()) {
+    void revokeAccountBindingInMongo(discordUserId);
+  }
 }
 
 /**
@@ -158,6 +180,49 @@ export function touchLastOk(database: Database.Database, discordUserId: string):
       'UPDATE df_account_bindings SET last_ok_at = CURRENT_TIMESTAMP WHERE discord_user_id = ?',
     )
     .run(discordUserId);
+
+  if (isMongoConnected()) {
+    void touchLastOkInMongo(discordUserId);
+  }
+}
+
+/**
+ * Dong bo active bindings tu MongoDB ve SQLite khi bot khoi dong tren Railway.
+ */
+export async function syncBindingsFromMongoToSqlite(database: Database.Database): Promise<number> {
+  if (!isMongoConnected()) return 0;
+  const mongoBindings = await loadAllActiveBindingsFromMongo();
+  if (!mongoBindings.length) return 0;
+
+  const stmt = database.prepare(`
+    INSERT INTO df_account_bindings
+      (discord_user_id, openid, cred_nonce, cred_ciphertext, cred_tag, key_version, captured_at, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
+    ON CONFLICT(discord_user_id) DO UPDATE SET
+      openid = excluded.openid,
+      cred_nonce = excluded.cred_nonce,
+      cred_ciphertext = excluded.cred_ciphertext,
+      cred_tag = excluded.cred_tag,
+      key_version = excluded.key_version,
+      status = 'active',
+      captured_at = excluded.captured_at,
+      updated_at = CURRENT_TIMESTAMP
+  `);
+
+  let count = 0;
+  for (const b of mongoBindings) {
+    stmt.run(
+      b.discord_user_id,
+      b.openid,
+      b.cred_nonce,
+      b.cred_ciphertext,
+      b.cred_tag,
+      b.key_version,
+      b.captured_at ? b.captured_at.toISOString() : new Date().toISOString(),
+    );
+    count++;
+  }
+  return count;
 }
 
 /**

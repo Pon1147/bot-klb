@@ -11,6 +11,11 @@ import {
   saveGuildSettings,
   updateGuildSettings,
 } from '../database/guild.settings.db.js';
+import {
+  saveGuildSettingsToMongo,
+  loadAllGuildSettingsFromMongo,
+} from '../database/mongo/repositories/guild-settings.repo.js';
+import { isMongoConnected } from '../database/mongo/mongo.client.js';
 import { buildContainer, BuildContainerResult } from '../utils/container.utils.js';
 
 /**
@@ -72,6 +77,26 @@ export class SettingsService {
   }
 
   /**
+   * Đồng bộ settings từ MongoDB vào SQLite và bộ nhớ đệm (in-memory cache) khi bot khởi động.
+   */
+  async initMongo(): Promise<void> {
+    if (!isMongoConnected()) {
+      return;
+    }
+    try {
+      const allSettings = await loadAllGuildSettingsFromMongo();
+      for (const [guildId, settings] of allSettings.entries()) {
+        // Đồng bộ vào SQLite để local database luôn có dữ liệu
+        saveGuildSettings(this.database, guildId, settings);
+        // Lưu vào in-memory cache
+        this.cache.set(guildId, settings);
+      }
+    } catch (err) {
+      console.error('[SettingsService] Lỗi khi đồng bộ guild settings từ MongoDB:', err);
+    }
+  }
+
+  /**
    * Cập nhật partial settings cho guild.
    * Tự động invalidate cache sau khi lưu.
    * Accept DeepPartial → chỉ cần pass các field muốn thay đổi.
@@ -79,6 +104,14 @@ export class SettingsService {
   update(guildId: string, partial: DeepPartial<GuildSettings>): GuildSettings {
     const merged = updateGuildSettings(this.database, guildId, partial);
     this.cache.set(guildId, merged);
+    if (isMongoConnected()) {
+      void saveGuildSettingsToMongo(guildId, merged).catch((err: unknown) => {
+        console.error(
+          `[SettingsService] Lỗi khi async sync guild settings sang Mongo (${guildId}):`,
+          err,
+        );
+      });
+    }
     return merged;
   }
 
@@ -88,6 +121,14 @@ export class SettingsService {
   set(guildId: string, settings: GuildSettings): void {
     saveGuildSettings(this.database, guildId, settings);
     this.cache.set(guildId, settings);
+    if (isMongoConnected()) {
+      void saveGuildSettingsToMongo(guildId, settings).catch((err: unknown) => {
+        console.error(
+          `[SettingsService] Lỗi khi async sync guild settings sang Mongo (${guildId}):`,
+          err,
+        );
+      });
+    }
   }
 
   /**

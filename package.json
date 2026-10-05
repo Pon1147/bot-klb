@@ -20,6 +20,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "dev:preview": "tsx scripts/dev-preview.ts",
+    "migrate:mongo": "tsx scripts/migrate-sqlite-to-mongo.ts",
     "postinstall": "npx puppeteer browsers install chrome"
   },
   "lint-staged": {
@@ -33,6 +34,7 @@
     "better-sqlite3": "^13.0.3",
     "discord.js": "^14.27.0",
     "dotenv": "^17.4.2",
+    "mongodb": "^7.7.0",
     "node-cron": "^4.6.0",
     "puppeteer": "^25.1.0",
     "sharp": "^0.35.4"

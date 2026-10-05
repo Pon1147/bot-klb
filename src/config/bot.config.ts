@@ -43,6 +43,8 @@ export const botConfig = {
   welcomeRoleId: process.env.WELCOME_ROLE_ID || null,
   dfCodesChannelId: process.env.DF_CODES_CHANNEL_ID || null,
   databasePath: resolveDatabasePath(),
+  // MongoDB Connection URI (ho tro bien moi truong tu Railway: MONGODB_URI hoac MONGO_URL)
+  mongoUri: process.env.MONGODB_URI || process.env.MONGO_URL || null,
   // DF Link crypto key (32 bytes, Base64-encoded)
   dfCredKeyV1: process.env.DF_CRED_KEY_V1 || null,
   // Discord Webhook handoff config
