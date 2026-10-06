@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 /**
  * Test cho MongoDB client va cac repositories.
  * Kiem tra hanh vi khi offline (fallback an toan) va khi mock connect.
@@ -9,8 +10,12 @@ import {
   getMongoDb,
   connectMongo,
   disconnectMongo,
+  initMongoIndexes,
   _setTestDb,
 } from '../../src/database/mongo/mongo.client.js';
+import { MongoClient } from 'mongodb';
+import * as MongoIndex from '../../src/database/mongo/index.js';
+import * as MongoRepoIndex from '../../src/database/mongo/repositories/index.js';
 import {
   getGuildSettingsFromMongo,
   saveGuildSettingsToMongo,
@@ -137,7 +142,7 @@ describe('MongoDB Module & Fallbacks', () => {
     beforeEach(() => {
       mockCollections = {};
 
-      const createMockCollection = (name: string) => {
+      const createMockCollection = (_name: string) => {
         const store = new Map<string, any>();
         return {
           findOne: jest.fn(async (query: any) => {
@@ -173,6 +178,9 @@ describe('MongoDB Module & Fallbacks', () => {
           findOneAndUpdate: jest.fn(async (filter: any, update: any) => {
             for (const [id, item] of store.entries()) {
               if (item.code === filter.code && item.status === filter.status) {
+                if (filter.expires_at?.$gt && item.expires_at <= filter.expires_at.$gt) {
+                  continue;
+                }
                 const updated = { ...item, ...update.$set };
                 store.set(id, updated);
                 return updated;
@@ -273,6 +281,89 @@ describe('MongoDB Module & Fallbacks', () => {
       expect(res.discordUserId).toBe('user-456');
     });
 
+    it('df-claim repo atomic consume phai bao code_not_found khi code khong ton tai', async () => {
+      const res = await consumeClaimSessionAtomicInMongo('NONEXISTENT');
+      expect(res.ok).toBe(false);
+      expect(res.reason).toBe('code_not_found');
+    });
+
+    it('df-claim repo atomic consume phai bao code_already_consumed khi code da bi dung', async () => {
+      await createClaimSessionInMongo('CODE-CONSUMED', 'user-789', new Date(Date.now() + 60000));
+      const res1 = await consumeClaimSessionAtomicInMongo('CODE-CONSUMED');
+      expect(res1.ok).toBe(true);
+
+      const res2 = await consumeClaimSessionAtomicInMongo('CODE-CONSUMED');
+      expect(res2.ok).toBe(false);
+      expect(res2.reason).toBe('code_already_consumed');
+    });
+
+    it('df-claim repo atomic consume phai bao code_expired khi code da het han', async () => {
+      await createClaimSessionInMongo('CODE-EXPIRED', 'user-expired', new Date(Date.now() - 5000));
+      const res = await consumeClaimSessionAtomicInMongo('CODE-EXPIRED');
+      expect(res.ok).toBe(false);
+      expect(res.reason).toBe('code_expired');
+    });
+
+    it('df-claim repo phai bat loi server_error khi MongoDB thao tac that bai', async () => {
+      const claimColl = getMongoDb()!.collection('claim_sessions') as any;
+      claimColl.findOneAndUpdate.mockRejectedValueOnce(new Error('DB Connection Timeout'));
+      const res = await consumeClaimSessionAtomicInMongo('CODE-ERR');
+      expect(res.ok).toBe(false);
+      expect(res.reason).toBe('server_error');
+
+      claimColl.insertOne.mockRejectedValueOnce(new Error('Insert error'));
+      await expect(
+        createClaimSessionInMongo('CODE-ERR2', 'user-err', new Date()),
+      ).resolves.not.toThrow();
+    });
+
+    it('df-binding repo va guild-settings repo phai an toan khi query Mongo nem loi', async () => {
+      const bindingColl = getMongoDb()!.collection('account_bindings') as any;
+      const guildColl = getMongoDb()!.collection('guild_settings') as any;
+
+      bindingColl.findOne.mockRejectedValueOnce(new Error('Find error 1'));
+      expect(await getAccountBindingFromMongo('err-user')).toBeNull();
+
+      bindingColl.findOne.mockRejectedValueOnce(new Error('Find error 2'));
+      expect(await getAccountBindingByOpenidFromMongo('err-openid')).toBeNull();
+
+      bindingColl.updateOne.mockRejectedValueOnce(new Error('Update error'));
+      await expect(
+        upsertAccountBindingToMongo({
+          discord_user_id: 'err-u',
+          openid: 'op',
+          cred_nonce: 'n',
+          cred_ciphertext: 'c',
+          cred_tag: 't',
+        }),
+      ).resolves.not.toThrow();
+
+      bindingColl.updateOne.mockRejectedValueOnce(new Error('Revoke error'));
+      await expect(revokeAccountBindingInMongo('err-u')).resolves.not.toThrow();
+
+      bindingColl.updateOne.mockRejectedValueOnce(new Error('Touch error'));
+      await expect(touchLastOkInMongo('err-u')).resolves.not.toThrow();
+
+      bindingColl.find.mockReturnValueOnce({
+        toArray: jest.fn().mockRejectedValueOnce(new Error('Cursor error')),
+      });
+      expect(await loadAllActiveBindingsFromMongo()).toEqual([]);
+
+      guildColl.findOne.mockRejectedValueOnce(new Error('Guild find error'));
+      expect(await getGuildSettingsFromMongo('guild-err')).toBeNull();
+
+      guildColl.updateOne.mockRejectedValueOnce(new Error('Guild update error'));
+      await expect(
+        saveGuildSettingsToMongo('guild-err', cloneDefaultSettings()),
+      ).resolves.not.toThrow();
+
+      guildColl.find.mockReturnValueOnce({
+        toArray: jest.fn().mockRejectedValueOnce(new Error('Guild cursor error')),
+      });
+      const allSettings = await loadAllGuildSettingsFromMongo();
+      expect(allSettings.size).toBe(0);
+    });
+
     it('syncBindingsFromMongoToSqlite phai sync data tu Mongo sang SQLite', async () => {
       await upsertAccountBindingToMongo({
         discord_user_id: 'user-sync-1',
@@ -323,6 +414,100 @@ describe('MongoDB Module & Fallbacks', () => {
       expect(updatedInMongo?.welcome.enabled).toBe(false);
 
       sqlite.close();
+    });
+  });
+
+  describe('MongoClient lifecycle & index initialization', () => {
+    let mockDbInstance: any;
+    let connectSpy: jest.SpyInstance;
+    let closeSpy: jest.SpyInstance;
+    let dbSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      mockDbInstance = {
+        databaseName: 'test-db',
+        command: jest.fn().mockResolvedValue({ ok: 1 }),
+        collection: jest.fn().mockReturnValue({
+          createIndex: jest.fn().mockResolvedValue('index-created'),
+        }),
+      };
+
+      connectSpy = jest.spyOn(MongoClient.prototype, 'connect').mockResolvedValue(undefined as any);
+      closeSpy = jest.spyOn(MongoClient.prototype, 'close').mockResolvedValue(undefined);
+      dbSpy = jest.spyOn(MongoClient.prototype, 'db').mockReturnValue(mockDbInstance);
+    });
+
+    afterEach(async () => {
+      connectSpy.mockRestore();
+      closeSpy.mockRestore();
+      dbSpy.mockRestore();
+      await disconnectMongo();
+    });
+
+    it('connectMongo phai bo qua connection URI chua template Railway ${{', async () => {
+      const res = await connectMongo('${{ secrets.MONGODB_URI }}');
+      expect(res).toBeNull();
+      expect(isMongoConnected()).toBe(false);
+    });
+
+    it('connectMongo phai ket noi thanh cong, ping db va cache connection', async () => {
+      const db1 = await connectMongo('mongodb://localhost:27017/test');
+      expect(db1).toBe(mockDbInstance);
+      expect(isMongoConnected()).toBe(true);
+      expect(getMongoDb()).toBe(mockDbInstance);
+      expect(mockDbInstance.command).toHaveBeenCalledWith({ ping: 1 });
+
+      // Goi lai connectMongo khi dang ket noi phai tra ve ngay cached db
+      const db2 = await connectMongo('mongodb://localhost:27017/test');
+      expect(db2).toBe(mockDbInstance);
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('connectMongo phai nem loi va reset state khi client.connect that bai', async () => {
+      connectSpy.mockRejectedValueOnce(new Error('Connection refused'));
+      await expect(connectMongo('mongodb://bad-host:27017/test')).rejects.toThrow('Connection refused');
+      expect(isMongoConnected()).toBe(false);
+      expect(getMongoDb()).toBeNull();
+    });
+
+    it('disconnectMongo phai dong client va reset state an toan du client.close nem loi', async () => {
+      await connectMongo('mongodb://localhost:27017/test');
+      expect(isMongoConnected()).toBe(true);
+
+      closeSpy.mockRejectedValueOnce(new Error('Close error'));
+      await expect(disconnectMongo()).resolves.not.toThrow();
+      expect(isMongoConnected()).toBe(false);
+      expect(getMongoDb()).toBeNull();
+    });
+
+    it('initMongoIndexes phai tra ve false khi chua ket noi DB', async () => {
+      expect(await initMongoIndexes()).toBe(false);
+    });
+
+    it('initMongoIndexes phai tao day du unique va TTL indexes khi ket noi DB', async () => {
+      _setTestDb(mockDbInstance);
+      const ok = await initMongoIndexes();
+      expect(ok).toBe(true);
+      expect(mockDbInstance.collection).toHaveBeenCalledTimes(5);
+    });
+
+    it('initMongoIndexes phai bat loi va tra ve false khi createIndex that bai', async () => {
+      mockDbInstance.collection = jest.fn().mockReturnValue({
+        createIndex: jest.fn().mockRejectedValue(new Error('Index conflict')),
+      });
+      _setTestDb(mockDbInstance);
+      const ok = await initMongoIndexes();
+      expect(ok).toBe(false);
+    });
+
+    it('barrel exports cua database/mongo va repositories phai resolve dung cac functions', () => {
+      expect(typeof MongoIndex.connectMongo).toBe('function');
+      expect(typeof MongoIndex.getMongoDb).toBe('function');
+      expect(typeof MongoIndex.initMongoIndexes).toBe('function');
+      expect(typeof MongoIndex.getGuildSettingsFromMongo).toBe('function');
+      expect(typeof MongoIndex.createClaimSessionInMongo).toBe('function');
+      expect(typeof MongoRepoIndex.consumeClaimSessionAtomicInMongo).toBe('function');
+      expect(typeof MongoRepoIndex.getAccountBindingFromMongo).toBe('function');
     });
   });
 });
