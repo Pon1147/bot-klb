@@ -142,11 +142,20 @@ export function loadCommands(
 function commandFingerprint(
   commandData: SlashCommandBuilder | APIApplicationCommand | Record<string, unknown>,
 ): string {
-  if ('toJSON' in commandData && typeof commandData.toJSON === 'function') {
-    return JSON.stringify(commandData.toJSON());
-  }
-  // Plain JSON object — already has all properties
-  return JSON.stringify(commandData);
+  const raw =
+    'toJSON' in commandData && typeof commandData.toJSON === 'function'
+      ? (commandData.toJSON() as Record<string, unknown>)
+      : (commandData as Record<string, unknown>);
+
+  // Chỉ so sánh các trường cấu hình cốt lõi của command (bỏ qua id, application_id, version do Discord cấp)
+  const normalized = {
+    name: raw.name,
+    description: raw.description,
+    options: raw.options || [],
+    default_member_permissions: raw.default_member_permissions ?? null,
+    nsfw: !!raw.nsfw,
+  };
+  return JSON.stringify(normalized);
 }
 
 /**
@@ -226,26 +235,36 @@ export async function deployCommands(
     return;
   }
 
+  const isGlobal = botConfig.commandScope === 'global' || !botConfig.guildId;
+  const targetRoute = isGlobal
+    ? Routes.applicationCommands(botConfig.clientId)
+    : Routes.applicationGuildCommands(botConfig.clientId, botConfig.guildId);
+
+  const scopeLabel = isGlobal ? 'GLOBAL' : `GUILD (${botConfig.guildId})`;
+  logger.info(`Bắt đầu quy trình deploy commands [Scope: ${scopeLabel}]...`);
+
   const rest = new REST().setToken(botConfig.token);
 
   // Bước 1: Fetch existing commands từ Discord
   let existingCommands: APIApplicationCommand[] = [];
   try {
-    existingCommands = (await rest.get(
-      Routes.applicationGuildCommands(botConfig.clientId, botConfig.guildId),
-    )) as APIApplicationCommand[];
-    logger.info(`Đã fetch ${existingCommands.length} command(s) từ Discord`, {
-      guildId: botConfig.guildId,
+    existingCommands = (await rest.get(targetRoute)) as APIApplicationCommand[];
+    logger.info(`Đã fetch ${existingCommands.length} command(s) từ Discord [${scopeLabel}]`, {
+      scope: isGlobal ? 'global' : 'guild',
+      guildId: isGlobal ? undefined : botConfig.guildId,
       existingCommands: existingCommands.map((c) => c.name),
     });
   } catch (error) {
-    logger.warn('Không thể fetch existing commands. Sẽ deploy tất cả commands.', { error });
+    logger.warn(`Không thể fetch existing commands [${scopeLabel}]. Sẽ deploy tất cả commands.`, {
+      error,
+    });
   }
 
   // Bước 2: So sánh local vs Discord để tìm thay đổi
   const diff = computeDiff(commandCollection, existingCommands);
 
   logger.info('=== Phân tích thay đổi commands ===', {
+    scope: isGlobal ? 'global' : 'guild',
     newCommands: diff.toAdd.length,
     changedCommands: diff.toUpdate.length,
     unchangedCommands: diff.unchanged.length,
@@ -284,13 +303,12 @@ export async function deployCommands(
   const needsDeployment = diff.toAdd.length > 0 || diff.toUpdate.length > 0;
 
   if (!needsDeployment) {
-    logger.info('Không có thay đổi. Bỏ qua deployment.');
+    logger.info(`Không có thay đổi trên [${scopeLabel}]. Bỏ qua deployment.`);
     return;
   }
 
   // Bước 4: Build danh sách commands cần deploy (TẤT CẢ local commands)
-  // Discord API PUT /guild/commands thay thế TOÀN BỘ, nên phải gửi full list
-  // Nhưng chỉ log những command thực sự thay đổi
+  // Discord API PUT thay thế TOÀN BỘ, nên phải gửi full list
   const localCommands = [];
   for (const [_name, command] of commandCollection) {
     // data can be a SlashCommandBuilder (has toJSON) or a plain JSON object
@@ -302,25 +320,41 @@ export async function deployCommands(
   }
 
   // Bước 5: Deploy đến Discord
-  logger.info(`Deploying ${localCommands.length} command(s) đến Guild: ${botConfig.guildId}`, {
+  logger.info(`Deploying ${localCommands.length} command(s) đến [${scopeLabel}]`, {
     clientId: botConfig.clientId,
-    guildId: botConfig.guildId,
+    scope: isGlobal ? 'global' : 'guild',
+    guildId: isGlobal ? undefined : botConfig.guildId,
     newCommands: diff.toAdd,
     changedCommands: diff.toUpdate,
   });
 
   try {
-    await rest.put(Routes.applicationGuildCommands(botConfig.clientId, botConfig.guildId), {
+    await rest.put(targetRoute, {
       body: localCommands,
     });
 
-    logger.info('✓ Deploy commands thành công!', {
+    logger.info(`✓ Deploy commands [${scopeLabel}] thành công!`, {
       totalDeployed: localCommands.length,
       newRegistered: diff.toAdd,
       updated: diff.toUpdate,
       skipped: diff.unchanged,
     });
+
+    // Nếu deploy Global và có guildId cấu hình, dọn dẹp các Guild commands cũ để tránh lỗi duplicate commands
+    if (isGlobal && botConfig.guildId && botConfig.guildId !== '000000000000000000') {
+      try {
+        const guildRoute = Routes.applicationGuildCommands(botConfig.clientId, botConfig.guildId);
+        await rest.put(guildRoute, { body: [] });
+        logger.info(
+          `✓ Đã dọn dẹp guild commands cũ trên Guild (${botConfig.guildId}) để chống duplicate.`,
+        );
+      } catch (cleanError) {
+        logger.debug('Không cần dọn dẹp hoặc không có quyền dọn guild commands:', {
+          error: cleanError,
+        });
+      }
+    }
   } catch (error) {
-    logger.error('✗ Thất bại khi deploy commands:', { error });
+    logger.error(`✗ Thất bại khi deploy commands [${scopeLabel}]:`, { error });
   }
 }

@@ -49,6 +49,10 @@ export const botConfig = {
     : process.env.MONGODB_URI || process.env.MONGO_URL || null,
   // DF Link crypto key (32 bytes, Base64-encoded)
   dfCredKeyV1: process.env.DF_CRED_KEY_V1 || null,
+  // Command deployment scope: 'global' | 'guild' (tu dong: production -> global, dev -> guild)
+  commandScope:
+    (process.env.COMMAND_SCOPE?.toLowerCase() as 'global' | 'guild' | undefined) ||
+    (process.env.NODE_ENV === 'production' && !process.env.DEV_GUILD_ID ? 'global' : 'guild'),
   // Discord Webhook handoff config
   dfWebhookSecret: process.env.DF_WEBHOOK_SECRET || '',
   dfLinkChannelId: process.env.DF_LINK_CHANNEL_ID || '',
