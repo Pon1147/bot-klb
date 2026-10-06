@@ -1,12 +1,12 @@
 /**
- * /set-role — Cấu hình role IDs cho RBAC.
+ * /set-role — Cấu hình role IDs cho RBAC theo từng máy chủ.
  *
  * Usage:
  *   /set-role owner @RoleName
  *   /set-role moderator @RoleName
  *   /set-role member @RoleName
  *
- * Lưu vào permissions.json để persist và reload cache permissions ngay tại runtime.
+ * Lưu vào guild_settings (SQLite & Mongo) của máy chủ hiện tại qua SettingsService.
  */
 
 import {
@@ -18,14 +18,8 @@ import {
   Role,
 } from 'discord.js';
 import Database from 'better-sqlite3';
-import { readFileSync, writeFileSync } from 'fs';
 import { buildErrorContainer } from '../../utils/container.utils.js';
-import type { PermissionsConfig } from '../../config/permissions.js';
-import {
-  loadPermissions,
-  getPermissionsFilePath,
-  DEFAULT_PERMISSIONS,
-} from '../../config/permissions.js';
+import { getSettingsService, SettingsService } from '../../services/settings.service.js';
 import { requireAdministrator } from '../../utils/df-guards.js';
 import { sendReply } from '../../utils/reply.utils.js';
 
@@ -34,7 +28,7 @@ import { sendReply } from '../../utils/reply.utils.js';
 function buildOwnerSubcommand(sub: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder {
   return sub
     .setName('owner')
-    .setDescription('Set Owner role cho RBAC.')
+    .setDescription('Set Owner role cho RBAC của máy chủ.')
     .addRoleOption((opt) => opt.setName('role').setDescription('Role Owner').setRequired(true));
 }
 
@@ -43,20 +37,20 @@ function buildModeratorSubcommand(
 ): SlashCommandSubcommandBuilder {
   return sub
     .setName('moderator')
-    .setDescription('Set Moderator role cho RBAC.')
+    .setDescription('Set Moderator role cho RBAC của máy chủ.')
     .addRoleOption((opt) => opt.setName('role').setDescription('Role Moderator').setRequired(true));
 }
 
 function buildMemberSubcommand(sub: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder {
   return sub
     .setName('member')
-    .setDescription('Set Member role cho RBAC.')
+    .setDescription('Set Member role cho RBAC của máy chủ.')
     .addRoleOption((opt) => opt.setName('role').setDescription('Role Member').setRequired(true));
 }
 
 export const data = new SlashCommandBuilder()
   .setName('set-role')
-  .setDescription('Cấu hình role IDs cho RBAC system.')
+  .setDescription('Cấu hình role IDs cho RBAC system của máy chủ.')
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addSubcommand(buildOwnerSubcommand)
   .addSubcommand(buildModeratorSubcommand)
@@ -64,17 +58,17 @@ export const data = new SlashCommandBuilder()
 
 // ─── Permission mapping ───────────────────────────────────────────
 
-const ROLE_KEY_MAP: Record<string, 'Owner' | 'Moderator' | 'Member'> = {
-  owner: 'Owner',
-  moderator: 'Moderator',
-  member: 'Member',
-};
+const ROLE_KEY_MAP = {
+  owner: { key: 'Owner', field: 'ownerRoleId' },
+  moderator: { key: 'Moderator', field: 'moderatorRoleId' },
+  member: { key: 'Member', field: 'memberRoleId' },
+} as const;
 
 // ─── Execute ──────────────────────────────────────────────────────
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
-  _database: Database.Database,
+  database?: Database.Database,
 ): Promise<void> {
   if (!interaction.guild) {
     await sendReply(interaction, { content: 'Lệnh này chỉ dùng được trong server.' });
@@ -84,8 +78,8 @@ export async function execute(
   // Guard: Yêu cầu quyền Administrator
   if (await requireAdministrator(interaction)) return;
 
-  const subcommand = interaction.options.getSubcommand();
-  const roleKey = ROLE_KEY_MAP[subcommand];
+  const subcommand = interaction.options.getSubcommand() as keyof typeof ROLE_KEY_MAP;
+  const mapping = ROLE_KEY_MAP[subcommand];
   const role = interaction.options.getRole('role') as Role;
 
   if (!role) {
@@ -96,7 +90,7 @@ export async function execute(
   }
 
   // Kiểm tra: không set @everyone (ID = guild ID)
-  if (role.id === interaction.guild!.id) {
+  if (role.id === interaction.guild.id) {
     await sendReply(interaction, {
       components: buildErrorContainer('Không thể dùng @everyone làm role.').toJSON(),
     });
@@ -114,28 +108,24 @@ export async function execute(
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
-    // 1. Đọc permissions.json (fallback DEFAULT_PERMISSIONS nếu chưa có file)
-    const permPath = getPermissionsFilePath();
-    let permData: Record<string, unknown>;
+    let settingsService: SettingsService;
     try {
-      permData = JSON.parse(readFileSync(permPath, 'utf8')) as Record<string, unknown>;
+      settingsService = getSettingsService();
     } catch {
-      permData = JSON.parse(JSON.stringify(DEFAULT_PERMISSIONS)) as Record<string, unknown>;
+      if (!database) {
+        throw new Error('SettingsService chưa được khởi tạo và database không khả dụng.');
+      }
+      settingsService = new SettingsService(database);
     }
 
-    // 2. Update role ID
-    if (typeof permData.roles === 'object' && permData.roles !== null) {
-      (permData.roles as Record<string, string>)[roleKey] = role.id;
-    }
-
-    // 3. Ghi lại file
-    writeFileSync(permPath, JSON.stringify(permData, null, 2), 'utf8');
-
-    // 4. Reload runtime cache
-    loadPermissions(permData as unknown as PermissionsConfig);
+    settingsService.update(interaction.guild.id, {
+      rbac: {
+        [mapping.field]: role.id,
+      },
+    });
 
     await interaction.editReply({
-      content: `✅ Đã set **${roleKey}** role: ${role} (${role.id})`,
+      content: `✅ Đã set **${mapping.key}** role: ${role} (${role.id}) cho máy chủ này.`,
     });
   } catch (error) {
     const err = buildErrorContainer(`Lỗi khi lưu: ${(error as Error).message}`);

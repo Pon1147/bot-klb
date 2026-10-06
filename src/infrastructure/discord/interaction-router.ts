@@ -9,9 +9,11 @@ import {
   MessageFlags,
   ModalSubmitInteraction,
   StringSelectMenuInteraction,
+  PermissionFlagsBits,
 } from 'discord.js';
 import { createLogger } from '../../utils/logger.js';
 import { botConfig } from '../../config/bot.config.js';
+import { getSettingsService } from '../../services/settings.service.js';
 import {
   ContainerIds,
   ContainerModalPrefix,
@@ -24,7 +26,7 @@ import {
   handleTeamFindSelect,
   handleDfStatsSelect,
 } from '../../features/delta-force/index.js';
-import { COMMAND_PERMISSIONS, hasRequiredRole, ROLE_IDS } from '../../config/permissions.js';
+import { COMMAND_PERMISSIONS, checkGuildRbacPermission } from '../../config/permissions.js';
 
 const logger = createLogger('InteractionRouter');
 
@@ -170,34 +172,71 @@ async function handleChatInputCommand(
     return;
   }
 
-  // ── RBAC Guard: kiểm tra quyền trước khi execute ──
+  // ── RBAC Guard: kiểm tra quyền theo cấu hình máy chủ trước khi execute ──
   const commandPerm = COMMAND_PERMISSIONS[commandName];
   if (commandPerm && commandPerm.requiredRoles.length > 0) {
     if (!interaction.replied && !interaction.deferred) {
+      const isGuildOwner = Boolean(
+        interaction.guild?.ownerId && interaction.guild.ownerId === interaction.user.id,
+      );
+      const isAdmin = Boolean(
+        interaction.memberPermissions?.has(PermissionFlagsBits.Administrator),
+      );
+
+      let userRoleIds: string[] = [];
       const member = interaction.member;
       if (member instanceof GuildMember) {
-        const userRoleIds = member.roles.cache.map((r) => r.id);
-        // Owner/Moderator bypass — toàn quyền mọi command
-        const adminRoleIds = ['Owner', 'Moderator'].map((r) => ROLE_IDS[r]).filter(Boolean);
-        if (userRoleIds.some((id) => adminRoleIds.includes(id))) {
-          // admin bypass — cho chạy luôn
-        } else {
-          // requiredRoles trong JSON là tên role → resolve thành role IDs
-          const requiredRoleIds = commandPerm.requiredRoles
-            .map((roleName) => ROLE_IDS[roleName] ?? null)
-            .filter((v): v is string => v !== null);
-          const hasPermission = hasRequiredRole(userRoleIds, requiredRoleIds);
-          if (!hasPermission) {
-            logger.warn(
-              `RBAC denied: user=${interaction.user.id} cmd=${commandName} required=${commandPerm.requiredRoles.join(',')}`,
-            );
-            await interaction.reply({
-              content: '🔒 Lệnh này yêu cầu role: ' + commandPerm.requiredRoles.join(', '),
-              flags: MessageFlags.Ephemeral,
-            });
-            return;
+        userRoleIds = member.roles.cache.map((r) => r.id);
+      } else if (member && (member as any).roles?.cache) {
+        const cache = (member as any).roles.cache;
+        userRoleIds =
+          typeof cache.map === 'function'
+            ? cache.map((r: any) => r.id)
+            : Array.from(cache.values()).map((r: any) => r.id);
+      } else if (member && Array.isArray((member as any).roles)) {
+        userRoleIds = (member as any).roles as string[];
+      }
+
+      let guildRbac: {
+        ownerRoleId: string | null;
+        moderatorRoleId: string | null;
+        memberRoleId: string | null;
+      } = {
+        ownerRoleId: null,
+        moderatorRoleId: null,
+        memberRoleId: null,
+      };
+
+      if (interaction.guildId) {
+        try {
+          const settingsService = getSettingsService();
+          const settings = settingsService.get(interaction.guildId);
+          if (settings.rbac) {
+            guildRbac = settings.rbac;
           }
+        } catch {
+          // SettingsService chưa khởi tạo (e.g. unit test) -> dùng default rbac
         }
+      }
+
+      const check = checkGuildRbacPermission({
+        userRoleIds,
+        isGuildOwner,
+        isAdmin,
+        requiredRoles: commandPerm.requiredRoles,
+        guildRbac,
+      });
+
+      if (!check.allowed) {
+        logger.warn(
+          `RBAC denied: user=${interaction.user.id} guild=${interaction.guildId} cmd=${commandName} required=${commandPerm.requiredRoles.join(',')}`,
+        );
+        await interaction.reply({
+          content:
+            check.reason ?? `🔒 Lệnh này yêu cầu role: ${commandPerm.requiredRoles.join(', ')}`,
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
       }
     }
   }

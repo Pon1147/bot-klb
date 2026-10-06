@@ -60,6 +60,11 @@ export const defaultGuildSettings: GuildSettings = {
     roleId: null,
     scheduleTime: '01:00', // mặc định 01:00 UTC+7
   },
+  rbac: {
+    ownerRoleId: null,
+    moderatorRoleId: null,
+    memberRoleId: null,
+  },
 };
 
 /**

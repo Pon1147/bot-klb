@@ -10,6 +10,7 @@ import {
   hasRequiredRole,
   DEFAULT_PERMISSIONS,
   getPermissionsFilePath,
+  checkGuildRbacPermission,
 } from '../../src/config/permissions.js';
 
 describe('RBAC — loadPermissions()', () => {
@@ -115,3 +116,135 @@ describe('RBAC — DEFAULT_PERMISSIONS & getPermissionsFilePath()', () => {
     }
   });
 });
+
+describe('RBAC — checkGuildRbacPermission()', () => {
+  const emptyRbac = {
+    ownerRoleId: null,
+    moderatorRoleId: null,
+    memberRoleId: null,
+  };
+
+  const configuredRbac = {
+    ownerRoleId: 'role-owner',
+    moderatorRoleId: 'role-mod',
+    memberRoleId: 'role-member',
+  };
+
+  it('phải cho phép Guild Owner bypass mọi lệnh', () => {
+    const res = checkGuildRbacPermission({
+      userRoleIds: [],
+      isGuildOwner: true,
+      isAdmin: false,
+      requiredRoles: ['Owner', 'Moderator'],
+      guildRbac: configuredRbac,
+    });
+    expect(res.allowed).toBe(true);
+  });
+
+  it('phải cho phép Discord Administrator bypass mọi lệnh', () => {
+    const res = checkGuildRbacPermission({
+      userRoleIds: [],
+      isGuildOwner: false,
+      isAdmin: true,
+      requiredRoles: ['Owner'],
+      guildRbac: configuredRbac,
+    });
+    expect(res.allowed).toBe(true);
+  });
+
+  it('phải cho phép user có Owner role bypass mọi lệnh', () => {
+    const res = checkGuildRbacPermission({
+      userRoleIds: ['role-owner'],
+      isGuildOwner: false,
+      isAdmin: false,
+      requiredRoles: ['Member'],
+      guildRbac: configuredRbac,
+    });
+    expect(res.allowed).toBe(true);
+  });
+
+  it('phải cho phép user có Moderator role bypass mọi lệnh', () => {
+    const res = checkGuildRbacPermission({
+      userRoleIds: ['role-mod'],
+      isGuildOwner: false,
+      isAdmin: false,
+      requiredRoles: ['Member'],
+      guildRbac: configuredRbac,
+    });
+    expect(res.allowed).toBe(true);
+  });
+
+  describe('Member command logic', () => {
+    it('mặc định cho phép Everyone khi guild chưa cấu hình memberRoleId', () => {
+      const res = checkGuildRbacPermission({
+        userRoleIds: [],
+        isGuildOwner: false,
+        isAdmin: false,
+        requiredRoles: ['Member'],
+        guildRbac: emptyRbac,
+      });
+      expect(res.allowed).toBe(true);
+    });
+
+    it('cho phép user khi guild đã cấu hình memberRoleId và user có role đó', () => {
+      const res = checkGuildRbacPermission({
+        userRoleIds: ['role-member', 'random-role'],
+        isGuildOwner: false,
+        isAdmin: false,
+        requiredRoles: ['Member'],
+        guildRbac: configuredRbac,
+      });
+      expect(res.allowed).toBe(true);
+    });
+
+    it('từ chối user khi guild đã cấu hình memberRoleId nhưng user không có role', () => {
+      const res = checkGuildRbacPermission({
+        userRoleIds: ['random-role'],
+        isGuildOwner: false,
+        isAdmin: false,
+        requiredRoles: ['Member'],
+        guildRbac: configuredRbac,
+      });
+      expect(res.allowed).toBe(false);
+      expect(res.reason).toContain('role-member');
+    });
+  });
+
+  describe('Owner / Moderator command logic', () => {
+    it('cho phép user có role Moderator khi lệnh yêu cầu [Owner, Moderator]', () => {
+      const res = checkGuildRbacPermission({
+        userRoleIds: ['role-mod'],
+        isGuildOwner: false,
+        isAdmin: false,
+        requiredRoles: ['Owner', 'Moderator'],
+        guildRbac: configuredRbac,
+      });
+      expect(res.allowed).toBe(true);
+    });
+
+    it('từ chối user khi chỉ có role Member mà lệnh yêu cầu [Owner, Moderator]', () => {
+      const res = checkGuildRbacPermission({
+        userRoleIds: ['role-member'],
+        isGuildOwner: false,
+        isAdmin: false,
+        requiredRoles: ['Owner', 'Moderator'],
+        guildRbac: configuredRbac,
+      });
+      expect(res.allowed).toBe(false);
+      expect(res.reason).toContain('Quản trị viên');
+    });
+
+    it('từ chối khi guild chưa cấu hình role nào và user không phải Admin/Owner', () => {
+      const res = checkGuildRbacPermission({
+        userRoleIds: ['some-role'],
+        isGuildOwner: false,
+        isAdmin: false,
+        requiredRoles: ['Owner', 'Moderator'],
+        guildRbac: emptyRbac,
+      });
+      expect(res.allowed).toBe(false);
+      expect(res.reason).toContain('Quản trị viên');
+    });
+  });
+});
+

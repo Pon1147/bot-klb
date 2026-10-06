@@ -178,6 +178,19 @@ describe('SettingsService', () => {
       expect(settings.booster.container.accentColor).toBe(0xff0000);
     });
 
+    it('phải update rbac roles theo từng máy chủ', () => {
+      service.update('guild-1', {
+        rbac: {
+          memberRoleId: 'role-member-999',
+        },
+      });
+
+      const settings = service.get('guild-1');
+      expect(settings.rbac.memberRoleId).toBe('role-member-999');
+      expect(settings.rbac.ownerRoleId).toBeNull();
+      expect(settings.rbac.moderatorRoleId).toBeNull();
+    });
+
     it('phải invalidate cache sau khi update', () => {
       service.get('guild-1'); // load + cache
       service.update('guild-1', {

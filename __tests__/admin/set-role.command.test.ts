@@ -1,34 +1,20 @@
 /// <reference types="jest" />
 /**
- * Unit tests cho /set-role command (admin RBAC setter).
- * Verify owner và moderator subcommands, path resolution, và error handling.
+ * Unit tests cho /set-role command (admin RBAC per-guild setter).
+ * Verify owner, moderator và member subcommands, SettingsService update, và error handling.
  */
 
-import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
-import { loadPermissions } from '../../src/config/permissions.js';
 import { execute, data } from '../../src/features/admin/set-role.command.js';
+import { getSettingsService } from '../../src/services/settings.service.js';
 
-jest.mock('fs', () => ({
-  readFileSync: jest.fn(),
-  writeFileSync: jest.fn(),
-}));
+const mockSettingsService = {
+  update: jest.fn(),
+  get: jest.fn(),
+};
 
-jest.mock('path', () => ({
-  join: jest.fn((...args: string[]) => args.join('/')),
-}));
-
-jest.mock('../../src/config/permissions.js', () => ({
-  loadPermissions: jest.fn(),
-  getPermissionsFilePath: jest.fn(() => 'src/config/permissions.json'),
-  DEFAULT_PERMISSIONS: {
-    roles: {
-      Owner: '418779992290492416',
-      Moderator: '1504374050779303936',
-      Member: '1513800432214872145',
-    },
-    commands: {},
-  },
+jest.mock('../../src/services/settings.service.js', () => ({
+  getSettingsService: jest.fn(() => mockSettingsService),
+  SettingsService: jest.fn().mockImplementation(() => mockSettingsService),
 }));
 
 jest.mock('discord.js', () => ({
@@ -96,31 +82,6 @@ jest.mock('../../src/utils/container.utils.js', () => ({
   })),
 }));
 
-const mockReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
-const mockWriteFileSync = writeFileSync as jest.MockedFunction<typeof writeFileSync>;
-const mockJoin = join as jest.MockedFunction<typeof join>;
-const mockLoadPermissions = loadPermissions as jest.MockedFunction<typeof loadPermissions>;
-
-const defaultPermissions = {
-  roles: {
-    Owner: '418779992290492416',
-    Moderator: '1504374050779303936',
-    Member: '1513800432214872145',
-  },
-  commands: {
-    container: { requiredRoles: ['418779992290492416', '1504374050779303936'] },
-    'df-link': { requiredRoles: ['1513800432214872145'] },
-    'df-unlink': { requiredRoles: ['1513800432214872145'] },
-    'df-daily': { requiredRoles: ['1513800432214872145'] },
-    'df-stats': { requiredRoles: ['1513800432214872145'] },
-    'df-history': { requiredRoles: ['1513800432214872145'] },
-    'df-code': { requiredRoles: ['1513800432214872145'] },
-    'team-find': { requiredRoles: ['1513800432214872145'] },
-    booster: { requiredRoles: ['418779992290492416', '1504374050779303936'] },
-    welcome: { requiredRoles: ['418779992290492416', '1504374050779303936'] },
-  },
-};
-
 function makeInteraction(
   opts: {
     guild?: object | null;
@@ -153,7 +114,6 @@ function makeInteraction(
 describe('/set-role command', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockJoin.mockImplementation((...args: string[]) => args.join('/'));
   });
 
   describe('data', () => {
@@ -191,7 +151,6 @@ describe('/set-role command', () => {
     it('nên reply error container khi role không tìm thấy', async () => {
       const interaction = makeInteraction({ role: null });
       await execute(interaction as any, null as any);
-      // Khi role null, code reply ngay (không deferReply)
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({ components: expect.any(Array) }),
       );
@@ -220,87 +179,76 @@ describe('/set-role command', () => {
   });
 
   describe('execute — flow', () => {
-    it('phải đọc permissions.json và update role Owner', async () => {
-      const permCopy = JSON.parse(JSON.stringify(defaultPermissions));
-      mockReadFileSync.mockReturnValue(JSON.stringify(permCopy));
-
+    it('phải cập nhật ownerRoleId cho guild qua SettingsService', async () => {
       const interaction = makeInteraction({ subcommand: 'owner' });
       await execute(interaction as any, null as any);
 
-      expect(mockReadFileSync).toHaveBeenCalled();
-      expect(mockWriteFileSync).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.stringContaining('999'),
-        'utf8',
-      );
-      expect(mockLoadPermissions).toHaveBeenCalled();
+      expect(mockSettingsService.update).toHaveBeenCalledWith('guild-1', {
+        rbac: {
+          ownerRoleId: '999',
+        },
+      });
       expect(interaction.editReply).toHaveBeenCalledWith(
         expect.objectContaining({ content: expect.stringContaining('Owner') }),
       );
     });
 
-    it('phải đọc permissions.json và update role Moderator', async () => {
-      const permCopy = JSON.parse(JSON.stringify(defaultPermissions));
-      mockReadFileSync.mockReturnValue(JSON.stringify(permCopy));
-
+    it('phải cập nhật moderatorRoleId cho guild qua SettingsService', async () => {
       const interaction = makeInteraction({ subcommand: 'moderator' });
       await execute(interaction as any, null as any);
 
-      expect(mockWriteFileSync).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.stringContaining('999'),
-        'utf8',
-      );
-      expect(mockLoadPermissions).toHaveBeenCalled();
+      expect(mockSettingsService.update).toHaveBeenCalledWith('guild-1', {
+        rbac: {
+          moderatorRoleId: '999',
+        },
+      });
       expect(interaction.editReply).toHaveBeenCalledWith(
         expect.objectContaining({ content: expect.stringContaining('Moderator') }),
       );
     });
 
-    it('phải đọc permissions.json và update role Member', async () => {
-      const permCopy = JSON.parse(JSON.stringify(defaultPermissions));
-      mockReadFileSync.mockReturnValue(JSON.stringify(permCopy));
-
+    it('phải cập nhật memberRoleId cho guild qua SettingsService', async () => {
       const interaction = makeInteraction({ subcommand: 'member' });
       await execute(interaction as any, null as any);
 
-      expect(mockWriteFileSync).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.stringContaining('999'),
-        'utf8',
-      );
-      expect(mockLoadPermissions).toHaveBeenCalled();
+      expect(mockSettingsService.update).toHaveBeenCalledWith('guild-1', {
+        rbac: {
+          memberRoleId: '999',
+        },
+      });
       expect(interaction.editReply).toHaveBeenCalledWith(
         expect.objectContaining({ content: expect.stringContaining('Member') }),
       );
     });
 
-    it('phải fallback DEFAULT_PERMISSIONS khi permissions.json chưa tồn tại hoặc parse lỗi', async () => {
-      mockReadFileSync.mockImplementation(() => {
-        throw new Error('ENOENT');
+    it('phải deferReply trước khi update settings', async () => {
+      const interaction = makeInteraction();
+      await execute(interaction as any, null as any);
+      expect(interaction.deferReply).toHaveBeenCalledWith({ flags: 64 });
+    });
+
+    it('nên fallback tạo new SettingsService(database) khi getSettingsService() throw', async () => {
+      (getSettingsService as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('Not initialized');
       });
 
+      const mockDb = {} as any;
       const interaction = makeInteraction({ subcommand: 'owner' });
-      await execute(interaction as any, null as any);
+      await execute(interaction as any, mockDb);
 
-      expect(mockWriteFileSync).toHaveBeenCalled();
-      expect(mockLoadPermissions).toHaveBeenCalled();
+      expect(mockSettingsService.update).toHaveBeenCalledWith('guild-1', {
+        rbac: {
+          ownerRoleId: '999',
+        },
+      });
       expect(interaction.editReply).toHaveBeenCalledWith(
         expect.objectContaining({ content: expect.stringContaining('Owner') }),
       );
     });
 
-    it('phải deferReply trước khi đọc file', async () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(defaultPermissions));
-      const interaction = makeInteraction();
-      await execute(interaction as any, null as any);
-      expect(interaction.deferReply).toHaveBeenCalled();
-    });
-
-    it('nên reply error khi writeFileSync throw', async () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(defaultPermissions));
-      mockWriteFileSync.mockImplementation(() => {
-        throw new Error('EACCES');
+    it('nên reply error khi settingsService.update throw', async () => {
+      mockSettingsService.update.mockImplementationOnce(() => {
+        throw new Error('Database write error');
       });
 
       const interaction = makeInteraction();

@@ -134,3 +134,87 @@ export function getPermissionsFilePath(): string {
 export function hasRequiredRole(userRoleIds: string[], requiredRoleIds: string[]): boolean {
   return requiredRoleIds.some((roleId) => userRoleIds.includes(roleId));
 }
+
+export interface CheckRbacOptions {
+  userRoleIds: string[];
+  isGuildOwner: boolean;
+  isAdmin: boolean;
+  requiredRoles: string[];
+  guildRbac: {
+    ownerRoleId: string | null;
+    moderatorRoleId: string | null;
+    memberRoleId: string | null;
+  };
+}
+
+export interface CheckRbacResult {
+  allowed: boolean;
+  reason?: string;
+}
+
+/**
+ * Kiểm tra quyền thực thi lệnh theo RBAC per-guild.
+ *
+ * Quy tắc:
+ * 1. Server Owner hoặc Discord Administrator luôn có toàn quyền (Bypass).
+ * 2. Thành viên có Owner hoặc Moderator role đã cấu hình cho server này luôn có toàn quyền (Bypass).
+ * 3. Lệnh yêu cầu Member:
+ *    - Nếu guild chưa cấu hình memberRoleId (null/rỗng) -> cho phép tất cả thành viên trong guild (mặc định mở).
+ *    - Nếu guild đã cấu hình memberRoleId -> yêu cầu user có role đó.
+ * 4. Lệnh yêu cầu Owner/Moderator:
+ *    - Yêu cầu user có ít nhất 1 role tương ứng đã cấu hình trong guild.
+ */
+export function checkGuildRbacPermission(options: CheckRbacOptions): CheckRbacResult {
+  const { userRoleIds, isGuildOwner, isAdmin, requiredRoles, guildRbac } = options;
+
+  // 1. Server Owner hoặc Discord Administrator luôn có toàn quyền
+  if (isGuildOwner || isAdmin) {
+    return { allowed: true };
+  }
+
+  // 2. Thành viên có Owner hoặc Moderator role của guild luôn có quyền
+  if (
+    (guildRbac.ownerRoleId && userRoleIds.includes(guildRbac.ownerRoleId)) ||
+    (guildRbac.moderatorRoleId && userRoleIds.includes(guildRbac.moderatorRoleId))
+  ) {
+    return { allowed: true };
+  }
+
+  // 3. Nếu command yêu cầu Member
+  if (requiredRoles.includes('Member')) {
+    // Nếu guild chưa cấu hình memberRoleId -> cho phép tất cả thành viên
+    if (!guildRbac.memberRoleId) {
+      return { allowed: true };
+    }
+    // Nếu đã cấu hình -> yêu cầu member phải có role đó
+    if (userRoleIds.includes(guildRbac.memberRoleId)) {
+      return { allowed: true };
+    }
+    return {
+      allowed: false,
+      reason: `🔒 Lệnh này yêu cầu role <@&${guildRbac.memberRoleId}> hoặc quyền Quản trị viên.`,
+    };
+  }
+
+  // 4. Nếu command yêu cầu Owner hoặc Moderator
+  const requiredConfiguredRoleIds: string[] = [];
+  if (requiredRoles.includes('Owner') && guildRbac.ownerRoleId) {
+    requiredConfiguredRoleIds.push(guildRbac.ownerRoleId);
+  }
+  if (requiredRoles.includes('Moderator') && guildRbac.moderatorRoleId) {
+    requiredConfiguredRoleIds.push(guildRbac.moderatorRoleId);
+  }
+
+  if (
+    requiredConfiguredRoleIds.length > 0 &&
+    hasRequiredRole(userRoleIds, requiredConfiguredRoleIds)
+  ) {
+    return { allowed: true };
+  }
+
+  return {
+    allowed: false,
+    reason:
+      '🔒 Lệnh này yêu cầu quyền Quản trị viên (Administrator) hoặc role Quản trị của máy chủ.',
+  };
+}

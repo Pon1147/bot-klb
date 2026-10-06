@@ -63,6 +63,18 @@ export interface DfCodesSettings {
 }
 
 /**
+ * Cấu hình RBAC roles theo từng máy chủ (Guild).
+ * - ownerRoleId: Discord role ID cho Owner permissions (null = chưa gán)
+ * - moderatorRoleId: Discord role ID cho Moderator permissions (null = chưa gán)
+ * - memberRoleId: Discord role ID cho Member permissions (null = mặc định mở cho Everyone)
+ */
+export interface RbacRoleSettings {
+  ownerRoleId: string | null;
+  moderatorRoleId: string | null;
+  memberRoleId: string | null;
+}
+
+/**
  * Toàn bộ settings của 1 guild.
  * Thêm feature mới chỉ cần add key vào interface này + default.
  */
@@ -71,6 +83,7 @@ export interface GuildSettings {
   leave: LeaveSettings;
   booster: BoosterSettings;
   dfCodes: DfCodesSettings;
+  rbac: RbacRoleSettings;
 }
 
 /**
