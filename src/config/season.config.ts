@@ -19,9 +19,10 @@ const SEASON_LABEL_MAP: Record<string, string> = {
   '10008': 'S8',
   '10009': 'S9',
   '10010': 'S10',
+  '10011': 'S11',
 };
 
-/** Build season options: Tổng Quan, S10, S9, ..., S1 (giảm dần) */
+/** Build season options: Tổng Quan, S11, S10, ..., S1 (giảm dần) */
 export function buildSeasonOptions(): SeasonOption[] {
   const options: SeasonOption[] = [{ label: 'Tổng Quan', value: 'overview', seasonNo: 'overview' }];
 

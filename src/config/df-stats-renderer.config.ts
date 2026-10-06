@@ -226,4 +226,5 @@ export const HEADER_LABELS: Record<string, string> = {
   '10008': 'SEASON 8',
   '10009': 'SEASON 9',
   '10010': 'SEASON 10',
+  '10011': 'SEASON 11',
 };
