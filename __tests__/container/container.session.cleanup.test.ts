@@ -76,6 +76,65 @@ describe('Container Session Management', () => {
       editSessions.clear();
       expect(editSessions.size).toBe(0);
     });
+
+    it('should return iterable entries via editSessions.entries()', () => {
+      const draft = createMockDraft();
+      createSession('u1', 'g1', 'welcome', draft, 'm1', 'c1');
+      createSession('u2', 'g2', 'leave', draft, 'm2', 'c2');
+
+      const entries = Array.from(editSessions.entries());
+
+      expect(entries).toHaveLength(2);
+      const entriesMap = new Map(entries);
+      expect(entriesMap.get('u1')).toEqual(
+        expect.objectContaining({
+          guildId: 'g1',
+          type: 'welcome',
+          messageId: 'm1',
+          channelId: 'c1',
+        }),
+      );
+      expect(entriesMap.get('u2')).toEqual(
+        expect.objectContaining({
+          guildId: 'g2',
+          type: 'leave',
+          messageId: 'm2',
+          channelId: 'c2',
+        }),
+      );
+    });
+
+    it('should manually cleanup expired sessions via editSessions.cleanupExpired()', () => {
+      // 1 session expired (20 phút trước)
+      editSessions.set('expired_u', {
+        guildId: 'g1',
+        type: 'welcome',
+        draft: createMockDraft(),
+        messageId: 'm1',
+        channelId: 'c1',
+        createdAt: Date.now() - 20 * 60 * 1000,
+        lastInteractionAt: Date.now() - 20 * 60 * 1000,
+      });
+
+      // 1 session còn valid
+      createSession('valid_u', 'g1', 'welcome', createMockDraft(), 'm2', 'c2');
+
+      expect(editSessions.size).toBe(2);
+
+      const count = editSessions.cleanupExpired();
+
+      expect(count).toBe(1);
+      expect(editSessions.has('expired_u')).toBe(false);
+      expect(editSessions.has('valid_u')).toBe(true);
+      expect(editSessions.get('valid_u')).toEqual(
+        expect.objectContaining({
+          guildId: 'g1',
+          type: 'welcome',
+          messageId: 'm2',
+          channelId: 'c2',
+        }),
+      );
+    });
   });
 
   // ─── createSession ───────────────────────────────────────────
@@ -276,23 +335,23 @@ describe('Container Session Management', () => {
     it('should refresh lastInteractionAt when session exists', () => {
       const draft: ContainerSettings = {
         accentColor: 0x5865f2,
-        headerTemplate: "Test",
-        contentLines: ["Test"],
+        headerTemplate: 'Test',
+        contentLines: ['Test'],
         mediaUrl: null,
         mediaDescription: null,
         showSeparator: false,
         files: [],
       };
-      createSession("touch-test-user", "guild_1", "welcome", draft, "msg_1", "ch_1");
-      const sessionBefore = editSessions.get("touch-test-user");
+      createSession('touch-test-user', 'guild_1', 'welcome', draft, 'msg_1', 'ch_1');
+      const sessionBefore = editSessions.get('touch-test-user');
       const originalTime = sessionBefore!.lastInteractionAt;
       // Advance fake time so touchSession sets a newer timestamp
       jest.advanceTimersByTime(1000);
-      touchSession("touch-test-user");
-      const sessionAfter = editSessions.get("touch-test-user");
+      touchSession('touch-test-user');
+      const sessionAfter = editSessions.get('touch-test-user');
       expect(sessionAfter).toBeDefined();
       expect(sessionAfter!.lastInteractionAt).toBeGreaterThanOrEqual(originalTime);
-      deleteSession("touch-test-user");
+      deleteSession('touch-test-user');
     });
   });
 });
