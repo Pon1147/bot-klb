@@ -145,6 +145,7 @@ export function startDfCodesScheduler(client: Client, database: Database.Databas
         logger.info(`[cron] Step 4/4: Sending message to #${channelName}...`);
         await (channel as { send: (data: unknown) => Promise<unknown> }).send({
           components: result.toJSON(),
+          files: result.files,
           flags: result.flags,
         });
 

@@ -1,6 +1,7 @@
 /** /df-code — Mật khẩu hằng ngày của các map (Container V2 pattern) */
 
 import {
+  AttachmentBuilder,
   ChatInputCommandInteraction,
   ComponentType,
   MessageFlags,
@@ -8,7 +9,12 @@ import {
 } from 'discord.js';
 import Database from 'better-sqlite3';
 
-import { MAP_DISPLAY } from '../../config/team-find.config.js';
+import {
+  ASSETS_PATH,
+  MAP_DISPLAY,
+  type MapKey,
+  type MapInfo,
+} from '../../config/team-find.config.js';
 import { fetchDailyCodes, type DailyCodes } from '../../services/deltaforce.scraper.js';
 import {
   handleSectionSetChannel,
@@ -34,20 +40,36 @@ export function hasAnyCodes(codes: DailyCodes | null): boolean {
   return Object.values(codes).some((v) => v !== null && v !== undefined);
 }
 
-/** Build codes display container (used by scheduler) */
+/** Build codes display container (used by scheduler & /df-code show) */
 export function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean) {
   const containerInner: unknown[] = [];
+  const files: AttachmentBuilder[] = [];
 
   if (hasCodes && codes) {
-    const lines = Object.entries(MAP_DISPLAY).map(([fullName, mapInfo]) => {
-      const code = codes[fullName as keyof DailyCodes] || 'Chưa có';
-      return `### **${mapInfo.name}**\n\`\`\`ini\n[${code}]\n\`\`\``;
-    });
+    const maps = Object.entries(MAP_DISPLAY) as [MapKey, MapInfo][];
 
-    containerInner.push({
-      type: ComponentType.TextDisplay,
-      content: lines.join('\n'),
-    });
+    for (const [fullName, mapInfo] of maps) {
+      const code = codes[fullName] || 'Chưa có';
+      const attachmentName = mapInfo.image;
+      const filePath = `${ASSETS_PATH}${mapInfo.image}`;
+
+      files.push(new AttachmentBuilder(filePath).setName(attachmentName));
+
+      containerInner.push({
+        type: ComponentType.Section,
+        components: [
+          {
+            type: ComponentType.TextDisplay,
+            content: `### **${mapInfo.name}**\n\`\`\`ini\n[${code}]\n\`\`\``,
+          },
+        ],
+        accessory: {
+          type: ComponentType.Thumbnail,
+          media: { url: `attachment://${attachmentName}` },
+          description: mapInfo.name,
+        },
+      });
+    }
   } else {
     containerInner.push({
       type: ComponentType.TextDisplay,
@@ -58,6 +80,7 @@ export function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean)
   return {
     components: [{ type: ComponentType.Container, components: containerInner }],
     flags: MessageFlags.IsComponentsV2,
+    files,
     toJSON() {
       return this.components;
     },
@@ -166,6 +189,7 @@ export async function execute(
 
       await interaction.editReply({
         components: container.toJSON(),
+        files: container.files,
         flags: MessageFlags.IsComponentsV2,
       });
     } catch (error) {

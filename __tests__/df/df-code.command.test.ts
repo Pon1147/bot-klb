@@ -4,7 +4,13 @@
  */
 
 jest.mock('discord.js', () => ({
-  ComponentType: { TextDisplay: 10, Separator: 14, Container: 17 },
+  ComponentType: {
+    TextDisplay: 10,
+    Separator: 14,
+    Container: 17,
+    Section: 9,
+    Thumbnail: 11,
+  },
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
   PermissionFlagsBits: { Administrator: 0x8 },
   SlashCommandBuilder: class {
@@ -93,6 +99,10 @@ jest.mock('discord.js', () => ({
       public opts?: any,
     ) {
       this.name = opts?.name ?? 'file.png';
+    }
+    setName(n: string) {
+      this.name = n;
+      return this;
     }
   },
 }));
