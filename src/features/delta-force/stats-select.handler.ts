@@ -4,13 +4,11 @@
  */
 
 import Database from 'better-sqlite3';
-import { AttachmentBuilder, StringSelectMenuInteraction } from 'discord.js';
+import { StringSelectMenuInteraction } from 'discord.js';
 import { getSeasonData, getOverviewData } from '../../services/deltaforce.api.js';
 import { buildDfApiToken } from '../../utils/df-token.utils.js';
-import { DF_STATS_SELECT_ID } from './stats.command.js';
-import { buildViewModel } from '../../renderers/df-stats/view-model.js';
-import { renderDashboard } from '../../renderers/df-stats/svg-renderer.js';
-import { buildSeasonSelectMenu } from './stats.command.js';
+import { DF_STATS_SELECT_ID, buildSeasonSelectMenu, buildStatsContainer } from './stats.command.js';
+import { getSeasonLabel } from '../../config/season.config.js';
 import { createLogger } from '../../utils/logger.js';
 import { getActiveBinding } from '../../database/df-binding.db.js';
 import { decryptCredential } from '../../services/df-crypto.js';
@@ -84,12 +82,12 @@ export async function handleDfStatsSelect(
   const disabledMenu = buildSeasonSelectMenu(selectedSeason);
   disabledMenu.components[0].setDisabled(true);
 
-  // deferReply trước API call để tránh interaction timeout (>3s)
+  // deferUpdate trước API call để cập nhật message hiện tại và tránh interaction timeout (>3s)
   try {
-    await interaction.deferReply({ flags: 64 }); // Ephemeral
+    await interaction.deferUpdate();
   } catch {
-    // deferReply fail — interaction đã expire, không làm gì thêm
-    logger.warn('deferReply failed for user ' + userId + ', interaction may have expired');
+    // deferUpdate fail — interaction đã expire, không làm gì thêm
+    logger.warn('deferUpdate failed for user ' + userId + ', interaction may have expired');
     return { handled: true };
   }
 
@@ -99,12 +97,11 @@ export async function handleDfStatsSelect(
     // Kiểm tra cache trước khi gọi API
     const cached = statsCache.get(userId + ':' + selectedSeason);
     if (cached) {
-      const viewModel = buildViewModel(cached.data, selectedSeason);
-      const imageBuffer = await renderDashboard(viewModel);
+      const seasonLabel = getSeasonLabel(selectedSeason);
+      const result = buildStatsContainer(cached.data, seasonLabel);
       const selectMenu = buildSeasonSelectMenu(selectedSeason);
       await interaction.editReply({
-        files: [new AttachmentBuilder(imageBuffer, { name: 'df-stats.png' })],
-        components: [selectMenu.toJSON()],
+        components: [...result.components, selectMenu.toJSON()],
       } as Parameters<typeof interaction.editReply>[0]);
       return { handled: true };
     }
@@ -120,13 +117,12 @@ export async function handleDfStatsSelect(
       expiresAt: Date.now() + 5 * 60 * 1000,
     });
 
-    const viewModel = buildViewModel(data, selectedSeason);
-    const imageBuffer = await renderDashboard(viewModel);
+    const seasonLabel = getSeasonLabel(selectedSeason);
+    const result = buildStatsContainer(data, seasonLabel);
     const selectMenu = buildSeasonSelectMenu(selectedSeason);
 
     await interaction.editReply({
-      files: [new AttachmentBuilder(imageBuffer, { name: 'df-stats.png' })],
-      components: [selectMenu.toJSON()],
+      components: [...result.components, selectMenu.toJSON()],
     } as Parameters<typeof interaction.editReply>[0]);
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);

@@ -44,28 +44,6 @@ jest.mock('../../src/database/df-binding.db.js', () => ({
   revokeBinding: jest.fn(),
 }));
 
-jest.mock('../../src/renderers/df-stats/view-model.js', () => ({
-  buildViewModel: jest.fn((data) => ({
-    player: {
-      nickname: data.player_info.nickname,
-      level: data.player_info.level,
-      joinDate: '01/01/2024',
-      playDurationHours: 100,
-      playDurationMinutes: 30,
-      totalMatches: data.summary_data.total_match_count,
-    },
-    economy: data.summary_data.economy,
-    combat: data.summary_data.combat,
-    squad: data.summary_data.team,
-    rank: { name: data.rank_data.current_rank, score: data.rank_data.current_rank_score },
-    seasonLabel: 'Tổng Quan',
-  })),
-}));
-
-jest.mock('../../src/renderers/df-stats/svg-renderer.js', () => ({
-  renderDashboard: jest.fn(() => Buffer.from('mock-png-data')),
-}));
-
 import { execute } from '../../src/features/delta-force/stats.command.js';
 import { getDfToken, touchDfToken } from '../../src/database/df.token.db.js';
 import { getOverviewData } from '../../src/services/deltaforce.api.js';
