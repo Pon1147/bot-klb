@@ -90,15 +90,13 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
 }
 
 export async function fetchDailyAll(): Promise<DailyData> {
-  const scrapeDebug: string[] = [];
   const startTime = Date.now();
-  scrapeDebug.push(`[SCRAPER_START] url=${HQ_URL} time=${new Date().toISOString()}`);
+  logger.info(`[Scraper] Bắt đầu lấy dữ liệu hàng ngày từ HQ (${HQ_URL})...`);
 
   const puppeteer = await loadPuppeteer();
   let browser: PuppeteerBrowser | null = null;
 
   try {
-    logger.info(`✅ [Scraper] ${scrapeDebug.join(' | ')}`);
     browser = (await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
@@ -114,116 +112,19 @@ export async function fetchDailyAll(): Promise<DailyData> {
     }
 
     // Dùng 'domcontentloaded' thay vì 'networkidle2' để tránh timeout
-    // khi website có background requests (WebSocket, analytics) không bao giờ idle
-    scrapeDebug.push('[SCRAPER_GOTO] Navigating to HQ_URL...');
     await withRetry(async () => {
       await page.goto(HQ_URL, { waitUntil: 'domcontentloaded', timeout: HQ_PAGE_TIMEOUT });
-      scrapeDebug.push('[SCRAPER_GOTO] ✅ Navigation completed');
     }, 3);
 
-    // Lấy URL hiện tại để kiểm tra
-    const currentUrl = page.url();
-    scrapeDebug.push(`[SCRAPER_URL] currentUrl=${currentUrl}`);
+    // Chờ selector hiển thị
+    await withRetry(async () => {
+      await page.waitForSelector('span[data-info^="operations-"]', {
+        timeout: HQ_SELECTOR_TIMEOUT,
+      });
+    }, 3);
 
-    // Lấy nội dung page để debug (dùng string script để tránh bundler/tsx inject __name)
-    const pageContent = await page.evaluate<string>(
-      'document.documentElement.outerHTML.substring(0, 5000)',
-    );
-    scrapeDebug.push(`[SCRAPER_PAGE] contentLength=${pageContent.length}`);
-
-    // Thử waitForSelector với retry
-    scrapeDebug.push('[SCRAPER_WAIT] Waiting for selector span[data-info^="operations-"]...');
-    try {
-      await withRetry(async () => {
-        await page.waitForSelector('span[data-info^="operations-"]', {
-          timeout: HQ_SELECTOR_TIMEOUT,
-        });
-        scrapeDebug.push('[SCRAPER_WAIT] ✅ Selector found');
-      }, 3);
-    } catch (waitError) {
-      scrapeDebug.push(`[SCRAPER_WAIT] ❌ Selector NOT found: ${(waitError as Error).message}`);
-      // Log các selector có trong page để debug
-      const availableSelectors = await page.evaluate<string[]>(
-        "Array.from(document.querySelectorAll('[data-info]')).map((el) => el.getAttribute('data-info'))",
-      );
-      scrapeDebug.push(
-        `[SCRAPER_DEBUG] Available [data-info] selectors (${availableSelectors.length}): ${JSON.stringify(availableSelectors.slice(0, 20))}`,
-      );
-    }
-
-    // Log tất cả span elements để debug
-    const allSpans = await page.evaluate<
-      Array<{ dataInfo: string | null; textContent: string; className: string }>
-    >(`
-      Array.from(document.querySelectorAll('span'))
-        .slice(0, 50)
-        .map((el) => ({
-          dataInfo: el.getAttribute('data-info'),
-          textContent: (el.textContent || '').trim().substring(0, 100),
-          className: el.className,
-        }))
-    `);
-    scrapeDebug.push(`[SCRAPER_DEBUG] First 50 spans: ${JSON.stringify(allSpans)}`);
-
-    // Chờ thêm 3 giây để async data load xong (nếu có)
-    scrapeDebug.push('[SCRAPER_WAIT] Waiting 3s for async data load...');
+    // Chờ 3 giây để dữ liệu async render vào DOM
     await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    // Chụp screenshot để debug UI
-    // Dùng path tuyệt đối + tạo thư mục nếu chưa có (production cần /tmp hoặc ./data/)
-    try {
-      const fs = await import('fs');
-      const path = await import('path');
-      const debugDir = path.join(process.cwd(), 'data', 'scraper-debug');
-      if (!fs.existsSync(debugDir)) {
-        fs.mkdirSync(debugDir, { recursive: true });
-      }
-      const screenshotPath = path.join(debugDir, `scraper-${Date.now()}.png`);
-      const screenshotData = await page.screenshot({ path: screenshotPath });
-      scrapeDebug.push(
-        `[SCRAPER_DEBUG] Screenshot saved: ${screenshotPath} (${screenshotData.length} bytes)`,
-      );
-    } catch (ssError) {
-      scrapeDebug.push(`[SCRAPER_DEBUG] Screenshot failed: ${(ssError as Error).message}`);
-    }
-
-    // Log HTML của password section
-    const passwordSectionHtml = await page.evaluate<Record<string, string>>(`(() => {
-      const q = (sel) => {
-        const el = document.querySelector(sel);
-        return el ? el.outerHTML.substring(0, 500) : 'NOT_FOUND';
-      };
-      return {
-        zeroDam: q('span[data-info="operations-zero-dam"]'),
-        layaliGrove: q('span[data-info="operations-layali-grove"]'),
-        brakkesh: q('span[data-info="operations-layali-brakkesh"]'),
-        spaceCity: q('span[data-info="operations-layali-space-city"]'),
-        tidePrison: q('span[data-info="operations-layali-tide-prison"]'),
-        az3: q('span[data-info="operations-layali-az3"]'),
-        hasNoData: q('[data-info="operations-nodata"]'),
-        loadingIndicator: q('[data-info*="loading"]'),
-        emptyState: q('[data-info*="empty"]'),
-      };
-    })()`);
-    scrapeDebug.push(
-      `[SCRAPER_DEBUG] Password section HTML: ${JSON.stringify(passwordSectionHtml)}`,
-    );
-
-    // Log tất cả [data-info] có textContent khác rỗng
-    const nonEmptyDataInfo = await page.evaluate<
-      Array<{ dataInfo: string | null; textContent: string; className: string }>
-    >(`
-      Array.from(document.querySelectorAll('[data-info]'))
-        .filter((el) => (el.textContent || '').trim().length > 0)
-        .map((el) => ({
-          dataInfo: el.getAttribute('data-info'),
-          textContent: (el.textContent || '').trim().substring(0, 100),
-          className: el.className,
-        }))
-    `);
-    scrapeDebug.push(
-      `[SCRAPER_DEBUG] Non-empty [data-info] elements (${nonEmptyDataInfo.length}): ${JSON.stringify(nonEmptyDataInfo)}`,
-    );
 
     const result = await page.evaluate<DailyData>(`(() => {
       const q = (sel) => document.querySelector(sel);
@@ -277,15 +178,14 @@ export async function fetchDailyAll(): Promise<DailyData> {
     })()`);
 
     const elapsed = Date.now() - startTime;
-    scrapeDebug.push(`[SCRAPER_RESULT] codes=${JSON.stringify(result.codes)}`);
-    scrapeDebug.push(`[SCRAPER_RESULT] elapsed=${elapsed}ms`);
-    logger.info(`✅ [Scraper] ${scrapeDebug.join(' | ')}`);
+    logger.info(
+      `[Scraper] Lấy dữ liệu thành công (${elapsed}ms): codes=${JSON.stringify(result.codes)}`,
+    );
 
     return result as unknown as DailyData;
   } catch (error) {
     const elapsed = Date.now() - startTime;
-    scrapeDebug.push(`[SCRAPER_ERROR] elapsed=${elapsed}ms error=${(error as Error).message}`);
-    logger.error(`❌ [Scraper] ${scrapeDebug.join(' | ')}`);
+    logger.error(`[Scraper] Lấy dữ liệu thất bại (${elapsed}ms): ${(error as Error).message}`);
     throw error;
   } finally {
     if (browser) {
