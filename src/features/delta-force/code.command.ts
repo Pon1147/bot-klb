@@ -50,10 +50,11 @@ export function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean)
 
     for (const [fullName, mapInfo] of maps) {
       const code = codes[fullName] || 'Chưa có';
-      const attachmentName = mapInfo.image;
-      const filePath = `${ASSETS_PATH}${mapInfo.image}`;
+      const imageUrl = mapInfo.url ?? `attachment://${mapInfo.image}`;
 
-      files.push(new AttachmentBuilder(filePath).setName(attachmentName));
+      if (!mapInfo.url) {
+        files.push(new AttachmentBuilder(`${ASSETS_PATH}${mapInfo.image}`).setName(mapInfo.image));
+      }
 
       containerInner.push({
         type: ComponentType.Section,
@@ -65,7 +66,7 @@ export function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean)
         ],
         accessory: {
           type: ComponentType.Thumbnail,
-          media: { url: `attachment://${attachmentName}` },
+          media: { url: imageUrl },
           description: mapInfo.name,
         },
       });

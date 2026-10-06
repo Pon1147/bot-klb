@@ -12,6 +12,7 @@ export const MAX_HISTORY_LIMIT = 10;
 export interface MapInfo {
   name: string;
   image: string;
+  url?: string;
 }
 
 /** Derive from DailyCodes so both types stay in sync */
@@ -19,12 +20,36 @@ export type MapKey = keyof DailyCodes;
 
 /** Map display registry - keys match DailyCodes from scraper */
 export const MAP_DISPLAY: Record<MapKey, MapInfo> = {
-  'Đập Nước Zero': { name: 'Zero Dam', image: 'map_zero.png' },
-  'Thung lũng Layali': { name: 'Layali', image: 'map_layali.png' },
-  'Phố Cổ Brakkesh': { name: 'Brakkesh', image: 'map_brakkesh.png' },
-  AZ3: { name: 'AZ3', image: 'map_az3.png' },
-  'Trạm Không Gian': { name: 'Space City', image: 'map_spacecity.png' },
-  'Ngục Giam Thủy Triều': { name: 'Tide Prison', image: 'map_tideprison.png' },
+  'Đập Nước Zero': {
+    name: 'Zero Dam',
+    image: 'map_zero.png',
+    url: 'https://www.playdeltaforce.com/events/hq/assets/step1_1-SIL-2Nfi.png',
+  },
+  'Thung lũng Layali': {
+    name: 'Layali',
+    image: 'map_layali.png',
+    url: 'https://www.playdeltaforce.com/events/hq/assets/step2_1-CvDG735k.png',
+  },
+  'Phố Cổ Brakkesh': {
+    name: 'Brakkesh',
+    image: 'map_brakkesh.png',
+    url: 'https://www.playdeltaforce.com/events/hq/assets/step3_1-CWwIzVnv.png',
+  },
+  AZ3: {
+    name: 'AZ3',
+    image: 'map_az3.png',
+    url: 'https://www.playdeltaforce.com/events/hq/assets/step6_1-DleYkxyf.png',
+  },
+  'Trạm Không Gian': {
+    name: 'Space City',
+    image: 'map_spacecity.png',
+    url: 'https://www.playdeltaforce.com/events/hq/assets/step4_1-BVYxxjY3.png',
+  },
+  'Ngục Giam Thủy Triều': {
+    name: 'Tide Prison',
+    image: 'map_tideprison.png',
+    url: 'https://www.playdeltaforce.com/events/hq/assets/step5_1-B8Z-Mgmx.png',
+  },
 };
 
 /** Difficulty levels for /team-find */
