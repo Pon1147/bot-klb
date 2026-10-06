@@ -7,7 +7,8 @@ interface PuppeteerPage {
   setUserAgent(ua: string): Promise<void>;
   goto(url: string, opts: { waitUntil: string; timeout: number }): Promise<string | null>;
   waitForSelector(selector: string, opts: { timeout: number }): Promise<unknown>;
-  evaluate<T>(fn: () => T): Promise<T>;
+  evaluate<T>(fn: string | (() => T)): Promise<T>;
+  evaluateOnNewDocument?(fn: string | (() => unknown)): Promise<unknown>;
   setRequestInterception(enabled: boolean): void;
   on(event: string, handler: (req: { url: () => string; continue: () => void }) => void): void;
   url(): string;
@@ -101,12 +102,16 @@ export async function fetchDailyAll(): Promise<DailyData> {
     browser = (await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
-    })) as PuppeteerBrowser;
+    })) as unknown as PuppeteerBrowser;
 
     const page = await browser.newPage();
     await page.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     );
+
+    if (typeof page.evaluateOnNewDocument === 'function') {
+      await page.evaluateOnNewDocument('window.__name = (fn) => fn;');
+    }
 
     // Dùng 'domcontentloaded' thay vì 'networkidle2' để tránh timeout
     // khi website có background requests (WebSocket, analytics) không bao giờ idle
@@ -120,10 +125,10 @@ export async function fetchDailyAll(): Promise<DailyData> {
     const currentUrl = page.url();
     scrapeDebug.push(`[SCRAPER_URL] currentUrl=${currentUrl}`);
 
-    // Lấy nội dung page để debug
-    const pageContent = await page.evaluate(() => {
-      return document.documentElement.outerHTML.substring(0, 5000);
-    });
+    // Lấy nội dung page để debug (dùng string script để tránh bundler/tsx inject __name)
+    const pageContent = await page.evaluate<string>(
+      'document.documentElement.outerHTML.substring(0, 5000)',
+    );
     scrapeDebug.push(`[SCRAPER_PAGE] contentLength=${pageContent.length}`);
 
     // Thử waitForSelector với retry
@@ -138,26 +143,26 @@ export async function fetchDailyAll(): Promise<DailyData> {
     } catch (waitError) {
       scrapeDebug.push(`[SCRAPER_WAIT] ❌ Selector NOT found: ${(waitError as Error).message}`);
       // Log các selector có trong page để debug
-      const availableSelectors = await page.evaluate(() => {
-        const allDataInfo = document.querySelectorAll('[data-info]');
-        return Array.from(allDataInfo).map((el) => el.getAttribute('data-info'));
-      });
+      const availableSelectors = await page.evaluate<string[]>(
+        "Array.from(document.querySelectorAll('[data-info]')).map((el) => el.getAttribute('data-info'))",
+      );
       scrapeDebug.push(
         `[SCRAPER_DEBUG] Available [data-info] selectors (${availableSelectors.length}): ${JSON.stringify(availableSelectors.slice(0, 20))}`,
       );
     }
 
     // Log tất cả span elements để debug
-    const allSpans = await page.evaluate(() => {
-      const spans = document.querySelectorAll('span');
-      return Array.from(spans)
+    const allSpans = await page.evaluate<
+      Array<{ dataInfo: string | null; textContent: string; className: string }>
+    >(`
+      Array.from(document.querySelectorAll('span'))
         .slice(0, 50)
         .map((el) => ({
           dataInfo: el.getAttribute('data-info'),
-          textContent: el.textContent?.trim().substring(0, 100),
+          textContent: (el.textContent || '').trim().substring(0, 100),
           className: el.className,
-        }));
-    });
+        }))
+    `);
     scrapeDebug.push(`[SCRAPER_DEBUG] First 50 spans: ${JSON.stringify(allSpans)}`);
 
     // Chờ thêm 3 giây để async data load xong (nếu có)
@@ -183,8 +188,8 @@ export async function fetchDailyAll(): Promise<DailyData> {
     }
 
     // Log HTML của password section
-    const passwordSectionHtml = await page.evaluate(() => {
-      const q = (sel: string) => {
+    const passwordSectionHtml = await page.evaluate<Record<string, string>>(`(() => {
+      const q = (sel) => {
         const el = document.querySelector(sel);
         return el ? el.outerHTML.substring(0, 500) : 'NOT_FOUND';
       };
@@ -199,32 +204,32 @@ export async function fetchDailyAll(): Promise<DailyData> {
         loadingIndicator: q('[data-info*="loading"]'),
         emptyState: q('[data-info*="empty"]'),
       };
-    });
+    })()`);
     scrapeDebug.push(
       `[SCRAPER_DEBUG] Password section HTML: ${JSON.stringify(passwordSectionHtml)}`,
     );
 
     // Log tất cả [data-info] có textContent khác rỗng
-    const nonEmptyDataInfo = await page.evaluate(() => {
-      const allDataInfo = document.querySelectorAll('[data-info]');
-      return Array.from(allDataInfo)
-        .filter((el) => el.textContent?.trim().length > 0)
+    const nonEmptyDataInfo = await page.evaluate<
+      Array<{ dataInfo: string | null; textContent: string; className: string }>
+    >(`
+      Array.from(document.querySelectorAll('[data-info]'))
+        .filter((el) => (el.textContent || '').trim().length > 0)
         .map((el) => ({
           dataInfo: el.getAttribute('data-info'),
-          textContent: el.textContent?.trim().substring(0, 100),
+          textContent: (el.textContent || '').trim().substring(0, 100),
           className: el.className,
-        }));
-    });
+        }))
+    `);
     scrapeDebug.push(
       `[SCRAPER_DEBUG] Non-empty [data-info] elements (${nonEmptyDataInfo.length}): ${JSON.stringify(nonEmptyDataInfo)}`,
     );
 
-    const result = await page.evaluate(() => {
-      // puppeteer evaluate chạy trong browser context, globalThis là Document
-      const q = globalThis.document.querySelector.bind(globalThis.document);
+    const result = await page.evaluate<DailyData>(`(() => {
+      const q = (sel) => document.querySelector(sel);
 
       // Daily codes (expect 4-digit numbers)
-      const codeMap: Record<string, string> = {
+      const codeMap = {
         'operations-zero-dam': 'Đập Nước Zero',
         'operations-layali-grove': 'Thung lũng Layali',
         'operations-layali-brakkesh': 'Phố Cổ Brakkesh',
@@ -233,12 +238,12 @@ export async function fetchDailyAll(): Promise<DailyData> {
         'operations-layali-az3': 'AZ3',
       };
 
-      const codes: Record<string, string | null> = {};
+      const codes = {};
       for (const [selector, name] of Object.entries(codeMap)) {
-        const el = q(`span[data-info="${selector}"]`);
+        const el = q('span[data-info="' + selector + '"]');
         if (el) {
-          const text = el.textContent?.trim();
-          const match = text?.match(/\S+/);
+          const text = (el.textContent || '').trim();
+          const match = text.match(/\\S+/);
           codes[name] = match ? match[0] : null;
         } else {
           codes[name] = null;
@@ -246,9 +251,9 @@ export async function fetchDailyAll(): Promise<DailyData> {
       }
 
       // Operations stats — chỉ lấy khi có data thật (không phải nodata state)
-      const hasNoData = !!q(`[data-info="operations-nodata"]`);
+      const hasNoData = !!q('[data-info="operations-nodata"]');
 
-      const opMap: Record<string, string> = {
+      const opMap = {
         'operations-earnings': 'earnings',
         'operations-killed': 'killed',
         'operations-evacuation': 'evacuation',
@@ -256,20 +261,20 @@ export async function fetchDailyAll(): Promise<DailyData> {
         'operations-kd': 'kd',
       };
 
-      const operations: Record<string, string | null> = {};
+      const operations = {};
       if (hasNoData) {
         for (const key of Object.values(opMap)) {
           operations[key] = null;
         }
       } else {
         for (const [selector, key] of Object.entries(opMap)) {
-          const el = q(`span[data-info="${selector}"]`);
-          operations[key] = el ? el.textContent?.trim() || null : null;
+          const el = q('span[data-info="' + selector + '"]');
+          operations[key] = el ? ((el.textContent || '').trim() || null) : null;
         }
       }
 
       return { codes, operations };
-    });
+    })()`);
 
     const elapsed = Date.now() - startTime;
     scrapeDebug.push(`[SCRAPER_RESULT] codes=${JSON.stringify(result.codes)}`);
@@ -304,7 +309,7 @@ export async function extractToken(
     browser = (await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    })) as PuppeteerBrowser;
+    })) as unknown as PuppeteerBrowser;
 
     const page = await browser.newPage();
     await page.setUserAgent(
