@@ -21,6 +21,7 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "dev:preview": "tsx scripts/dev-preview.ts",
     "migrate:mongo": "tsx scripts/migrate-sqlite-to-mongo.ts",
+    "test:mongo": "tsx scripts/test-mongo.ts",
     "postinstall": "npx puppeteer browsers install chrome"
   },
   "lint-staged": {
