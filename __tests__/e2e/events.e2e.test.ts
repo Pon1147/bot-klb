@@ -337,4 +337,48 @@ describe('Events E2E — guildMemberUpdate', () => {
     const { execute } = require('../../src/events/guildMemberUpdate.event');
     await expect(execute({}, oldMember, newMember)).resolves.not.toThrow();
   });
+
+  it('phải dọn dẹp team-find message và session khi user rời voice channel', async () => {
+    const { storeMessage } = require('../../src/services/team-find-message-store');
+    const { createSession, getSession } = require('../../src/services/team-find-session');
+
+    const msgDeleteMock = jest.fn().mockResolvedValue(undefined);
+    const mockMsgChannel = {
+      isTextBased: () => true,
+      messages: {
+        fetch: jest.fn().mockResolvedValue({ delete: msgDeleteMock }),
+      },
+    };
+
+    const oldMember: any = {
+      guild: {
+        id: 'guild-123',
+        channels: {
+          fetch: jest.fn().mockResolvedValue(mockMsgChannel),
+        },
+      },
+      user: { id: 'user-voice-1', bot: false },
+      voice: { channelId: 'voice-room-old' },
+      premiumSince: null,
+    };
+
+    const newMember: any = {
+      guild: oldMember.guild,
+      user: oldMember.user,
+      voice: { channelId: null }, // Đã rời voice
+      premiumSince: null,
+    };
+
+    // Đăng ký message ref và session
+    storeMessage('guild-123', 'user-voice-1', 'msg-team', 'ch-team');
+    createSession('user-voice-1', 'guild-123', 'msg-menu', 'ch-menu');
+
+    const { execute } = require('../../src/events/guildMemberUpdate.event');
+    await execute({}, oldMember, newMember);
+
+    // Session phải bị xóa
+    expect(getSession('user-voice-1')).toBeUndefined();
+    expect(oldMember.guild.channels.fetch).toHaveBeenCalledWith('ch-team');
+    expect(msgDeleteMock).toHaveBeenCalled();
+  });
 });
