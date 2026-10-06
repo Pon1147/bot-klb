@@ -174,7 +174,7 @@ export async function fetchDailyAll(): Promise<DailyData> {
         fs.mkdirSync(debugDir, { recursive: true });
       }
       const screenshotPath = path.join(debugDir, `scraper-${Date.now()}.png`);
-      const screenshotData = await (page as any).screenshot({ path: screenshotPath });
+      const screenshotData = await page.screenshot({ path: screenshotPath });
       scrapeDebug.push(
         `[SCRAPER_DEBUG] Screenshot saved: ${screenshotPath} (${screenshotData.length} bytes)`,
       );
