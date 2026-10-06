@@ -3,10 +3,20 @@
   "compilerOptions": {
     "rootDir": "..",
     "noEmit": true,
+    "strict": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
+    "skipLibCheck": true,
     "types": ["jest", "node"]
   },
-  "include": ["*.ts", "../src/**/*.ts"],
-  "exclude": []
+  "include": [
+    "./**/*.ts",
+    "./**/*.d.ts",
+    "../src/types/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "e2e",
+    "extensions"
+  ]
 }

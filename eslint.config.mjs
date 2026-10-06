@@ -16,10 +16,6 @@ export default [
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: 'module',
-        parserOptions: {
-          project: './tsconfig.eslint.json',
-        },
-        tsconfigRootDir: import.meta.dirname,
       },
     },
     plugins: {
@@ -36,6 +32,19 @@ export default [
       '@typescript-eslint/no-explicit-any': 'warn',
       // Cho phép index signatures (cần cho SettingsRecord pattern)
       '@typescript-eslint/no-empty-object-type': 'off',
+    },
+  },
+
+  // Quy chuẩn nới lỏng cho test suites (cho phép mock stubs và dynamic requires)
+  {
+    files: ['__tests__/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
     },
   },
 
