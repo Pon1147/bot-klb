@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 /**
  * Unit tests cho df-code.command.ts — /df-code slash command (daily codes + subcommands).
  */
@@ -7,37 +8,68 @@ jest.mock('discord.js', () => ({
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
   PermissionFlagsBits: { Administrator: 0x8 },
   SlashCommandBuilder: class {
-    constructor() { this._subcommands = []; }
-    setName() { return this; }
-    setDescription() { return this; }
+    _subcommands: any[] = [];
+    constructor() {
+      this._subcommands = [];
+    }
+    setName() {
+      return this;
+    }
+    setDescription() {
+      return this;
+    }
     addSubcommand(cmd: any) {
       const mockSub: any = {
-        setName() { return this; },
-        setDescription() { return this; },
+        setName() {
+          return this;
+        },
+        setDescription() {
+          return this;
+        },
         addChannelOption(cb: any) {
           const mockOpt: any = {
-            setName() { return this; },
-            setDescription() { return this; },
-            setRequired() { return this; },
+            setName() {
+              return this;
+            },
+            setDescription() {
+              return this;
+            },
+            setRequired() {
+              return this;
+            },
           };
           cb(mockOpt);
           return this;
         },
         addRoleOption(cb: any) {
           const mockOpt: any = {
-            setName() { return this; },
-            setDescription() { return this; },
-            setRequired() { return this; },
+            setName() {
+              return this;
+            },
+            setDescription() {
+              return this;
+            },
+            setRequired() {
+              return this;
+            },
           };
           cb(mockOpt);
           return this;
         },
         addStringOption(cb: any) {
           const mockOpt: any = {
-            setName() { return this; },
-            setDescription() { return this; },
-            setRequired() { return this; },
-            setAutocomplete() { return this; },
+            setName() {
+              return this;
+            },
+            setDescription() {
+              return this;
+            },
+            setRequired() {
+              return this;
+            },
+            setAutocomplete() {
+              return this;
+            },
           };
           cb(mockOpt);
           return this;
@@ -47,11 +79,19 @@ jest.mock('discord.js', () => ({
       this._subcommands.push(mockSub);
       return this;
     }
-    addSubcommandGroup() { return this; }
-    toJSON() { return { subcommands: this._subcommands }; }
+    addSubcommandGroup() {
+      return this;
+    }
+    toJSON() {
+      return { subcommands: this._subcommands };
+    }
   },
   AttachmentBuilder: class {
-    constructor(public pathOrBuffer: any, public opts?: any) {
+    name: string;
+    constructor(
+      public pathOrBuffer: any,
+      public opts?: any,
+    ) {
       this.name = opts?.name ?? 'file.png';
     }
   },
@@ -66,22 +106,33 @@ jest.mock('../../src/utils/container.utils.js', () => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
     flags: 65536,
     files: [],
-    toJSON() { return this.components; },
+    toJSON() {
+      return this.components;
+    },
   })),
   buildSuccessContainer: jest.fn((msg: any) => ({
     components: [{ type: 17, components: [{ type: 10, content: msg }] }],
     flags: 65536,
     files: [],
-    toJSON() { return this.components; },
+    toJSON() {
+      return this.components;
+    },
   })),
-  buildTextOnlyContainer: jest.fn((content: any, color: any) => ({
+  buildTextOnlyContainer: jest.fn((content: any, _color: any) => ({
     components: [{ type: 17, components: [{ type: 10, content }] }],
     flags: 65536,
     files: [],
-    toJSON() { return this.components; },
+    toJSON() {
+      return this.components;
+    },
   })),
   makeResult: jest.fn((components: any, flags: any, files: any) => ({
-    components, flags, files, toJSON() { return components; },
+    components,
+    flags,
+    files,
+    toJSON() {
+      return components;
+    },
   })),
 }));
 
@@ -100,6 +151,11 @@ jest.mock('../../src/utils/section-config.handlers.js', () => ({
       components: [{ type: 17, components: [{ type: 10, content: 'success' }] }],
     });
   }),
+  handleSectionSetRole: jest.fn(async (interaction: any) => {
+    await interaction.editReply({
+      components: [{ type: 17, components: [{ type: 10, content: 'setrole-success' }] }],
+    });
+  }),
   handleSectionStatus: jest.fn(async (interaction: any) => {
     // Interaction đã defer → dùng editReply
     await interaction.editReply({
@@ -107,7 +163,9 @@ jest.mock('../../src/utils/section-config.handlers.js', () => ({
     });
   }),
   buildSectionSubcommands: jest.fn(() => ({
-    setName: () => ({ setDescription: () => ({ addSubcommand: () => ({ addSubcommandGroup: () => ({}) }) }) }),
+    setName: () => ({
+      setDescription: () => ({ addSubcommand: () => ({ addSubcommandGroup: () => ({}) }) }),
+    }),
   })),
 }));
 
@@ -118,7 +176,9 @@ import { MessageFlags } from 'discord.js';
 import { randomUUID } from 'crypto';
 
 describe('df-code.command', () => {
-  const mockDb: any = { prepare: jest.fn(() => ({ get: jest.fn(), run: jest.fn(), all: jest.fn(() => []) })) };
+  const mockDb: any = {
+    prepare: jest.fn(() => ({ get: jest.fn(), run: jest.fn(), all: jest.fn(() => []) })),
+  };
   const mockReply = jest.fn().mockResolvedValue(undefined);
   const mockEditReply = jest.fn().mockResolvedValue({ id: 'msg-123' });
   const mockDeferReply = jest.fn().mockResolvedValue(undefined);
@@ -148,7 +208,10 @@ describe('df-code.command', () => {
     const interaction = createMockInteraction({ guild: null });
     await execute(interaction, mockDb);
     expect(mockReply).toHaveBeenCalledWith(
-      expect.objectContaining({ content: expect.stringContaining('server'), flags: MessageFlags.Ephemeral }),
+      expect.objectContaining({
+        content: expect.stringContaining('server'),
+        flags: MessageFlags.Ephemeral,
+      }),
     );
   });
 
@@ -283,6 +346,187 @@ describe('df-code.command', () => {
     await execute(interaction, mockDb);
     // Interaction đã defer → handler gọi editReply
     expect(mockEditReply).toHaveBeenCalled();
+  });
+
+  it('nen chan user khi guild da cau hinh roleId nhung user khong co role', async () => {
+    const { getSettingsService } = require('../../src/services/settings.service.js');
+    (getSettingsService as jest.Mock).mockReturnValueOnce({
+      get: jest.fn(() => ({
+        dfCodes: { enabled: true, roleId: 'required-role-123' },
+      })),
+    });
+
+    const interaction = createMockInteraction({
+      options: { getSubcommand: () => 'show' },
+      member: {
+        roles: {
+          cache: [{ id: 'other-role-456' }],
+        },
+      },
+    });
+
+    await execute(interaction, mockDb);
+    expect(mockReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        components: expect.arrayContaining([
+          expect.objectContaining({
+            components: expect.arrayContaining([
+              expect.objectContaining({
+                content: expect.stringContaining('Bạn không có quyền sử dụng lệnh này'),
+              }),
+            ]),
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it('nen cho phep user khi guild da cau hinh roleId va user co dung role', async () => {
+    const { getSettingsService } = require('../../src/services/settings.service.js');
+    (getSettingsService as jest.Mock).mockReturnValueOnce({
+      get: jest.fn(() => ({
+        dfCodes: { enabled: true, roleId: 'required-role-123' },
+      })),
+    });
+
+    (fetchDailyCodes as jest.Mock).mockResolvedValue({
+      'Đập Nước Zero': '1234',
+      'Thung lũng Layali': '5678',
+      'Phố Cổ Brakkesh': '9012',
+      AZ3: 'AB12',
+      'Trạm Không Gian': '3456',
+      'Ngục Giam Thủy Triều': '7890',
+    });
+
+    const interaction = createMockInteraction({
+      options: { getSubcommand: () => 'show' },
+      member: {
+        roles: {
+          cache: [{ id: 'required-role-123' }],
+        },
+      },
+    });
+
+    await execute(interaction, mockDb);
+    expect(mockDeferReply).toHaveBeenCalled();
+    expect(mockEditReply).toHaveBeenCalled();
+  });
+
+  it('nen call setrole subcommand', async () => {
+    const interaction = createMockInteraction({
+      options: { getSubcommand: () => 'setrole' },
+    });
+    await execute(interaction, mockDb);
+    expect(mockEditReply).toHaveBeenCalled();
+  });
+
+  it('settime: nen bao loi khi gio sai dinh dang', async () => {
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommand: () => 'settime',
+        getString: (name: string) => (name === 'time' ? '8:0' : null),
+      },
+    });
+    await execute(interaction, mockDb);
+    expect(mockReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        components: expect.arrayContaining([
+          expect.objectContaining({
+            components: expect.arrayContaining([
+              expect.objectContaining({
+                content: expect.stringContaining('Định dạng giờ không hợp lệ'),
+              }),
+            ]),
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it('settime: nen bao loi khi gio vuot nguong 23h hoac phut vuot nguong 59', async () => {
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommand: () => 'settime',
+        getString: (name: string) => (name === 'time' ? '25:70' : null),
+      },
+    });
+    await execute(interaction, mockDb);
+    expect(mockReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        components: expect.arrayContaining([
+          expect.objectContaining({
+            components: expect.arrayContaining([
+              expect.objectContaining({
+                content: expect.stringContaining('Giờ phải từ 00-23, phút từ 00-59'),
+              }),
+            ]),
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it('settime: nen luu gio thanh cong khi gio hop le', async () => {
+    const { getSettingsService } = require('../../src/services/settings.service.js');
+    const updateMock = jest.fn();
+    (getSettingsService as jest.Mock).mockReturnValue({
+      get: jest.fn(() => ({ dfCodes: { enabled: true } })),
+      update: updateMock,
+    });
+
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommand: () => 'settime',
+        getString: (name: string) => (name === 'time' ? '08:30' : null),
+      },
+    });
+    await execute(interaction, mockDb);
+    expect(updateMock).toHaveBeenCalledWith('111', { dfCodes: { scheduleTime: '08:30' } });
+    expect(mockReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        components: expect.arrayContaining([
+          expect.objectContaining({
+            components: expect.arrayContaining([
+              expect.objectContaining({
+                content: expect.stringContaining('08:30'),
+              }),
+            ]),
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it('setadminchannel: nen luu adminChannel thanh cong', async () => {
+    const { getSettingsService } = require('../../src/services/settings.service.js');
+    const updateMock = jest.fn();
+    (getSettingsService as jest.Mock).mockReturnValue({
+      get: jest.fn(() => ({ dfCodes: { enabled: true } })),
+      update: updateMock,
+    });
+
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommand: () => 'setadminchannel',
+        getChannel: (name: string) =>
+          name === 'channel' ? { id: 'admin-ch-999', toString: () => '<#admin-ch-999>' } : null,
+      },
+    });
+    await execute(interaction, mockDb);
+    expect(updateMock).toHaveBeenCalledWith('111', { dfCodes: { adminChannelId: 'admin-ch-999' } });
+    expect(mockReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        components: expect.arrayContaining([
+          expect.objectContaining({
+            components: expect.arrayContaining([
+              expect.objectContaining({
+                content: expect.stringContaining('Đã đặt channel thông báo lỗi'),
+              }),
+            ]),
+          }),
+        ]),
+      }),
+    );
   });
 });
 
