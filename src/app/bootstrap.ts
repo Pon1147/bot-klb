@@ -81,13 +81,24 @@ export async function bootstrap(): Promise<Client> {
   if (botConfig.mongoUri) {
     logger.info('Connecting to MongoDB...');
     try {
-      await connectMongo(botConfig.mongoUri);
-      await initMongoIndexes();
-      logger.info('MongoDB connected and indexes initialized');
+      const mongoDb = await connectMongo(botConfig.mongoUri);
 
-      // Đồng bộ account bindings từ MongoDB sang SQLite
-      const syncedBindings = await syncBindingsFromMongoToSqlite(database);
-      logger.info(`Synced ${syncedBindings} account binding(s) from MongoDB to local SQLite`);
+      if (mongoDb) {
+        logger.info('✓ MongoDB connected');
+
+        const indexesOk = await initMongoIndexes();
+        if (indexesOk) {
+          logger.info('✓ MongoDB indexes initialized');
+        } else {
+          logger.warn('⚠ MongoDB indexes initialization failed — MongoDB features may be degraded');
+        }
+
+        // Đồng bộ account bindings từ MongoDB sang SQLite
+        const syncedBindings = await syncBindingsFromMongoToSqlite(database);
+        logger.info(`Synced ${syncedBindings} account binding(s) from MongoDB to local SQLite`);
+      } else {
+        logger.warn('⚠ MongoDB connection returned null — skipping indexes and sync');
+      }
     } catch (err) {
       logger.error(
         'Failed to connect to MongoDB, falling back to local SQLite: ' + (err as Error).message,

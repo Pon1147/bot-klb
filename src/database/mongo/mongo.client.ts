@@ -93,9 +93,10 @@ export function _setTestDb(mockDb: Db | null): void {
 /**
  * Khoi tao cac Index can thiet tren MongoDB (Unique index & TTL index).
  * Chi goi 1 lan khi bootstrap bot.
+ * Tra ve true neu tat ca indexes duoc khoi tao thanh cong, false neu that bai.
  */
-export async function initMongoIndexes(): Promise<void> {
-  if (!db) return;
+export async function initMongoIndexes(): Promise<boolean> {
+  if (!db) return false;
 
   try {
     // 1. Guild Settings: unique index theo guildId
@@ -125,7 +126,10 @@ export async function initMongoIndexes(): Promise<void> {
       .createIndex({ discord_id: 1 }, { unique: true, background: true });
 
     logger.info('✓ Khoi tao MongoDB indexes hoan tat (Unique & TTL indexes da san sang).');
+
+    return true;
   } catch (error) {
     logger.error('Loi khi khoi tao MongoDB indexes:', { error });
+    return false;
   }
 }
