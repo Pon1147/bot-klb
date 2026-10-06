@@ -20,6 +20,9 @@ describe('deltaforce.api', () => {
   let getMatchList: (token: any) => Promise<any>;
   let getCollection: (token: any) => Promise<any>;
   let getDailyReport: (token: any) => Promise<any>;
+  let validateToken: (token: any, openid: string) => Promise<boolean>;
+  let getWorkshopRecommendations: (token: any) => Promise<any>;
+  let getWorkbenchList: (token: any) => Promise<any>;
   let mockPost: jest.Mock;
 
   beforeEach(() => {
@@ -28,8 +31,16 @@ describe('deltaforce.api', () => {
     mockPost = jest.fn();
     axios.create.mockReturnValue({ post: mockPost });
 
-    ({ getMyData, getSeasonData, getMatchList, getCollection, getDailyReport } =
-      require('../../src/services/deltaforce.api.js'));
+    ({
+      getMyData,
+      getSeasonData,
+      getMatchList,
+      getCollection,
+      getDailyReport,
+      validateToken,
+      getWorkshopRecommendations,
+      getWorkbenchList,
+    } = require('../../src/services/deltaforce.api.js'));
   });
 
   function mockSuccess(data: any) {
@@ -122,6 +133,61 @@ describe('deltaforce.api', () => {
     it('nên throw error khi API thất bại', async () => {
       mockError(-5, 'No collection');
       await expect(getCollection(MOCK_TOKEN)).rejects.toThrow('GetDahongCollection failed');
+    });
+  });
+
+  describe('validateToken', () => {
+    it('nên trả về true khi code = 0', async () => {
+      mockSuccess({});
+      const isValid = await validateToken(MOCK_TOKEN, 'openid-123');
+      expect(isValid).toBe(true);
+      expect(mockPost).toHaveBeenCalledWith('/GetMyData', expect.objectContaining({ openid: 'openid-123' }));
+    });
+
+    it('nên trả về false khi code khác 0', async () => {
+      mockError(-1, 'Token expired');
+      const isValid = await validateToken(MOCK_TOKEN, 'openid-123');
+      expect(isValid).toBe(false);
+    });
+
+    it('nên trả về false khi network request ném lỗi', async () => {
+      mockPost.mockRejectedValue(new Error('Network error'));
+      const isValid = await validateToken(MOCK_TOKEN, 'openid-123');
+      expect(isValid).toBe(false);
+    });
+  });
+
+  describe('getWorkshopRecommendations', () => {
+    it('nên trả về recommendations khi API thành công', async () => {
+      const mockRecs = { list: [{ item_id: 1, item_name: 'Item A', profit_per_hour: 500 }] };
+      mockSuccess(mockRecs);
+      const result = await getWorkshopRecommendations(MOCK_TOKEN);
+      expect(result).toEqual(mockRecs);
+      expect(mockPost).toHaveBeenCalledWith('/GetManufactureRecommendationList', {});
+    });
+
+    it('nên throw error khi API trả về mã lỗi', async () => {
+      mockError(-10, 'Maintenance');
+      await expect(getWorkshopRecommendations(MOCK_TOKEN)).rejects.toThrow(
+        'GetManufactureRecommendationList failed: code=-10 msg=Maintenance',
+      );
+    });
+  });
+
+  describe('getWorkbenchList', () => {
+    it('nên trả về workbench list khi API thành công', async () => {
+      const mockWorkbench = { list: [{ slot_id: 1, remain_time: 120, status: 1 }] };
+      mockSuccess(mockWorkbench);
+      const result = await getWorkbenchList(MOCK_TOKEN);
+      expect(result).toEqual(mockWorkbench);
+      expect(mockPost).toHaveBeenCalledWith('/GetWorkbenchList', {});
+    });
+
+    it('nên throw error khi API trả về mã lỗi', async () => {
+      mockError(-11, 'Invalid slot');
+      await expect(getWorkbenchList(MOCK_TOKEN)).rejects.toThrow(
+        'GetWorkbenchList failed: code=-11 msg=Invalid slot',
+      );
     });
   });
 });

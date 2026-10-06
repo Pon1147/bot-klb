@@ -158,3 +158,80 @@ describe('parseRecipeImages', () => {
     expect(Object.keys(result)).toHaveLength(2);
   });
 });
+
+describe('getWorkshopItemName & getWorkshopItemImage — Service Logic', () => {
+  const {
+    getWorkshopItemName,
+    getWorkshopItemImage,
+    clearWorkshopDataCache,
+    clearRecipeImageCache,
+  } = require('../../src/services/workshop-data.service.js');
+
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    clearWorkshopDataCache();
+    clearRecipeImageCache();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it('nên fetch và parse item name từ JS files, sau đó cache kết quả', async () => {
+    const mockCollections = `var basic_info_collection = [{"prop_id":"101","language":{"vi":"M4A1 Assault Rifle\\u0020Special"}}];`;
+    const mockRecipes = `var craft = [{"item_id":"202","item_name":"Armor Plate"}];`;
+
+    global.fetch = jest.fn((url: string | URL | Request) => {
+      const urlStr = url.toString();
+      if (urlStr.includes('collections_vi.js')) {
+        return Promise.resolve(new Response(mockCollections, { status: 200 }));
+      }
+      return Promise.resolve(new Response(mockRecipes, { status: 200 }));
+    }) as any;
+
+    // Lần 1: Gọi fetch
+    const name1 = await getWorkshopItemName('101');
+    expect(name1).toBe('M4A1 Assault Rifle Special');
+
+    const name2 = await getWorkshopItemName('202');
+    expect(name2).toBe('Armor Plate');
+
+    // Lần 2: Đọc từ cache, không fetch lại
+    const nameCached = await getWorkshopItemName('101');
+    expect(nameCached).toBe('M4A1 Assault Rifle Special');
+    expect(global.fetch).toHaveBeenCalledTimes(2); // 1 cho collections, 1 cho recipes
+  });
+
+  it('nên fallback trả về "Item <id>" khi không tìm thấy item trong data', async () => {
+    global.fetch = jest.fn(() => Promise.resolve(new Response('var a = [];', { status: 200 }))) as any;
+
+    const fallbackName = await getWorkshopItemName('999999');
+    expect(fallbackName).toBe('Item 999999');
+  });
+
+  it('nên xử lý network fetch fail gracefully và fallback an toàn', async () => {
+    global.fetch = jest.fn(() => Promise.reject(new Error('Connection timeout'))) as any;
+
+    const fallbackName = await getWorkshopItemName('500');
+    expect(fallbackName).toBe('Item 500');
+  });
+
+  it('nên fetch và cache recipe images cho getWorkshopItemImage', async () => {
+    const mockRecipeJs = `var craft = [{ item_id: '12345', item_image_url: 'https://example.com/img12345.png' }];`;
+
+    global.fetch = jest.fn(() => Promise.resolve(new Response(mockRecipeJs, { status: 200 }))) as any;
+
+    const img1 = await getWorkshopItemImage('12345');
+    expect(img1).toBe('https://example.com/img12345.png');
+
+    // Lần 2: Cache hit
+    const imgCached = await getWorkshopItemImage('12345');
+    expect(imgCached).toBe('https://example.com/img12345.png');
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+    // Missing item image
+    const notFoundImg = await getWorkshopItemImage('999');
+    expect(notFoundImg).toBe('');
+  });
+});
