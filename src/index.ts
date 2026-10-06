@@ -1,6 +1,6 @@
 import { bootstrap } from './app/bootstrap.js';
 import { createLogger } from './utils/logger.js';
-import { disconnectMongo } from './database/mongo/mongo.client.js';
+import { disconnectMongo } from './database/mongo/index.js';
 
 const logger = createLogger('Bot');
 

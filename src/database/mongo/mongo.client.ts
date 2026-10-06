@@ -17,9 +17,9 @@ export async function connectMongo(uri?: string): Promise<Db | null> {
     return db;
   }
 
-  const connectionUri = uri || process.env.MONGODB_URI || process.env.MONGO_URL;
-  if (!connectionUri) {
-    logger.debug('Khong co MONGODB_URI/MONGO_URL duoc cau hinh, bo qua ket noi MongoDB.');
+  const connectionUri = uri !== undefined ? uri : process.env.MONGODB_URI || process.env.MONGO_URL;
+  if (!connectionUri || connectionUri.includes('${{')) {
+    logger.debug('Khong co MONGODB_URI/MONGO_URL hop le duoc cau hinh, bo qua ket noi MongoDB.');
     return null;
   }
 

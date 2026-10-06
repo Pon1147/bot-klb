@@ -15,8 +15,8 @@ import {
   revokeAccountBindingInMongo,
   touchLastOkInMongo,
   loadAllActiveBindingsFromMongo,
-} from './mongo/repositories/df-binding.repo.js';
-import { isMongoConnected } from './mongo/mongo.client.js';
+  isMongoConnected,
+} from './mongo/index.js';
 
 interface AccountBindingRow {
   id: number;

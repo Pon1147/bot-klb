@@ -20,7 +20,7 @@ import {
   syncBindingsFromMongoToSqlite,
 } from '../database/df-binding.db.js';
 import { initializeCaptureEventsTable } from '../database/df-telemetry.db.js';
-import { connectMongo, initMongoIndexes } from '../database/mongo/mongo.client.js';
+import { connectMongo, initMongoIndexes } from '../database/mongo/index.js';
 import { SettingsService, setSettingsService } from '../services/settings.service.js';
 import {
   CommandModule,

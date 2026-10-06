@@ -14,8 +14,8 @@ import {
 import {
   saveGuildSettingsToMongo,
   loadAllGuildSettingsFromMongo,
-} from '../database/mongo/repositories/guild-settings.repo.js';
-import { isMongoConnected } from '../database/mongo/mongo.client.js';
+  isMongoConnected,
+} from '../database/mongo/index.js';
 import { buildContainer, BuildContainerResult } from '../utils/container.utils.js';
 
 /**
