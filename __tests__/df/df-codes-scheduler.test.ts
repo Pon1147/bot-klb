@@ -23,10 +23,10 @@ jest.mock('../../src/services/deltaforce.scraper.js', () => ({
   fetchDailyCodes: jest.fn(),
 }));
 
-jest.mock('../../src/features/delta-force/code.command.js', () => ({
+jest.mock('../../src/features/delta-force/code.renderer.js', () => ({
   buildCodesContainer: jest.fn((_codes: any, _hasCodes: boolean) => ({
     components: [{ type: 17, components: [{ type: 10, content: 'codes' }] }],
-    flags: 65536,
+    flags: 32768,
     files: [],
     toJSON() {
       return this.components;
@@ -38,8 +38,14 @@ jest.mock('../../src/features/delta-force/code.command.js', () => ({
 }));
 
 import { fetchDailyCodes } from '../../src/services/deltaforce.scraper.js';
-import { buildCodesContainer, hasAnyCodes } from '../../src/features/delta-force/code.command.js';
-import { startDfCodesScheduler, rescheduleDfCodes } from '../../src/services/df-codes-scheduler.js';
+import { buildCodesContainer, hasAnyCodes } from '../../src/features/delta-force/code.renderer.js';
+import {
+  startDfCodesScheduler,
+  rescheduleDfCodes,
+  stopGuildCronJob,
+  stopAllCronJobs,
+  getScheduledGuildIds,
+} from '../../src/services/df-codes-scheduler.js';
 import { getSettingsService } from '../../src/services/settings.service.js';
 import cron from 'node-cron';
 
@@ -157,7 +163,7 @@ describe('df-codes-scheduler', () => {
       expect(mockClient.channels.fetch).toHaveBeenCalledWith('channel-123');
       expect(mockChannel.send).toHaveBeenCalledWith(
         expect.objectContaining({
-          flags: 65536,
+          flags: 32768,
         }),
       );
     });
@@ -346,5 +352,121 @@ describe('df-codes-scheduler', () => {
       rescheduleDfCodes(mockClient, mockDb);
       expect(cron.schedule).toHaveBeenCalled();
     });
+
+    it('startDfCodesScheduler nên lập lịch độc lập cho nhiều guild trong database', () => {
+      (cron.schedule as jest.Mock).mockClear();
+      (getSettingsService as jest.Mock).mockReturnValue({
+        get: jest.fn((guildId: string) => {
+          if (guildId === 'guild-1') {
+            return { dfCodes: { channelId: 'ch-1', scheduleTime: '08:00' } };
+          }
+          if (guildId === 'guild-2') {
+            return { dfCodes: { channelId: 'ch-2', scheduleTime: '10:15' } };
+          }
+          return {};
+        }),
+      });
+
+      startDfCodesScheduler(mockClient, mockDb);
+
+      expect(getScheduledGuildIds()).toEqual(expect.arrayContaining(['guild-1', 'guild-2']));
+      expect(getScheduledGuildIds()).toHaveLength(2);
+      expect(cron.schedule).toHaveBeenCalledTimes(2);
+
+      // Kiểm tra biểu thức cron tương ứng với scheduleTime của từng guild
+      expect(cron.schedule).toHaveBeenCalledWith(
+        '0 8 * * *',
+        expect.any(Function),
+        expect.objectContaining({ timezone: 'Asia/Ho_Chi_Minh' }),
+      );
+      expect(cron.schedule).toHaveBeenCalledWith(
+        '15 10 * * *',
+        expect.any(Function),
+        expect.objectContaining({ timezone: 'Asia/Ho_Chi_Minh' }),
+      );
+    });
+
+    it('rescheduleDfCodes với targetGuildId chỉ cập nhật lại guild đó mà không đụng tới guild khác', () => {
+      // Thiết lập ban đầu với 2 guild
+      (cron.schedule as jest.Mock).mockClear();
+      const mockStopJob1 = jest.fn();
+      const mockStopJob2 = jest.fn();
+      let callCount = 0;
+      (cron.schedule as jest.Mock).mockImplementation(() => {
+        callCount++;
+        return { stop: callCount === 1 ? mockStopJob1 : mockStopJob2 };
+      });
+
+      (getSettingsService as jest.Mock).mockReturnValue({
+        get: jest.fn((guildId: string) => {
+          if (guildId === 'guild-1') {
+            return { dfCodes: { channelId: 'ch-1', scheduleTime: '08:00' } };
+          }
+          if (guildId === 'guild-2') {
+            return { dfCodes: { channelId: 'ch-2', scheduleTime: '10:15' } };
+          }
+          return {};
+        }),
+      });
+
+      startDfCodesScheduler(mockClient, mockDb);
+      expect(getScheduledGuildIds()).toHaveLength(2);
+
+      // Reschedule chỉ guild-1 sang 09:30
+      (getSettingsService as jest.Mock).mockReturnValue({
+        get: jest.fn((guildId: string) => {
+          if (guildId === 'guild-1') {
+            return { dfCodes: { channelId: 'ch-1', scheduleTime: '09:30' } };
+          }
+          if (guildId === 'guild-2') {
+            return { dfCodes: { channelId: 'ch-2', scheduleTime: '10:15' } };
+          }
+          return {};
+        }),
+      });
+
+      rescheduleDfCodes(mockClient, mockDb, 'guild-1');
+
+      // Job 1 phải bị stop, Job 2 vẫn giữ nguyên không bị stop
+      expect(mockStopJob1).toHaveBeenCalledTimes(1);
+      expect(mockStopJob2).not.toHaveBeenCalled();
+
+      // Cả 2 guild vẫn còn trong danh sách đã lên lịch
+      expect(getScheduledGuildIds()).toEqual(expect.arrayContaining(['guild-1', 'guild-2']));
+    });
+
+    it('stopGuildCronJob và stopAllCronJobs quản lý dọn dẹp chính xác', () => {
+      const mockStop1 = jest.fn();
+      const mockStop2 = jest.fn();
+      let callCount = 0;
+      (cron.schedule as jest.Mock).mockImplementation(() => {
+        callCount++;
+        return { stop: callCount === 1 ? mockStop1 : mockStop2 };
+      });
+
+      (getSettingsService as jest.Mock).mockReturnValue({
+        get: jest.fn((guildId: string) => ({
+          dfCodes: { channelId: `ch-${guildId}`, scheduleTime: '08:00' },
+        })),
+      });
+
+      startDfCodesScheduler(mockClient, mockDb);
+      expect(getScheduledGuildIds()).toHaveLength(2);
+
+      // Dừng guild-1
+      const stoppedGuild1 = stopGuildCronJob('guild-1');
+      expect(stoppedGuild1).toBe(true);
+      expect(mockStop1).toHaveBeenCalledTimes(1);
+      expect(getScheduledGuildIds()).toEqual(['guild-2']);
+
+      // Thử dừng lại guild-1 -> trả về false vì đã không còn
+      expect(stopGuildCronJob('guild-1')).toBe(false);
+
+      // Dừng tất cả
+      stopAllCronJobs();
+      expect(mockStop2).toHaveBeenCalledTimes(1);
+      expect(getScheduledGuildIds()).toHaveLength(0);
+    });
   });
 });
+
