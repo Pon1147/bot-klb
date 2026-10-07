@@ -24,6 +24,7 @@ export interface TeamFindParams {
   difficulty: Difficulty;
   channelName: string;
   channelId: string;
+  guildId?: string;
   username: string;
   avatarUrl: string;
   rank?: string | null;
@@ -68,7 +69,7 @@ export function buildTeamFindEmbed(params: TeamFindParams) {
   }
 
   lines.push(`**ROOM**`);
-  lines.push(params.channelName);
+  lines.push(`<#${params.channelId}>`);
 
   // ── Separator with difficulty accent color ──
   const separator: Record<string, unknown> = {
@@ -97,11 +98,15 @@ export function buildTeamFindEmbed(params: TeamFindParams) {
     components: containerInner,
   };
 
-  // ── Button Row ──
+  // ── Button Row: Link Button dẫn thẳng vào phòng thoại ──
+  const voiceUrl = params.guildId
+    ? `https://discord.com/channels/${params.guildId}/${params.channelId}`
+    : `https://discord.com/channels/@me/${params.channelId}`;
+
   const joinButton = new ButtonBuilder()
-    .setCustomId(`team-find-join:${params.channelId}`)
-    .setLabel('Join Room')
-    .setStyle(ButtonStyle.Primary);
+    .setLabel(`Tham gia: ${params.channelName}`)
+    .setStyle(ButtonStyle.Link)
+    .setURL(voiceUrl);
 
   const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(joinButton);
 

@@ -45,22 +45,39 @@ export async function handleTeamFindButton(
     }
   }
 
-  // ── Join voice channel button ──
+  // ── Join voice channel button (tương thích ngược cho các tin nhắn cũ) ──
   if (customId.startsWith(TeamFindIds.JOIN)) {
-    return await handleJoinVoice(interaction);
+    try {
+      return await handleJoinVoice(interaction);
+    } catch (error) {
+      logger.error(
+        'Lỗi trong xử lý tham gia phòng thoại: ' +
+          (error instanceof Error ? error.message : String(error)),
+      );
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction
+          .reply({
+            content: 'Đã xảy ra lỗi khi tham gia phòng thoại.',
+            flags: MessageFlags.Ephemeral,
+          })
+          .catch(() => {});
+      }
+      return { handled: true };
+    }
   }
 
   return { handled: false };
 }
 
 /**
- * Handle team-find join voice channel button.
- * Extracts channel ID from customId, validates, and joins.
+ * Xử lý nút tham gia phòng thoại của tin nhắn tìm đội (fallback cho tin nhắn cũ).
+ * Trích xuất channelId từ customId, xác thực và hướng dẫn/di chuyển người dùng.
  */
 async function handleJoinVoice(interaction: ButtonInteraction): Promise<TeamFindInteractionResult> {
   const channelId = interaction.customId.split(':')[1];
   const channel = await interaction.guild?.channels.fetch(channelId).catch(() => null);
 
+  // Kiểm tra phòng thoại có tồn tại và đúng loại voice channel (type 2: GuildVoice)
   if (!channel || channel.type !== 2) {
     await interaction.reply({
       content: 'Phòng thoại không còn tồn tại.',
@@ -71,14 +88,17 @@ async function handleJoinVoice(interaction: ButtonInteraction): Promise<TeamFind
 
   const member = interaction.member;
   const memberVoice = member instanceof GuildMember ? member.voice : null;
+
+  // Trường hợp người dùng đã ở sẵn trong phòng này
   if (memberVoice?.channel?.id === channelId) {
     await interaction.reply({
-      content: 'Bạn đã đang trong phòng này.',
+      content: 'Bạn đã đang trong phòng thoại này rồi.',
       flags: MessageFlags.Ephemeral,
     });
     return { handled: true };
   }
 
+  // Trường hợp phòng thoại đã đầy
   if (channel.full) {
     await interaction.reply({
       content: VOICE_CHANNEL_FULL_MESSAGE,
@@ -87,21 +107,23 @@ async function handleJoinVoice(interaction: ButtonInteraction): Promise<TeamFind
     return { handled: true };
   }
 
-  const me = interaction.guild!.members.me;
-  const botPerms = me ? channel.permissionsFor(me) : null;
-  if (!botPerms?.has('Connect')) {
-    await interaction.reply({
-      content: 'Bot không có quyền tham gia phòng thoại này.',
-      flags: MessageFlags.Ephemeral,
-    });
-    return { handled: true };
+  // Nếu người dùng đang ở một phòng voice khác, thử di chuyển họ sang phòng của đội
+  if (memberVoice?.channel) {
+    try {
+      await memberVoice.setChannel(channelId);
+      await interaction.reply({
+        content: `Đã di chuyển bạn vào phòng thoại <#${channelId}>!`,
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    } catch {
+      // Bot không có quyền MoveMembers hoặc không move được -> fallback hướng dẫn click
+    }
   }
 
-  // channel là VoiceChannel nhưng type là GuildVoiceChannel — discord.js v14 type hierarchy
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (channel as any).join();
+  // Nếu người dùng chưa vào phòng thoại nào, hướng dẫn họ click vào tag kênh
   await interaction.reply({
-    content: 'Đã tham gia phòng thành công!',
+    content: `Vui lòng bấm vào phòng thoại <#${channelId}> để tham gia cùng đội nhé!`,
     flags: MessageFlags.Ephemeral,
   });
   return { handled: true };

@@ -13,10 +13,11 @@ jest.mock('discord.js', () => ({
     ActionRow: 1,
   },
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
-  ButtonStyle: { Primary: 1 },
+  ButtonStyle: { Primary: 1, Link: 5 },
   ButtonBuilder: class {
     label: string = '';
     customId: string = '';
+    url: string = '';
     style: number = 1;
     setLabel(l: string) {
       this.label = l;
@@ -26,12 +27,16 @@ jest.mock('discord.js', () => ({
       this.customId = id;
       return this;
     }
+    setURL(u: string) {
+      this.url = u;
+      return this;
+    }
     setStyle(s: number) {
       this.style = s;
       return this;
     }
     toJSON() {
-      return { type: 2, label: this.label, custom_id: this.customId, style: this.style };
+      return { type: 2, label: this.label, custom_id: this.customId, url: this.url, style: this.style };
     }
   },
   ActionRowBuilder: class {
@@ -98,10 +103,16 @@ describe('team-find.embed — buildTeamFindEmbed', () => {
     expect(result.files.length).toBeGreaterThan(0);
   });
 
-  it('nên chứa button với custom ID chứa channel ID', () => {
+  it('nên chứa Link Button dẫn tới phòng thoại', () => {
     const result = buildTeamFindEmbed(mockParams);
-    const buttonFound = JSON.stringify(result.components).includes('team-find-join:vc-123');
-    expect(buttonFound).toBe(true);
+    const content = JSON.stringify(result.components);
+    expect(content).toContain('https://discord.com/channels/@me/vc-123');
+  });
+
+  it('nên hỗ trợ guildId trong Link Button', () => {
+    const result = buildTeamFindEmbed({ ...mockParams, guildId: 'guild-456' });
+    const content = JSON.stringify(result.components);
+    expect(content).toContain('https://discord.com/channels/guild-456/vc-123');
   });
 
   it('nên chứa tên map trong content', () => {
@@ -122,9 +133,10 @@ describe('team-find.embed — buildTeamFindEmbed', () => {
     expect(content).toContain('Dễ');
   });
 
-  it('nên chứa channel name trong content', () => {
+  it('nên chứa tag kênh thoại trong content và tên kênh trong label nút', () => {
     const result = buildTeamFindEmbed(mockParams);
     const content = JSON.stringify(result.components);
+    expect(content).toContain('<#vc-123>');
     expect(content).toContain('Gaming Room');
   });
 

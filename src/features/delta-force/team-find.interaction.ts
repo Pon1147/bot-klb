@@ -170,6 +170,7 @@ export async function handleTeamFindInteraction(
       difficulty,
       channelName: voiceChannel.name,
       channelId: voiceChannel.id,
+      guildId: interaction.guildId ?? session.guildId,
       username: interaction.user.username,
       avatarUrl: interaction.user.displayAvatarURL({ extension: 'png', size: EMBED_AVATAR_SIZE }),
       rank: session.rank ?? null,
