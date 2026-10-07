@@ -44,21 +44,11 @@ jest.mock('../../src/services/team-find-session.js', () => ({
   createSession: jest.fn(),
 }));
 
-import { data, execute } from '../../src/features/delta-force/team-find.command.js';
+import { execute } from '../../src/features/delta-force/team-find.handler.js';
 import { requireGuild } from '../../src/utils/df-guards.js';
 import { checkVoiceForTeamFind } from '../../src/utils/df-voice.utils.js';
 import { buildSelectMenuMessage } from '../../src/features/delta-force/team-find.menu.js';
 import { createSession } from '../../src/services/team-find-session.js';
-
-describe('team-find.command — data', () => {
-  it('nên có tên team-find', () => {
-    expect(data.name).toBe('team-find');
-  });
-
-  it('không nên có options (select menu flow)', () => {
-    expect((data as any).options).toBeUndefined();
-  });
-});
 
 describe('team-find.command — execute', () => {
   const mockDb: any = { prepare: jest.fn(() => ({ get: jest.fn(), run: jest.fn() })) };

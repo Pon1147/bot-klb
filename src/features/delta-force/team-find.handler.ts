@@ -1,11 +1,6 @@
-/** /team-find — Tìm đồng đội (select menu flow) */
+/** Team-find handler — Tìm đồng đội (select menu flow) */
 
-import {
-  ChatInputCommandInteraction,
-  GuildTextBasedChannel,
-  MessageFlags,
-  SlashCommandBuilder,
-} from 'discord.js';
+import { ChatInputCommandInteraction, GuildTextBasedChannel, MessageFlags } from 'discord.js';
 import Database from 'better-sqlite3';
 import { requireGuild } from '../../utils/df-guards.js';
 import { checkVoiceForTeamFind } from '../../utils/df-voice.utils.js';
@@ -13,10 +8,6 @@ import { buildSelectMenuMessage } from './team-find.menu.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { createSession } from '../../services/team-find-session.js';
 import { sendReply } from '../../utils/reply.utils.js';
-
-export const data = new SlashCommandBuilder()
-  .setName('team-find')
-  .setDescription('Tìm đồng đội chơi theo bản đồ và chế độ');
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
