@@ -18,7 +18,6 @@
 
 import {
   ChatInputCommandInteraction,
-  MessageFlags,
   Role,
   SlashCommandBuilder,
   SlashCommandSubcommandBuilder,
@@ -223,8 +222,6 @@ async function handleRolesSet(
     return;
   }
 
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
   try {
     let settingsService: SettingsService;
     try {
@@ -248,13 +245,13 @@ async function handleRolesSet(
       rbac: rbacUpdate,
     });
 
-    await interaction.editReply({
+    await sendReply(interaction, {
       content: `✅ Đã thiết lập **${mapping.label}** role: ${role} (\`${role.id}\`) cho máy chủ này.`,
     });
   } catch (error) {
     logger.error(`Error saving role config: ${(error as Error).message}`);
     const err = buildErrorContainer(`Lỗi khi lưu: ${(error as Error).message}`);
-    await interaction.editReply({ components: err.toJSON() });
+    await sendReply(interaction, { components: err.toJSON() });
   }
 }
 
@@ -263,7 +260,6 @@ async function handleRolesView(
   database?: Database.Database,
 ): Promise<void> {
   const guild = interaction.guild!;
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
     let settingsService: SettingsService;
@@ -294,11 +290,11 @@ async function handleRolesView(
     ].join('\n');
 
     const container = buildTextOnlyContainer(content, COLORS.INFO);
-    await interaction.editReply({ components: container.toJSON() });
+    await sendReply(interaction, { components: container.toJSON() });
   } catch (error) {
     logger.error(`Error viewing roles config: ${(error as Error).message}`);
     const err = buildErrorContainer(`Lỗi khi đọc cấu hình: ${(error as Error).message}`);
-    await interaction.editReply({ components: err.toJSON() });
+    await sendReply(interaction, { components: err.toJSON() });
   }
 }
 

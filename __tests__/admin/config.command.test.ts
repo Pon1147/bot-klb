@@ -184,7 +184,7 @@ describe('/config command — Execute Dispatch', () => {
         ownerRoleId: 'role-999',
       },
     });
-    expect(interaction.editReply).toHaveBeenCalledWith(
+    expect(interaction.reply).toHaveBeenCalledWith(
       expect.objectContaining({ content: expect.stringContaining('role-999') }),
     );
   });
@@ -235,6 +235,22 @@ describe('/config command — Execute Dispatch', () => {
     await execute(interaction);
 
     expect(mockSettingsService.get).toHaveBeenCalledWith('guild-123');
+    expect(interaction.reply).toHaveBeenCalledWith(
+      expect.objectContaining({ components: expect.any(Array) }),
+    );
+  });
+
+  it('roles view: khi interaction đã deferred trước đó, sendReply gọi editReply', async () => {
+    const interaction = createMockInteraction({
+      deferred: true,
+      options: {
+        getSubcommandGroup: jest.fn().mockReturnValue('roles'),
+        getSubcommand: jest.fn().mockReturnValue('view'),
+      },
+    });
+
+    await execute(interaction);
+
     expect(interaction.editReply).toHaveBeenCalledWith(
       expect.objectContaining({ components: expect.any(Array) }),
     );
