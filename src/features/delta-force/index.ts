@@ -5,14 +5,18 @@
  */
 
 // Commands
-export * as codeCommand from './code.command.js';
-export * as dailyCommand from './daily.command.js';
-export * as historyCommand from './history.command.js';
-export * as linkCommand from './link.command.js';
-export * as statsCommand from './stats.command.js';
-export * as teamFindCommand from './team-find.command.js';
-export * as unlinkCommand from './unlink.command.js';
-export * as workshopCommand from './workshop.command.js';
+export * as dfCommand from './df.command.js';
+export * as teamCommand from './team.command.js';
+
+// Handlers
+export * as codeHandler from './code.handler.js';
+export * as dailyHandler from './daily.handler.js';
+export * as historyHandler from './history.handler.js';
+export * as linkHandler from './link.handler.js';
+export * as statsHandler from './stats.handler.js';
+export * as teamFindHandler from './team-find.handler.js';
+export * as unlinkHandler from './unlink.handler.js';
+export * as workshopHandler from './workshop.handler.js';
 
 // Interaction handlers & IDs
 export * from './team-find-ids.js';

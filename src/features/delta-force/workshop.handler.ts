@@ -1,11 +1,6 @@
-/** /df-workshop — Xưởng Căn Cứ Ngầm (Container V2 pattern) */
+/** Workshop handler — Xưởng Căn Cứ Ngầm (Container V2 pattern) */
 
-import {
-  ChatInputCommandInteraction,
-  ComponentType,
-  MessageFlags,
-  SlashCommandBuilder,
-} from 'discord.js';
+import { ChatInputCommandInteraction, ComponentType, MessageFlags } from 'discord.js';
 import Database from 'better-sqlite3';
 
 import { getWorkbenchList, getWorkshopRecommendations } from '../../services/deltaforce.api.js';
@@ -19,10 +14,6 @@ import { WORKSHOP_FALLBACK_IMAGE_URL } from '../../config/app.constants.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('WorkshopCmd');
-
-export const data = new SlashCommandBuilder()
-  .setName('df-workshop')
-  .setDescription('Xem thông tin sản xuất tại Xưởng Căn Cứ Ngầm.');
 
 /** Build a Section for a single workshop item (pattern giống df-history) */
 async function buildWorkshopItemSection(

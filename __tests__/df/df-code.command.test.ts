@@ -179,7 +179,7 @@ jest.mock('../../src/utils/section-config.handlers.js', () => ({
   })),
 }));
 
-import { execute, hasAnyCodes, MAP_DISPLAY } from '../../src/features/delta-force/code.command.js';
+import { execute, hasAnyCodes, MAP_DISPLAY } from '../../src/features/delta-force/code.handler.js';
 import { fetchDailyCodes } from '../../src/services/deltaforce.scraper.js';
 import type { DailyCodes } from '../../src/services/deltaforce.scraper.js';
 import { MessageFlags } from 'discord.js';
@@ -299,20 +299,7 @@ describe('df-code.command', () => {
     expect(callCount).toBe(2);
   });
 
-  it('data co subcommand setchannel va status', () => {
-    const { data } = require('../../src/features/delta-force/code.command.js');
-    expect(data).toBeDefined();
-    // Data được xây dựng với 2 subcommands: setchannel và status
-    expect(data.toJSON).toBeDefined();
-  });
 
-  it('data co du 6 subcommand (show + setchannel + setrole + settime + setadminchannel + status)', () => {
-    const { data } = require('../../src/features/delta-force/code.command.js');
-    const json = data.toJSON();
-    // SlashCommandBuilder.toJSON() trả về array có 6 subcommands
-    expect(json).toHaveProperty('subcommands');
-    expect(json.subcommands).toHaveLength(6);
-  });
 
   it('nen reject khi khong co admin permission (setchannel)', async () => {
     const interaction = createMockInteraction({

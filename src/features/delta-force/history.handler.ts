@@ -5,7 +5,6 @@ import {
   ChatInputCommandInteraction,
   ComponentType,
   MessageFlags,
-  SlashCommandBuilder,
 } from 'discord.js';
 import Database from 'better-sqlite3';
 import { buildErrorContainer, toComponentsV2 } from '../../utils/container.utils.js';
@@ -24,17 +23,6 @@ import {
 } from '../../config/team-find.config.js';
 import { MAX_HISTORY_PAGE } from '../../config/app.constants.js';
 import type { DfMatchEntry } from '../../types/deltaforce.types.js';
-
-export const data = new SlashCommandBuilder()
-  .setName('df-history')
-  .setDescription('Xem lich su tran dau Delta Force.')
-  .addIntegerOption((opt) =>
-    opt
-      .setName('limit')
-      .setDescription('So tran hien thi (1-20)')
-      .setMinValue(1)
-      .setMaxValue(MAX_HISTORY_PAGE),
-  );
 
 function buildMatchItemSection(match: DfMatchEntry): Record<string, unknown> {
   const operatorId = match.operator_id;

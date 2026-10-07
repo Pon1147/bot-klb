@@ -1,5 +1,5 @@
 /**
- * Slash command /df-link — link tài khoản Delta Force HQ.
+ * Handler link tài khoản Delta Force HQ.
  *
  * Subcommands:
  * - start: Tạo claim code, gửi script qua DM, hướng dẫn user
@@ -13,7 +13,6 @@ import {
   ButtonStyle,
   ChatInputCommandInteraction,
   MessageFlags,
-  SlashCommandBuilder,
 } from 'discord.js';
 import Database from 'better-sqlite3';
 import {
@@ -34,27 +33,6 @@ import { maskString } from '../../utils/string.utils.js';
 import { encryptCredential } from '../../services/df-crypto.js';
 
 const logger = createLogger('DfLink');
-
-export const data = new SlashCommandBuilder()
-  .setName('df-link')
-  .setDescription('Liên kết / kiểm tra / hủy tài khoản Delta Force HQ.')
-  .addSubcommand((sub) =>
-    sub.setName('start').setDescription('Tạo mã claim và gửi hướng dẫn qua DM.'),
-  )
-  .addSubcommand((sub) =>
-    sub.setName('status').setDescription('Kiểm tra trạng thái liên kết hiện tại.'),
-  )
-  .addSubcommand((sub) =>
-    sub
-      .setName('manual')
-      .setDescription('Liên kết bằng cách nhập openid + token (fallback).')
-      .addStringOption((opt) =>
-        opt.setName('openid').setDescription('OpenID của tài khoản HQ').setRequired(true),
-      )
-      .addStringOption((opt) =>
-        opt.setName('token').setDescription('Token authentication (hex)').setRequired(true),
-      ),
-  );
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
@@ -135,7 +113,7 @@ async function handleStatus(
       `**Đã liên kết (legacy)**\n\n` +
         `OpenID: ${masked}\n` +
         `Liên kết lúc: ${legacyToken.linked_at}\n\n` +
-        `> ⚠️ Bạn nên dùng \`/df-link start\` để cập nhật lên hệ thống mới.`,
+        `> ⚠️ Bạn nên dùng \`/df link start\` để cập nhật lên hệ thống mới.`,
     );
     await sendReply(interaction, { components: info.toJSON() });
     return;
@@ -185,7 +163,7 @@ async function handleManual(
       const successResult = buildSuccessContainer(
         `Đã lưu thông tin liên kết!\n\n` +
           `OpenID: ${openid}\n\n` +
-          `> ⚠️ Đây là fallback manual. Nên dùng \`/df-link start\` để link tự động qua extension.`,
+          `> ⚠️ Đây là fallback manual. Nên dùng \`/df link start\` để link tự động qua extension.`,
       );
       await interaction.editReply({
         components: successResult.toJSON(),
@@ -205,7 +183,7 @@ async function handleManual(
     const successResult = buildSuccessContainer(
       `Đã lưu thông tin liên kết!\n\n` +
         `OpenID: ${openid}\n\n` +
-        `> ⚠️ Encryption chưa khả dụng, lưu ở chế độ legacy. Nên dùng \`/df-link start\` để link tự động qua extension.`,
+        `> ⚠️ Encryption chưa khả dụng, lưu ở chế độ legacy. Nên dùng \`/df link start\` để link tự động qua extension.`,
     );
     await interaction.editReply({
       components: successResult.toJSON(),

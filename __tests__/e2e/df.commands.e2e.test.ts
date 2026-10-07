@@ -162,7 +162,7 @@ describe('DF Commands E2E — /df-stats', () => {
 
     ({ createTestDb, seedDfToken } = require('./setup'));
     ({ createMockInteraction } = require('./fixtures'));
-    ({ execute } = require('../../src/features/delta-force/stats.command'));
+    ({ execute } = require('../../src/features/delta-force/stats.handler'));
   });
 
   it('phải trả về error khi không có guild', async () => {
@@ -324,7 +324,7 @@ describe('DF Commands E2E — /df-daily', () => {
     jest.resetModules();
     mockDeltaForceApi.mockReset();
 
-    ({ execute } = require('../../src/features/delta-force/daily.command'));
+    ({ execute } = require('../../src/features/delta-force/daily.handler'));
     ({ createTestDb, seedDfToken } = require('./setup'));
     ({ createMockInteraction } = require('./fixtures'));
   });
@@ -428,7 +428,7 @@ describe('DF Commands E2E — /df-code', () => {
   beforeEach(() => {
     jest.resetModules();
 
-    ({ execute } = require('../../src/features/delta-force/code.command'));
+    ({ execute } = require('../../src/features/delta-force/code.handler'));
     ({ createTestDb } = require('./setup'));
     ({ createMockInteraction } = require('./fixtures'));
   });
@@ -481,7 +481,7 @@ describe('DF Commands E2E — /df-unlink', () => {
 
     ({ createTestDb, seedDfToken } = require('./setup'));
     ({ createMockInteraction } = require('./fixtures'));
-    ({ execute } = require('../../src/features/delta-force/unlink.command'));
+    ({ execute } = require('../../src/features/delta-force/unlink.handler'));
   });
 
   it('phải trả về error khi không có guild', async () => {
@@ -534,7 +534,7 @@ describe('DF Commands E2E — /df-history', () => {
 
     ({ createTestDb, seedDfToken } = require('./setup'));
     ({ createMockInteraction } = require('./fixtures'));
-    ({ execute } = require('../../src/features/delta-force/history.command'));
+    ({ execute } = require('../../src/features/delta-force/history.handler'));
   });
 
   it('phải trả về error khi không có guild', async () => {

@@ -71,7 +71,7 @@ jest.mock('../../src/services/workshop-data.service.js', () => ({
   getWorkshopItemImage: jest.fn(),
 }));
 
-import { execute } from '../../src/features/delta-force/workshop.command.js';
+import { execute } from '../../src/features/delta-force/workshop.handler.js';
 import { getDfToken, touchDfToken } from '../../src/database/df.token.db.js';
 import { getActiveBinding, touchLastOk } from '../../src/database/df-binding.db.js';
 import { getWorkbenchList, getWorkshopRecommendations } from '../../src/services/deltaforce.api.js';

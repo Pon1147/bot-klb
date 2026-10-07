@@ -7,7 +7,7 @@ import Database from 'better-sqlite3';
 import { StringSelectMenuInteraction } from 'discord.js';
 import { getSeasonData, getOverviewData } from '../../services/deltaforce.api.js';
 import { buildDfApiToken } from '../../utils/df-token.utils.js';
-import { DF_STATS_SELECT_ID, buildSeasonSelectMenu, buildStatsContainer } from './stats.command.js';
+import { DF_STATS_SELECT_ID, buildSeasonSelectMenu, buildStatsContainer } from './stats.handler.js';
 import { getSeasonLabel } from '../../config/season.config.js';
 import { createLogger } from '../../utils/logger.js';
 import { getActiveBinding } from '../../database/df-binding.db.js';

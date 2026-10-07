@@ -1,9 +1,4 @@
-import {
-  ChatInputCommandInteraction,
-  ComponentType,
-  MessageFlags,
-  SlashCommandBuilder,
-} from 'discord.js';
+import { ChatInputCommandInteraction, ComponentType, MessageFlags } from 'discord.js';
 import Database from 'better-sqlite3';
 import { makeResult } from '../../utils/container.utils.js';
 import { COLORS } from '../../config/container.variables.js';
@@ -14,10 +9,6 @@ import { createLogger } from '../../utils/logger.js';
 import type { DfBattlefieldBattle } from '../../types/deltaforce.types.js';
 
 const logger = createLogger('DfDaily');
-
-export const data = new SlashCommandBuilder()
-  .setName('df-daily')
-  .setDescription('Trạng thái chiến đấu hàng ngày Delta Force.');
 
 function formatOperations(battle: DfBattlefieldBattle | null): string {
   if (!battle) return '  _Chưa có dữ liệu (chưa chơi trận nào hôm nay)_';

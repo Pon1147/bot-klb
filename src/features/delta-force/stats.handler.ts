@@ -3,7 +3,6 @@ import {
   ChatInputCommandInteraction,
   ComponentType,
   MessageFlags,
-  SlashCommandBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
 } from 'discord.js';
@@ -16,10 +15,6 @@ import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { runDfCommand } from '../../utils/df-command.runner.js';
 import { buildSeasonOptions, getSeasonLabel } from '../../config/season.config.js';
 import type { DfMyDataResponse } from '../../types/deltaforce.types.js';
-
-export const data = new SlashCommandBuilder()
-  .setName('df-stats')
-  .setDescription('Xem thong ke tai khoan Delta Force.');
 
 /** Custom ID prefix for df-stats select menu */
 export const DF_STATS_SELECT_ID = 'df_stats_season_select';

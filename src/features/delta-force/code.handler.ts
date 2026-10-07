@@ -1,92 +1,24 @@
-/** /df-code — Mật khẩu hằng ngày của các map (Container V2 pattern) */
-
-import {
-  AttachmentBuilder,
-  ChatInputCommandInteraction,
-  ComponentType,
-  MessageFlags,
-  SlashCommandBuilder,
-} from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import Database from 'better-sqlite3';
-
-import {
-  ASSETS_PATH,
-  MAP_DISPLAY,
-  type MapKey,
-  type MapInfo,
-} from '../../config/team-find.config.js';
 import { fetchDailyCodes, type DailyCodes } from '../../services/deltaforce.scraper.js';
+import { buildErrorContainer, buildSuccessContainer } from '../../utils/container.utils.js';
 import {
   handleSectionSetChannel,
   handleSectionSetRole,
   handleSectionStatus,
   type SectionConfig,
 } from '../../utils/section-config.handlers.js';
-import { buildErrorContainer, buildSuccessContainer } from '../../utils/container.utils.js';
-import { COLORS } from '../../config/container.variables.js';
 import { requireAdministrator, requireGuild } from '../../utils/df-guards.js';
 import { sendReply } from '../../utils/reply.utils.js';
+import { COLORS } from '../../config/container.variables.js';
 import { getSettingsService } from '../../services/settings.service.js';
 import { createLogger } from '../../utils/logger.js';
 import { rescheduleDfCodes } from '../../services/df-codes-scheduler.js';
+import { buildCodesContainer, hasAnyCodes, MAP_DISPLAY } from './code.renderer.js';
 
 const logger = createLogger('DfCode');
 
-export { MAP_DISPLAY };
-
-/** Check if DailyCodes object has at least one non-null value (used by scheduler) */
-export function hasAnyCodes(codes: DailyCodes | null): boolean {
-  if (!codes) return false;
-  return Object.values(codes).some((v) => v !== null && v !== undefined);
-}
-
-/** Build codes display container (used by scheduler & /df-code show) */
-export function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean) {
-  const containerInner: unknown[] = [];
-  const files: AttachmentBuilder[] = [];
-
-  if (hasCodes && codes) {
-    const maps = Object.entries(MAP_DISPLAY) as [MapKey, MapInfo][];
-
-    for (const [fullName, mapInfo] of maps) {
-      const code = codes[fullName] || 'Chưa có';
-      const imageUrl = mapInfo.url ?? `attachment://${mapInfo.image}`;
-
-      if (!mapInfo.url) {
-        files.push(new AttachmentBuilder(`${ASSETS_PATH}${mapInfo.image}`).setName(mapInfo.image));
-      }
-
-      containerInner.push({
-        type: ComponentType.Section,
-        components: [
-          {
-            type: ComponentType.TextDisplay,
-            content: `### **${mapInfo.name}**\n\`\`\`ini\n[${code}]\n\`\`\``,
-          },
-        ],
-        accessory: {
-          type: ComponentType.Thumbnail,
-          media: { url: imageUrl },
-          description: mapInfo.name,
-        },
-      });
-    }
-  } else {
-    containerInner.push({
-      type: ComponentType.TextDisplay,
-      content: '_Không tìm thấy mật khẩu hôm nay._',
-    });
-  }
-
-  return {
-    components: [{ type: ComponentType.Container, components: containerInner }],
-    flags: MessageFlags.IsComponentsV2,
-    files,
-    toJSON() {
-      return this.components;
-    },
-  };
-}
+export { buildCodesContainer, hasAnyCodes, MAP_DISPLAY };
 
 const DF_CODES_CONFIG: SectionConfig = {
   sectionKey: 'dfCodes',
@@ -94,56 +26,6 @@ const DF_CODES_CONFIG: SectionConfig = {
   statusEmoji: '🔑',
   statusColor: COLORS.DF,
 };
-
-export const data = new SlashCommandBuilder()
-  .setName('df-code')
-  .setDescription('Mật khẩu hằng ngày của các map.')
-  .addSubcommand((subcommand) => subcommand.setName('show').setDescription('Xem mật khẩu hôm nay.'))
-  .addSubcommand((subcommand) =>
-    subcommand
-      .setName('setchannel')
-      .setDescription('Đặt channel tự động gửi codes mỗi ngày.')
-      .addChannelOption((option) =>
-        option.setName('channel').setDescription('Kênh để gửi codes.').setRequired(true),
-      ),
-  )
-  .addSubcommand((subcommand) =>
-    subcommand
-      .setName('setrole')
-      .setDescription('Đặt role được phép sử dụng lệnh.')
-      .addRoleOption((option) =>
-        option
-          .setName('role')
-          .setDescription('Role để giới hạn quyền dùng lệnh.')
-          .setRequired(true),
-      ),
-  )
-  .addSubcommand((subcommand) =>
-    subcommand
-      .setName('settime')
-      .setDescription('Đặt giờ tự động gửi codes mỗi ngày.')
-      .addStringOption((option) =>
-        option
-          .setName('time')
-          .setDescription('Giờ gửi theo định dạng HH:mm (24h), ví dụ 08:00')
-          .setRequired(true)
-          .setAutocomplete(false),
-      ),
-  )
-  .addSubcommand((subcommand) =>
-    subcommand
-      .setName('setadminchannel')
-      .setDescription('Đặt channel nhận thông báo lỗi scheduler.')
-      .addChannelOption((option) =>
-        option
-          .setName('channel')
-          .setDescription('Channel để bot gửi thông báo khi scrape lỗi.')
-          .setRequired(true),
-      ),
-  )
-  .addSubcommand((subcommand) =>
-    subcommand.setName('status').setDescription('Xem channel cấu hình.'),
-  );
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
@@ -209,7 +91,11 @@ export async function execute(
   if (subcommand === 'setchannel') {
     logger.info(`Set channel for guild ${guildId}`);
     await handleSectionSetChannel(interaction, guildId, DF_CODES_CONFIG);
-    rescheduleDfCodes(interaction.client, interaction.client.database as Database.Database);
+    rescheduleDfCodes(
+      interaction.client,
+      interaction.client.database as Database.Database,
+      guildId,
+    );
     return;
   }
 
@@ -239,7 +125,11 @@ export async function execute(
     }
     getSettingsService().update(guildId, { dfCodes: { scheduleTime: timeStr } });
     logger.info(`Set scheduleTime for guild ${guildId}: ${timeStr} (UTC+7)`);
-    rescheduleDfCodes(interaction.client, interaction.client.database as Database.Database);
+    rescheduleDfCodes(
+      interaction.client,
+      interaction.client.database as Database.Database,
+      guildId,
+    );
     const result = buildSuccessContainer(`Đã đặt giờ tự động gửi codes: ${timeStr} mỗi ngày.`);
     await sendReply(interaction, { components: result.toJSON() });
     return;

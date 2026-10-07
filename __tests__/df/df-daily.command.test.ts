@@ -39,7 +39,7 @@ jest.mock('../../src/utils/container.utils.js', () => ({
   })),
 }));
 
-import { execute, data } from '../../src/features/delta-force/daily.command.js';
+import { execute } from '../../src/features/delta-force/daily.handler.js';
 import { getDfToken, touchDfToken } from '../../src/database/df.token.db.js';
 import { getDailyReport } from '../../src/services/deltaforce.api.js';
 import { MessageFlags } from 'discord.js';

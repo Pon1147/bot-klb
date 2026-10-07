@@ -44,7 +44,7 @@ jest.mock('../../src/database/df-binding.db.js', () => ({
   revokeBinding: jest.fn(),
 }));
 
-import { execute } from '../../src/features/delta-force/stats.command.js';
+import { execute } from '../../src/features/delta-force/stats.handler.js';
 import { getDfToken, touchDfToken } from '../../src/database/df.token.db.js';
 import { getOverviewData } from '../../src/services/deltaforce.api.js';
 import { resolveRankFromScore } from '../../src/utils/df-rank.utils.js';
