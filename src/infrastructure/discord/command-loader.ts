@@ -300,7 +300,8 @@ export async function deployCommands(
   }
 
   // Bước 3: Nếu không có thay đổi gì → bỏ qua deployment
-  const needsDeployment = diff.toAdd.length > 0 || diff.toUpdate.length > 0;
+  const needsDeployment =
+    diff.toAdd.length > 0 || diff.toUpdate.length > 0 || diff.toRemove.length > 0;
 
   if (!needsDeployment) {
     logger.info(`Không có thay đổi trên [${scopeLabel}]. Bỏ qua deployment.`);

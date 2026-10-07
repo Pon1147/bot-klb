@@ -5,11 +5,9 @@ import {
   ButtonStyle,
   ChatInputCommandInteraction,
   Client,
-  GuildMember,
   MessageFlags,
   ModalSubmitInteraction,
   StringSelectMenuInteraction,
-  PermissionFlagsBits,
 } from 'discord.js';
 import { createLogger } from '../../utils/logger.js';
 import { botConfig } from '../../config/bot.config.js';
@@ -26,21 +24,31 @@ import {
   handleTeamFindSelect,
   handleDfStatsSelect,
 } from '../../features/delta-force/index.js';
-import { COMMAND_PERMISSIONS, checkGuildRbacPermission } from '../../config/permissions.js';
+import { hasPolicy, resolveCommandPolicy } from '../../config/permissions.js';
+import { getCommandPath } from '../../utils/command-path.utils.js';
+import { TTLStore, ExpiryEntry } from '../../utils/ttl-store.js';
 
 const logger = createLogger('InteractionRouter');
 
-// Track users đã click button reveal webhook URL — chống spam
-const webhookRevealedUsers = new Set<string>();
+export interface WebhookRevealEntry extends ExpiryEntry {
+  revealed: true;
+}
+
+// Track users đã click button reveal webhook URL — chống spam (TTL 60s)
+export const webhookRevealedUsers = new TTLStore<string, WebhookRevealEntry>({
+  ttlMs: 60_000,
+  cleanupIntervalMs: 300_000,
+  name: 'WebhookRevealDebounce',
+});
 
 /**
  * Handle button interactions by delegating to specific button handlers.
  */
 async function handleButton(interaction: ButtonInteraction): Promise<void> {
-  // DF Link: reveal webhook URL (ephemeral, chỉ 1 lần/user)
+  // DF Link: reveal webhook URL (ephemeral, chỉ 1 lần/user trong 60s)
   if (interaction.customId === 'df_link_show_webhook') {
-    // Guard: chống spam — user chỉ reveal 1 lần
-    if (webhookRevealedUsers.has(interaction.user.id)) {
+    // Guard: chống spam — debounce 60s mỗi user
+    if (webhookRevealedUsers.get(interaction.user.id)) {
       await interaction
         .reply({
           content: 'Bạn đã hiện Webhook URL rồi.',
@@ -60,8 +68,11 @@ async function handleButton(interaction: ButtonInteraction): Promise<void> {
       return;
     }
 
-    // Đánh dấu ngay — trước khi reply để chống race condition
-    webhookRevealedUsers.add(interaction.user.id);
+    // Đánh dấu ngay với TTL 60s — trước khi reply để chống race condition
+    webhookRevealedUsers.set(interaction.user.id, {
+      expiresAt: Date.now() + 60_000,
+      revealed: true,
+    });
 
     try {
       await interaction.reply({
@@ -164,80 +175,68 @@ async function handleChatInputCommand(
     return;
   }
 
+  const commandPath = getCommandPath(interaction);
   const commandName = interaction.commandName;
   const commandModule = commands.get(commandName);
 
   if (!commandModule) {
-    logger.warn('Command not found: ' + commandName);
+    logger.warn(`Command not found: ${commandName} (path: ${commandPath})`);
     return;
   }
 
-  // ── RBAC Guard: kiểm tra quyền theo cấu hình máy chủ trước khi execute ──
-  const commandPerm = COMMAND_PERMISSIONS[commandName];
-  if (commandPerm && commandPerm.requiredRoles.length > 0) {
+  logger.info(
+    `Dispatching command /${commandPath} (user=${interaction.user.id}, guild=${interaction.guildId ?? 'DM'})`,
+  );
+
+  // ── Authorization Guard ──
+  const commandPolicy = resolveCommandPolicy(commandPath);
+
+  if (!commandPolicy) {
+    logger.error(`Security check failed: unmapped command path "${commandPath}" denied.`);
     if (!interaction.replied && !interaction.deferred) {
-      const isGuildOwner = Boolean(
-        interaction.guild?.ownerId && interaction.guild.ownerId === interaction.user.id,
-      );
-      const isAdmin = Boolean(
-        interaction.memberPermissions?.has(PermissionFlagsBits.Administrator),
-      );
-
-      let userRoleIds: string[] = [];
-      const member = interaction.member;
-      if (member instanceof GuildMember) {
-        userRoleIds = member.roles.cache.map((r) => r.id);
-      } else if (member && (member as any).roles?.cache) {
-        const cache = (member as any).roles.cache;
-        userRoleIds =
-          typeof cache.map === 'function'
-            ? cache.map((r: any) => r.id)
-            : Array.from(cache.values()).map((r: any) => r.id);
-      } else if (member && Array.isArray((member as any).roles)) {
-        userRoleIds = (member as any).roles as string[];
-      }
-
-      let guildRbac: {
-        ownerRoleId: string | null;
-        moderatorRoleId: string | null;
-        memberRoleId: string | null;
-      } = {
-        ownerRoleId: null,
-        moderatorRoleId: null,
-        memberRoleId: null,
-      };
-
-      if (interaction.guildId) {
-        try {
-          const settingsService = getSettingsService();
-          const settings = settingsService.get(interaction.guildId);
-          if (settings.rbac) {
-            guildRbac = settings.rbac;
-          }
-        } catch {
-          // SettingsService chưa khởi tạo (e.g. unit test) -> dùng default rbac
-        }
-      }
-
-      const check = checkGuildRbacPermission({
-        userRoleIds,
-        isGuildOwner,
-        isAdmin,
-        requiredRoles: commandPerm.requiredRoles,
-        guildRbac,
+      await interaction.reply({
+        content: '🔒 Lệnh này chưa được cấu hình phân quyền bảo mật.',
+        flags: MessageFlags.Ephemeral,
       });
+    }
+    return;
+  }
 
-      if (!check.allowed) {
-        logger.warn(
-          `RBAC denied: user=${interaction.user.id} guild=${interaction.guildId} cmd=${commandName} required=${commandPerm.requiredRoles.join(',')}`,
-        );
-        await interaction.reply({
-          content:
-            check.reason ?? `🔒 Lệnh này yêu cầu role: ${commandPerm.requiredRoles.join(', ')}`,
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
+  if (!interaction.replied && !interaction.deferred) {
+    let guildRbac: {
+      botAdminRoleId: string | null;
+      ownerRoleId?: string | null;
+      moderatorRoleId: string | null;
+      memberRoleId: string | null;
+    } = {
+      botAdminRoleId: null,
+      ownerRoleId: null,
+      moderatorRoleId: null,
+      memberRoleId: null,
+    };
+
+    if (interaction.guildId) {
+      try {
+        const settingsService = getSettingsService();
+        const settings = settingsService.get(interaction.guildId);
+        if (settings.rbac) {
+          guildRbac = settings.rbac;
+        }
+      } catch {
+        // SettingsService chưa khởi tạo (e.g. unit test) -> dùng default rbac
       }
+    }
+
+    const policyResult = hasPolicy(interaction, commandPolicy, guildRbac);
+    if (!policyResult.allowed) {
+      logger.warn(
+        `RBAC denied: user=${interaction.user.id} guild=${interaction.guildId} cmd=${commandPath} policy=${commandPolicy} reason=${policyResult.reason ?? 'N/A'}`,
+      );
+      await interaction.reply({
+        content: policyResult.reason ?? '🔒 Bạn không có quyền thực thi lệnh này.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
     }
   }
 
@@ -266,7 +265,7 @@ async function handleChatInputCommand(
     ) {
       return;
     }
-    logger.error('Error executing command ' + commandName + ': ' + errMessage);
+    logger.error(`Error executing command ${commandPath}: ${errMessage}`);
 
     if (!interaction.replied && !interaction.deferred) {
       try {
