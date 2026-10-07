@@ -1,5 +1,10 @@
 import type { APIMessageTopLevelComponent } from 'discord-api-types/v10';
-import { AttachmentBuilder, ComponentType, MessageFlags } from 'discord.js';
+import {
+  AttachmentBuilder,
+  ComponentType,
+  MessageFlags,
+  SlashCommandStringOption,
+} from 'discord.js';
 import { ContainerSettings, TemplateContext } from '../types/settings.types.js';
 import { resolveTemplate } from './template.utils.js';
 import { COLORS } from '../config/container.variables.js';
@@ -259,4 +264,35 @@ export function buildTextOnlyContainer(
     MessageFlags.IsComponentsV2,
     [],
   );
+}
+
+/**
+ * Option Builder Callbacks cho container type options (Welcome, Leave, Booster)
+ */
+export function buildEditTypeOptionCallback(
+  opt: SlashCommandStringOption,
+): SlashCommandStringOption {
+  return opt
+    .setName('type')
+    .setDescription('Loại container cần chỉnh sửa.')
+    .setRequired(true)
+    .addChoices(
+      { name: 'Welcome', value: 'welcome' },
+      { name: 'Leave', value: 'leave' },
+      { name: 'Booster', value: 'booster' },
+    );
+}
+
+export function buildResetTypeOptionCallback(
+  opt: SlashCommandStringOption,
+): SlashCommandStringOption {
+  return opt
+    .setName('type')
+    .setDescription('Loại container cần reset.')
+    .setRequired(true)
+    .addChoices(
+      { name: 'Welcome', value: 'welcome' },
+      { name: 'Leave', value: 'leave' },
+      { name: 'Booster', value: 'booster' },
+    );
 }

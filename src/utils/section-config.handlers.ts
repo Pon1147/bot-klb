@@ -16,6 +16,8 @@ import {
 import { COLORS } from '../config/container.variables.js';
 import { requireAdministrator } from './df-guards.js';
 import { sendReply } from './reply.utils.js';
+import { getCommandPath } from './command-path.utils.js';
+import { resolveCommandPolicy } from '../config/permissions.js';
 
 export interface SectionConfig {
   sectionKey: 'welcome' | 'booster' | 'dfCodes';
@@ -143,7 +145,10 @@ export async function executeSectionCommand(
     await sendReply(interaction, { content: 'Lệnh này chỉ dùng được trong server.' });
     return;
   }
-  if (await requireAdministrator(interaction)) return;
+  const commandPath = getCommandPath(interaction);
+  if (!resolveCommandPolicy(commandPath)) {
+    if (await requireAdministrator(interaction)) return;
+  }
   const subcommandName = interaction.options.getSubcommand();
   const guildIdentifier = interaction.guild.id;
   try {

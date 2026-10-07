@@ -64,14 +64,17 @@ export interface DfCodesSettings {
 
 /**
  * Cấu hình RBAC roles theo từng máy chủ (Guild).
- * - ownerRoleId: Discord role ID cho Owner permissions (null = chưa gán)
- * - moderatorRoleId: Discord role ID cho Moderator permissions (null = chưa gán)
- * - memberRoleId: Discord role ID cho Member permissions (null = mặc định mở cho Everyone)
+ * - botAdminRoleId: Discord role ID cho BOT_ADMIN permissions (null = chưa gán)
+ * - moderatorRoleId: Discord role ID cho MODERATOR permissions (null = chưa gán)
+ * - memberRoleId: Discord role ID cho MEMBER permissions (null = mặc định mở cho Everyone)
+ * - ownerRoleId: Legacy fallback tương đương botAdminRoleId (tương thích ngược)
  */
 export interface RbacRoleSettings {
-  ownerRoleId: string | null;
+  botAdminRoleId: string | null;
   moderatorRoleId: string | null;
   memberRoleId: string | null;
+  /** @deprecated Dùng botAdminRoleId thay thế. Hỗ trợ tương thích ngược với dữ liệu cũ */
+  ownerRoleId?: string | null;
 }
 
 /**
