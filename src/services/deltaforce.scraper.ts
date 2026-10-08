@@ -1,4 +1,9 @@
-import { HQ_URL_BASE, HQ_PAGE_TIMEOUT, HQ_SELECTOR_TIMEOUT } from '../config/deltaforce.config.js';
+import {
+  HQ_URL_BASE,
+  HQ_PAGE_TIMEOUT,
+  HQ_SELECTOR_TIMEOUT,
+  HQ_CODES_CACHE_TTL,
+} from '../config/deltaforce.config.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('Scraper');
@@ -40,9 +45,29 @@ export interface DailyOperations {
 // URL đã được fix typo: laugue → language
 const HQ_URL = HQ_URL_BASE;
 
-async function loadPuppeteer() {
+type PuppeteerModule = {
+  launch: (opts?: unknown) => Promise<unknown>;
+};
+
+let puppeteerLoader: () => Promise<PuppeteerModule> = async () => {
   const mod = await import('puppeteer');
-  return mod.default;
+  return mod.default as unknown as PuppeteerModule;
+};
+
+/** Thiết lập Puppeteer loader phục vụ unit test */
+export function setPuppeteerLoaderForTest(loader: (() => Promise<PuppeteerModule>) | null): void {
+  if (loader) {
+    puppeteerLoader = loader;
+  } else {
+    puppeteerLoader = async () => {
+      const mod = await import('puppeteer');
+      return mod.default as unknown as PuppeteerModule;
+    };
+  }
+}
+
+async function loadPuppeteer() {
+  return await puppeteerLoader();
 }
 
 export interface DailyData {
@@ -50,9 +75,48 @@ export interface DailyData {
   operations: DailyOperations;
 }
 
-/** Backward compat — scrape daily codes only */
-export async function fetchDailyCodes(): Promise<DailyCodes> {
-  const result = await fetchDailyAll();
+export interface FetchDailyOptions {
+  /** Bỏ qua cache và cào lại dữ liệu mới từ HQ */
+  forceRefresh?: boolean;
+}
+
+interface CachedDailyData {
+  data: DailyData;
+  expiresAt: number;
+}
+
+/** Cache trong bộ nhớ cho kết quả cào HQ */
+let dailyDataCache: CachedDailyData | null = null;
+
+/** Promise đang chạy để gom nhóm các cuộc gọi đồng thời (in-flight deduplication) */
+let inFlightFetchPromise: Promise<DailyData> | null = null;
+
+/** Kiểm tra kết quả DailyCodes có ít nhất 1 mã hợp lệ không */
+function hasValidCodes(codes: DailyCodes): boolean {
+  return Object.values(codes).some((code) => typeof code === 'string' && code.trim().length > 0);
+}
+
+/**
+ * Xóa cache dữ liệu hàng ngày (phục vụ test hoặc ép buộc làm mới).
+ */
+export function clearDailyDataCache(): void {
+  dailyDataCache = null;
+  inFlightFetchPromise = null;
+}
+
+/**
+ * Lấy dữ liệu cache hiện tại nếu còn hạn.
+ */
+export function getCachedDailyData(): DailyData | null {
+  if (dailyDataCache && Date.now() < dailyDataCache.expiresAt) {
+    return dailyDataCache.data;
+  }
+  return null;
+}
+
+/** Backward compat — scrape daily codes only, hỗ trợ tùy chọn forceRefresh */
+export async function fetchDailyCodes(options?: FetchDailyOptions): Promise<DailyCodes> {
+  const result = await fetchDailyAll(options);
   return result.codes;
 }
 
@@ -89,7 +153,51 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
   throw lastError!;
 }
 
-export async function fetchDailyAll(): Promise<DailyData> {
+/**
+ * Lấy dữ liệu mật mã và thông số chiến dịch hàng ngày từ HQ.
+ * Tự động cache kết quả trong thời gian HQ_CODES_CACHE_TTL và gom nhóm các request đồng thời.
+ */
+export async function fetchDailyAll(options?: FetchDailyOptions): Promise<DailyData> {
+  // 1. Trả về từ cache nếu còn hạn và không bắt buộc làm mới
+  if (!options?.forceRefresh && dailyDataCache && Date.now() < dailyDataCache.expiresAt) {
+    const remainingSec = Math.max(0, Math.round((dailyDataCache.expiresAt - Date.now()) / 1000));
+    logger.info(`[Scraper] Sử dụng dữ liệu cache hàng ngày (còn hiệu lực ${remainingSec}s)`);
+    return dailyDataCache.data;
+  }
+
+  // 2. Nếu đang có một tiến trình cào dữ liệu đang chạy, dùng chung kết quả (deduplication)
+  if (inFlightFetchPromise) {
+    logger.info(
+      '[Scraper] Đang có tiến trình cào dữ liệu đang chạy, dùng chung kết quả (deduplication)...',
+    );
+    return inFlightFetchPromise;
+  }
+
+  // 3. Khởi tạo tác vụ cào dữ liệu mới
+  inFlightFetchPromise = (async () => {
+    try {
+      const data = await performScrapeDailyAll();
+      // Chỉ lưu vào cache nếu có ít nhất 1 code hợp lệ
+      if (hasValidCodes(data.codes)) {
+        dailyDataCache = {
+          data,
+          expiresAt: Date.now() + HQ_CODES_CACHE_TTL,
+        };
+        logger.info(`[Scraper] Đã lưu dữ liệu vào cache (TTL: ${HQ_CODES_CACHE_TTL / 1000}s)`);
+      }
+      return data;
+    } finally {
+      inFlightFetchPromise = null;
+    }
+  })();
+
+  return inFlightFetchPromise;
+}
+
+/**
+ * Thực hiện cào dữ liệu thực tế bằng Puppeteer headless browser.
+ */
+async function performScrapeDailyAll(): Promise<DailyData> {
   const startTime = Date.now();
   logger.info(`[Scraper] Bắt đầu lấy dữ liệu hàng ngày từ HQ (${HQ_URL})...`);
 
@@ -99,7 +207,12 @@ export async function fetchDailyAll(): Promise<DailyData> {
   try {
     browser = (await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+      ],
     })) as unknown as PuppeteerBrowser;
 
     const page = await browser.newPage();
@@ -123,8 +236,11 @@ export async function fetchDailyAll(): Promise<DailyData> {
       });
     }, 3);
 
-    // Chờ 3 giây để dữ liệu async render vào DOM
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    // Chờ 3 giây để dữ liệu async render vào DOM (bỏ qua khi chạy unit test)
+    const renderDelay = process.env.NODE_ENV === 'test' ? 0 : 3000;
+    if (renderDelay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, renderDelay));
+    }
 
     const result = await page.evaluate<DailyData>(`(() => {
       const q = (sel) => document.querySelector(sel);

@@ -20,8 +20,10 @@ export const DF_REFERER = 'https://www.playdeltaforce.com/';
 // ===== HQ (Human Quest) =====
 export const HQ_URL_BASE =
   'https://www.playdeltaforce.com/events/hq/vi/index.html?language=vi&info=';
-export const HQ_PAGE_TIMEOUT = 30_000;
+export const HQ_PAGE_TIMEOUT = 45_000;
 export const HQ_SELECTOR_TIMEOUT = 15_000;
+/** Thời gian lưu cache mã hàng ngày (30 phút = 1_800_000 ms) */
+export const HQ_CODES_CACHE_TTL = 30 * 60 * 1000;
 
 // ===== API Timeout =====
 export const API_TIMEOUT_MS = 15_000;
