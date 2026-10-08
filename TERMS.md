@@ -72,3 +72,4 @@ We reserve the right to modify or replace these Terms at any time. Significant u
 If you have any questions or concerns regarding these Terms, please contact us via our official repository:
 
 - GitHub Repository: [https://github.com/Pon1147/bot-klb](https://github.com/Pon1147/bot-klb)
+
