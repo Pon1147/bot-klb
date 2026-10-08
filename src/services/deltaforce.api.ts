@@ -39,6 +39,20 @@ const HEADERS = {
   referer: DF_REFERER,
 };
 
+type AxiosCreator = (config: unknown) => AxiosInstance;
+
+let axiosCreator: AxiosCreator = (config) =>
+  axios.create(config as Parameters<typeof axios.create>[0]);
+
+/** Thiết lập Axios creator cho unit test nhằm ngăn chặn tuyệt đối việc gửi request thật */
+export function setAxiosCreatorForTest(creator: AxiosCreator | null): void {
+  if (creator) {
+    axiosCreator = creator;
+  } else {
+    axiosCreator = (config) => axios.create(config as Parameters<typeof axios.create>[0]);
+  }
+}
+
 function buildInstance(token: DfApiToken): AxiosInstance {
   logger.info(
     'buildInstance: openid=' +
@@ -52,7 +66,7 @@ function buildInstance(token: DfApiToken): AxiosInstance {
       ', u=' +
       (token.u || crypto.randomUUID()),
   );
-  return axios.create({
+  return axiosCreator({
     baseURL: BASE_API_URL,
     params: {
       openid: token.openid,

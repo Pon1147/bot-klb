@@ -3,44 +3,31 @@
  * Mock axios để test request/response mà không gọi real API.
  */
 
-jest.mock('axios', () => {
-  const mockAxios = {
-    create: jest.fn(() => ({
-      post: jest.fn(),
-    })),
-  };
-  return mockAxios;
-}, { virtual: true });
+const mockPost = jest.fn();
+const mockCreate = jest.fn(() => ({ post: mockPost }));
+
+import {
+  getMyData,
+  getSeasonData,
+  getMatchList,
+  getCollection,
+  getDailyReport,
+  validateToken,
+  getWorkshopRecommendations,
+  getWorkbenchList,
+  setAxiosCreatorForTest,
+} from '../../src/services/deltaforce.api.js';
 
 const MOCK_TOKEN = { openid: '1234567890', token: 'abc123def456' };
 
 describe('deltaforce.api', () => {
-  let getMyData: (token: any) => Promise<any>;
-  let getSeasonData: (token: any, seasonNo: string) => Promise<any>;
-  let getMatchList: (token: any) => Promise<any>;
-  let getCollection: (token: any) => Promise<any>;
-  let getDailyReport: (token: any) => Promise<any>;
-  let validateToken: (token: any, openid: string) => Promise<boolean>;
-  let getWorkshopRecommendations: (token: any) => Promise<any>;
-  let getWorkbenchList: (token: any) => Promise<any>;
-  let mockPost: jest.Mock;
-
   beforeEach(() => {
-    jest.resetModules();
-    const axios = require('axios');
-    mockPost = jest.fn();
-    axios.create.mockReturnValue({ post: mockPost });
+    jest.clearAllMocks();
+    setAxiosCreatorForTest(mockCreate as any);
+  });
 
-    ({
-      getMyData,
-      getSeasonData,
-      getMatchList,
-      getCollection,
-      getDailyReport,
-      validateToken,
-      getWorkshopRecommendations,
-      getWorkbenchList,
-    } = require('../../src/services/deltaforce.api.js'));
+  afterAll(() => {
+    setAxiosCreatorForTest(null);
   });
 
   function mockSuccess(data: any) {
