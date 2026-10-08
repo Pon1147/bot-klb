@@ -77,9 +77,9 @@ describe('/config command — Structure & Builder', () => {
     expect(json.default_member_permissions).toBeUndefined();
   });
 
-  it('phải có đúng 4 SubcommandGroups: roles, welcome, booster, container', () => {
+  it('phải có đúng 5 SubcommandGroups: roles, welcome, booster, container, bot', () => {
     const groupNames = json.options?.map((opt: any) => opt.name);
-    expect(groupNames).toEqual(['roles', 'welcome', 'booster', 'container']);
+    expect(groupNames).toEqual(['roles', 'welcome', 'booster', 'container', 'bot']);
     json.options?.forEach((opt: any) => {
       expect(opt.type).toBe(2); // 2 = SUB_COMMAND_GROUP
     });
@@ -149,6 +149,15 @@ describe('/config command — Structure & Builder', () => {
       const resetTypeOpt = resetSub.options.find((o: any) => o.name === 'type');
       expect(resetTypeOpt.type).toBe(3);
       expect(resetTypeOpt.required).toBe(true);
+    });
+  });
+
+  describe('bot group structure', () => {
+    const botGroup = json.options?.find((o: any) => o.name === 'bot');
+
+    it('phải chứa subcommand: guilds', () => {
+      const subNames = botGroup?.options?.map((s: any) => s.name);
+      expect(subNames).toEqual(['guilds']);
     });
   });
 });
@@ -315,6 +324,55 @@ describe('/config command — Execute Dispatch', () => {
     await execute(interaction);
 
     expect(handleContainerReset).toHaveBeenCalledWith(interaction, 'guild-123');
+  });
+
+  it('bot guilds: phải reply danh sách guilds với ephemeral flag', async () => {
+    const mockGuilds = new Map();
+    mockGuilds.set('guild-1', {
+      name: 'Server Alpha',
+      id: 'guild-1',
+      memberCount: 50,
+      ownerId: 'owner-1',
+    });
+
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommandGroup: jest.fn().mockReturnValue('bot'),
+        getSubcommand: jest.fn().mockReturnValue('guilds'),
+      },
+      client: {
+        guilds: {
+          cache: mockGuilds,
+        },
+      },
+      reply: jest.fn().mockResolvedValue(undefined),
+    });
+
+    await execute(interaction);
+
+    expect(interaction.reply).toHaveBeenCalled();
+    const replyCall = interaction.reply.mock.calls[0][0];
+    expect(replyCall.flags).toBeDefined();
+    expect(replyCall.components).toBeDefined();
+  });
+
+  it('bot guilds: phải xử lý khi không có guild nào', async () => {
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommandGroup: jest.fn().mockReturnValue('bot'),
+        getSubcommand: jest.fn().mockReturnValue('guilds'),
+      },
+      client: {
+        guilds: {
+          cache: new Map(),
+        },
+      },
+      reply: jest.fn().mockResolvedValue(undefined),
+    });
+
+    await execute(interaction);
+
+    expect(interaction.reply).toHaveBeenCalled();
   });
 });
 

@@ -18,6 +18,7 @@
 
 import {
   ChatInputCommandInteraction,
+  MessageFlags,
   Role,
   SlashCommandBuilder,
   SlashCommandSubcommandBuilder,
@@ -27,6 +28,7 @@ import Database from 'better-sqlite3';
 import { getSettingsService, SettingsService } from '../../services/settings.service.js';
 import {
   buildErrorContainer,
+  buildInfoContainer,
   buildTextOnlyContainer,
   buildEditTypeOptionCallback,
   buildResetTypeOptionCallback,
@@ -170,6 +172,18 @@ function buildContainerGroup(
     );
 }
 
+/** Nhóm bot: xem thông tin và trạng thái của bot */
+function buildBotGroup(
+  group: SlashCommandSubcommandGroupBuilder,
+): SlashCommandSubcommandGroupBuilder {
+  return group
+    .setName('bot')
+    .setDescription('Xem thông tin và trạng thái hoạt động của bot.')
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub.setName('guilds').setDescription('Xem danh sách các máy chủ (guilds) bot đang tham gia.'),
+    );
+}
+
 // ─── Slash Command Builder ────────────────────────────────────────
 
 export const data = new SlashCommandBuilder()
@@ -178,7 +192,8 @@ export const data = new SlashCommandBuilder()
   .addSubcommandGroup(buildRolesGroup)
   .addSubcommandGroup(buildWelcomeGroup)
   .addSubcommandGroup(buildBoosterGroup)
-  .addSubcommandGroup(buildContainerGroup);
+  .addSubcommandGroup(buildContainerGroup)
+  .addSubcommandGroup(buildBotGroup);
 
 // ─── Roles Mapping ────────────────────────────────────────────────
 
@@ -343,10 +358,43 @@ export async function execute(
       break;
     }
 
+    case 'bot': {
+      if (subcommand === 'guilds') {
+        await handleBotGuilds(interaction);
+      }
+      break;
+    }
+
     default: {
       await sendReply(interaction, {
         components: buildErrorContainer('Nhóm lệnh không hợp lệ.').toJSON(),
       });
     }
   }
+}
+
+/** Subcommand `bot guilds` — xem danh sách toàn bộ server bot đang tham gia */
+async function handleBotGuilds(interaction: ChatInputCommandInteraction): Promise<void> {
+  const guilds = interaction.client.guilds.cache;
+  if (!guilds.size) {
+    await interaction.reply({
+      components: buildInfoContainer('Bot hiện chưa tham gia máy chủ nào.').toJSON(),
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const lines = Array.from(guilds.values()).map(
+    (g, idx) =>
+      `**${idx + 1}. ${g.name}**\n• **ID**: \`${g.id}\`\n• **Thành viên**: ${g.memberCount}\n• **Chủ sở hữu ID**: \`${g.ownerId}\``,
+  );
+
+  const container = buildInfoContainer(
+    `### 🌐 Danh sách máy chủ (${guilds.size} servers)\n\n` + lines.join('\n\n'),
+  );
+
+  await interaction.reply({
+    components: container.toJSON(),
+    flags: MessageFlags.Ephemeral,
+  });
 }
