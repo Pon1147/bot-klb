@@ -7,6 +7,15 @@ if (!window.AuthUtils) {
 
 // ===== CONSTANTS =====
 const DEFAULT_CODES = [
+  'SMGLONGKAKA',
+  'AUGTUTO',
+  'DAISUAK12YOR',
+  'VUADIVUANHAY',
+  'AKHIPFIRERIP',
+  'P90FFF',
+  'SKSMINHUN',
+  'QBZTUGIAN',
+  'SG552MICRO',
   'DFVITRAT63',
   'DFVNHackclaw1',
   'DFVNNox5',
