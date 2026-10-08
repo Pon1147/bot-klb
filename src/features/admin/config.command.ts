@@ -18,7 +18,6 @@
 
 import {
   ChatInputCommandInteraction,
-  MessageFlags,
   Role,
   SlashCommandBuilder,
   SlashCommandSubcommandBuilder,
@@ -377,9 +376,8 @@ export async function execute(
 async function handleBotGuilds(interaction: ChatInputCommandInteraction): Promise<void> {
   const guilds = interaction.client.guilds.cache;
   if (!guilds.size) {
-    await interaction.reply({
+    await sendReply(interaction, {
       components: buildInfoContainer('Bot hiện chưa tham gia máy chủ nào.').toJSON(),
-      flags: MessageFlags.Ephemeral,
     });
     return;
   }
@@ -393,8 +391,7 @@ async function handleBotGuilds(interaction: ChatInputCommandInteraction): Promis
     `### 🌐 Danh sách máy chủ (${guilds.size} servers)\n\n` + lines.join('\n\n'),
   );
 
-  await interaction.reply({
+  await sendReply(interaction, {
     components: container.toJSON(),
-    flags: MessageFlags.Ephemeral,
   });
 }
