@@ -59,7 +59,7 @@ temp/
 # =========================
 # AI config
 # =========================
-.github/
+.github/copilot-instructions.md
 .memories
 .claude
 
