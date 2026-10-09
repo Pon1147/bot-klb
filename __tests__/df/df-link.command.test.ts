@@ -154,6 +154,7 @@ describe('df-link.command', () => {
       guild: { id: '111' },
       user: { id: '222', createDM: mockCreateDm },
       reply: mockReply,
+      followUp: jest.fn().mockResolvedValue(undefined),
       editReply: jest.fn().mockResolvedValue(undefined),
       deferReply: mockDeferReply,
       options: {

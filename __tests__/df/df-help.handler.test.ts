@@ -99,12 +99,13 @@ describe('DF Help Handler & Extension Utils', () => {
       expect(interaction.reply).not.toHaveBeenCalled();
     });
 
-    it('trả lời ephemeral kèm Components V2 và file zip khi trong guild', async () => {
+    it('trả lời ephemeral kèm Components V2 và followUp file zip khi trong guild', async () => {
       jest.spyOn(dfGuards, 'requireGuild').mockResolvedValueOnce(false as never);
 
       const interaction: any = {
         guildId: 'guild-123',
         reply: jest.fn().mockResolvedValue({}),
+        followUp: jest.fn().mockResolvedValue({}),
       };
 
       await execute(interaction);
@@ -114,8 +115,12 @@ describe('DF Help Handler & Extension Utils', () => {
 
       expect(replyCall.flags).toBe(MessageFlags.Ephemeral | MessageFlags.IsComponentsV2);
       expect(replyCall.components).toBeDefined();
-      expect(replyCall.files).toHaveLength(1);
-      expect(replyCall.files[0].name).toBe('DF-Extension.zip');
+
+      expect(interaction.followUp).toHaveBeenCalledTimes(1);
+      const followUpCall = interaction.followUp.mock.calls[0][0];
+      expect(followUpCall.flags).toBe(MessageFlags.Ephemeral);
+      expect(followUpCall.files).toHaveLength(1);
+      expect(followUpCall.files[0].name).toBe('DF-Extension.zip');
     });
   });
 

@@ -143,9 +143,18 @@ export async function execute(
 
   await interaction.reply({
     components: [...container.toJSON(), row.toJSON()],
-    files,
     flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
   } as Parameters<typeof interaction.reply>[0]);
+
+  // Gửi file ZIP qua followUp vì Discord client không render generic file attachments trong Components V2
+  if (files.length > 0) {
+    await interaction.followUp({
+      content:
+        '📦 **Tệp cài đặt Tiện ích mở rộng Delta Force (Extension):**\n> Tải tệp đính kèm bên dưới, giải nén và làm theo hướng dẫn tại tab **🧩 Hướng Dẫn Liên Kết**.',
+      files,
+      flags: MessageFlags.Ephemeral,
+    });
+  }
 }
 
 /**
