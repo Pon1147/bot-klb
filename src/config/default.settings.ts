@@ -66,6 +66,9 @@ export const defaultGuildSettings: GuildSettings = {
     moderatorRoleId: null,
     memberRoleId: null,
   },
+  botAnnounce: {
+    channelId: null,
+  },
 };
 
 /**

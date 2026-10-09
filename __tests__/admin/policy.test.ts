@@ -528,8 +528,8 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
   // ─── 7. PHASE 4: Command Path Policy Mapping ──────────────────────
   describe('PHASE 4 — Command Path Policy Mapping', () => {
-    it('COMMAND_PATH_POLICIES chứa đúng 29 canonical command paths', () => {
-      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(29);
+    it('COMMAND_PATH_POLICIES chứa đúng 30 canonical command paths', () => {
+      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(30);
     });
 
     it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds và config.bot.announce', () => {
@@ -539,7 +539,7 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(resolveCommandPolicy('config.bot.announce')).toBe(Policy.MANAGE_RBAC);
     });
 
-    it('MANAGE_CONFIG policy mapping cho config.welcome.*, booster.*, container.*', () => {
+    it('MANAGE_CONFIG policy mapping cho config.welcome.*, booster.*, container.* và config.bot.setannouncechannel', () => {
       expect(resolveCommandPolicy('config.welcome.setchannel')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.welcome.setrole')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.welcome.toggle')).toBe(Policy.MANAGE_CONFIG);
@@ -552,6 +552,7 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
       expect(resolveCommandPolicy('config.container.edit')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.container.reset')).toBe(Policy.MANAGE_CONFIG);
+      expect(resolveCommandPolicy('config.bot.setannouncechannel')).toBe(Policy.MANAGE_CONFIG);
     });
 
     it('MANAGE_DF_CODE policy mapping cho df.code admin commands', () => {

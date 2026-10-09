@@ -78,6 +78,13 @@ export interface RbacRoleSettings {
 }
 
 /**
+ * Cấu hình kênh nhận thông báo cập nhật bot cho guild.
+ */
+export interface BotAnnounceSettings {
+  channelId: string | null;
+}
+
+/**
  * Toàn bộ settings của 1 guild.
  * Thêm feature mới chỉ cần add key vào interface này + default.
  */
@@ -87,6 +94,7 @@ export interface GuildSettings {
   booster: BoosterSettings;
   dfCodes: DfCodesSettings;
   rbac: RbacRoleSettings;
+  botAnnounce: BotAnnounceSettings;
 }
 
 /**

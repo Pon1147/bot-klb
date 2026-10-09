@@ -190,6 +190,17 @@ function buildBotGroup(
     )
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
+        .setName('setannouncechannel')
+        .setDescription('Cấu hình kênh nhận thông báo cập nhật bot cho máy chủ này.')
+        .addChannelOption((opt) =>
+          opt
+            .setName('channel')
+            .setDescription('Kênh văn bản nhận thông báo từ bot')
+            .setRequired(true),
+        ),
+    )
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
         .setName('announce')
         .setDescription('Phát thông báo cập nhật tới toàn bộ máy chủ (chỉ dành cho Bot Owner).')
         .addBooleanOption((opt) =>
@@ -386,6 +397,8 @@ export async function execute(
         await handleBotGuilds(interaction);
       } else if (subcommand === 'announce') {
         await handleBotAnnounce(interaction);
+      } else if (subcommand === 'setannouncechannel') {
+        await handleBotSetAnnounceChannel(interaction, db);
       }
       break;
     }
@@ -422,9 +435,36 @@ async function handleBotGuilds(interaction: ChatInputCommandInteraction): Promis
   });
 }
 
+/** Subcommand `bot setannouncechannel` — đặt kênh nhận thông báo cập nhật bot cho máy chủ này */
+async function handleBotSetAnnounceChannel(
+  interaction: ChatInputCommandInteraction,
+  _db: Database.Database,
+): Promise<void> {
+  const guildId = interaction.guildId ?? interaction.guild?.id;
+  if (!guildId) return;
+
+  const channel = interaction.options.getChannel('channel', true);
+  const settingsService = getSettingsService();
+
+  settingsService.update(guildId, {
+    botAnnounce: {
+      channelId: channel.id,
+    },
+  });
+
+  await sendReply(interaction, {
+    content: `✅ Đã thiết lập kênh nhận thông báo cập nhật của bot cho máy chủ này là <#${channel.id}> (\`${channel.id}\`).`,
+  });
+}
+
 /** Xây dựng container thông báo cập nhật tính năng mới */
-export function buildAnnouncementContainer(customNote?: string | null) {
+export function buildAnnouncementContainer(customNote?: string | null, isPreview?: boolean) {
+  const previewBanner = isPreview
+    ? '> 👁️ **CHẾ ĐỘ XEM TRƯỚC (PREVIEW)**\n> *Giao diện thông báo mẫu sẽ gửi tới các máy chủ. Chạy lệnh với `preview: false` để phát thật.*\n\n'
+    : '';
+
   const content = [
+    previewBanner,
     '## 🚀 BẢN CẬP NHẬT MỚI: DELTA FORCE BOT & TIỆN ÍCH EXTENSION',
     '',
     'Xin chào tất cả các Đặc vụ! Bot vừa được cập nhật các tính năng mới giúp trải nghiệm và liên kết tài khoản mượt mà hơn:',
@@ -458,19 +498,44 @@ export function buildAnnouncementContainer(customNote?: string | null) {
   );
 }
 
-/** Tìm kênh thích hợp nhất để gửi thông báo trong guild */
-export function findAnnouncementChannel(guild: Guild): TextChannel | null {
+/** Tìm kênh thích hợp nhất để gửi thông báo trong guild (ưu tiên kênh đã cấu hình) */
+export function findAnnouncementChannel(
+  guild: Guild,
+  configuredChannelId?: string | null,
+): { channel: TextChannel | null; reason?: string; isConfigured: boolean } {
   const botMember = guild.members.me;
 
-  // 1. Kênh hệ thống nếu có quyền
-  if (guild.systemChannel) {
-    const perms = botMember ? guild.systemChannel.permissionsFor(botMember) : null;
-    if (perms?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages])) {
-      return guild.systemChannel as TextChannel;
+  // 1. Kênh đã cấu hình riêng cho guild
+  if (configuredChannelId) {
+    const configured = guild.channels.cache.get(configuredChannelId);
+    if (
+      configured &&
+      configured.isTextBased() &&
+      !configured.isDMBased() &&
+      !configured.isVoiceBased()
+    ) {
+      const textChan = configured as TextChannel;
+      const perms = botMember ? textChan.permissionsFor(botMember) : null;
+      if (perms?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages])) {
+        return { channel: textChan, isConfigured: true };
+      }
+      return {
+        channel: null,
+        isConfigured: true,
+        reason: `Kênh đã cấu hình (#${textChan.name}) nhưng bot thiếu quyền ViewChannel hoặc SendMessages`,
+      };
     }
   }
 
-  // 2. Kênh văn bản có tên chứa từ khóa ưu tiên
+  // 2. Kênh hệ thống nếu có quyền
+  if (guild.systemChannel) {
+    const perms = botMember ? guild.systemChannel.permissionsFor(botMember) : null;
+    if (perms?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages])) {
+      return { channel: guild.systemChannel as TextChannel, isConfigured: false };
+    }
+  }
+
+  // 3. Kênh văn bản có tên chứa từ khóa ưu tiên
   const textChannels = Array.from(guild.channels.cache.values()).filter(
     (c): c is TextChannel =>
       c.isTextBased() && !c.isDMBased() && !c.isVoiceBased() && 'permissionsFor' in c,
@@ -489,22 +554,26 @@ export function findAnnouncementChannel(guild: Guild): TextChannel | null {
     if (found && botMember) {
       const perms = found.permissionsFor(botMember);
       if (perms?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages])) {
-        return found;
+        return { channel: found, isConfigured: false };
       }
     }
   }
 
-  // 3. Kênh văn bản đầu tiên bot có quyền gửi
+  // 4. Kênh văn bản đầu tiên bot có quyền gửi
   for (const c of textChannels) {
     if (botMember) {
       const perms = c.permissionsFor(botMember);
       if (perms?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages])) {
-        return c;
+        return { channel: c, isConfigured: false };
       }
     }
   }
 
-  return null;
+  return {
+    channel: null,
+    isConfigured: false,
+    reason: 'Không tìm thấy kênh văn bản khả dụng có quyền gửi tin nhắn',
+  };
 }
 
 /** Subcommand `bot announce` — phát thông báo toàn hệ thống (chỉ dành cho Bot Owner) */
@@ -521,34 +590,39 @@ export async function handleBotAnnounce(interaction: ChatInputCommandInteraction
 
   const preview = interaction.options.getBoolean('preview') ?? false;
   const customMessage = interaction.options.getString('message');
-  const container = buildAnnouncementContainer(customMessage);
 
   if (preview) {
-    const note = buildInfoContainer(
-      '👁️ **Chế độ Xem Trước (Preview)**\n' +
-        'Dưới đây là giao diện thông báo sẽ được gửi tới tất cả các máy chủ.\n' +
-        '> Để thực sự phát thông báo tới tất cả máy chủ, hãy chạy lại lệnh với `preview: False`.',
-    );
+    const container = buildAnnouncementContainer(customMessage, true);
     await sendReply(interaction, {
-      components: [...note.toJSON(), ...container.toJSON()],
+      components: container.toJSON(),
     });
     return;
   }
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
+  const container = buildAnnouncementContainer(customMessage, false);
   const guilds = interaction.client.guilds.cache;
-  const results: { guildName: string; channelName?: string; success: boolean; reason?: string }[] =
-    [];
+  const settingsService = getSettingsService();
+  const results: {
+    guildName: string;
+    channelName?: string;
+    success: boolean;
+    reason?: string;
+    isConfigured: boolean;
+  }[] = [];
 
   for (const guild of guilds.values()) {
     try {
-      const channel = findAnnouncementChannel(guild);
+      const configuredChannelId = settingsService.get(guild.id).botAnnounce?.channelId;
+      const { channel, reason, isConfigured } = findAnnouncementChannel(guild, configuredChannelId);
+
       if (!channel) {
         results.push({
           guildName: guild.name,
           success: false,
-          reason: 'Không tìm thấy kênh văn bản có quyền gửi tin nhắn',
+          reason: reason || 'Không tìm thấy kênh văn bản có quyền gửi tin nhắn',
+          isConfigured,
         });
         continue;
       }
@@ -562,12 +636,14 @@ export async function handleBotAnnounce(interaction: ChatInputCommandInteraction
         guildName: guild.name,
         channelName: channel.name,
         success: true,
+        isConfigured,
       });
     } catch (err) {
       results.push({
         guildName: guild.name,
         success: false,
         reason: err instanceof Error ? err.message : String(err),
+        isConfigured: false,
       });
     }
   }
@@ -575,23 +651,30 @@ export async function handleBotAnnounce(interaction: ChatInputCommandInteraction
   const successCount = results.filter((r) => r.success).length;
   const failCount = results.filter((r) => !r.success).length;
 
-  const summaryLines = results.map((r) => {
+  const summaryLines = results.map((r, idx) => {
     if (r.success) {
-      return `• **${r.guildName}** (#${r.channelName}): ✅ Đã gửi`;
+      const tag = r.isConfigured ? '*(Kênh đã cấu hình)*' : '*(Kênh tự động)*';
+      return `**${idx + 1}. ${r.guildName}**: ✅ Đã gửi → <#${r.channelName ? r.channelName : ''}> (#${r.channelName}) ${tag}`;
     }
-    return `• **${r.guildName}**: ⚠️ Bỏ qua (${r.reason})`;
+    const tag = r.isConfigured ? ' *(Kênh đã cấu hình)*' : '';
+    return `**${idx + 1}. ${r.guildName}**: ⚠️ Bỏ qua → ${r.reason}${tag}`;
   });
 
-  const report = buildInfoContainer(
-    `📢 **Báo Cáo Phát Thông Báo Toàn Hệ Thống**\n\n` +
-      `• Tổng số máy chủ: **${guilds.size}**\n` +
-      `• Gửi thành công: **${successCount}**\n` +
-      `• Thất bại / Bỏ qua: **${failCount}**\n\n` +
-      `**Chi tiết từng máy chủ:**\n` +
-      summaryLines.join('\n'),
-  );
+  const nowUnix = Math.floor(Date.now() / 1000);
+  const summaryContent = [
+    `# 📢 BÁO CÁO PHÁT THÔNG BÁO TOÀN HỆ THỐNG`,
+    `> ⏱️ **Thời gian thực hiện:** <t:${nowUnix}:f> (<t:${nowUnix}:R>)`,
+    ``,
+    `### 📊 Thống Kê Tổng Hợp:`,
+    `• 🌐 Tổng số máy chủ bot có mặt: **${guilds.size}**`,
+    `• ✅ Gửi thành công: **${successCount} / ${guilds.size}** máy chủ`,
+    `• ⚠️ Thất bại / Bỏ qua: **${failCount}** máy chủ`,
+    ``,
+    `### 📋 Chi Tiết Từng Máy Chủ:`,
+    ...summaryLines,
+  ].join('\n');
 
   await interaction.editReply({
-    components: report.toJSON(),
+    content: summaryContent,
   });
 }

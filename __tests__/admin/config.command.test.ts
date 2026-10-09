@@ -45,6 +45,7 @@ jest.mock('../../src/features/container/container-reset.handler.js', () => ({
 function createMockInteraction(overrides: Record<string, unknown> = {}): any {
   const base: Record<string, unknown> = {
     guild: { id: 'guild-123' },
+    guildId: 'guild-123',
     user: { id: 'user-123' },
     channel: { id: 'channel-123' },
     replied: false,
@@ -155,9 +156,18 @@ describe('/config command — Structure & Builder', () => {
   describe('bot group structure', () => {
     const botGroup = json.options?.find((o: any) => o.name === 'bot');
 
-    it('phải chứa subcommands: guilds, announce', () => {
+    it('phải chứa subcommands: guilds, setannouncechannel, announce', () => {
       const subNames = botGroup?.options?.map((s: any) => s.name);
-      expect(subNames).toEqual(['guilds', 'announce']);
+      expect(subNames).toEqual(['guilds', 'setannouncechannel', 'announce']);
+    });
+
+    it('subcommand "setannouncechannel" phải có option "channel" (CHANNEL, required)', () => {
+      const setSub = botGroup?.options?.find((s: any) => s.name === 'setannouncechannel');
+      expect(setSub.options).toHaveLength(1);
+      const chanOpt = setSub.options[0];
+      expect(chanOpt.name).toBe('channel');
+      expect(chanOpt.type).toBe(7); // CHANNEL
+      expect(chanOpt.required).toBe(true);
     });
   });
 });
@@ -375,6 +385,29 @@ describe('/config command — Execute Dispatch', () => {
     expect(interaction.reply).toHaveBeenCalled();
   });
 
+  describe('bot setannouncechannel', () => {
+    it('phải cập nhật kênh thông báo vào settings của guild', async () => {
+      const interaction = createMockInteraction({
+        options: {
+          getSubcommandGroup: jest.fn().mockReturnValue('bot'),
+          getSubcommand: jest.fn().mockReturnValue('setannouncechannel'),
+          getChannel: jest.fn().mockReturnValue({ id: 'chan-announce', name: 'thông-báo-chung' }),
+        },
+      });
+
+      await execute(interaction);
+
+      expect(mockSettingsService.update).toHaveBeenCalledWith('guild-123', {
+        botAnnounce: {
+          channelId: 'chan-announce',
+        },
+      });
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({ content: expect.stringContaining('chan-announce') }),
+      );
+    });
+  });
+
   describe('bot announce', () => {
     it('phải từ chối nếu user không phải Bot Owner', async () => {
       const interaction = createMockInteraction({
@@ -409,7 +442,7 @@ describe('/config command — Execute Dispatch', () => {
 
       expect(interaction.reply).toHaveBeenCalled();
       const replyCall = interaction.reply.mock.calls[0][0];
-      expect(JSON.stringify(replyCall)).toContain('Xem Trước');
+      expect(JSON.stringify(replyCall)).toMatch(/xem trước/i);
       expect(JSON.stringify(replyCall)).toContain('Test custom note');
     });
 
