@@ -465,18 +465,6 @@ export function buildAnnouncementContainer(customNote?: string | null, isPreview
 
   const content = [
     previewBanner,
-    '## 🚀 BẢN CẬP NHẬT MỚI: DELTA FORCE BOT & TIỆN ÍCH EXTENSION',
-    '',
-    'Xin chào tất cả các Đặc vụ! Bot vừa được cập nhật các tính năng mới giúp trải nghiệm và liên kết tài khoản mượt mà hơn:',
-    '',
-    '### 📌 Lệnh mới: `/df help`',
-    '- **Trung tâm trợ giúp toàn diện**: Tra cứu nhanh danh sách mọi lệnh của bot (`/df`, `/team`, `/config`).',
-    '- **Tải Tiện ích 1-Click**: Tự động đính kèm tệp tiện ích mở rộng `DF-Extension.zip` sạch và an toàn.',
-    '- **Hướng dẫn 5 bước**: Cài đặt tiện ích qua chế độ Developer mode và liên kết tài khoản Delta Force HQ dễ dàng.',
-    '',
-    '### ⚡ Cải tiến lệnh: `/df link start`',
-    '- Giờ đây khi lấy mã claim, bot đính kèm sẵn tệp `DF-Extension.zip` để bạn cài đặt ngay mà không cần tìm link ngoài.',
-    '',
     customNote ? `> 💬 **Lời nhắn từ Nhà phát triển:**\n> ${customNote}\n\n` : '',
     '👉 *Hãy gõ ngay lệnh `/df help` trên máy chủ để trải nghiệm thử nhé!*',
   ]
