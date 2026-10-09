@@ -165,7 +165,7 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'config.roles.view': Policy.MANAGE_RBAC,
   'config.bot.guilds': Policy.MANAGE_RBAC,
   'config.bot.announce': Policy.MANAGE_RBAC,
-  'config.bot.setannouncechannel': Policy.MANAGE_CONFIG,
+  'config.bot.setannouncechannel': Policy.MANAGE_RBAC,
 
   'config.welcome.setchannel': Policy.MANAGE_CONFIG,
   'config.welcome.setrole': Policy.MANAGE_CONFIG,

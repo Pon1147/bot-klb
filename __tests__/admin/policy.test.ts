@@ -532,14 +532,15 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(30);
     });
 
-    it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds và config.bot.announce', () => {
+    it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds, config.bot.announce và config.bot.setannouncechannel', () => {
       expect(resolveCommandPolicy('config.roles.set')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.roles.view')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.bot.guilds')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.bot.announce')).toBe(Policy.MANAGE_RBAC);
+      expect(resolveCommandPolicy('config.bot.setannouncechannel')).toBe(Policy.MANAGE_RBAC);
     });
 
-    it('MANAGE_CONFIG policy mapping cho config.welcome.*, booster.*, container.* và config.bot.setannouncechannel', () => {
+    it('MANAGE_CONFIG policy mapping cho config.welcome.*, booster.* và container.*', () => {
       expect(resolveCommandPolicy('config.welcome.setchannel')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.welcome.setrole')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.welcome.toggle')).toBe(Policy.MANAGE_CONFIG);
@@ -552,7 +553,6 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
       expect(resolveCommandPolicy('config.container.edit')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.container.reset')).toBe(Policy.MANAGE_CONFIG);
-      expect(resolveCommandPolicy('config.bot.setannouncechannel')).toBe(Policy.MANAGE_CONFIG);
     });
 
     it('MANAGE_DF_CODE policy mapping cho df.code admin commands', () => {
