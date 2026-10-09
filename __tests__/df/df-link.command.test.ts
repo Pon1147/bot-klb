@@ -6,6 +6,9 @@
 
 jest.mock('discord.js', () => ({
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
+  AttachmentBuilder: class {
+    constructor(public attachment: any, public data?: any) {}
+  },
   ActionRowBuilder: class {
     constructor() {
       this._components = [];

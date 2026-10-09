@@ -12,6 +12,7 @@ import { execute as executeWorkshop } from '../../src/features/delta-force/works
 import { execute as executeUnlink } from '../../src/features/delta-force/unlink.handler.js';
 import { execute as executeCode } from '../../src/features/delta-force/code.handler.js';
 import { execute as executeLink } from '../../src/features/delta-force/link.handler.js';
+import { execute as executeHelp } from '../../src/features/delta-force/help.handler.js';
 
 jest.mock('../../src/features/delta-force/stats.handler.js', () => ({
   execute: jest.fn().mockResolvedValue(undefined),
@@ -38,6 +39,10 @@ jest.mock('../../src/features/delta-force/code.handler.js', () => ({
 }));
 
 jest.mock('../../src/features/delta-force/link.handler.js', () => ({
+  execute: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../../src/features/delta-force/help.handler.js', () => ({
   execute: jest.fn().mockResolvedValue(undefined),
 }));
 
@@ -68,9 +73,9 @@ describe('/df command — Structure & Builder', () => {
     expect(json.name).toBe('df');
   });
 
-  it('phải chứa direct subcommands: stats, daily, history, workshop, unlink', () => {
+  it('phải chứa direct subcommands: stats, daily, history, workshop, unlink, help', () => {
     const directSubs = json.options?.filter((o: any) => o.type === 1).map((o: any) => o.name);
-    expect(directSubs).toEqual(['stats', 'daily', 'history', 'workshop', 'unlink']);
+    expect(directSubs).toEqual(['stats', 'daily', 'history', 'workshop', 'unlink', 'help']);
   });
 
   it('subcommand "history" phải có option "limit" (INTEGER, 1-20, optional)', () => {
@@ -249,10 +254,21 @@ describe('/df command — Execute Dispatch', () => {
         getString: jest.fn((name: string) => (name === 'token' ? 'hex-token' : null)),
       },
     });
-
     await execute(interaction);
     expect(executeLink).toHaveBeenCalled();
     expect(capturedOpenId).toBe('user-fallback-123');
+  });
+
+  it('phải dispatch tới executeHelp khi chọn subcommand "help"', async () => {
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommandGroup: jest.fn().mockReturnValue(null),
+        getSubcommand: jest.fn().mockReturnValue('help'),
+      },
+    });
+
+    await execute(interaction);
+    expect(executeHelp).toHaveBeenCalledWith(interaction, expect.anything());
   });
 });
 

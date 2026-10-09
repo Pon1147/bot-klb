@@ -22,6 +22,7 @@
     "dev:preview": "tsx scripts/dev-preview.ts",
     "migrate:mongo": "tsx scripts/migrate-sqlite-to-mongo.ts",
     "test:mongo": "tsx scripts/test-mongo.ts",
+    "package:extension": "tsx scripts/package-extension.ts",
     "postinstall": "npx puppeteer browsers install chrome"
   },
   "lint-staged": {
@@ -31,6 +32,7 @@
     ]
   },
   "dependencies": {
+    "archiver": "^8.0.0",
     "axios": "^1.17.0",
     "better-sqlite3": "^13.0.3",
     "discord.js": "^14.27.0",
@@ -41,6 +43,7 @@
     "sharp": "^0.35.4"
   },
   "devDependencies": {
+    "@types/archiver": "^8.0.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.19.19",

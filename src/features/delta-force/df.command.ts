@@ -32,6 +32,7 @@ import { execute as executeWorkshop } from './workshop.handler.js';
 import { execute as executeUnlink } from './unlink.handler.js';
 import { execute as executeCode } from './code.handler.js';
 import { execute as executeLink } from './link.handler.js';
+import { execute as executeHelp } from './help.handler.js';
 
 import { MAX_HISTORY_PAGE } from '../../config/app.constants.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
@@ -142,6 +143,11 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((sub) =>
     sub.setName('unlink').setDescription('Hủy liên kết tài khoản Delta Force.'),
   )
+  .addSubcommand((sub) =>
+    sub
+      .setName('help')
+      .setDescription('Xem hướng dẫn sử dụng bot và tải tiện ích liên kết tài khoản.'),
+  )
   .addSubcommandGroup(buildCodeGroup)
   .addSubcommandGroup(buildLinkGroup);
 
@@ -193,6 +199,9 @@ export async function execute(
       return;
     case 'unlink':
       await executeUnlink(interaction, db);
+      return;
+    case 'help':
+      await executeHelp(interaction, db);
       return;
     default:
       await sendReply(interaction, {

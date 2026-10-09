@@ -528,8 +528,8 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
   // ─── 7. PHASE 4: Command Path Policy Mapping ──────────────────────
   describe('PHASE 4 — Command Path Policy Mapping', () => {
-    it('COMMAND_PATH_POLICIES chứa đúng 27 canonical command paths', () => {
-      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(27);
+    it('COMMAND_PATH_POLICIES chứa đúng 28 canonical command paths', () => {
+      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(28);
     });
 
     it('MANAGE_RBAC policy mapping cho config.roles.* và config.bot.guilds', () => {
@@ -567,6 +567,7 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(resolveCommandPolicy('df.history')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.workshop')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.unlink')).toBe(Policy.DF_ACCESS);
+      expect(resolveCommandPolicy('df.help')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.link.start')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.link.status')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.link.manual')).toBe(Policy.DF_ACCESS);

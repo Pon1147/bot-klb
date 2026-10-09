@@ -23,6 +23,7 @@ import {
   handleTeamFindButton,
   handleTeamFindSelect,
   handleDfStatsSelect,
+  handleHelpButton,
 } from '../../features/delta-force/index.js';
 import { hasPolicy, resolveCommandPolicy } from '../../config/permissions.js';
 import { getCommandPath } from '../../utils/command-path.utils.js';
@@ -130,6 +131,9 @@ async function handleButton(interaction: ButtonInteraction): Promise<void> {
 
   // Team-find buttons (map/mode/done/join)
   if ((await handleTeamFindButton(interaction)).handled) return;
+
+  // DF Help tab switch buttons
+  if ((await handleHelpButton(interaction)).handled) return;
 }
 
 /**

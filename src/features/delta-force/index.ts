@@ -17,6 +17,7 @@ export * as statsHandler from './stats.handler.js';
 export * as teamFindHandler from './team-find.handler.js';
 export * as unlinkHandler from './unlink.handler.js';
 export * as workshopHandler from './workshop.handler.js';
+export * as helpHandler from './help.handler.js';
 
 // Interaction handlers & IDs
 export * from './team-find-ids.js';
@@ -25,6 +26,8 @@ export * from './team-find.interaction.js';
 export * from './team-find.embed.js';
 export * from './team-find.menu.js';
 export * from './stats-select.handler.js';
+export { handleHelpButton } from './help.handler.js';
+export { getExtensionZipPath } from './extension.utils.js';
 
 // Services, Schedulers & Crypto
 export * from '../../services/df-codes-scheduler.js';

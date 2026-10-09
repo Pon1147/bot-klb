@@ -9,6 +9,7 @@
 
 import {
   ActionRowBuilder,
+  AttachmentBuilder,
   ButtonBuilder,
   ButtonStyle,
   ChatInputCommandInteraction,
@@ -31,6 +32,7 @@ import { createLogger } from '../../utils/logger.js';
 import { sendReply } from '../../utils/reply.utils.js';
 import { maskString } from '../../utils/string.utils.js';
 import { encryptCredential } from '../../services/df-crypto.js';
+import { getExtensionZipPath } from './extension.utils.js';
 
 const logger = createLogger('DfLink');
 
@@ -66,17 +68,30 @@ async function handleStart(
     .setStyle(ButtonStyle.Secondary);
   const row = new ActionRowBuilder().addComponents(revealButton);
 
+  const zipPath = getExtensionZipPath();
+  const files = zipPath
+    ? [
+        new AttachmentBuilder(zipPath, {
+          name: 'DF-Extension.zip',
+          description: 'Tiện ích liên kết tài khoản Delta Force',
+        }),
+      ]
+    : [];
+
   const info = buildInfoContainer(
     `**Liên kết tài khoản Delta Force**\n\n` +
       `**Mã claim: \`${code}\`** (hết hạn sau 10 phút)\n\n` +
-      '1. Mở [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html) → đăng nhập\n' +
-      '2. Mở extension → popup → paste Webhook URL → Lưu\n' +
-      '3. Tab **Link** → dán mã claim → bấm **Liên kết Discord**\n' +
-      '4. Chờ DM "Linked OK" từ bot\n\n' +
+      '1. Tải và giải nén file **`DF-Extension.zip`** đính kèm (nếu chưa cài tiện ích)\n' +
+      '2. Mở `chrome://extensions/` → Bật Developer mode → Load unpacked thư mục vừa giải nén\n' +
+      '3. Mở [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html) → đăng nhập\n' +
+      '4. Mở popup tiện ích → paste Webhook URL (nhấn nút bên dưới) → Lưu\n' +
+      '5. Tab **Link** trong tiện ích → dán mã claim → bấm **Liên kết Discord**\n' +
+      '6. Chờ thông báo xác nhận thành công từ bot!\n\n' +
       '> Nhấn button bên dưới để hiện Webhook URL (chỉ hiện 1 lần)',
   );
   await interaction.reply({
     components: [...info.toJSON(), row.toJSON()],
+    files,
     flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
   } as Parameters<typeof interaction.reply>[0]);
 }
