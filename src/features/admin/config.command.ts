@@ -465,8 +465,7 @@ export function buildAnnouncementContainer(customNote?: string | null, isPreview
 
   const content = [
     previewBanner,
-    customNote ? `> 💬 **Lời nhắn từ Nhà phát triển:**\n> ${customNote}\n\n` : '',
-    '👉 *Hãy gõ ngay lệnh `/df help` trên máy chủ để trải nghiệm thử nhé!*',
+    customNote ? ` 💬 **Lời nhắn từ Nhà phát triển:**\n> ${customNote}\n\n` : '',
   ]
     .filter(Boolean)
     .join('\n');
