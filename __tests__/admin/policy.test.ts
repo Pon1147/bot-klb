@@ -528,14 +528,15 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
   // ─── 7. PHASE 4: Command Path Policy Mapping ──────────────────────
   describe('PHASE 4 — Command Path Policy Mapping', () => {
-    it('COMMAND_PATH_POLICIES chứa đúng 28 canonical command paths', () => {
-      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(28);
+    it('COMMAND_PATH_POLICIES chứa đúng 29 canonical command paths', () => {
+      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(29);
     });
 
-    it('MANAGE_RBAC policy mapping cho config.roles.* và config.bot.guilds', () => {
+    it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds và config.bot.announce', () => {
       expect(resolveCommandPolicy('config.roles.set')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.roles.view')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.bot.guilds')).toBe(Policy.MANAGE_RBAC);
+      expect(resolveCommandPolicy('config.bot.announce')).toBe(Policy.MANAGE_RBAC);
     });
 
     it('MANAGE_CONFIG policy mapping cho config.welcome.*, booster.*, container.*', () => {

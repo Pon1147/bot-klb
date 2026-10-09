@@ -57,4 +57,6 @@ export const botConfig = {
   dfWebhookSecret: process.env.DF_WEBHOOK_SECRET || '',
   dfLinkChannelId: process.env.DF_LINK_CHANNEL_ID || '',
   dfWebhookUrl: process.env.DF_CLAIM_WEBHOOK_URL || '',
+  // Bot Owner / Developer Discord User ID
+  botOwnerId: process.env.BOT_OWNER_ID || '418779992290492416',
 };

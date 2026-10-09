@@ -18,19 +18,26 @@
 
 import {
   ChatInputCommandInteraction,
+  ComponentType,
+  Guild,
+  MessageFlags,
+  PermissionFlagsBits,
   Role,
   SlashCommandBuilder,
   SlashCommandSubcommandBuilder,
   SlashCommandSubcommandGroupBuilder,
+  TextChannel,
 } from 'discord.js';
 import Database from 'better-sqlite3';
 import { getSettingsService, SettingsService } from '../../services/settings.service.js';
+import { botConfig } from '../../config/bot.config.js';
 import {
   buildErrorContainer,
   buildInfoContainer,
   buildTextOnlyContainer,
   buildEditTypeOptionCallback,
   buildResetTypeOptionCallback,
+  makeResult,
 } from '../../utils/container.utils.js';
 import { sendReply } from '../../utils/reply.utils.js';
 import {
@@ -177,9 +184,26 @@ function buildBotGroup(
 ): SlashCommandSubcommandGroupBuilder {
   return group
     .setName('bot')
-    .setDescription('Xem thông tin và trạng thái hoạt động của bot.')
+    .setDescription('Xem thông tin và quản trị cấp cao bot.')
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub.setName('guilds').setDescription('Xem danh sách các máy chủ (guilds) bot đang tham gia.'),
+    )
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
+        .setName('announce')
+        .setDescription('Phát thông báo cập nhật tới toàn bộ máy chủ (chỉ dành cho Bot Owner).')
+        .addBooleanOption((opt) =>
+          opt
+            .setName('preview')
+            .setDescription('Chỉ xem trước giao diện thông báo, chưa phát thật (mặc định: false)')
+            .setRequired(false),
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName('message')
+            .setDescription('Lời nhắn thêm từ nhà phát triển (tùy chọn)')
+            .setRequired(false),
+        ),
     );
 }
 
@@ -360,6 +384,8 @@ export async function execute(
     case 'bot': {
       if (subcommand === 'guilds') {
         await handleBotGuilds(interaction);
+      } else if (subcommand === 'announce') {
+        await handleBotAnnounce(interaction);
       }
       break;
     }
@@ -393,5 +419,179 @@ async function handleBotGuilds(interaction: ChatInputCommandInteraction): Promis
 
   await sendReply(interaction, {
     components: container.toJSON(),
+  });
+}
+
+/** Xây dựng container thông báo cập nhật tính năng mới */
+export function buildAnnouncementContainer(customNote?: string | null) {
+  const content = [
+    '## 🚀 BẢN CẬP NHẬT MỚI: DELTA FORCE BOT & TIỆN ÍCH EXTENSION',
+    '',
+    'Xin chào tất cả các Đặc vụ! Bot vừa được cập nhật các tính năng mới giúp trải nghiệm và liên kết tài khoản mượt mà hơn:',
+    '',
+    '### 📌 Lệnh mới: `/df help`',
+    '- **Trung tâm trợ giúp toàn diện**: Tra cứu nhanh danh sách mọi lệnh của bot (`/df`, `/team`, `/config`).',
+    '- **Tải Tiện ích 1-Click**: Tự động đính kèm tệp tiện ích mở rộng `DF-Extension.zip` sạch và an toàn.',
+    '- **Hướng dẫn 5 bước**: Cài đặt tiện ích qua chế độ Developer mode và liên kết tài khoản Delta Force HQ dễ dàng.',
+    '',
+    '### ⚡ Cải tiến lệnh: `/df link start`',
+    '- Giờ đây khi lấy mã claim, bot đính kèm sẵn tệp `DF-Extension.zip` để bạn cài đặt ngay mà không cần tìm link ngoài.',
+    '',
+    customNote ? `> 💬 **Lời nhắn từ Nhà phát triển:**\n> ${customNote}\n\n` : '',
+    '👉 *Hãy gõ ngay lệnh `/df help` trên máy chủ để trải nghiệm thử nhé!*',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  return makeResult(
+    [
+      {
+        type: ComponentType.Container,
+        components: [
+          { type: ComponentType.TextDisplay, content },
+          { type: ComponentType.Separator, accentColor: COLORS.INFO },
+        ],
+      },
+    ],
+    MessageFlags.IsComponentsV2,
+    [],
+  );
+}
+
+/** Tìm kênh thích hợp nhất để gửi thông báo trong guild */
+export function findAnnouncementChannel(guild: Guild): TextChannel | null {
+  const botMember = guild.members.me;
+
+  // 1. Kênh hệ thống nếu có quyền
+  if (guild.systemChannel) {
+    const perms = botMember ? guild.systemChannel.permissionsFor(botMember) : null;
+    if (perms?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages])) {
+      return guild.systemChannel as TextChannel;
+    }
+  }
+
+  // 2. Kênh văn bản có tên chứa từ khóa ưu tiên
+  const textChannels = Array.from(guild.channels.cache.values()).filter(
+    (c): c is TextChannel =>
+      c.isTextBased() && !c.isDMBased() && !c.isVoiceBased() && 'permissionsFor' in c,
+  );
+
+  const priorityKeywords = [
+    'thông-báo',
+    'announcement',
+    'announcements',
+    'general',
+    'chung',
+    'chat',
+  ];
+  for (const keyword of priorityKeywords) {
+    const found = textChannels.find((c) => c.name.toLowerCase().includes(keyword));
+    if (found && botMember) {
+      const perms = found.permissionsFor(botMember);
+      if (perms?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages])) {
+        return found;
+      }
+    }
+  }
+
+  // 3. Kênh văn bản đầu tiên bot có quyền gửi
+  for (const c of textChannels) {
+    if (botMember) {
+      const perms = c.permissionsFor(botMember);
+      if (perms?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages])) {
+        return c;
+      }
+    }
+  }
+
+  return null;
+}
+
+/** Subcommand `bot announce` — phát thông báo toàn hệ thống (chỉ dành cho Bot Owner) */
+export async function handleBotAnnounce(interaction: ChatInputCommandInteraction): Promise<void> {
+  // Guard bảo mật tối cao: Chỉ duy nhất Bot Owner được phép phát thông báo toàn hệ thống
+  if (interaction.user.id !== botConfig.botOwnerId) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '🔒 Bạn không có quyền sử dụng lệnh này. Chỉ duy nhất Chủ sở hữu Bot (Bot Developer) mới có quyền phát thông báo toàn hệ thống.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  const preview = interaction.options.getBoolean('preview') ?? false;
+  const customMessage = interaction.options.getString('message');
+  const container = buildAnnouncementContainer(customMessage);
+
+  if (preview) {
+    const note = buildInfoContainer(
+      '👁️ **Chế độ Xem Trước (Preview)**\n' +
+        'Dưới đây là giao diện thông báo sẽ được gửi tới tất cả các máy chủ.\n' +
+        '> Để thực sự phát thông báo tới tất cả máy chủ, hãy chạy lại lệnh với `preview: False`.',
+    );
+    await sendReply(interaction, {
+      components: [...note.toJSON(), ...container.toJSON()],
+    });
+    return;
+  }
+
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  const guilds = interaction.client.guilds.cache;
+  const results: { guildName: string; channelName?: string; success: boolean; reason?: string }[] =
+    [];
+
+  for (const guild of guilds.values()) {
+    try {
+      const channel = findAnnouncementChannel(guild);
+      if (!channel) {
+        results.push({
+          guildName: guild.name,
+          success: false,
+          reason: 'Không tìm thấy kênh văn bản có quyền gửi tin nhắn',
+        });
+        continue;
+      }
+
+      await channel.send({
+        components: container.toJSON(),
+        flags: MessageFlags.IsComponentsV2,
+      });
+
+      results.push({
+        guildName: guild.name,
+        channelName: channel.name,
+        success: true,
+      });
+    } catch (err) {
+      results.push({
+        guildName: guild.name,
+        success: false,
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  const successCount = results.filter((r) => r.success).length;
+  const failCount = results.filter((r) => !r.success).length;
+
+  const summaryLines = results.map((r) => {
+    if (r.success) {
+      return `• **${r.guildName}** (#${r.channelName}): ✅ Đã gửi`;
+    }
+    return `• **${r.guildName}**: ⚠️ Bỏ qua (${r.reason})`;
+  });
+
+  const report = buildInfoContainer(
+    `📢 **Báo Cáo Phát Thông Báo Toàn Hệ Thống**\n\n` +
+      `• Tổng số máy chủ: **${guilds.size}**\n` +
+      `• Gửi thành công: **${successCount}**\n` +
+      `• Thất bại / Bỏ qua: **${failCount}**\n\n` +
+      `**Chi tiết từng máy chủ:**\n` +
+      summaryLines.join('\n'),
+  );
+
+  await interaction.editReply({
+    components: report.toJSON(),
   });
 }

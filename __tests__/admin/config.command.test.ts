@@ -155,9 +155,9 @@ describe('/config command — Structure & Builder', () => {
   describe('bot group structure', () => {
     const botGroup = json.options?.find((o: any) => o.name === 'bot');
 
-    it('phải chứa subcommand: guilds', () => {
+    it('phải chứa subcommands: guilds, announce', () => {
       const subNames = botGroup?.options?.map((s: any) => s.name);
-      expect(subNames).toEqual(['guilds']);
+      expect(subNames).toEqual(['guilds', 'announce']);
     });
   });
 });
@@ -373,6 +373,90 @@ describe('/config command — Execute Dispatch', () => {
     await execute(interaction);
 
     expect(interaction.reply).toHaveBeenCalled();
+  });
+
+  describe('bot announce', () => {
+    it('phải từ chối nếu user không phải Bot Owner', async () => {
+      const interaction = createMockInteraction({
+        user: { id: 'random-user-id' },
+        options: {
+          getSubcommandGroup: jest.fn().mockReturnValue('bot'),
+          getSubcommand: jest.fn().mockReturnValue('announce'),
+          getBoolean: jest.fn().mockReturnValue(false),
+          getString: jest.fn().mockReturnValue(null),
+        },
+      });
+
+      await execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalled();
+      const replyCall = interaction.reply.mock.calls[0][0];
+      expect(JSON.stringify(replyCall)).toContain('Chủ sở hữu Bot');
+    });
+
+    it('cho phép xem trước (preview: true) nếu là Bot Owner', async () => {
+      const interaction = createMockInteraction({
+        user: { id: '418779992290492416' },
+        options: {
+          getSubcommandGroup: jest.fn().mockReturnValue('bot'),
+          getSubcommand: jest.fn().mockReturnValue('announce'),
+          getBoolean: jest.fn().mockReturnValue(true),
+          getString: jest.fn().mockReturnValue('Test custom note'),
+        },
+      });
+
+      await execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalled();
+      const replyCall = interaction.reply.mock.calls[0][0];
+      expect(JSON.stringify(replyCall)).toContain('Xem Trước');
+      expect(JSON.stringify(replyCall)).toContain('Test custom note');
+    });
+
+    it('broadcast tới toàn bộ máy chủ (preview: false) nếu là Bot Owner', async () => {
+      const mockChannel = {
+        name: 'thông-báo',
+        isTextBased: () => true,
+        isDMBased: () => false,
+        isVoiceBased: () => false,
+        permissionsFor: jest.fn().mockReturnValue({
+          has: jest.fn().mockReturnValue(true),
+        }),
+        send: jest.fn().mockResolvedValue({}),
+      };
+
+      const mockGuilds = new Map();
+      mockGuilds.set('guild-1', {
+        name: 'Server KLB',
+        channels: {
+          cache: new Map([['chan-1', mockChannel]]),
+        },
+        members: {
+          me: { id: 'bot-id' },
+        },
+      });
+
+      const interaction = createMockInteraction({
+        user: { id: '418779992290492416' },
+        options: {
+          getSubcommandGroup: jest.fn().mockReturnValue('bot'),
+          getSubcommand: jest.fn().mockReturnValue('announce'),
+          getBoolean: jest.fn().mockReturnValue(false),
+          getString: jest.fn().mockReturnValue(null),
+        },
+        client: {
+          guilds: {
+            cache: mockGuilds,
+          },
+        },
+      });
+
+      await execute(interaction);
+
+      expect(interaction.deferReply).toHaveBeenCalled();
+      expect(mockChannel.send).toHaveBeenCalled();
+      expect(interaction.editReply).toHaveBeenCalled();
+    });
   });
 });
 
