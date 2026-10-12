@@ -149,3 +149,4 @@ sequenceDiagram
 - [ ] **Bước 5 (Action Router & Interactivity)**: Xử lý nút bấm Confirm/Cancel, select menu ngân hàng, và modal feedback.
 - [ ] **Bước 6 (RBAC & Permissions)**: Đăng ký policy cho `/seller` vào `permissions.ts`.
 - [ ] **Bước 7 (Testing & QA)**: Viết unit tests cho database, service và command handler. Chạy `npm run check` và `npm test` đạt 100%.
+
