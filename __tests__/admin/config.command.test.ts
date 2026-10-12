@@ -42,6 +42,17 @@ jest.mock('../../src/features/container/container-reset.handler.js', () => ({
   handleContainerReset: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('../../src/config/bot.config.js', () => {
+  const actual = jest.requireActual('../../src/config/bot.config.js');
+  return {
+    ...actual,
+    botConfig: {
+      ...actual.botConfig,
+      botOwnerId: '418779992290492416',
+    },
+  };
+});
+
 function createMockInteraction(overrides: Record<string, unknown> = {}): any {
   const base: Record<string, unknown> = {
     guild: { id: 'guild-123' },
