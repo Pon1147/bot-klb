@@ -4,7 +4,7 @@
  */
 
 import { GuildMember, Role, TextChannel } from 'discord.js';
-import { assignBoosterRole, handleBoosterMemberUpdate } from '../../src/features/booster/booster.event.js';
+import { handleBoosterMemberUpdate } from '../../src/features/booster/booster.event.js';
 import { getSettingsService } from '../../src/services/settings.service.js';
 
 jest.mock('../../src/services/settings.service.js', () => ({
@@ -60,32 +60,6 @@ describe('features/booster/booster.event', () => {
     (getSettingsService as jest.Mock).mockReturnValue(mockSettingsService);
   });
 
-  describe('assignBoosterRole', () => {
-    it('gán role thành công khi role tồn tại trong guild', async () => {
-      await assignBoosterRole(mockMember as unknown as GuildMember, 'booster-role-123');
-      expect(mockMember.roles.add).toHaveBeenCalledWith(mockRole);
-    });
-
-    it('bỏ qua nếu role không tồn tại trong cache của guild', async () => {
-      await assignBoosterRole(mockMember as unknown as GuildMember, 'non-existent-role');
-      expect(mockMember.roles.add).not.toHaveBeenCalled();
-    });
-
-    it('bắt ngoại lệ và log lỗi gracefully nếu roles.add ném ra Error instance', async () => {
-      mockMember.roles.add.mockRejectedValueOnce(new Error('Missing Permissions'));
-      await expect(
-        assignBoosterRole(mockMember as unknown as GuildMember, 'booster-role-123'),
-      ).resolves.toBeUndefined();
-    });
-
-    it('bắt ngoại lệ và log lỗi gracefully nếu roles.add ném ra string/non-error', async () => {
-      mockMember.roles.add.mockRejectedValueOnce('Network failure');
-      await expect(
-        assignBoosterRole(mockMember as unknown as GuildMember, 'booster-role-123'),
-      ).resolves.toBeUndefined();
-    });
-  });
-
   describe('handleBoosterMemberUpdate', () => {
     it('bỏ qua nếu newMember là bot', async () => {
       const oldMember = { ...mockMember, user: { bot: true } };
@@ -123,7 +97,7 @@ describe('features/booster/booster.event', () => {
       expect(getSettingsService).not.toHaveBeenCalled();
     });
 
-    it('gửi thông báo cảm ơn và gán role khi member vừa mới boost', async () => {
+    it('gửi thông báo cảm ơn khi member vừa mới boost', async () => {
       const oldMember = { ...mockMember, premiumSince: null };
       const newMember = { ...mockMember, premiumSince: new Date() };
 
@@ -145,7 +119,6 @@ describe('features/booster/booster.event', () => {
           files: [],
         }),
       );
-      expect(mockMember.roles.add).toHaveBeenCalledWith(mockRole);
     });
 
     it('không gửi gì nếu booster feature bị disabled trong settings', async () => {
@@ -215,7 +188,7 @@ describe('features/booster/booster.event', () => {
       expect(mockMember.roles.add).not.toHaveBeenCalled();
     });
 
-    it('gửi thông báo nhưng không gán role nếu booster settings không cấu hình roleId', async () => {
+    it('gửi thông báo ngay cả khi booster settings không cấu hình roleId', async () => {
       mockSettingsService.getBooster.mockReturnValueOnce({
         enabled: true,
         channelId: 'booster-ch-999',
@@ -237,7 +210,6 @@ describe('features/booster/booster.event', () => {
       );
 
       expect(mockChannel.send).toHaveBeenCalled();
-      expect(mockMember.roles.add).not.toHaveBeenCalled();
     });
 
     it('bắt ngoại lệ và log lỗi gracefully nếu gửi message ném ra Error instance', async () => {

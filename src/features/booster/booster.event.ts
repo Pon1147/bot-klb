@@ -5,24 +5,8 @@ import { createLogger } from '../../utils/logger.js';
 const logger = createLogger('BoosterEvent');
 
 /**
- * Gán role booster tự động cho member khi server boost.
- */
-export async function assignBoosterRole(member: GuildMember, roleId: string): Promise<void> {
-  const role = member.guild.roles.cache.get(roleId);
-  if (!role) return;
-
-  try {
-    await member.roles.add(role);
-  } catch (error) {
-    logger.error(
-      `Failed to assign booster role ${role.name} to ${member.user.tag}: ` +
-        (error instanceof Error ? error.message : String(error)),
-    );
-  }
-}
-
-/**
  * Xử lý sự kiện khi member bắt đầu Boost server (guildMemberUpdate).
+ * Discord đã tự động gán role Nitro Booster cho member, bot chỉ cần gửi tin nhắn cảm ơn.
  *
  * @param oldMember Trạng thái member trước update
  * @param newMember Trạng thái member sau update
@@ -61,10 +45,6 @@ export async function handleBoosterMemberUpdate(
         flags: boosterContainer.flags,
         files: boosterContainer.files,
       });
-
-      if (booster.roleId) {
-        await assignBoosterRole(newMember, booster.roleId);
-      }
     } catch (error) {
       logger.error(
         `Error sending booster message for ${newMember.user.tag}: ` +
