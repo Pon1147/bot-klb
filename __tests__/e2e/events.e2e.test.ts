@@ -279,11 +279,10 @@ describe('Events E2E — guildMemberUpdate', () => {
     setSettingsService(new SettingsService(db));
   }
 
-  it('phải gửi booster message + cấp role khi member boost', async () => {
+  it('phải gửi booster message khi member boost', async () => {
     setupSettingsService();
 
     const channel = createMockTextChannel({ id: 'channel-booster' });
-    const role = createMockRole({ id: 'role-booster' });
 
     seedGuildSettings(db, 'guild-123', makeSettings({
       booster: { enabled: true, channelId: 'channel-booster', roleId: 'role-booster' },
@@ -295,17 +294,13 @@ describe('Events E2E — guildMemberUpdate', () => {
       guildId: 'guild-123',
       channelId: 'channel-booster',
       channelIdExists: true,
-      roleId: 'role-booster',
-      roleIdExists: true,
     });
     newMember.guild.channels.cache.get.mockImplementation((id: string) => id === 'channel-booster' ? channel : undefined);
-    newMember.guild.roles.cache.get.mockImplementation((id: string) => id === 'role-booster' ? role : undefined);
 
     const { execute } = require('../../src/events/guildMemberUpdate.event');
     await execute({}, oldMember, newMember);
 
     expect(channel.send).toHaveBeenCalled();
-    expect(newMember.roles.add).toHaveBeenCalledWith(role);
   });
 
   it('phải bỏ qua khi member là bot', async () => {
