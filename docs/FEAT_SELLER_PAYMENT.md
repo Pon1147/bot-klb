@@ -143,10 +143,10 @@ sequenceDiagram
 ## 6. Kế Hoạch Triển Khai Từng Bước (Milestones)
 
 - [x] **Bước 1 (Branching & Space)**: Tạo nhánh `feat/seller-payment`, lập tài liệu kỹ thuật, chuẩn bị cấu trúc thư mục `src/features/seller/`.
-- [ ] **Bước 2 (Database Layer)**: Tạo `src/database/seller.db.ts` với đầy đủ DDL, migrations, query methods.
-- [ ] **Bước 3 (VietQR Engine)**: Tích hợp `vietqr.service.ts` gọi API VietQR sinh ảnh QR động dạng Buffer, không phụ thuộc canvas nặng nề.
-- [ ] **Bước 4 (Command & Handlers)**: Xây dựng `/seller qr` và `/seller pay` với Discord Components V2.
-- [ ] **Bước 5 (Action Router & Interactivity)**: Xử lý nút bấm Confirm/Cancel, select menu ngân hàng, và modal feedback.
-- [ ] **Bước 6 (RBAC & Permissions)**: Đăng ký policy cho `/seller` vào `permissions.ts`.
-- [ ] **Bước 7 (Testing & QA)**: Viết unit tests cho database, service và command handler. Chạy `npm run check` và `npm test` đạt 100%.
+- [x] **Bước 2 (Database Layer)**: Tạo `src/database/seller.db.ts` với đầy đủ DDL, migrations, query methods.
+- [x] **Bước 3 (VietQR Engine)**: Tích hợp `vietqr.service.ts` gọi API VietQR sinh ảnh QR động dạng Buffer, không phụ thuộc canvas nặng nề.
+- [x] **Bước 4 (Command & Handlers)**: Xây dựng `/seller qr` và `/seller pay` với Discord Components V2.
+- [x] **Bước 5 (Action Router & Interactivity)**: Xử lý nút bấm Confirm/Cancel, select menu ngân hàng, và modal feedback.
+- [x] **Bước 6 (RBAC & Permissions)**: Đăng ký policy cho `/seller` vào `permissions.ts`.
+- [x] **Bước 7 (Testing & QA)**: Viết unit tests cho database, service và command handler. Chạy `npm run check` và `npm test` đạt 100%.
 

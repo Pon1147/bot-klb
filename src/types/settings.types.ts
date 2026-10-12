@@ -85,6 +85,13 @@ export interface BotAnnounceSettings {
 }
 
 /**
+ * Cấu hình vai trò Thợ Kéo (Seller) của server.
+ */
+export interface SellerSettings {
+  roleId: string | null;
+}
+
+/**
  * Toàn bộ settings của 1 guild.
  * Thêm feature mới chỉ cần add key vào interface này + default.
  */
@@ -95,6 +102,7 @@ export interface GuildSettings {
   dfCodes: DfCodesSettings;
   rbac: RbacRoleSettings;
   botAnnounce: BotAnnounceSettings;
+  seller: SellerSettings;
 }
 
 /**

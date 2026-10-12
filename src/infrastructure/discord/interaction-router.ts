@@ -25,6 +25,21 @@ import {
   handleDfStatsSelect,
   handleHelpButton,
 } from '../../features/delta-force/index.js';
+import {
+  SELLER_QR_IDS,
+  SELLER_PAY_IDS,
+  handleSelectBankButton,
+  handleEditInfoButton,
+  handleDeleteQrButton,
+  handleBankSelectMenu,
+  handleSellerInfoModalSubmit,
+  handlePaymentConfirmButton,
+  handlePaymentConfirmModalSubmit,
+  handlePaymentCancelButton,
+  handlePaymentCancelModalSubmit,
+  handleRateStarButton,
+  handleRateModalSubmit,
+} from '../../features/seller/index.js';
 import { hasPolicy, resolveCommandPolicy } from '../../config/permissions.js';
 import { getCommandPath } from '../../utils/command-path.utils.js';
 import { TTLStore, ExpiryEntry } from '../../utils/ttl-store.js';
@@ -134,6 +149,40 @@ async function handleButton(interaction: ButtonInteraction): Promise<void> {
 
   // DF Help tab switch buttons
   if ((await handleHelpButton(interaction)).handled) return;
+
+  // Seller buttons
+  if (interaction.customId.startsWith(`${SELLER_QR_IDS.SELECT_BANK}:`)) {
+    const targetUserId = interaction.customId.slice(`${SELLER_QR_IDS.SELECT_BANK}:`.length);
+    await handleSelectBankButton(interaction, targetUserId);
+    return;
+  }
+  if (interaction.customId.startsWith(`${SELLER_QR_IDS.EDIT_INFO}:`)) {
+    const targetUserId = interaction.customId.slice(`${SELLER_QR_IDS.EDIT_INFO}:`.length);
+    await handleEditInfoButton(interaction, targetUserId);
+    return;
+  }
+  if (interaction.customId.startsWith(`${SELLER_QR_IDS.DELETE}:`)) {
+    const targetUserId = interaction.customId.slice(`${SELLER_QR_IDS.DELETE}:`.length);
+    await handleDeleteQrButton(interaction, targetUserId);
+    return;
+  }
+  if (interaction.customId.startsWith(`${SELLER_PAY_IDS.CONFIRM}:`)) {
+    const txId = interaction.customId.slice(`${SELLER_PAY_IDS.CONFIRM}:`.length);
+    await handlePaymentConfirmButton(interaction, txId);
+    return;
+  }
+  if (interaction.customId.startsWith(`${SELLER_PAY_IDS.CANCEL}:`)) {
+    const txId = interaction.customId.slice(`${SELLER_PAY_IDS.CANCEL}:`.length);
+    await handlePaymentCancelButton(interaction, txId);
+    return;
+  }
+  if (interaction.customId.startsWith(`${SELLER_PAY_IDS.RATE_STAR}:`)) {
+    const parts = interaction.customId.split(':');
+    const rating = Number(parts[1]);
+    const txId = parts[2];
+    await handleRateStarButton(interaction, rating, txId);
+    return;
+  }
 }
 
 /**
@@ -143,6 +192,11 @@ async function handleStringSelectMenu(
   client: Client,
   interaction: StringSelectMenuInteraction,
 ): Promise<void> {
+  if (interaction.customId.startsWith(`${SELLER_QR_IDS.SELECT_BANK}_menu:`)) {
+    const targetUserId = interaction.customId.slice(`${SELLER_QR_IDS.SELECT_BANK}_menu:`.length);
+    await handleBankSelectMenu(interaction, targetUserId);
+    return;
+  }
   if (interaction.customId.startsWith(TeamFindIds.RANK)) {
     await handleTeamFindSelect(interaction);
   }
@@ -153,6 +207,29 @@ async function handleStringSelectMenu(
  * Handle modal submit interactions.
  */
 async function handleModalSubmit(interaction: ModalSubmitInteraction): Promise<void> {
+  if (interaction.customId.startsWith(`${SELLER_QR_IDS.MODAL_INFO}:`)) {
+    const [, , targetUserId, bankCode, bankName] = interaction.customId.split(':');
+    await handleSellerInfoModalSubmit(interaction, targetUserId, bankCode, bankName);
+    return;
+  }
+  if (interaction.customId.startsWith(`${SELLER_PAY_IDS.CONFIRM_MODAL}:`)) {
+    const txId = interaction.customId.slice(`${SELLER_PAY_IDS.CONFIRM_MODAL}:`.length);
+    await handlePaymentConfirmModalSubmit(interaction, txId);
+    return;
+  }
+  if (interaction.customId.startsWith(`${SELLER_PAY_IDS.CANCEL_MODAL}:`)) {
+    const txId = interaction.customId.slice(`${SELLER_PAY_IDS.CANCEL_MODAL}:`.length);
+    await handlePaymentCancelModalSubmit(interaction, txId);
+    return;
+  }
+  if (interaction.customId.startsWith(`${SELLER_PAY_IDS.RATE_MODAL}:`)) {
+    const parts = interaction.customId.split(':');
+    const rating = Number(parts[1]);
+    const txId = parts[2];
+    await handleRateModalSubmit(interaction, rating, txId);
+    return;
+  }
+
   if (interaction.customId.startsWith(ContainerModalPrefix)) {
     try {
       await handleContainerEditorModalSubmit(interaction);

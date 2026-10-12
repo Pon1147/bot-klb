@@ -20,6 +20,7 @@ import {
   syncBindingsFromMongoToSqlite,
 } from '../database/df-binding.db.js';
 import { initializeCaptureEventsTable } from '../database/df-telemetry.db.js';
+import { initializeSellerTables, getSellerDb } from '../database/seller.db.js';
 import { connectMongo, initMongoIndexes } from '../database/mongo/index.js';
 import { SettingsService, setSettingsService } from '../services/settings.service.js';
 import {
@@ -75,7 +76,9 @@ export async function bootstrap(): Promise<Client> {
   migrateClaimSessionsToNumeric(database);
   initializeAccountBindingsTable(database);
   initializeCaptureEventsTable(database);
-  logger.info('DF Link tables ready');
+  initializeSellerTables(database);
+  getSellerDb(database);
+  logger.info('DF Link & Seller tables ready');
 
   // Step 2d: Kết nối MongoDB (nếu MONGODB_URI / MONGO_URL được cấu hình trên Railway)
   if (botConfig.mongoUri) {

@@ -69,6 +69,9 @@ export const defaultGuildSettings: GuildSettings = {
   botAnnounce: {
     channelId: null,
   },
+  seller: {
+    roleId: null,
+  },
 };
 
 /**

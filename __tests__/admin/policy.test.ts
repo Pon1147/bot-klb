@@ -528,8 +528,8 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
   // ─── 7. PHASE 4: Command Path Policy Mapping ──────────────────────
   describe('PHASE 4 — Command Path Policy Mapping', () => {
-    it('COMMAND_PATH_POLICIES chứa đúng 30 canonical command paths', () => {
-      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(30);
+    it('COMMAND_PATH_POLICIES chứa đúng 35 canonical command paths', () => {
+      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(35);
     });
 
     it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds, config.bot.announce và config.bot.setannouncechannel', () => {
@@ -577,6 +577,14 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
     it('TEAM_ACCESS policy mapping cho team.find', () => {
       expect(resolveCommandPolicy('team.find')).toBe(Policy.TEAM_ACCESS);
+    });
+
+    it('SELLER_ACCESS và MANAGE_CONFIG policy mapping cho seller commands', () => {
+      expect(resolveCommandPolicy('seller.pay')).toBe(Policy.SELLER_ACCESS);
+      expect(resolveCommandPolicy('seller.qr')).toBe(Policy.SELLER_ACCESS);
+      expect(resolveCommandPolicy('seller.history')).toBe(Policy.SELLER_ACCESS);
+      expect(resolveCommandPolicy('seller.top')).toBe(Policy.SELLER_ACCESS);
+      expect(resolveCommandPolicy('seller.config.setrole')).toBe(Policy.MANAGE_CONFIG);
     });
 
     it('trả về null đối với commandPath không xác định hoặc legacy commands', () => {

@@ -3,6 +3,7 @@ import {
   GuildSettings,
   WelcomeSettings,
   BoosterSettings,
+  SellerSettings,
   TemplateContext,
   ContainerSettings,
 } from '../types/settings.types.js';
@@ -74,6 +75,23 @@ export class SettingsService {
    */
   getBooster(guildId: string): BoosterSettings {
     return this.get(guildId).booster;
+  }
+
+  /**
+   * Lấy seller settings cụ thể (role thợ kéo).
+   */
+  getSeller(guildId: string): SellerSettings {
+    return this.get(guildId).seller ?? { roleId: null };
+  }
+
+  /**
+   * Cập nhật seller settings cụ thể (role thợ kéo).
+   */
+  updateSeller(guildId: string, partial: Partial<SellerSettings>): GuildSettings {
+    const current = this.getSeller(guildId);
+    return this.update(guildId, {
+      seller: { ...current, ...partial },
+    });
   }
 
   /**
