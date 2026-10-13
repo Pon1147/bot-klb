@@ -47,3 +47,4 @@ describe('utils/discord-error.utils', () => {
     expect(isIgnorableInteractionError(undefined)).toBe(false);
   });
 });
+
