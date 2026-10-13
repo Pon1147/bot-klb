@@ -11,6 +11,19 @@ import {
   SellerTransaction,
   TransactionStatus,
 } from '../features/seller/types/seller.types.js';
+import {
+  isMongoConnected,
+  upsertSellerProfileToMongo,
+  deleteSellerProfileFromMongo,
+  loadAllSellerProfilesFromMongo,
+  upsertSellerTransactionToMongo,
+  loadAllSellerTransactionsFromMongo,
+  insertSellerReviewToMongo,
+  loadAllSellerReviewsFromMongo,
+} from './mongo/index.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('SellerDatabase');
 
 /**
  * Khởi tạo các bảng SQLite cho tính năng Thợ Kéo:
@@ -143,11 +156,19 @@ export class SellerDatabase {
         updatedAt,
       });
 
-    return {
+    const savedProfile: SellerProfile = {
       ...profile,
       createdAt,
       updatedAt,
     };
+
+    if (isMongoConnected()) {
+      void upsertSellerProfileToMongo(savedProfile).catch((err) => {
+        logger.error('Lỗi khi sync seller profile sang MongoDB:', err);
+      });
+    }
+
+    return savedProfile;
   }
 
   /** Xóa thông tin cấu hình QR của thợ kéo */
@@ -155,6 +176,13 @@ export class SellerDatabase {
     const result = this.db
       .prepare('DELETE FROM seller_profiles WHERE user_id = ? AND guild_id = ?')
       .run(userId, guildId);
+
+    if (result.changes > 0 && isMongoConnected()) {
+      void deleteSellerProfileFromMongo(userId, guildId).catch((err) => {
+        logger.error('Lỗi khi sync xóa seller profile khỏi MongoDB:', err);
+      });
+    }
+
     return result.changes > 0;
   }
 
@@ -180,6 +208,12 @@ export class SellerDatabase {
         createdAt: tx.createdAt,
         processedAt: tx.processedAt,
       });
+
+    if (isMongoConnected()) {
+      void upsertSellerTransactionToMongo(tx).catch((err) => {
+        logger.error('Lỗi khi sync seller transaction sang MongoDB:', err);
+      });
+    }
   }
 
   /** Lấy thông tin đơn giao dịch theo mã txId */
@@ -226,6 +260,15 @@ export class SellerDatabase {
     this.db
       .prepare('UPDATE seller_transactions SET message_id = ? WHERE tx_id = ?')
       .run(messageId, txId);
+
+    if (isMongoConnected()) {
+      const updated = this.getTransaction(txId);
+      if (updated) {
+        void upsertSellerTransactionToMongo(updated).catch((err) => {
+          logger.error('Lỗi khi sync update transaction messageId sang MongoDB:', err);
+        });
+      }
+    }
   }
 
   /** Cập nhật trạng thái đơn giao dịch (confirm hoặc cancel) */
@@ -243,6 +286,16 @@ export class SellerDatabase {
          WHERE tx_id = ?`,
       )
       .run(status, note, processedBy, now, txId);
+
+    if (result.changes > 0 && isMongoConnected()) {
+      const updated = this.getTransaction(txId);
+      if (updated) {
+        void upsertSellerTransactionToMongo(updated).catch((err) => {
+          logger.error('Lỗi khi sync update seller transaction status sang MongoDB:', err);
+        });
+      }
+    }
+
     return result.changes > 0;
   }
 
@@ -338,11 +391,19 @@ export class SellerDatabase {
         createdAt,
       });
 
-    return {
+    const savedReview: SellerReview = {
       id: Number(result.lastInsertRowid),
       ...review,
       createdAt,
     };
+
+    if (isMongoConnected()) {
+      void insertSellerReviewToMongo({ ...review, createdAt }).catch((err) => {
+        logger.error('Lỗi khi sync seller review sang MongoDB:', err);
+      });
+    }
+
+    return savedReview;
   }
 
   /** Lấy đánh giá của một đơn giao dịch */
@@ -483,4 +544,109 @@ export function getSellerDb(db?: Database.Database): SellerDatabase {
 /** Đặt singleton instance (dùng cho testing/mocking) */
 export function setSellerDb(instance: SellerDatabase | null): void {
   sellerDbInstance = instance;
+}
+
+/**
+ * Đồng bộ dữ liệu Seller từ MongoDB sang SQLite khi bot khởi động.
+ * Đảm bảo khôi phục 100% hồ sơ, giao dịch và review nếu SQLite bị reset trên Cloud.
+ */
+export async function syncSellerFromMongoToSqlite(
+  db: Database.Database,
+): Promise<{ profiles: number; transactions: number; reviews: number }> {
+  if (!isMongoConnected()) {
+    return { profiles: 0, transactions: 0, reviews: 0 };
+  }
+
+  initializeSellerTables(db);
+  let profilesCount = 0;
+  let txsCount = 0;
+  let reviewsCount = 0;
+
+  // 1. Đồng bộ Profiles
+  const profiles = await loadAllSellerProfilesFromMongo();
+  if (profiles.length > 0) {
+    const stmt = db.prepare(`
+      INSERT INTO seller_profiles
+        (user_id, guild_id, bank_code, bank_name, account_number, account_name, is_active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, guild_id) DO UPDATE SET
+        bank_code = excluded.bank_code,
+        bank_name = excluded.bank_name,
+        account_number = excluded.account_number,
+        account_name = excluded.account_name,
+        is_active = excluded.is_active,
+        updated_at = excluded.updated_at
+    `);
+
+    for (const p of profiles) {
+      stmt.run(
+        p.user_id,
+        p.guild_id,
+        p.bank_code,
+        p.bank_name,
+        p.account_number,
+        p.account_name,
+        p.is_active ? 1 : 0,
+        p.created_at.getTime(),
+        p.updated_at.getTime(),
+      );
+      profilesCount++;
+    }
+  }
+
+  // 2. Đồng bộ Transactions
+  const txs = await loadAllSellerTransactionsFromMongo();
+  if (txs.length > 0) {
+    const stmt = db.prepare(`
+      INSERT INTO seller_transactions
+        (tx_id, guild_id, channel_id, message_id, buyer_id, seller_id, amount, description, status, note, processed_by, created_at, processed_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(tx_id) DO UPDATE SET
+        channel_id = excluded.channel_id,
+        message_id = excluded.message_id,
+        status = excluded.status,
+        note = excluded.note,
+        processed_by = excluded.processed_by,
+        processed_at = excluded.processed_at
+    `);
+
+    for (const t of txs) {
+      stmt.run(
+        t.tx_id,
+        t.guild_id,
+        t.channel_id,
+        t.message_id,
+        t.buyer_id,
+        t.seller_id,
+        t.amount,
+        t.description,
+        t.status,
+        t.note,
+        t.processed_by,
+        t.created_at.getTime(),
+        t.processed_at ? t.processed_at.getTime() : null,
+      );
+      txsCount++;
+    }
+  }
+
+  // 3. Đồng bộ Reviews
+  const reviews = await loadAllSellerReviewsFromMongo();
+  if (reviews.length > 0) {
+    const stmt = db.prepare(`
+      INSERT INTO seller_reviews
+        (tx_id, seller_id, buyer_id, rating, comment, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(tx_id) DO UPDATE SET
+        rating = excluded.rating,
+        comment = excluded.comment
+    `);
+
+    for (const r of reviews) {
+      stmt.run(r.tx_id, r.seller_id, r.buyer_id, r.rating, r.comment, r.created_at.getTime());
+      reviewsCount++;
+    }
+  }
+
+  return { profiles: profilesCount, transactions: txsCount, reviews: reviewsCount };
 }

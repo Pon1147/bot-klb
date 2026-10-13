@@ -20,7 +20,11 @@ import {
   syncBindingsFromMongoToSqlite,
 } from '../database/df-binding.db.js';
 import { initializeCaptureEventsTable } from '../database/df-telemetry.db.js';
-import { initializeSellerTables, getSellerDb } from '../database/seller.db.js';
+import {
+  initializeSellerTables,
+  getSellerDb,
+  syncSellerFromMongoToSqlite,
+} from '../database/seller.db.js';
 import { connectMongo, initMongoIndexes } from '../database/mongo/index.js';
 import { SettingsService, setSettingsService } from '../services/settings.service.js';
 import {
@@ -99,6 +103,12 @@ export async function bootstrap(): Promise<Client> {
         // Đồng bộ account bindings từ MongoDB sang SQLite
         const syncedBindings = await syncBindingsFromMongoToSqlite(database);
         logger.info(`Synced ${syncedBindings} account binding(s) from MongoDB to local SQLite`);
+
+        // Đồng bộ Seller profiles, transactions, reviews từ MongoDB sang SQLite
+        const syncedSeller = await syncSellerFromMongoToSqlite(database);
+        logger.info(
+          `Synced ${syncedSeller.profiles} seller profile(s), ${syncedSeller.transactions} transaction(s), ${syncedSeller.reviews} review(s) from MongoDB to local SQLite`,
+        );
       } else {
         logger.warn('⚠ MongoDB connection returned null — skipping indexes and sync');
       }

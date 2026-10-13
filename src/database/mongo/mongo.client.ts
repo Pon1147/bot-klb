@@ -125,6 +125,27 @@ export async function initMongoIndexes(): Promise<boolean> {
       .collection(MONGO_COLLECTIONS.DF_TOKENS)
       .createIndex({ discord_id: 1 }, { unique: true, background: true });
 
+    // 6. Seller Profiles: compound unique index theo user_id + guild_id
+    const sellerProfiles = db.collection(MONGO_COLLECTIONS.SELLER_PROFILES);
+    await sellerProfiles.createIndex(
+      { user_id: 1, guild_id: 1 },
+      { unique: true, background: true },
+    );
+    await sellerProfiles.createIndex({ guild_id: 1 }, { background: true });
+
+    // 7. Seller Transactions: unique index theo tx_id, index theo guild_id, seller_id, buyer_id, status
+    const sellerTxs = db.collection(MONGO_COLLECTIONS.SELLER_TRANSACTIONS);
+    await sellerTxs.createIndex({ tx_id: 1 }, { unique: true, background: true });
+    await sellerTxs.createIndex({ guild_id: 1 }, { background: true });
+    await sellerTxs.createIndex({ seller_id: 1 }, { background: true });
+    await sellerTxs.createIndex({ buyer_id: 1 }, { background: true });
+    await sellerTxs.createIndex({ status: 1 }, { background: true });
+
+    // 8. Seller Reviews: unique index theo tx_id, index theo seller_id
+    const sellerReviews = db.collection(MONGO_COLLECTIONS.SELLER_REVIEWS);
+    await sellerReviews.createIndex({ tx_id: 1 }, { unique: true, background: true });
+    await sellerReviews.createIndex({ seller_id: 1 }, { background: true });
+
     logger.info('✓ Khoi tao MongoDB indexes hoan tat (Unique & TTL indexes da san sang).');
 
     return true;

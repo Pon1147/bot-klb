@@ -5,6 +5,9 @@ export {
   type ClaimSessionDocument,
   type CaptureEventDocument,
   type DfTokenDocument,
+  type SellerProfileDocument,
+  type SellerTransactionDocument,
+  type SellerReviewDocument,
 } from './collections.js';
 
 export {
@@ -28,4 +31,11 @@ export {
   loadAllActiveBindingsFromMongo,
   createClaimSessionInMongo,
   consumeClaimSessionAtomicInMongo,
+  upsertSellerProfileToMongo,
+  deleteSellerProfileFromMongo,
+  loadAllSellerProfilesFromMongo,
+  upsertSellerTransactionToMongo,
+  loadAllSellerTransactionsFromMongo,
+  insertSellerReviewToMongo,
+  loadAllSellerReviewsFromMongo,
 } from './repositories/index.js';
