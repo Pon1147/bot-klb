@@ -127,7 +127,15 @@ export async function handlePaymentConfirmModalSubmit(
   const note = interaction.fields.getTextInputValue('confirm_note').trim() || null;
   const processedBy = interaction.user.id;
 
-  sellerDb.updateTransactionStatus(txId, 'confirmed', note, processedBy);
+  const success = sellerDb.updateTransactionStatus(txId, 'confirmed', note, processedBy);
+  if (!success) {
+    await interaction.reply({
+      content: '❌ Đơn giao dịch này đã được xử lý trước đó hoặc không còn ở trạng thái chờ!',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
   const updatedTx = sellerDb.getTransaction(txId)!;
 
   // Cập nhật Embed giao dịch gốc
@@ -245,7 +253,15 @@ export async function handlePaymentCancelModalSubmit(
   const reason = interaction.fields.getTextInputValue('cancel_reason').trim();
   const processedBy = interaction.user.id;
 
-  sellerDb.updateTransactionStatus(txId, 'cancelled', reason, processedBy);
+  const success = sellerDb.updateTransactionStatus(txId, 'cancelled', reason, processedBy);
+  if (!success) {
+    await interaction.reply({
+      content: '❌ Đơn giao dịch này đã được xử lý trước đó hoặc không còn ở trạng thái chờ!',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
   const updatedTx = sellerDb.getTransaction(txId)!;
 
   const cancelledEmbed = buildCancelledPaymentEmbed(updatedTx, interaction.user.tag);

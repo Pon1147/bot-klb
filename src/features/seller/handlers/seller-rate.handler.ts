@@ -104,6 +104,15 @@ export async function handleRateModalSubmit(
     return;
   }
 
+  const parsedRating = Math.floor(Number(rating));
+  if (isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+    await interaction.reply({
+      content: '❌ Số sao đánh giá không hợp lệ (1 - 5 ⭐)!',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
   const existing = sellerDb.getReviewByTxId(txId);
   if (existing) {
     await interaction.reply({
@@ -115,13 +124,21 @@ export async function handleRateModalSubmit(
 
   const comment = interaction.fields.getTextInputValue('rate_comment').trim() || null;
 
-  sellerDb.createReview({
-    txId,
-    sellerId: tx.sellerId,
-    buyerId: tx.buyerId,
-    rating,
-    comment,
-  });
+  try {
+    sellerDb.createReview({
+      txId,
+      sellerId: tx.sellerId,
+      buyerId: tx.buyerId,
+      rating: parsedRating,
+      comment,
+    });
+  } catch {
+    await interaction.reply({
+      content: '❌ Đơn này đã được đánh giá trước đó!',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
 
   await interaction.reply({
     content: `💖 Cảm ơn bạn đã gửi đánh giá **${rating} ⭐** cho thợ kéo <@${tx.sellerId}>!`,

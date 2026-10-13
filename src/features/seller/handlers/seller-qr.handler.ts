@@ -241,6 +241,23 @@ export async function handleSellerInfoModalSubmit(
     return;
   }
 
+  if (!/^[0-9A-Za-z]{5,30}$/.test(accountNumber)) {
+    await interaction.reply({
+      content:
+        '❌ Số tài khoản không hợp lệ (phải từ 5 đến 30 ký tự chữ/số, không chứa khoảng trắng hoặc ký tự đặc biệt)!',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (accountName.length > 100) {
+    await interaction.reply({
+      content: '❌ Tên chủ tài khoản không được vượt quá 100 ký tự!',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
   const guildId = interaction.guildId || 'global';
   const sellerDb = getSellerDb();
 

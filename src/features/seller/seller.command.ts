@@ -54,7 +54,8 @@ function buildPaySubcommand(sub: SlashCommandSubcommandBuilder): SlashCommandSub
         .setName('amount')
         .setDescription('Số tiền thanh toán (VNĐ)')
         .setRequired(true)
-        .setMinValue(1000),
+        .setMinValue(1000)
+        .setMaxValue(500000000),
     )
     .addStringOption((opt) =>
       opt
@@ -153,6 +154,24 @@ async function executePay(interaction: ChatInputCommandInteraction): Promise<voi
   const amount = interaction.options.getInteger('amount', true);
   const description = interaction.options.getString('description', true);
   const targetSellerUser = interaction.options.getUser('seller') || interaction.user;
+
+  // Chống bot làm buyer hoặc seller
+  if (buyerUser.bot || targetSellerUser.bot) {
+    await interaction.reply({
+      content: '❌ Khách hàng và thợ kéo không thể là bot Discord!',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  // Giới hạn số tiền giao dịch an toàn
+  if (amount < 1000 || amount > 500_000_000) {
+    await interaction.reply({
+      content: '❌ Số tiền thanh toán phải từ 1,000 VNĐ đến 500,000,000 VNĐ!',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
 
   // Không cho phép tự kéo chính mình
   if (buyerUser.id === targetSellerUser.id) {

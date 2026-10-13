@@ -271,21 +271,22 @@ export class SellerDatabase {
     }
   }
 
-  /** Cập nhật trạng thái đơn giao dịch (confirm hoặc cancel) */
+  /** Cập nhật trạng thái đơn giao dịch (confirm hoặc cancel) với khóa trạng thái nguyên tử (Atomic CAS) */
   updateTransactionStatus(
     txId: string,
     status: TransactionStatus,
     note: string | null = null,
     processedBy: string | null = null,
+    expectedCurrentStatus: TransactionStatus = 'pending',
   ): boolean {
     const now = Date.now();
     const result = this.db
       .prepare(
         `UPDATE seller_transactions
          SET status = ?, note = ?, processed_by = ?, processed_at = ?
-         WHERE tx_id = ?`,
+         WHERE tx_id = ? AND status = ?`,
       )
-      .run(status, note, processedBy, now, txId);
+      .run(status, note, processedBy, now, txId, expectedCurrentStatus);
 
     if (result.changes > 0 && isMongoConnected()) {
       const updated = this.getTransaction(txId);
@@ -479,7 +480,7 @@ export class SellerDatabase {
     };
   }
 
-  /** Lấy danh sách Top Thợ Kéo theo doanh thu hoặc số đơn hoàn thành */
+  /** Lấy danh sách Top Thợ Kéo theo doanh thu hoặc số đơn hoàn thành (Tối ưu 1 query, không N+1) */
   getTopSellers(guildId: string, limit: number = 10): SellerStats[] {
     const rows = this.db
       .prepare(
@@ -488,8 +489,15 @@ export class SellerDatabase {
            COUNT(*) as total_transactions,
            SUM(CASE WHEN t.status = 'confirmed' THEN 1 ELSE 0 END) as confirmed_count,
            SUM(CASE WHEN t.status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count,
-           SUM(CASE WHEN t.status = 'confirmed' THEN t.amount ELSE 0 END) as total_revenue
+           SUM(CASE WHEN t.status = 'confirmed' THEN t.amount ELSE 0 END) as total_revenue,
+           COALESCE(r.total_reviews, 0) as total_reviews,
+           COALESCE(r.average_rating, 0) as average_rating
          FROM seller_transactions t
+         LEFT JOIN (
+           SELECT seller_id, COUNT(*) as total_reviews, AVG(rating) as average_rating
+           FROM seller_reviews
+           GROUP BY seller_id
+         ) r ON r.seller_id = t.seller_id
          WHERE t.guild_id = ?
          GROUP BY t.seller_id
          HAVING confirmed_count > 0
@@ -502,28 +510,19 @@ export class SellerDatabase {
       confirmed_count: number;
       cancelled_count: number;
       total_revenue: number;
+      total_reviews: number;
+      average_rating: number;
     }>;
 
-    return rows.map((row) => {
-      const reviewStats = this.db
-        .prepare(
-          `SELECT COUNT(*) as total_reviews, AVG(rating) as average_rating
-           FROM seller_reviews WHERE seller_id = ?`,
-        )
-        .get(row.seller_id) as { total_reviews: number; average_rating: number | null };
-
-      return {
-        sellerId: row.seller_id,
-        totalTransactions: row.total_transactions,
-        confirmedCount: row.confirmed_count,
-        cancelledCount: row.cancelled_count,
-        totalRevenue: row.total_revenue || 0,
-        averageRating: reviewStats?.average_rating
-          ? Number(reviewStats.average_rating.toFixed(2))
-          : 0,
-        totalReviews: reviewStats?.total_reviews || 0,
-      };
-    });
+    return rows.map((row) => ({
+      sellerId: row.seller_id,
+      totalTransactions: row.total_transactions,
+      confirmedCount: row.confirmed_count,
+      cancelledCount: row.cancelled_count,
+      totalRevenue: row.total_revenue || 0,
+      averageRating: row.average_rating ? Number(row.average_rating.toFixed(2)) : 0,
+      totalReviews: row.total_reviews || 0,
+    }));
   }
 }
 

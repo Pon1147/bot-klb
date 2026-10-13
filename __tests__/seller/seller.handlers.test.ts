@@ -207,6 +207,29 @@ describe('Seller Handlers', () => {
       expect(profile?.accountName).toBe('NGUYEN VAN A');
     });
 
+    it('handleSellerInfoModalSubmit chặn STK chứa ký tự đặc biệt', async () => {
+      const ctx = createMockInteractionContext({ userId: 'seller-1' });
+      const interaction = {
+        ...ctx,
+        fields: {
+          getTextInputValue: jest.fn().mockImplementation((id: string) => {
+            if (id === 'seller_qr_input_account') return '0123456789<script>';
+            if (id === 'seller_qr_input_name') return 'nguyen van a';
+            return '';
+          }),
+        },
+        reply: jest.fn().mockResolvedValue(undefined),
+      } as unknown as ModalSubmitInteraction;
+
+      await handleSellerInfoModalSubmit(interaction, 'seller-1', '970422', 'MBBank');
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('Số tài khoản không hợp lệ'),
+        }),
+      );
+    });
+
     it('handleDeleteQrButton xóa QR và cập nhật UI', async () => {
       sellerDb.upsertProfile({
         userId: 'seller-1',
@@ -330,6 +353,50 @@ describe('Seller Handlers', () => {
       const tx = sellerDb.getTransaction('TX-TEST-1');
       expect(tx?.status).toBe('cancelled');
       expect(tx?.note).toBe('Khách bận đột xuất');
+    });
+
+    it('handlePaymentConfirmModalSubmit báo lỗi nếu đơn đã bị hủy trước đó (chống race condition)', async () => {
+      // Đơn đã bị hủy trước đó
+      sellerDb.updateTransactionStatus('TX-TEST-1', 'cancelled', 'Hủy trước');
+
+      const ctx = createMockInteractionContext({ userId: 'seller-1' });
+      const interaction = {
+        ...ctx,
+        fields: {
+          getTextInputValue: jest.fn().mockReturnValue('Thử confirm muộn'),
+        },
+        reply: jest.fn().mockResolvedValue(undefined),
+      } as unknown as ModalSubmitInteraction;
+
+      await handlePaymentConfirmModalSubmit(interaction, 'TX-TEST-1');
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('Đơn giao dịch không hợp lệ hoặc đã được xử lý trước đó'),
+        }),
+      );
+    });
+
+    it('handlePaymentCancelModalSubmit báo lỗi nếu đơn đã được confirm trước đó (chống race condition)', async () => {
+      // Đơn đã được confirm trước đó
+      sellerDb.updateTransactionStatus('TX-TEST-1', 'confirmed', 'Đã nhận');
+
+      const ctx = createMockInteractionContext({ userId: 'buyer-1' });
+      const interaction = {
+        ...ctx,
+        fields: {
+          getTextInputValue: jest.fn().mockReturnValue('Thử cancel muộn'),
+        },
+        reply: jest.fn().mockResolvedValue(undefined),
+      } as unknown as ModalSubmitInteraction;
+
+      await handlePaymentCancelModalSubmit(interaction, 'TX-TEST-1');
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('Đơn giao dịch không hợp lệ hoặc đã được xử lý trước đó'),
+        }),
+      );
     });
   });
 

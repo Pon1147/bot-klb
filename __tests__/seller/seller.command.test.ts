@@ -140,6 +140,46 @@ describe('SellerCommand (/seller)', () => {
       );
     });
 
+    it('báo lỗi nếu buyer hoặc seller là bot Discord', async () => {
+      const interaction = createMockInteraction({
+        subcommand: 'pay',
+        userId: 'user-1',
+        optionsData: {
+          buyer: { id: 'bot-1', tag: 'Bot#1', bot: true },
+          amount: 100000,
+          description: 'Kéo Đập Nước',
+        },
+      });
+
+      await execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: '❌ Khách hàng và thợ kéo không thể là bot Discord!',
+        }),
+      );
+    });
+
+    it('báo lỗi nếu số tiền vượt quá hạn mức 500 triệu', async () => {
+      const interaction = createMockInteraction({
+        subcommand: 'pay',
+        userId: 'user-1',
+        optionsData: {
+          buyer: { id: 'buyer-1', tag: 'Buyer#1' },
+          amount: 600000000,
+          description: 'Kéo Đập Nước',
+        },
+      });
+
+      await execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('Số tiền thanh toán phải từ'),
+        }),
+      );
+    });
+
     it('báo lỗi nếu tạo đơn cho người khác mà không phải Admin', async () => {
       const interaction = createMockInteraction({
         subcommand: 'pay',
