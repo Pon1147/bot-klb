@@ -19,6 +19,7 @@ import { makeResult, BuildContainerResult } from '../../utils/container.utils.js
 import { COLORS } from '../../config/container.variables.js';
 import { requireGuild } from '../../utils/df-guards.js';
 import { getExtensionZipPath } from './extension.utils.js';
+import { isIgnorableInteractionError } from '../../utils/discord-error.utils.js';
 
 export type HelpTab = 'commands' | 'guide';
 
@@ -181,9 +182,15 @@ export async function handleHelpButton(
   const container = buildHelpContainer(tab);
   const row = buildHelpActionRow(tab);
 
-  await interaction.update({
-    components: [...container.toJSON(), row.toJSON()],
-  });
+  try {
+    await interaction.update({
+      components: [...container.toJSON(), row.toJSON()],
+    });
+  } catch (error) {
+    if (!isIgnorableInteractionError(error)) {
+      throw error;
+    }
+  }
 
   return { handled: true };
 }

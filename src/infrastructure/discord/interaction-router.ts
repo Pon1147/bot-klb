@@ -43,6 +43,7 @@ import {
 import { hasPolicy, resolveCommandPolicy } from '../../config/permissions.js';
 import { getCommandPath } from '../../utils/command-path.utils.js';
 import { TTLStore, ExpiryEntry } from '../../utils/ttl-store.js';
+import { isIgnorableInteractionError } from '../../utils/discord-error.utils.js';
 
 const logger = createLogger('InteractionRouter');
 
@@ -339,16 +340,10 @@ async function handleChatInputCommand(
   try {
     await commandModule.execute(interaction, database);
   } catch (error) {
-    const errMessage = error instanceof Error ? error.message : String(error);
-    // Suppress interaction errors — không log noise
-    if (
-      errMessage.includes('40060') ||
-      errMessage.includes('Interaction has already been acknowledged') ||
-      errMessage.includes('10062') ||
-      errMessage.includes('Unknown interaction')
-    ) {
+    if (isIgnorableInteractionError(error)) {
       return;
     }
+    const errMessage = error instanceof Error ? error.message : String(error);
     logger.error(`Error executing command ${commandPath}: ${errMessage}`);
 
     if (!interaction.replied && !interaction.deferred) {
@@ -376,27 +371,38 @@ export async function routeInteraction(
     | ChatInputCommandInteraction
     | ModalSubmitInteraction,
 ): Promise<void> {
-  // ── 1. Button Interactions ──
-  if (interaction.isButton()) {
-    await handleButton(interaction);
-    return;
-  }
+  try {
+    // ── 1. Button Interactions ──
+    if (interaction.isButton()) {
+      await handleButton(interaction);
+      return;
+    }
 
-  // ── 1b. String Select Menu Interactions ──
-  if (interaction.isStringSelectMenu()) {
-    await handleStringSelectMenu(client, interaction);
-    return;
-  }
+    // ── 1b. String Select Menu Interactions ──
+    if (interaction.isStringSelectMenu()) {
+      await handleStringSelectMenu(client, interaction);
+      return;
+    }
 
-  // ── 2. Modal Submissions ──
-  if (interaction.isModalSubmit()) {
-    await handleModalSubmit(interaction);
-    return;
-  }
+    // ── 2. Modal Submissions ──
+    if (interaction.isModalSubmit()) {
+      await handleModalSubmit(interaction);
+      return;
+    }
 
-  // ── 3. Slash Commands ──
-  if (interaction.isChatInputCommand()) {
-    await handleChatInputCommand(client, interaction);
-    return;
+    // ── 3. Slash Commands ──
+    if (interaction.isChatInputCommand()) {
+      await handleChatInputCommand(client, interaction);
+      return;
+    }
+  } catch (error) {
+    if (isIgnorableInteractionError(error)) {
+      return;
+    }
+    logger.error('Lỗi khi điều phối interaction:', {
+      type: interaction.type,
+      customId: 'customId' in interaction ? interaction.customId : undefined,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
