@@ -78,9 +78,19 @@ describe('/df command — Structure & Builder', () => {
     expect(json.name).toBe('df');
   });
 
-  it('phải chứa direct subcommands: stats, daily, history, workshop, unlink, help, map', () => {
+  it('phải chứa direct subcommands: stats, daily, history, workshop, unlink, help, map, build, gun', () => {
     const directSubs = json.options?.filter((o: any) => o.type === 1).map((o: any) => o.name);
-    expect(directSubs).toEqual(['stats', 'daily', 'history', 'workshop', 'unlink', 'help', 'map']);
+    expect(directSubs).toEqual([
+      'stats',
+      'daily',
+      'history',
+      'workshop',
+      'unlink',
+      'help',
+      'map',
+      'build',
+      'gun',
+    ]);
   });
 
   it('subcommand "history" phải có option "limit" (INTEGER, 1-20, optional)', () => {

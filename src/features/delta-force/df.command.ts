@@ -34,6 +34,7 @@ import { execute as executeCode } from './code.handler.js';
 import { execute as executeLink } from './link.handler.js';
 import { execute as executeHelp } from './help.handler.js';
 import { execute as executeMap } from './map.handler.js';
+import { execute as executeBuild } from './build.handler.js';
 
 import { MAX_HISTORY_PAGE } from '../../config/app.constants.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
@@ -152,6 +153,12 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((sub) =>
     sub.setName('map').setDescription('Mô phỏng bản đồ 3D tương tác và cẩm nang học map.'),
   )
+  .addSubcommand((sub) =>
+    sub.setName('build').setDescription('Thư viện build súng và mã Gunsmith meta (Garena).'),
+  )
+  .addSubcommand((sub) =>
+    sub.setName('gun').setDescription('Thư viện build súng và mã Gunsmith meta (Garena).'),
+  )
   .addSubcommandGroup(buildCodeGroup)
   .addSubcommandGroup(buildLinkGroup);
 
@@ -209,6 +216,10 @@ export async function execute(
       return;
     case 'map':
       await executeMap(interaction, db);
+      return;
+    case 'build':
+    case 'gun':
+      await executeBuild(interaction, db);
       return;
     default:
       await sendReply(interaction, {

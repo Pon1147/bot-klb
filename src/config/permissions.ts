@@ -192,6 +192,8 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'df.workshop': Policy.DF_ACCESS,
   'df.unlink': Policy.DF_ACCESS,
   'df.map': Policy.DF_ACCESS,
+  'df.build': Policy.DF_ACCESS,
+  'df.gun': Policy.DF_ACCESS,
   'df.help': Policy.DF_ACCESS,
 
   'df.code.show': Policy.DF_ACCESS,

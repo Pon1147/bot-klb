@@ -41,6 +41,7 @@ export function buildHelpContainer(tab: HelpTab): BuildContainerResult {
       '- `/df link status`: Kiểm tra tình trạng liên kết tài khoản.',
       '- `/df unlink`: Hủy liên kết tài khoản hiện tại.',
       '- `/df map`: Trình mô phỏng bản đồ 3D tương tác và cẩm nang học map.',
+      '- `/df build`: Thư viện build súng & mã Gunsmith meta (Server Garena).',
       '- `/df help`: Xem hướng dẫn sử dụng và tải tiện ích mở rộng.',
       '',
       '### 👥 Nhóm lệnh Squad (`/team`)',

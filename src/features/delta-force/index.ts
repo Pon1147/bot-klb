@@ -19,6 +19,7 @@ export * as unlinkHandler from './unlink.handler.js';
 export * as workshopHandler from './workshop.handler.js';
 export * as helpHandler from './help.handler.js';
 export * as mapHandler from './map.handler.js';
+export * as buildHandler from './build.handler.js';
 
 // Interaction handlers & IDs
 export * from './team-find-ids.js';
