@@ -202,11 +202,22 @@ export async function handleSellerInfoModalSubmit(
   const guildId = interaction.guildId || 'global';
   const sellerDb = getSellerDb();
 
+  let resolvedBankName = bankName?.trim();
+  if (!resolvedBankName) {
+    try {
+      const banks = await getBankList();
+      const matched = banks.find((b) => b.bin === bankCode);
+      resolvedBankName = matched ? matched.shortName : 'Ngân Hàng';
+    } catch {
+      resolvedBankName = 'Ngân Hàng';
+    }
+  }
+
   const updatedProfile = sellerDb.upsertProfile({
     userId: targetUserId,
     guildId,
     bankCode,
-    bankName,
+    bankName: resolvedBankName,
     accountNumber,
     accountName,
     isActive: true,

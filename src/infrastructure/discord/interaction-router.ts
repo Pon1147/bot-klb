@@ -208,7 +208,10 @@ async function handleStringSelectMenu(
  */
 async function handleModalSubmit(interaction: ModalSubmitInteraction): Promise<void> {
   if (interaction.customId.startsWith(`${SELLER_QR_IDS.MODAL_INFO}:`)) {
-    const [, , targetUserId, bankCode, bankName] = interaction.customId.split(':');
+    const parts = interaction.customId.split(':');
+    const targetUserId = parts[1];
+    const bankCode = parts[2];
+    const bankName = parts.slice(3).join(':');
     await handleSellerInfoModalSubmit(interaction, targetUserId, bankCode, bankName);
     return;
   }
