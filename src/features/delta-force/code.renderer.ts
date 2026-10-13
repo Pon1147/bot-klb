@@ -1,4 +1,11 @@
-import { AttachmentBuilder, ComponentType, MessageFlags } from 'discord.js';
+import {
+  ActionRowBuilder,
+  AttachmentBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ComponentType,
+  MessageFlags,
+} from 'discord.js';
 import {
   ASSETS_PATH,
   MAP_DISPLAY,
@@ -6,8 +13,12 @@ import {
   type MapInfo,
 } from '../../config/team-find.config.js';
 import type { DailyCodes } from '../../services/deltaforce.scraper.js';
+import { makeResult, type BuildContainerResult } from '../../utils/container.utils.js';
 
 export { MAP_DISPLAY };
+
+/** Link xem bản đồ vị trí phòng cửa mật */
+export const MAP_CODES_URL = 'https://deltaforcetools.gg/map?utm_source=PonN%C3%A8';
 
 /**
  * Kiểm tra xem DailyCodes có ít nhất 1 mã hợp lệ hay không.
@@ -20,7 +31,10 @@ export function hasAnyCodes(codes: DailyCodes | null): boolean {
 /**
  * Xây dựng Container hiển thị mật khẩu các map hôm nay.
  */
-export function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean) {
+export function buildCodesContainer(
+  codes: DailyCodes | null,
+  hasCodes: boolean,
+): BuildContainerResult {
   const containerInner: unknown[] = [];
   const files: AttachmentBuilder[] = [];
 
@@ -50,6 +64,12 @@ export function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean)
         },
       });
     }
+
+    // Dòng hint gợi trí tò mò
+    containerInner.push({
+      type: ComponentType.TextDisplay,
+      content: '💡 _Có mã nhưng chưa biết cửa ở đâu để loot hòm? Bấm nút bên dưới để xem vị trí!_',
+    });
   } else {
     containerInner.push({
       type: ComponentType.TextDisplay,
@@ -57,12 +77,17 @@ export function buildCodesContainer(codes: DailyCodes | null, hasCodes: boolean)
     });
   }
 
-  return {
-    components: [{ type: ComponentType.Container, components: containerInner }],
-    flags: MessageFlags.IsComponentsV2,
-    files,
-    toJSON() {
-      return this.components;
-    },
-  };
+  const components: unknown[] = [{ type: ComponentType.Container, components: containerInner }];
+
+  if (hasCodes && codes) {
+    const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Link)
+        .setLabel('📍 Xem Chi Tiết Vị Trí Dùng Các Mã Này')
+        .setURL(MAP_CODES_URL),
+    );
+    components.push(actionRow.toJSON());
+  }
+
+  return makeResult(components, MessageFlags.IsComponentsV2, files);
 }

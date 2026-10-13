@@ -95,16 +95,16 @@ describe('code.renderer', () => {
 
       expect(result).toBeDefined();
       expect(result.flags).toBe(32768); // 1 << 15 (SuppressNotifications)
-      expect(result.components).toHaveLength(1);
+      expect(result.components).toHaveLength(2); // Container + ActionRow
 
       const json = result.toJSON();
       expect(Array.isArray(json)).toBe(true);
-      expect(json).toHaveLength(1);
+      expect(json).toHaveLength(2);
 
       const container = json[0] as any;
       expect(container.type).toBe(17); // Container component type
-      // Gồm 6 sections cho 6 maps
-      expect(container.components).toHaveLength(6);
+      // Gồm 6 sections cho 6 maps + 1 hint text
+      expect(container.components).toHaveLength(7);
 
       // Map đầu tiên có code 1111
       const section1 = container.components[0];
@@ -113,6 +113,16 @@ describe('code.renderer', () => {
       // Map thứ hai không có code -> hiển thị [Chưa có]
       const section2 = container.components[1];
       expect(section2.components[0].content).toContain('[Chưa có]');
+
+      // Component thứ 7 là hint text
+      const hintSection = container.components[6];
+      expect(hintSection.content).toContain('Có mã nhưng chưa biết cửa ở đâu');
+
+      // Component thứ 2 trong payload là ActionRow chứa Link Button
+      const actionRow = json[1] as any;
+      expect(actionRow.type).toBe(1); // ActionRow type
+      expect(actionRow.components[0].style).toBe(5); // Link button
+      expect(actionRow.components[0].url).toContain('deltaforcetools.gg/map');
     });
 
     it('khi hasCodes = false, render container rỗng/thông báo không tìm thấy mật khẩu hôm nay', () => {

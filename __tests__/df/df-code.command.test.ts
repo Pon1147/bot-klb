@@ -105,6 +105,52 @@ jest.mock('discord.js', () => ({
       return this;
     }
   },
+  ButtonStyle: {
+    Primary: 1,
+    Secondary: 2,
+    Success: 3,
+    Danger: 4,
+    Link: 5,
+  },
+  ButtonBuilder: class {
+    data: any = {};
+    setCustomId(id: string) {
+      this.data.custom_id = id;
+      return this;
+    }
+    setLabel(l: string) {
+      this.data.label = l;
+      return this;
+    }
+    setStyle(s: any) {
+      this.data.style = s;
+      return this;
+    }
+    setURL(u: string) {
+      this.data.url = u;
+      return this;
+    }
+    setDisabled(d: boolean) {
+      this.data.disabled = d;
+      return this;
+    }
+    toJSON() {
+      return this.data;
+    }
+  },
+  ActionRowBuilder: class {
+    components: any[] = [];
+    addComponents(...c: any[]) {
+      this.components.push(...c);
+      return this;
+    }
+    toJSON() {
+      return {
+        type: 1,
+        components: this.components.map((c) => (c.toJSON ? c.toJSON() : c)),
+      };
+    }
+  },
 }));
 
 jest.mock('../../src/services/deltaforce.scraper.js', () => ({

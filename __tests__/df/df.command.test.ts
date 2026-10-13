@@ -13,6 +13,7 @@ import { execute as executeUnlink } from '../../src/features/delta-force/unlink.
 import { execute as executeCode } from '../../src/features/delta-force/code.handler.js';
 import { execute as executeLink } from '../../src/features/delta-force/link.handler.js';
 import { execute as executeHelp } from '../../src/features/delta-force/help.handler.js';
+import { execute as executeMap } from '../../src/features/delta-force/map.handler.js';
 
 jest.mock('../../src/features/delta-force/stats.handler.js', () => ({
   execute: jest.fn().mockResolvedValue(undefined),
@@ -46,6 +47,10 @@ jest.mock('../../src/features/delta-force/help.handler.js', () => ({
   execute: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('../../src/features/delta-force/map.handler.js', () => ({
+  execute: jest.fn().mockResolvedValue(undefined),
+}));
+
 function createMockInteraction(overrides: Record<string, unknown> = {}): any {
   const base: Record<string, unknown> = {
     guild: { id: 'guild-123' },
@@ -73,9 +78,9 @@ describe('/df command — Structure & Builder', () => {
     expect(json.name).toBe('df');
   });
 
-  it('phải chứa direct subcommands: stats, daily, history, workshop, unlink, help', () => {
+  it('phải chứa direct subcommands: stats, daily, history, workshop, unlink, help, map', () => {
     const directSubs = json.options?.filter((o: any) => o.type === 1).map((o: any) => o.name);
-    expect(directSubs).toEqual(['stats', 'daily', 'history', 'workshop', 'unlink', 'help']);
+    expect(directSubs).toEqual(['stats', 'daily', 'history', 'workshop', 'unlink', 'help', 'map']);
   });
 
   it('subcommand "history" phải có option "limit" (INTEGER, 1-20, optional)', () => {
@@ -269,6 +274,18 @@ describe('/df command — Execute Dispatch', () => {
 
     await execute(interaction);
     expect(executeHelp).toHaveBeenCalledWith(interaction, expect.anything());
+  });
+
+  it('phải dispatch tới executeMap khi chọn subcommand "map"', async () => {
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommandGroup: jest.fn().mockReturnValue(null),
+        getSubcommand: jest.fn().mockReturnValue('map'),
+      },
+    });
+
+    await execute(interaction);
+    expect(executeMap).toHaveBeenCalledWith(interaction, expect.anything());
   });
 });
 

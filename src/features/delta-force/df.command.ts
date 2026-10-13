@@ -33,6 +33,7 @@ import { execute as executeUnlink } from './unlink.handler.js';
 import { execute as executeCode } from './code.handler.js';
 import { execute as executeLink } from './link.handler.js';
 import { execute as executeHelp } from './help.handler.js';
+import { execute as executeMap } from './map.handler.js';
 
 import { MAX_HISTORY_PAGE } from '../../config/app.constants.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
@@ -148,6 +149,9 @@ export const data = new SlashCommandBuilder()
       .setName('help')
       .setDescription('Xem hướng dẫn sử dụng bot và tải tiện ích liên kết tài khoản.'),
   )
+  .addSubcommand((sub) =>
+    sub.setName('map').setDescription('Mô phỏng bản đồ 3D tương tác và cẩm nang học map.'),
+  )
   .addSubcommandGroup(buildCodeGroup)
   .addSubcommandGroup(buildLinkGroup);
 
@@ -202,6 +206,9 @@ export async function execute(
       return;
     case 'help':
       await executeHelp(interaction, db);
+      return;
+    case 'map':
+      await executeMap(interaction, db);
       return;
     default:
       await sendReply(interaction, {
