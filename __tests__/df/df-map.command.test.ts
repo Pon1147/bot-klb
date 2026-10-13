@@ -7,7 +7,7 @@ import {
   buildMapContainer,
   execute,
   MAP_SIMULATOR_URL,
-  MAP_INTERACTIVE_URL,
+  MAP_HOMEPAGE_URL,
 } from '../../src/features/delta-force/map.handler.js';
 import { execute as executeDf } from '../../src/features/delta-force/df.command.js';
 import { MessageFlags } from 'discord.js';
@@ -37,9 +37,9 @@ describe('df-map.handler', () => {
     expect(actionRow.components[0].style).toBe(5); // Link
     expect(actionRow.components[0].url).toBe(MAP_SIMULATOR_URL);
 
-    // Button 2: 2D Interactive Map
+    // Button 2: Trang chủ
     expect(actionRow.components[1].style).toBe(5); // Link
-    expect(actionRow.components[1].url).toBe(MAP_INTERACTIVE_URL);
+    expect(actionRow.components[1].url).toBe(MAP_HOMEPAGE_URL);
   });
 
   it('execute từ chối khi gọi ngoài guild (DM)', async () => {

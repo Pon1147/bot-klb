@@ -13,7 +13,7 @@ import { requireGuild } from '../../utils/df-guards.js';
 
 export const MAP_SIMULATOR_URL =
   'https://s1-static.deltaforcetools.gg/dftool/dfmaptool/en/index.html';
-export const MAP_INTERACTIVE_URL = 'https://deltaforcetools.gg/map?utm_source=PonN%C3%A8';
+export const MAP_HOMEPAGE_URL = 'https://deltaforcetools.gg/?utm_source=PonN%C3%A8';
 
 /**
  * Xây dựng Container V2 hiển thị cẩm nang học map và các nút điều hướng 3D Simulator.
@@ -40,8 +40,8 @@ export function buildMapContainer(): BuildContainerResult {
       .setURL(MAP_SIMULATOR_URL),
     new ButtonBuilder()
       .setStyle(ButtonStyle.Link)
-      .setLabel('🗺️ Bản Đồ 2D (Điểm Loot & Cửa Mật)')
-      .setURL(MAP_INTERACTIVE_URL),
+      .setLabel('🌐 Trang Chủ DeltaForceTools.gg')
+      .setURL(MAP_HOMEPAGE_URL),
   );
 
   return makeResult(
