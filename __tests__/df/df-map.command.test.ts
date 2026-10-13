@@ -6,14 +6,13 @@
 import {
   buildMapContainer,
   execute,
-  MAP_SIMULATOR_URL,
   MAP_HOMEPAGE_URL,
 } from '../../src/features/delta-force/map.handler.js';
 import { execute as executeDf } from '../../src/features/delta-force/df.command.js';
 import { MessageFlags } from 'discord.js';
 
 describe('df-map.handler', () => {
-  it('buildMapContainer trả về Container và ActionRow với 2 link buttons', () => {
+  it('buildMapContainer trả về Container và ActionRow với duy nhất 1 link button hoa hồng', () => {
     const result = buildMapContainer();
 
     expect(result).toBeDefined();
@@ -26,20 +25,18 @@ describe('df-map.handler', () => {
     const container = json[0] as any;
     expect(container.type).toBe(17); // Container
     expect(container.components[0].content).toContain('Trình Mô Phỏng Bản Đồ 3D');
+    expect(container.components[0].content).toContain('bấm trực tiếp vào banner "3D Interactive Map"');
     expect(container.components[0].content).toContain('Đập Nước Zero');
     expect(container.components[0].content).toContain('Thung Lũng Layali');
 
     const actionRow = json[1] as any;
     expect(actionRow.type).toBe(1); // ActionRow
-    expect(actionRow.components).toHaveLength(2);
+    expect(actionRow.components).toHaveLength(1); // Chỉ 1 button duy nhất để tính hoa hồng
 
-    // Button 1: 3D Simulator
+    // Button duy nhất: Trang chủ có UTM
     expect(actionRow.components[0].style).toBe(5); // Link
-    expect(actionRow.components[0].url).toBe(MAP_SIMULATOR_URL);
-
-    // Button 2: Trang chủ
-    expect(actionRow.components[1].style).toBe(5); // Link
-    expect(actionRow.components[1].url).toBe(MAP_HOMEPAGE_URL);
+    expect(actionRow.components[0].url).toBe(MAP_HOMEPAGE_URL);
+    expect(actionRow.components[0].url).toContain('utm_source=');
   });
 
   it('execute từ chối khi gọi ngoài guild (DM)', async () => {
@@ -59,7 +56,7 @@ describe('df-map.handler', () => {
     );
   });
 
-  it('execute gửi reply thành công khi trong guild', async () => {
+  it('execute gửi reply thành công khi trong guild kèm files và components', async () => {
     const mockReply = jest.fn().mockResolvedValue(undefined);
     const mockInteraction: any = {
       guild: { id: 'guild-123' },
@@ -72,6 +69,7 @@ describe('df-map.handler', () => {
       expect.objectContaining({
         flags: MessageFlags.IsComponentsV2,
         components: expect.any(Array),
+        files: expect.any(Array),
       }),
     );
   });
