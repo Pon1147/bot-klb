@@ -176,6 +176,28 @@ async function executePay(interaction: ChatInputCommandInteraction): Promise<voi
     }
   }
 
+  // Kiểm tra RBAC: Thợ kéo bắt buộc phải sở hữu role Thợ Kéo (nếu server đã cấu hình role)
+  if (interaction.guildId && interaction.guild) {
+    const settingsService = getSettingsService();
+    const sellerSettings = settingsService.getSeller(interaction.guildId);
+
+    if (sellerSettings.roleId) {
+      const sellerMember = await interaction.guild.members
+        .fetch(targetSellerUser.id)
+        .catch(() => null);
+      const isRoleHolder = Boolean(sellerMember?.roles.cache.has(sellerSettings.roleId));
+      const isAdminOrOwner = hasPolicy(interaction, Policy.MANAGE_CONFIG).allowed;
+
+      if (!isRoleHolder && !isAdminOrOwner) {
+        await interaction.reply({
+          content: `🔒 <@${targetSellerUser.id}> không sở hữu role định danh Thợ Kéo (<@&${sellerSettings.roleId}>) của máy chủ!`,
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+    }
+  }
+
   const sellerDb = getSellerDb();
   const profile = sellerDb.getProfile(targetSellerUser.id, guildId);
 
@@ -261,6 +283,26 @@ async function executeQr(interaction: ChatInputCommandInteraction): Promise<void
         flags: MessageFlags.Ephemeral,
       });
       return;
+    }
+  }
+
+  // Kiểm tra RBAC: Người dùng cần có role Thợ Kéo (nếu server đã cấu hình role)
+  if (interaction.guildId && interaction.guild) {
+    const settingsService = getSettingsService();
+    const sellerSettings = settingsService.getSeller(interaction.guildId);
+
+    if (sellerSettings.roleId) {
+      const targetMember = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
+      const isRoleHolder = Boolean(targetMember?.roles.cache.has(sellerSettings.roleId));
+      const isAdminOrOwner = hasPolicy(interaction, Policy.MANAGE_CONFIG).allowed;
+
+      if (!isRoleHolder && !isAdminOrOwner) {
+        await interaction.reply({
+          content: `🔒 Bạn cần có role Thợ Kéo (<@&${sellerSettings.roleId}>) của máy chủ để thiết lập tài khoản nhận tiền!`,
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
     }
   }
 

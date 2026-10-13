@@ -37,11 +37,20 @@ jest.mock('../../src/features/seller/services/vietqr.service.js', () => ({
   ]),
 }));
 
+import {
+  SettingsService,
+  setSettingsService,
+} from '../../src/services/settings.service.js';
+
 function createMockInteractionContext(options: {
   userId: string;
   guildId?: string;
   isAdmin?: boolean;
+  userRoles?: string[];
 }) {
+  const rolesMap = new Map<string, { id: string; name: string }>();
+  (options.userRoles || []).forEach((r) => rolesMap.set(r, { id: r, name: r }));
+
   const user = { id: options.userId, tag: `User#${options.userId}` };
   const member = {
     id: options.userId,
@@ -49,7 +58,7 @@ function createMockInteractionContext(options: {
     permissions: {
       has: jest.fn().mockReturnValue(Boolean(options.isAdmin)),
     },
-    roles: { cache: new Map() },
+    roles: { cache: rolesMap },
   };
   const memberPermissions = {
     has: jest.fn().mockReturnValue(Boolean(options.isAdmin)),
@@ -57,6 +66,16 @@ function createMockInteractionContext(options: {
   const guild = {
     id: options.guildId || 'guild-123',
     ownerId: 'owner-999',
+    members: {
+      cache: new Map([[options.userId, member]]),
+      fetch: jest.fn().mockImplementation((id: string) => {
+        if (id === options.userId) return Promise.resolve(member);
+        return Promise.resolve({
+          id,
+          roles: { cache: new Map() },
+        });
+      }),
+    },
   };
 
   return { user, member, memberPermissions, guild, guildId: guild.id };
@@ -65,6 +84,7 @@ function createMockInteractionContext(options: {
 describe('Seller Handlers', () => {
   let db: Database.Database;
   let sellerDb: SellerDatabase;
+  let settingsService: SettingsService;
 
   beforeEach(() => {
     db = new Database(':memory:');
@@ -72,6 +92,9 @@ describe('Seller Handlers', () => {
     initializeSellerTables(db);
     sellerDb = new SellerDatabase(db);
     setSellerDb(sellerDb);
+
+    settingsService = new SettingsService(db);
+    setSettingsService(settingsService);
     jest.clearAllMocks();
   });
 
@@ -97,8 +120,34 @@ describe('Seller Handlers', () => {
       );
     });
 
-    it('handleSelectBankButton gửi select menu ngân hàng cho chính chủ', async () => {
-      const ctx = createMockInteractionContext({ userId: 'seller-1' });
+    it('handleSelectBankButton chặn chính chủ nếu server đã cấu hình role mà user không sở hữu role', async () => {
+      settingsService.updateSeller('guild-123', { roleId: 'role-pro-seller' });
+      const ctx = createMockInteractionContext({
+        userId: 'seller-1',
+        isAdmin: false,
+        userRoles: ['other-role'],
+      });
+      const interaction = {
+        ...ctx,
+        reply: jest.fn().mockResolvedValue(undefined),
+      } as unknown as ButtonInteraction;
+
+      await handleSelectBankButton(interaction, 'seller-1');
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('Bạn cần có role Thợ Kéo'),
+        }),
+      );
+    });
+
+    it('handleSelectBankButton gửi select menu ngân hàng cho chính chủ có role Thợ Kéo', async () => {
+      settingsService.updateSeller('guild-123', { roleId: 'role-pro-seller' });
+      const ctx = createMockInteractionContext({
+        userId: 'seller-1',
+        isAdmin: false,
+        userRoles: ['role-pro-seller'],
+      });
       const interaction = {
         ...ctx,
         reply: jest.fn().mockResolvedValue(undefined),

@@ -22,6 +22,7 @@ function createMockInteraction(options: {
   guildId?: string;
   isOwner?: boolean;
   isAdmin?: boolean;
+  userRoles?: string[];
   optionsData?: Record<string, any>;
 }): ChatInputCommandInteraction {
   const userId = options.userId || 'user-123';
@@ -32,17 +33,17 @@ function createMockInteraction(options: {
     tag: `User#${userId}`,
   } as unknown as User;
 
+  const rolesMap = new Map<string, { id: string; name: string }>();
+  (options.userRoles || []).forEach((r) => rolesMap.set(r, { id: r, name: r }));
+
   const member = {
     id: userId,
     user,
     permissions: {
-      has: jest.fn().mockImplementation((perm: any) => {
-        if (options.isAdmin) return true;
-        return false;
-      }),
+      has: jest.fn().mockImplementation(() => Boolean(options.isAdmin)),
     },
     roles: {
-      cache: new Map(),
+      cache: rolesMap,
     },
   } as unknown as GuildMember;
 
@@ -52,6 +53,13 @@ function createMockInteraction(options: {
     ownerId: options.isOwner ? userId : 'owner-999',
     members: {
       cache: new Map([[userId, member]]),
+      fetch: jest.fn().mockImplementation((id: string) => {
+        if (id === userId) return Promise.resolve(member);
+        return Promise.resolve({
+          id,
+          roles: { cache: new Map() },
+        });
+      }),
     },
   } as unknown as Guild;
 
@@ -214,6 +222,63 @@ describe('SellerCommand (/seller)', () => {
       expect(txs[0].buyerId).toBe('buyer-1');
       expect(txs[0].messageId).toBe('msg-reply-123');
     });
+
+    it('báo lỗi nếu server đã cấu hình role thợ kéo nhưng seller không sở hữu role đó', async () => {
+      settingsService.updateSeller('guild-123', { roleId: 'role-pro-seller' });
+
+      const interaction = createMockInteraction({
+        subcommand: 'pay',
+        userId: 'user-no-role',
+        userRoles: ['some-other-role'],
+        optionsData: {
+          buyer: { id: 'buyer-1', tag: 'Buyer#1' },
+          amount: 150000,
+          description: 'Kéo Đập Nước 3 game',
+        },
+      });
+
+      await execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('không sở hữu role định danh Thợ Kéo'),
+        }),
+      );
+    });
+
+    it('cho phép tạo đơn khi seller sở hữu role Thợ Kéo đã cấu hình', async () => {
+      settingsService.updateSeller('guild-123', { roleId: 'role-pro-seller' });
+
+      sellerDb.upsertProfile({
+        userId: 'seller-with-role',
+        guildId: 'guild-123',
+        bankCode: '970422',
+        bankName: 'MBBank',
+        accountNumber: '0987654321',
+        accountName: 'NGUYEN VAN A',
+        isActive: true,
+      });
+
+      const interaction = createMockInteraction({
+        subcommand: 'pay',
+        userId: 'seller-with-role',
+        userRoles: ['role-pro-seller'],
+        optionsData: {
+          buyer: { id: 'buyer-1', tag: 'Buyer#1' },
+          amount: 200000,
+          description: 'Kéo Đập Nước',
+        },
+      });
+
+      await execute(interaction);
+
+      expect(interaction.deferReply).toHaveBeenCalled();
+      expect(interaction.editReply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('Đơn thanh toán kéo game đã được tạo!'),
+        }),
+      );
+    });
   });
 
   describe('Subcommand /seller qr', () => {
@@ -229,6 +294,62 @@ describe('SellerCommand (/seller)', () => {
         expect.objectContaining({
           embeds: expect.any(Array),
           components: expect.any(Array),
+        }),
+      );
+    });
+
+    it('báo lỗi mở QR nếu server đã cấu hình role thợ kéo nhưng user không sở hữu role', async () => {
+      settingsService.updateSeller('guild-123', { roleId: 'role-pro-seller' });
+
+      const interaction = createMockInteraction({
+        subcommand: 'qr',
+        userId: 'user-no-role',
+        userRoles: [],
+      });
+
+      await execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('Bạn cần có role Thợ Kéo'),
+        }),
+      );
+    });
+
+    it('cho phép mở QR khi user sở hữu role thợ kéo đã cấu hình', async () => {
+      settingsService.updateSeller('guild-123', { roleId: 'role-pro-seller' });
+
+      const interaction = createMockInteraction({
+        subcommand: 'qr',
+        userId: 'user-has-role',
+        userRoles: ['role-pro-seller'],
+      });
+
+      await execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          embeds: expect.any(Array),
+          components: expect.any(Array),
+        }),
+      );
+    });
+
+    it('cho phép admin mở QR dù không sở hữu role thợ kéo', async () => {
+      settingsService.updateSeller('guild-123', { roleId: 'role-pro-seller' });
+
+      const interaction = createMockInteraction({
+        subcommand: 'qr',
+        userId: 'admin-1',
+        isAdmin: true,
+        userRoles: [],
+      });
+
+      await execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          embeds: expect.any(Array),
         }),
       );
     });

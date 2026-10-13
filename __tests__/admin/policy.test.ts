@@ -579,12 +579,12 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(resolveCommandPolicy('team.find')).toBe(Policy.TEAM_ACCESS);
     });
 
-    it('SELLER_ACCESS và MANAGE_CONFIG policy mapping cho seller commands', () => {
+    it('SELLER_ACCESS và MANAGE_RBAC policy mapping cho seller commands', () => {
       expect(resolveCommandPolicy('seller.pay')).toBe(Policy.SELLER_ACCESS);
       expect(resolveCommandPolicy('seller.qr')).toBe(Policy.SELLER_ACCESS);
       expect(resolveCommandPolicy('seller.history')).toBe(Policy.SELLER_ACCESS);
       expect(resolveCommandPolicy('seller.top')).toBe(Policy.SELLER_ACCESS);
-      expect(resolveCommandPolicy('seller.config.setrole')).toBe(Policy.MANAGE_CONFIG);
+      expect(resolveCommandPolicy('seller.config.setrole')).toBe(Policy.MANAGE_RBAC);
     });
 
     it('trả về null đối với commandPath không xác định hoặc legacy commands', () => {

@@ -1,5 +1,9 @@
 import { Collection } from 'discord.js';
-import { loadCommands, deployCommands, CommandModule } from '../src/infrastructure/discord/command-loader.js';
+import {
+  loadCommands,
+  deployCommands,
+  CommandModule,
+} from '../src/infrastructure/discord/command-loader.js';
 import { botConfig } from '../src/config/bot.config.js';
 import { createLogger } from '../src/utils/logger.js';
 

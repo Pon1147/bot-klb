@@ -209,7 +209,7 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'seller.qr': Policy.SELLER_ACCESS,
   'seller.history': Policy.SELLER_ACCESS,
   'seller.top': Policy.SELLER_ACCESS,
-  'seller.config.setrole': Policy.MANAGE_CONFIG,
+  'seller.config.setrole': Policy.MANAGE_RBAC,
 };
 
 /**

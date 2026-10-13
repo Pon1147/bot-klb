@@ -23,19 +23,49 @@ import {
 } from '../ui/seller-qr.container.js';
 import { createLogger } from '../../../utils/logger.js';
 import { hasPolicy, Policy } from '../../../config/permissions.js';
+import { getSettingsService } from '../../../services/settings.service.js';
 
 const logger = createLogger('SellerQrHandler');
 
 /**
  * Kiểm tra xem người tương tác có quyền chỉnh sửa QR của targetUserId hay không.
- * Phải là chính chủ HOẶC có quyền quản trị bot / máy chủ.
+ * Phải là Admin HOẶC chính chủ sở hữu role Thợ Kéo (nếu server đã cấu hình).
  */
-function canManageQr(
+async function canManageQr(
   interaction: ButtonInteraction | StringSelectMenuInteraction | ModalSubmitInteraction,
   targetUserId: string,
-): boolean {
-  if (interaction.user.id === targetUserId) return true;
-  return hasPolicy(interaction, Policy.MANAGE_CONFIG).allowed;
+): Promise<{ allowed: boolean; reason: string }> {
+  const isAdmin = hasPolicy(interaction, Policy.MANAGE_CONFIG).allowed;
+  if (isAdmin) return { allowed: true, reason: '' };
+
+  if (interaction.user.id !== targetUserId) {
+    return {
+      allowed: false,
+      reason: '❌ Bạn không có quyền chỉnh sửa cấu hình QR của người khác!',
+    };
+  }
+
+  // Kiểm tra role Thợ Kéo nếu guild đã cấu hình
+  if (interaction.guildId && interaction.guild) {
+    try {
+      const settingsService = getSettingsService();
+      const sellerSettings = settingsService.getSeller(interaction.guildId);
+      if (sellerSettings.roleId) {
+        const member = await interaction.guild.members.fetch(targetUserId).catch(() => null);
+        const hasRole = Boolean(member?.roles.cache.has(sellerSettings.roleId));
+        if (!hasRole) {
+          return {
+            allowed: false,
+            reason: `🔒 Bạn cần có role Thợ Kéo (<@&${sellerSettings.roleId}>) của máy chủ để thiết lập tài khoản nhận tiền!`,
+          };
+        }
+      }
+    } catch {
+      // Bỏ qua lỗi tra cứu settings nếu chưa khởi tạo
+    }
+  }
+
+  return { allowed: true, reason: '' };
 }
 
 /**
@@ -45,9 +75,10 @@ export async function handleSelectBankButton(
   interaction: ButtonInteraction,
   targetUserId: string,
 ): Promise<void> {
-  if (!canManageQr(interaction, targetUserId)) {
+  const check = await canManageQr(interaction, targetUserId);
+  if (!check.allowed) {
     await interaction.reply({
-      content: '❌ Bạn không có quyền chỉnh sửa cấu hình QR của người khác!',
+      content: check.reason,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -80,9 +111,10 @@ export async function handleBankSelectMenu(
   interaction: StringSelectMenuInteraction,
   targetUserId: string,
 ): Promise<void> {
-  if (!canManageQr(interaction, targetUserId)) {
+  const check = await canManageQr(interaction, targetUserId);
+  if (!check.allowed) {
     await interaction.reply({
-      content: '❌ Bạn không có quyền chỉnh sửa cấu hình QR của người khác!',
+      content: check.reason,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -126,9 +158,10 @@ export async function handleEditInfoButton(
   interaction: ButtonInteraction,
   targetUserId: string,
 ): Promise<void> {
-  if (!canManageQr(interaction, targetUserId)) {
+  const check = await canManageQr(interaction, targetUserId);
+  if (!check.allowed) {
     await interaction.reply({
-      content: '❌ Bạn không có quyền chỉnh sửa cấu hình QR của người khác!',
+      content: check.reason,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -183,6 +216,15 @@ export async function handleSellerInfoModalSubmit(
   bankCode: string,
   bankName: string,
 ): Promise<void> {
+  const check = await canManageQr(interaction, targetUserId);
+  if (!check.allowed) {
+    await interaction.reply({
+      content: check.reason,
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
   const accountNumber = interaction.fields
     .getTextInputValue(SELLER_QR_IDS.MODAL_INPUT_ACCOUNT)
     .trim();
@@ -249,9 +291,10 @@ export async function handleDeleteQrButton(
   interaction: ButtonInteraction,
   targetUserId: string,
 ): Promise<void> {
-  if (!canManageQr(interaction, targetUserId)) {
+  const check = await canManageQr(interaction, targetUserId);
+  if (!check.allowed) {
     await interaction.reply({
-      content: '❌ Bạn không có quyền xóa cấu hình QR của người khác!',
+      content: check.reason,
       flags: MessageFlags.Ephemeral,
     });
     return;
