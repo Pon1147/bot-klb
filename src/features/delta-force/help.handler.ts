@@ -61,6 +61,8 @@ export function buildHelpContainer(tab: HelpTab): BuildContainerResult {
       '### ⚙️ Nhóm lệnh Quản trị (`/config`)',
       '- `/config bot guilds`: Xem danh sách server bot đang tham gia (Dành cho Quản trị viên).',
       '- `/config welcome ...` & `/config booster ...`: Cấu hình thông báo máy chủ.',
+      '',
+      '> 💬 **Hỗ trợ & Thắc mắc:** Vui lòng liên hệ Discord: `crushpon` hoặc tham gia server [KLB Community](https://discord.gg/vz6w6c3Xe3) để đặt câu hỏi.',
     ].join('\n');
 
     return makeResult(
@@ -100,6 +102,8 @@ export function buildHelpContainer(tab: HelpTab): BuildContainerResult {
     'Mở [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html) và đăng nhập. Mở popup tiện ích qua tab **Link**, dán mã claim và bấm **Liên kết Discord**.',
     '',
     '> 💡 *Tiện ích hoạt động an toàn cục bộ trên máy tính của bạn và tự động đồng bộ mã điểm danh/thống kê.*',
+    '',
+    '> 💬 **Hỗ trợ & Thắc mắc:** Vui lòng liên hệ Discord: `crushpon` hoặc tham gia server [KLB Community](https://discord.gg/vz6w6c3Xe3) để được hỗ trợ.',
   ].join('\n');
 
   return makeResult(
