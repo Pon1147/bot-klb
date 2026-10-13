@@ -40,6 +40,7 @@ describe('DF Help Handler & Extension Utils', () => {
       expect(textDisplay.content).toContain('/df stats');
       expect(textDisplay.content).toContain('/df link start');
       expect(textDisplay.content).toContain('/team find');
+      expect(textDisplay.content).toContain('/seller pay');
       expect(textDisplay.content).toContain('/config bot guilds');
     });
 
