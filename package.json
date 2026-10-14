@@ -24,6 +24,7 @@
     "migrate:mongo": "tsx scripts/migrate-sqlite-to-mongo.ts",
     "test:mongo": "tsx scripts/test-mongo.ts",
     "package:extension": "tsx scripts/package-extension.ts",
+    "dump:server": "tsx scripts/dump-server.ts",
     "postinstall": "npx puppeteer browsers install chrome"
   },
   "lint-staged": {

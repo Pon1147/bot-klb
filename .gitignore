@@ -55,6 +55,7 @@ temp/
 *.swp
 *.swo
 *~
+*_channels.md
 
 # =========================
 # AI config
