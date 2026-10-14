@@ -16,12 +16,12 @@ import {
   getAutoPostConfig,
 } from '../../src/database/df-autopost.db.js';
 
-// Mock findAnnouncementChannel
-jest.mock('../../src/features/admin/config.command.js', () => ({
-  findAnnouncementChannel: jest.fn(),
+// Mock df-channel-matcher
+jest.mock('../../src/services/df-channel-matcher.js', () => ({
+  findAutoPostTargetChannel: jest.fn(),
 }));
 
-import { findAnnouncementChannel } from '../../src/features/admin/config.command.js';
+import { findAutoPostTargetChannel } from '../../src/services/df-channel-matcher.js';
 
 // Mock settings.service
 jest.mock('../../src/services/settings.service.js', () => ({
@@ -78,8 +78,10 @@ describe('df-autopost-scheduler', () => {
       const mockGuild1 = { id: 'guild-1', name: 'Server 1' };
       const mockGuild2 = { id: 'guild-2', name: 'Server 2' };
 
-      (findAnnouncementChannel as jest.Mock).mockReturnValue({
+      (findAutoPostTargetChannel as jest.Mock).mockReturnValue({
         channel: { name: 'thong-bao', send: mockChannelSend },
+        matchTier: 'content',
+        matchReason: 'Khớp chuyên mục Bản Đồ 3D',
       });
 
       const mockClient: any = {
@@ -104,8 +106,9 @@ describe('df-autopost-scheduler', () => {
     });
 
     it('ghi nhận thất bại khi không tìm thấy channel thích hợp', async () => {
-      (findAnnouncementChannel as jest.Mock).mockReturnValue({
+      (findAutoPostTargetChannel as jest.Mock).mockReturnValue({
         channel: null,
+        matchTier: 'none',
         reason: 'Không có quyền',
       });
 

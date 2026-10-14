@@ -163,7 +163,8 @@ async function handleRun(
 
   const detailLines = result.details.map((d, idx) => {
     if (d.success) {
-      return `**${idx + 1}. ${d.guildName}**: ✅ Đã gửi → #${d.channelName}`;
+      const matchTag = d.matchReason ? ` _(${d.matchReason})_` : '';
+      return `**${idx + 1}. ${d.guildName}**: ✅ Đã gửi → #${d.channelName}${matchTag}`;
     }
     return `**${idx + 1}. ${d.guildName}**: ⚠️ Bỏ qua → ${d.reason}`;
   });

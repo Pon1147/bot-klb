@@ -9,7 +9,7 @@ import Database from 'better-sqlite3';
 import { buildMapContainer } from '../features/delta-force/map.handler.js';
 import { buildWeaponContainer } from '../features/delta-force/build.handler.js';
 import { getSettingsService } from './settings.service.js';
-import { findAnnouncementChannel } from '../features/admin/config.command.js';
+import { findAutoPostTargetChannel } from './df-channel-matcher.js';
 import {
   AutoPostContentType,
   getAutoPostConfig,
@@ -53,6 +53,7 @@ export interface BroadcastResult {
     guildId: string;
     guildName: string;
     channelName?: string;
+    matchReason?: string;
     success: boolean;
     reason?: string;
   }>;
@@ -80,15 +81,21 @@ export async function broadcastAutoPost(
   for (let i = 0; i < guilds.length; i++) {
     const guild = guilds[i];
     try {
-      const configuredChannelId = settingsService.get(guild.id).botAnnounce?.channelId;
-      const { channel, reason } = findAnnouncementChannel(guild, configuredChannelId);
+      const guildSettings = settingsService.get(guild.id);
+      const dfCodesChannelId = guildSettings.dfCodes?.channelId;
+      const botAnnounceChannelId = guildSettings.botAnnounce?.channelId;
+
+      const { channel, reason, matchReason } = findAutoPostTargetChannel(guild, type, {
+        dfCodesChannelId,
+        botAnnounceChannelId,
+      });
 
       if (!channel) {
         results.push({
           guildId: guild.id,
           guildName: guild.name,
           success: false,
-          reason: reason || 'Không tìm thấy kênh văn bản thích hợp có quyền gửi tin nhắn',
+          reason: reason || 'Không tìm thấy kênh game hoặc chat cộng đồng thích hợp',
         });
         continue;
       }
@@ -103,6 +110,7 @@ export async function broadcastAutoPost(
         guildId: guild.id,
         guildName: guild.name,
         channelName: channel.name,
+        matchReason,
         success: true,
       });
 
