@@ -528,16 +528,20 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
   // ─── 7. PHASE 4: Command Path Policy Mapping ──────────────────────
   describe('PHASE 4 — Command Path Policy Mapping', () => {
-    it('COMMAND_PATH_POLICIES chứa đúng 38 canonical command paths', () => {
-      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(38);
+    it('COMMAND_PATH_POLICIES chứa đúng 42 canonical command paths', () => {
+      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(42);
     });
 
-    it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds, config.bot.announce và config.bot.setannouncechannel', () => {
+    it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds, config.bot.announce, config.bot.setannouncechannel và df.autopost.*', () => {
       expect(resolveCommandPolicy('config.roles.set')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.roles.view')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.bot.guilds')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.bot.announce')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.bot.setannouncechannel')).toBe(Policy.MANAGE_RBAC);
+      expect(resolveCommandPolicy('df.autopost.set')).toBe(Policy.MANAGE_RBAC);
+      expect(resolveCommandPolicy('df.autopost.toggle')).toBe(Policy.MANAGE_RBAC);
+      expect(resolveCommandPolicy('df.autopost.status')).toBe(Policy.MANAGE_RBAC);
+      expect(resolveCommandPolicy('df.autopost.run')).toBe(Policy.MANAGE_RBAC);
     });
 
     it('MANAGE_CONFIG policy mapping cho config.welcome.*, booster.* và container.*', () => {

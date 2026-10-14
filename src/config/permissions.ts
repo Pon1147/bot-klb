@@ -206,6 +206,11 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'df.link.status': Policy.DF_ACCESS,
   'df.link.manual': Policy.DF_ACCESS,
 
+  'df.autopost.set': Policy.MANAGE_RBAC,
+  'df.autopost.toggle': Policy.MANAGE_RBAC,
+  'df.autopost.status': Policy.MANAGE_RBAC,
+  'df.autopost.run': Policy.MANAGE_RBAC,
+
   'team.find': Policy.TEAM_ACCESS,
 
   'seller.pay': Policy.SELLER_ACCESS,

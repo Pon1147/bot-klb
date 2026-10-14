@@ -20,6 +20,7 @@ export * as workshopHandler from './workshop.handler.js';
 export * as helpHandler from './help.handler.js';
 export * as mapHandler from './map.handler.js';
 export * as buildHandler from './build.handler.js';
+export * as autopostHandler from './autopost.handler.js';
 
 // Interaction handlers & IDs
 export * from './team-find-ids.js';
@@ -33,6 +34,15 @@ export { getExtensionZipPath } from './extension.utils.js';
 
 // Services, Schedulers & Crypto
 export * from '../../services/df-codes-scheduler.js';
+export {
+  startDfAutoPostScheduler,
+  rescheduleDfAutoPost,
+  broadcastAutoPost,
+  stopAutoPostTask,
+  stopAllAutoPostTasks,
+  getActiveAutoPostTypes,
+  intervalToCron,
+} from '../../services/df-autopost-scheduler.js';
 export * from '../../services/df-crypto.js';
 export * from '../../services/df-claim-handler.js';
 export { cleanup as cleanupTeamFindSessions } from '../../services/team-find-session.js';

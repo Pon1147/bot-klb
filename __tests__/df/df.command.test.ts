@@ -14,6 +14,7 @@ import { execute as executeCode } from '../../src/features/delta-force/code.hand
 import { execute as executeLink } from '../../src/features/delta-force/link.handler.js';
 import { execute as executeHelp } from '../../src/features/delta-force/help.handler.js';
 import { execute as executeMap } from '../../src/features/delta-force/map.handler.js';
+import { execute as executeAutopost } from '../../src/features/delta-force/autopost.handler.js';
 
 jest.mock('../../src/features/delta-force/stats.handler.js', () => ({
   execute: jest.fn().mockResolvedValue(undefined),
@@ -48,6 +49,10 @@ jest.mock('../../src/features/delta-force/help.handler.js', () => ({
 }));
 
 jest.mock('../../src/features/delta-force/map.handler.js', () => ({
+  execute: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../../src/features/delta-force/autopost.handler.js', () => ({
   execute: jest.fn().mockResolvedValue(undefined),
 }));
 
@@ -104,9 +109,9 @@ describe('/df command — Structure & Builder', () => {
     expect(limitOpt.max_value).toBe(20);
   });
 
-  it('phải chứa 2 SubcommandGroups: code và link', () => {
+  it('phải chứa 3 SubcommandGroups: code, link và autopost', () => {
     const groups = json.options?.filter((o: any) => o.type === 2).map((o: any) => o.name);
-    expect(groups).toEqual(['code', 'link']);
+    expect(groups).toEqual(['code', 'link', 'autopost']);
   });
 
   describe('code group structure', () => {
@@ -296,6 +301,18 @@ describe('/df command — Execute Dispatch', () => {
 
     await execute(interaction);
     expect(executeMap).toHaveBeenCalledWith(interaction, expect.anything());
+  });
+
+  it('phải dispatch tới executeAutopost khi chọn group "autopost"', async () => {
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommandGroup: jest.fn().mockReturnValue('autopost'),
+        getSubcommand: jest.fn().mockReturnValue('status'),
+      },
+    });
+
+    await execute(interaction);
+    expect(executeAutopost).toHaveBeenCalledWith(interaction, expect.anything());
   });
 });
 

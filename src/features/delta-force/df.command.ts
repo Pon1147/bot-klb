@@ -35,6 +35,7 @@ import { execute as executeLink } from './link.handler.js';
 import { execute as executeHelp } from './help.handler.js';
 import { execute as executeMap } from './map.handler.js';
 import { execute as executeBuild } from './build.handler.js';
+import { execute as executeAutopost } from './autopost.handler.js';
 
 import { MAX_HISTORY_PAGE } from '../../config/app.constants.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
@@ -116,6 +117,73 @@ function buildLinkGroup(
     );
 }
 
+function buildAutopostGroup(
+  group: SlashCommandSubcommandGroupBuilder,
+): SlashCommandSubcommandGroupBuilder {
+  return group
+    .setName('autopost')
+    .setDescription('Quản lý lịch phát tự động map/gun toàn hệ thống (Chỉ dành cho Bot Owner).')
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
+        .setName('set')
+        .setDescription('Thiết lập chu kỳ lặp lại cho loại nội dung.')
+        .addStringOption((opt) =>
+          opt
+            .setName('type')
+            .setDescription('Loại nội dung muốn phát tự động')
+            .setRequired(true)
+            .addChoices(
+              { name: '🗺️ Bản Đồ 3D (/df map)', value: 'map' },
+              { name: '🔫 Build Súng Garena (/df gun)', value: 'gun' },
+            ),
+        )
+        .addIntegerOption((opt) =>
+          opt
+            .setName('interval_hours')
+            .setDescription('Khoảng cách số giờ giữa mỗi lần phát (1 - 24 giờ)')
+            .setRequired(true)
+            .setMinValue(1)
+            .setMaxValue(24),
+        ),
+    )
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
+        .setName('toggle')
+        .setDescription('Bật hoặc tắt phát tự động cho loại nội dung.')
+        .addStringOption((opt) =>
+          opt
+            .setName('type')
+            .setDescription('Loại nội dung')
+            .setRequired(true)
+            .addChoices(
+              { name: '🗺️ Bản Đồ 3D (/df map)', value: 'map' },
+              { name: '🔫 Build Súng Garena (/df gun)', value: 'gun' },
+            ),
+        )
+        .addBooleanOption((opt) =>
+          opt.setName('enabled').setDescription('Bật (True) hoặc Tắt (False)').setRequired(true),
+        ),
+    )
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub.setName('status').setDescription('Xem trạng thái cấu hình Auto-Post toàn hệ thống.'),
+    )
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
+        .setName('run')
+        .setDescription('Bắn thử nghiệm ngay lập tức 1 đợt tới toàn bộ các máy chủ.')
+        .addStringOption((opt) =>
+          opt
+            .setName('type')
+            .setDescription('Loại nội dung muốn phát ngay')
+            .setRequired(true)
+            .addChoices(
+              { name: '🗺️ Bản Đồ 3D (/df map)', value: 'map' },
+              { name: '🔫 Build Súng Garena (/df gun)', value: 'gun' },
+            ),
+        ),
+    );
+}
+
 // ─── Slash Command Builder ────────────────────────────────────────
 
 export const data = new SlashCommandBuilder()
@@ -160,7 +228,8 @@ export const data = new SlashCommandBuilder()
     sub.setName('gun').setDescription('Thư viện build súng và mã Gunsmith meta (Garena).'),
   )
   .addSubcommandGroup(buildCodeGroup)
-  .addSubcommandGroup(buildLinkGroup);
+  .addSubcommandGroup(buildLinkGroup)
+  .addSubcommandGroup(buildAutopostGroup);
 
 // ─── Execute ──────────────────────────────────────────────────────
 
@@ -191,6 +260,11 @@ export async function execute(
       };
     }
     await executeLink(interaction, db);
+    return;
+  }
+
+  if (group === 'autopost') {
+    await executeAutopost(interaction, db);
     return;
   }
 
