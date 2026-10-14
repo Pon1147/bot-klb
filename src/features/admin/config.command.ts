@@ -463,12 +463,35 @@ export function buildAnnouncementContainer(customNote?: string | null, isPreview
     ? '> 👁️ **CHẾ ĐỘ XEM TRƯỚC (PREVIEW)**\n> *Giao diện thông báo mẫu sẽ gửi tới các máy chủ. Chạy lệnh với `preview: false` để phát thật.*\n\n'
     : '';
 
-  const content = [
-    previewBanner,
-    customNote ? `💬 **Lời nhắn từ Nhà phát triển:**\n ${customNote}\n\n` : '',
+  const defaultChangelog = [
+    '# 🚀 BẢN CẬP NHẬT TÍNH NĂNG MỚI — BOT KLB & DELTA FORCE',
+    '',
+    'Chào các Chỉ Huy và Quản trị viên máy chủ! Bot KLB vừa được nâng cấp các tính năng tác chiến và tiện ích tự động mới nhất:',
+    '',
+    '### 1. 🗺️ Trình Mô Phỏng Bản Đồ 3D Tương Tác (`/df map`)',
+    '• Trải nghiệm mô phỏng di chuyển góc nhìn 3D (FPS / Top-down) trực quan trên mọi thiết bị.',
+    '• Soi vị trí két sắt, hòm Safe Box, tài nguyên giá trị cao và các lối rút quân an toàn.',
+    '',
+    '### 2. 🔫 Thư Viện Build Súng Chuẩn Meta Garena (`/df build` / `/df gun`)',
+    '• Tra cứu cấu hình phụ kiện tối ưu cho từng loại vũ khí theo meta chiến đấu hiện tại.',
+    '• Sao chép mã Gunsmith code chỉ với 1-click để nhập thẳng vào game.',
+    '',
+    '### 3. 🤖 Hệ Thống Cẩm Nang Tự Động & Live Board Thông Minh (`/df autopost`)',
+    '• Định kỳ phát sóng cẩm nang Bản đồ 3D và Build súng meta tới các kênh cộng đồng.',
+    '• **Cơ chế Live Board sạch sẽ:** Tự động dọn dẹp tin nhắn cũ trước khi đăng bài mới, giữ kênh luôn ngăn nắp và không làm trôi tin nhắn chia sẻ của thành viên.',
+    '',
+    '### 4. ⚙️ Phân Luồng Kênh Quản Trị Tùy Biến',
+    '• `/df code setchannel`: Thiết lập kênh nhận mật mã hòm đồ két sắt hàng ngày (08:00 sáng).',
+    '• `/config bot setannouncechannel`: Thiết lập kênh nhận thông báo cập nhật của bot.',
+    '• `/df help`: Xem toàn bộ danh sách lệnh và hướng dẫn cài đặt tiện ích đồng bộ tài khoản.',
+    '',
+    customNote ? `💬 **Lời nhắn từ Nhà phát triển:**\n${customNote}\n\n` : '',
+    '> 💡 *Admin server có thể dùng lệnh `/config bot setannouncechannel` để chọn kênh nhận tin cập nhật chính thức từ bot.*',
   ]
     .filter(Boolean)
     .join('\n');
+
+  const content = `${previewBanner}${defaultChangelog}`;
 
   return makeResult(
     [
