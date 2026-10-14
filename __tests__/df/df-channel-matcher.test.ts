@@ -78,7 +78,7 @@ describe('df-channel-matcher — findAutoPostTargetChannel Prioritization', () =
     expect(res.matchTier).toBe('configured');
   });
 
-  it('ưu tiên 2: chọn kênh dfCodesChannelId nếu có', () => {
+  it('tuyệt đối loại trừ kênh dfCodesChannelId (kênh mật mã hòm đồ /df code) để tránh spam vào kênh code', () => {
     const chDfCode = createMockChannel('c-dfcode', 'code-daily');
     const chChat = createMockChannel('c-chat', 'chat-chung');
 
@@ -96,8 +96,8 @@ describe('df-channel-matcher — findAutoPostTargetChannel Prioritization', () =
       dfCodesChannelId: 'c-dfcode',
     });
 
-    expect(res.channel?.id).toBe('c-dfcode');
-    expect(res.matchTier).toBe('df_code');
+    expect(res.channel?.id).toBe('c-chat');
+    expect(res.channel?.id).not.toBe('c-dfcode');
   });
 
   it('Tier A: chọn kênh khớp nội dung "gun" (vd: share-build-súng, ┃𝐆𝐮𝐧-𝐂𝐨𝐝𝐞)', () => {
@@ -168,9 +168,9 @@ describe('df-channel-matcher — findAutoPostTargetChannel Prioritization', () =
     expect(res.matchTier).toBe('game');
   });
 
-  it('Tier C & D: chọn kênh code/useful hoặc chat-chung nếu không có kênh game riêng', () => {
+  it('Tier C & D: chọn kênh useful hoặc chat-chung nếu không có kênh game riêng', () => {
     const chAnnounce = createMockChannel('c-ann', 'thông-báo');
-    const chCode = createMockChannel('c-code', 'code');
+    const chUseful = createMockChannel('c-useful', 'useful');
     const chGeneral = createMockChannel('c-gen', 'chat-chung');
 
     const mockGuild: any = {
@@ -178,7 +178,7 @@ describe('df-channel-matcher — findAutoPostTargetChannel Prioritization', () =
       channels: {
         cache: new Map([
           ['c-ann', chAnnounce],
-          ['c-code', chCode],
+          ['c-useful', chUseful],
           ['c-gen', chGeneral],
         ]),
       },
@@ -186,7 +186,7 @@ describe('df-channel-matcher — findAutoPostTargetChannel Prioritization', () =
 
     const res = findAutoPostTargetChannel(mockGuild, 'map');
 
-    expect(res.channel?.id).toBe('c-code');
+    expect(res.channel?.id).toBe('c-useful');
     expect(res.matchTier).toBe('feature');
   });
 

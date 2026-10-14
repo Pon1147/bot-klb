@@ -7,7 +7,7 @@ import { Guild, TextChannel, PermissionFlagsBits, GuildMember } from 'discord.js
 import { AutoPostContentType } from '../database/df-autopost.db.js';
 
 export type AutoPostMatchTier =
-  'configured' | 'df_code' | 'content' | 'game' | 'feature' | 'community' | 'fallback' | 'none';
+  'configured' | 'content' | 'game' | 'feature' | 'community' | 'fallback' | 'none';
 
 export interface AutoPostChannelMatchResult {
   channel: TextChannel | null;
@@ -67,10 +67,10 @@ export const AUTOPOST_CONTENT_KEYWORDS: Record<AutoPostContentType, string[]> = 
 export const AUTOPOST_GAME_KEYWORDS = ['delta-force', 'deltaforce', 'delta', 'df'];
 
 /**
- * Danh sách từ khóa kênh tiện ích / code game (Tier C: Tiện ích).
+ * Danh sách từ khóa kênh tiện ích / hướng dẫn game (Tier C: Tiện ích).
+ * Không chứa 'code' vì kênh 'code' thường dành riêng cho mật mã hòm đồ (/df code).
  */
 export const AUTOPOST_FEATURE_KEYWORDS = [
-  'code',
   'useful',
   'mẹo',
   'meo',
@@ -147,12 +147,16 @@ export function hasSendPermissions(channel: TextChannel, botMember: GuildMember 
  *
  * Thứ tự ưu tiên:
  * 1. Kênh cấu hình riêng cho Auto-Post (nếu có).
- * 2. Kênh cấu hình /df code của server (nếu có).
- * 3. Kênh khớp chính xác loại nội dung (Tier A: gun / map).
- * 4. Kênh chuyên về Delta Force (Tier B: delta, df).
- * 5. Kênh tiện ích / mã game (Tier C: code, useful, guide...).
- * 6. Kênh chat cộng đồng chung (Tier D: chat-chung, general, chung...).
- * 7. Kênh văn bản an toàn đầu tiên (không thuộc blacklist).
+ * 2. Kênh khớp chính xác loại nội dung (Tier A: gun / map).
+ * 3. Kênh chuyên về Delta Force (Tier B: delta, df).
+ * 4. Kênh tiện ích / hướng dẫn game (Tier C: useful, guide...).
+ * 5. Kênh chat cộng đồng chung (Tier D: chat-chung, general, chung...).
+ * 6. Kênh văn bản an toàn đầu tiên (không thuộc blacklist).
+ *
+ * BẢO VỆ TUYỆT ĐỐI (Loại trừ):
+ * - Kênh thông báo cập nhật bot (botAnnounceChannelId)
+ * - Kênh hiển thị mật mã hòm đồ hàng ngày (dfCodesChannelId)
+ * - Các kênh thông báo/quản trị thuộc AUTOPOST_BLACKLIST_KEYWORDS
  */
 export function findAutoPostTargetChannel(
   guild: Guild,
@@ -172,7 +176,7 @@ export function findAutoPostTargetChannel(
     };
   }
 
-  // 1. Kênh cấu hình riêng cho Auto-Post
+  // 1. Kênh cấu hình riêng cho Auto-Post (nếu có)
   if (options.configuredChannelId) {
     const configured = guild.channels.cache.get(options.configuredChannelId);
     if (
@@ -186,24 +190,6 @@ export function findAutoPostTargetChannel(
         channel: configured as TextChannel,
         matchTier: 'configured',
         matchReason: 'Kênh cấu hình thủ công cho Auto-Post',
-      };
-    }
-  }
-
-  // 2. Kênh cấu hình /df code
-  if (options.dfCodesChannelId) {
-    const codeChannel = guild.channels.cache.get(options.dfCodesChannelId);
-    if (
-      codeChannel &&
-      codeChannel.isTextBased() &&
-      !codeChannel.isDMBased() &&
-      !codeChannel.isVoiceBased() &&
-      hasSendPermissions(codeChannel as TextChannel, botMember)
-    ) {
-      return {
-        channel: codeChannel as TextChannel,
-        matchTier: 'df_code',
-        matchReason: 'Kênh chỉ định Delta Force Code',
       };
     }
   }
@@ -226,9 +212,14 @@ export function findAutoPostTargetChannel(
     };
   }
 
-  // Loại trừ kênh botAnnounce và các kênh thuộc Blacklist
+  // Loại trừ kênh botAnnounce, kênh dfCodes (mật mã hòm đồ) và các kênh thuộc Blacklist
   const safeChannels = availableTextChannels.filter((c) => {
+    // Không gửi vào kênh thông báo update bot
     if (options.botAnnounceChannelId && c.id === options.botAnnounceChannelId) {
+      return false;
+    }
+    // Không làm loãng kênh nhận mật mã hòm đồ hàng ngày của server (/df code)
+    if (options.dfCodesChannelId && c.id === options.dfCodesChannelId) {
       return false;
     }
     const cleaned = cleanChannelName(c.name);
