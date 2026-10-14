@@ -34,7 +34,16 @@ export function initializeAutoPostTable(database: Database.Database): void {
       interval_hours INTEGER NOT NULL DEFAULT 6,
       last_run_at TEXT,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
+    );
+
+    CREATE TABLE IF NOT EXISTS df_autopost_messages (
+      guild_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      channel_id TEXT NOT NULL,
+      message_id TEXT NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (guild_id, type)
+    );
   `);
 
   const insertStmt = database.prepare(`
@@ -125,4 +134,80 @@ export function updateAutoPostConfig(
     `,
     )
     .run(type, newEnabled, newInterval, newLastRun);
+}
+
+export interface AutoPostLastMessage {
+  guildId: string;
+  type: AutoPostContentType;
+  channelId: string;
+  messageId: string;
+  updatedAt: string;
+}
+
+interface RawAutoPostMessageRow {
+  guild_id: string;
+  type: string;
+  channel_id: string;
+  message_id: string;
+  updated_at: string;
+}
+
+/**
+ * Lấy thông tin tin nhắn Auto-Post gần nhất của một guild và loại nội dung.
+ */
+export function getAutoPostLastMessage(
+  database: Database.Database,
+  guildId: string,
+  type: AutoPostContentType,
+): AutoPostLastMessage | null {
+  const row = database
+    .prepare('SELECT * FROM df_autopost_messages WHERE guild_id = ? AND type = ?')
+    .get(guildId, type) as RawAutoPostMessageRow | undefined;
+
+  if (!row) return null;
+
+  return {
+    guildId: row.guild_id,
+    type: row.type as AutoPostContentType,
+    channelId: row.channel_id,
+    messageId: row.message_id,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * Lưu hoặc cập nhật ID tin nhắn Auto-Post mới nhất để dọn dẹp ở lần chạy tiếp theo.
+ */
+export function saveAutoPostLastMessage(
+  database: Database.Database,
+  guildId: string,
+  type: AutoPostContentType,
+  channelId: string,
+  messageId: string,
+): void {
+  database
+    .prepare(
+      `
+      INSERT INTO df_autopost_messages (guild_id, type, channel_id, message_id, updated_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(guild_id, type) DO UPDATE SET
+        channel_id = excluded.channel_id,
+        message_id = excluded.message_id,
+        updated_at = CURRENT_TIMESTAMP
+    `,
+    )
+    .run(guildId, type, channelId, messageId);
+}
+
+/**
+ * Xóa thông tin tin nhắn Auto-Post khỏi bảng lưu trữ.
+ */
+export function deleteAutoPostLastMessage(
+  database: Database.Database,
+  guildId: string,
+  type: AutoPostContentType,
+): void {
+  database
+    .prepare('DELETE FROM df_autopost_messages WHERE guild_id = ? AND type = ?')
+    .run(guildId, type);
 }

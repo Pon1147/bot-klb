@@ -235,11 +235,34 @@ export function findAutoPostTargetChannel(
     };
   }
 
+  /**
+   * Chọn kênh tốt nhất trong danh sách khớp từ khóa:
+   * 1. Ưu tiên kênh có tên ngắn hơn (kênh chung thường ngắn gọn, ví dụ `code-súng-op` thay vì kênh cá nhân dài như `minhun-code-súng`).
+   * 2. Ưu tiên vị trí hiển thị cao hơn trên giao diện Discord (`rawPosition` / `position`).
+   */
+  const pickBestChannel = (channels: TextChannel[], keywords: string[]): TextChannel | null => {
+    const matched = channels.filter((c) => matchesKeywords(cleanChannelName(c.name), keywords));
+    if (matched.length === 0) return null;
+    if (matched.length === 1) return matched[0];
+
+    return matched.sort((a, b) => {
+      // Tiêu chí 1: Độ dài tên đã chuẩn hóa (ngắn hơn -> chung hơn, ít mang tên riêng)
+      const lenA = cleanChannelName(a.name).ascii.replace(/-+/g, '-').length;
+      const lenB = cleanChannelName(b.name).ascii.replace(/-+/g, '-').length;
+      if (lenA !== lenB) {
+        return lenA - lenB;
+      }
+
+      // Tiêu chí 2: Vị trí hiển thị trên Discord (position nhỏ hơn -> nằm ở trên)
+      const posA = a.rawPosition ?? a.position ?? 0;
+      const posB = b.rawPosition ?? b.position ?? 0;
+      return posA - posB;
+    })[0];
+  };
+
   // 3. Tier A: Khớp chính xác nội dung ('gun' hoặc 'map')
   const contentKeywords = AUTOPOST_CONTENT_KEYWORDS[type] ?? [];
-  const contentMatch = safeChannels.find((c) =>
-    matchesKeywords(cleanChannelName(c.name), contentKeywords),
-  );
+  const contentMatch = pickBestChannel(safeChannels, contentKeywords);
   if (contentMatch) {
     const label = type === 'gun' ? 'Build Súng' : 'Bản Đồ 3D';
     return {
@@ -250,9 +273,7 @@ export function findAutoPostTargetChannel(
   }
 
   // 4. Tier B: Khớp kênh game Delta Force
-  const gameMatch = safeChannels.find((c) =>
-    matchesKeywords(cleanChannelName(c.name), AUTOPOST_GAME_KEYWORDS),
-  );
+  const gameMatch = pickBestChannel(safeChannels, AUTOPOST_GAME_KEYWORDS);
   if (gameMatch) {
     return {
       channel: gameMatch,
@@ -262,9 +283,7 @@ export function findAutoPostTargetChannel(
   }
 
   // 5. Tier C: Khớp kênh tiện ích / mã game
-  const featureMatch = safeChannels.find((c) =>
-    matchesKeywords(cleanChannelName(c.name), AUTOPOST_FEATURE_KEYWORDS),
-  );
+  const featureMatch = pickBestChannel(safeChannels, AUTOPOST_FEATURE_KEYWORDS);
   if (featureMatch) {
     return {
       channel: featureMatch,
@@ -274,9 +293,7 @@ export function findAutoPostTargetChannel(
   }
 
   // 6. Tier D: Khớp kênh chat cộng đồng chung
-  const communityMatch = safeChannels.find((c) =>
-    matchesKeywords(cleanChannelName(c.name), AUTOPOST_COMMUNITY_KEYWORDS),
-  );
+  const communityMatch = pickBestChannel(safeChannels, AUTOPOST_COMMUNITY_KEYWORDS);
   if (communityMatch) {
     return {
       channel: communityMatch,

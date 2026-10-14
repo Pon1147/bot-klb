@@ -15,6 +15,8 @@ import {
   getAutoPostConfig,
   getAllAutoPostConfigs,
   updateAutoPostConfig,
+  getAutoPostLastMessage,
+  saveAutoPostLastMessage,
 } from '../database/df-autopost.db.js';
 import { createLogger } from '../utils/logger.js';
 
@@ -100,11 +102,33 @@ export async function broadcastAutoPost(
         continue;
       }
 
-      await channel.send({
+      // Dọn dẹp tin nhắn Auto-Post cũ của loại này (nếu có) trước khi gửi mới để chống trôi kênh
+      const lastMsg = getAutoPostLastMessage(database, guild.id, type);
+      if (lastMsg) {
+        try {
+          const oldChannel = (guild.channels.cache.get(lastMsg.channelId) ??
+            (await client.channels.fetch(lastMsg.channelId).catch(() => null))) as any;
+          if (oldChannel && typeof oldChannel.messages?.fetch === 'function') {
+            const oldMessage = await oldChannel.messages.fetch(lastMsg.messageId).catch(() => null);
+            if (oldMessage && typeof oldMessage.delete === 'function') {
+              await oldMessage.delete().catch(() => null);
+            }
+          }
+        } catch {
+          // Bỏ qua lỗi dọn dẹp nếu tin nhắn cũ đã bị xóa thủ công hoặc kênh không còn tồn tại
+        }
+      }
+
+      const sentMessage = await channel.send({
         components: containerResult.toJSON(),
         files: containerResult.files,
         flags: MessageFlags.IsComponentsV2,
       });
+
+      // Lưu lại ID tin nhắn mới để phục vụ dọn dẹp ở chu kỳ phát tiếp theo
+      if (sentMessage?.id) {
+        saveAutoPostLastMessage(database, guild.id, type, channel.id, sentMessage.id);
+      }
 
       results.push({
         guildId: guild.id,

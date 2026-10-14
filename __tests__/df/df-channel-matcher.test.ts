@@ -214,4 +214,41 @@ describe('df-channel-matcher — findAutoPostTargetChannel Prioritization', () =
     expect(res.matchTier).toBe('none');
     expect(res.reason).toContain('đã loại trừ an toàn');
   });
+
+  it('ưu tiên kênh có tên ngắn hơn (kênh chung) thay vì kênh dài (kênh cá nhân/phụ) dù kênh dài ở trước trong cache', () => {
+    // Giả lập thứ tự cache: Kênh dài cá nhân xuất hiện trước trong Map
+    const chLongPersonal = {
+      ...createMockChannel('c-long', '🔫 ll code-súng-vương-quốc'),
+      rawPosition: 3,
+      position: 3,
+    };
+    const chMediumPersonal = {
+      ...createMockChannel('c-med', '🔫 ll minhun-code-súng'),
+      rawPosition: 2,
+      position: 2,
+    };
+    const chShortGeneric = {
+      ...createMockChannel('c-short', '🔫 ll code-súng-op'),
+      rawPosition: 1,
+      position: 1,
+    };
+
+    const mockGuild: any = {
+      members: { me: mockBotMember },
+      channels: {
+        cache: new Map([
+          ['c-long', chLongPersonal],
+          ['c-med', chMediumPersonal],
+          ['c-short', chShortGeneric],
+        ]),
+      },
+    };
+
+    const res = findAutoPostTargetChannel(mockGuild, 'gun');
+
+    // Phải chọn c-short (code-súng-op) vì tên ngắn nhất và vị trí cao nhất
+    expect(res.channel?.id).toBe('c-short');
+    expect(res.matchTier).toBe('content');
+  });
 });
+
