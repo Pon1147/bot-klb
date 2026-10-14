@@ -312,16 +312,22 @@ async function handleChatInputCommand(
       }
     }
 
-    const policyResult = hasPolicy(interaction, commandPolicy, guildRbac);
-    if (!policyResult.allowed) {
-      logger.warn(
-        `RBAC denied: user=${interaction.user.id} guild=${interaction.guildId} cmd=${commandPath} policy=${commandPolicy} reason=${policyResult.reason ?? 'N/A'}`,
-      );
-      await interaction.reply({
-        content: policyResult.reason ?? '🔒 Bạn không có quyền thực thi lệnh này.',
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
+    // Bot Owner tối cao có toàn quyền thực thi, bypass kiểm tra RBAC cấp máy chủ
+    const isBotOwnerUser = Boolean(
+      botConfig.botOwnerId && interaction.user.id === botConfig.botOwnerId,
+    );
+    if (!isBotOwnerUser) {
+      const policyResult = hasPolicy(interaction, commandPolicy, guildRbac);
+      if (!policyResult.allowed) {
+        logger.warn(
+          `RBAC denied: user=${interaction.user.id} guild=${interaction.guildId} cmd=${commandPath} policy=${commandPolicy} reason=${policyResult.reason ?? 'N/A'}`,
+        );
+        await interaction.reply({
+          content: policyResult.reason ?? '🔒 Bạn không có quyền thực thi lệnh này.',
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
     }
   }
 

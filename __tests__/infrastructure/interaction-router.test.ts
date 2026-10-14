@@ -840,5 +840,65 @@ describe('Phase 7: Webhook Reveal Debounce with TTL (Area C)', () => {
   });
 });
 
+describe('interaction-router — Bot Owner RBAC Bypass', () => {
+  let mockClient: any;
+  let mockExecute: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockExecute = jest.fn().mockResolvedValue(undefined);
+    mockClient = {
+      commands: new Map([['df', { execute: mockExecute }]]),
+      database: {},
+    };
+    mockSettingsService.get.mockReturnValue({
+      rbac: {
+        botAdminRoleId: 'role-admin',
+        moderatorRoleId: 'role-mod',
+        memberRoleId: 'role-mem',
+      },
+    });
+  });
+
+  it('Bot Owner được phép thực thi lệnh quản trị mà không cần role admin trong server', async () => {
+    const interaction = createMockInteraction({
+      commandName: 'df',
+      options: {
+        getSubcommandGroup: jest.fn(() => 'autopost'),
+        getSubcommand: jest.fn(() => 'status'),
+      },
+      user: { id: botConfig.botOwnerId },
+      member: { roles: { cache: new Map() } },
+    });
+
+    await routeInteraction(mockClient, interaction as any);
+
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+    expect(interaction.reply).not.toHaveBeenCalled();
+  });
+
+  it('Người dùng thông thường không có role sẽ bị từ chối truy cập RBAC', async () => {
+    const interaction = createMockInteraction({
+      commandName: 'df',
+      options: {
+        getSubcommandGroup: jest.fn(() => 'autopost'),
+        getSubcommand: jest.fn(() => 'status'),
+      },
+      user: { id: 'regular-user-without-role' },
+      member: { roles: { cache: new Map() } },
+    });
+
+    await routeInteraction(mockClient, interaction as any);
+
+    expect(mockExecute).not.toHaveBeenCalled();
+    expect(interaction.reply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('Quản trị viên'),
+        flags: MessageFlags.Ephemeral,
+      }),
+    );
+  });
+});
+
 
 

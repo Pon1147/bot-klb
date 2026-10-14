@@ -20,6 +20,7 @@ import {
   syncBindingsFromMongoToSqlite,
 } from '../database/df-binding.db.js';
 import { initializeCaptureEventsTable } from '../database/df-telemetry.db.js';
+import { initializeAutoPostTable } from '../database/df-autopost.db.js';
 import {
   initializeSellerTables,
   getSellerDb,
@@ -40,6 +41,7 @@ import {
   cleanupTeamFindSessions,
   startClaimCleanup,
   startDfCodesScheduler,
+  startDfAutoPostScheduler,
 } from '../features/delta-force/index.js';
 import { TEAM_FIND_CLEANUP_INTERVAL_MS } from '../config/app.constants.js';
 
@@ -82,7 +84,8 @@ export async function bootstrap(): Promise<Client> {
   initializeCaptureEventsTable(database);
   initializeSellerTables(database);
   getSellerDb(database);
-  logger.info('DF Link & Seller tables ready');
+  initializeAutoPostTable(database);
+  logger.info('DF Link, Seller & AutoPost tables ready');
 
   // Step 2d: Kết nối MongoDB (nếu MONGODB_URI / MONGO_URL được cấu hình trên Railway)
   if (botConfig.mongoUri) {
@@ -209,6 +212,11 @@ export async function bootstrap(): Promise<Client> {
   logger.info('Starting daily df-code scheduler...');
   startDfCodesScheduler(client, database);
   logger.info('Daily df-code scheduler started');
+
+  // Khởi động global df-autopost scheduler
+  logger.info('Starting global df-autopost scheduler...');
+  startDfAutoPostScheduler(client, database);
+  logger.info('Global df-autopost scheduler started');
 
   return client;
 }
