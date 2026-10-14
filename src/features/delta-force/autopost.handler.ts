@@ -182,25 +182,13 @@ async function handleRun(
     .filter(Boolean)
     .join('\n');
 
-  const replyContainer = makeResult(
-    [
-      {
-        type: ComponentType.Container,
-        components: [
-          { type: ComponentType.TextDisplay, content },
-          {
-            type: ComponentType.Separator,
-            accentColor: result.failedCount === 0 ? COLORS.SUCCESS : COLORS.WARNING,
-          },
-        ],
-      },
-    ],
-    MessageFlags.IsComponentsV2,
-    [],
-  );
+  const safeContent =
+    content.length > 1950
+      ? `${content.slice(0, 1900)}\n\n_...danh sách chi tiết quá dài đã được rút gọn._`
+      : content;
 
   await interaction.editReply({
-    components: replyContainer.toJSON(),
+    content: safeContent,
   });
 }
 

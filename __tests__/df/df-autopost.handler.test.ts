@@ -163,7 +163,7 @@ describe('df-autopost.handler', () => {
       );
       expect(mockEditReply).toHaveBeenCalledWith(
         expect.objectContaining({
-          components: expect.any(Array),
+          content: expect.stringContaining('Kết Quả Phát Sóng'),
         }),
       );
     });
