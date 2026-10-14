@@ -8,13 +8,7 @@
  *   npx tsx scripts/dump-server.ts [guild_id]
  */
 
-import {
-  Client,
-  GatewayIntentBits,
-  ChannelType,
-  GuildChannel,
-  CategoryChannel,
-} from 'discord.js';
+import { Client, GatewayIntentBits, ChannelType, GuildChannel, CategoryChannel } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { botConfig } from '../src/config/bot.config.js';
@@ -33,11 +27,6 @@ const CHANNEL_TYPE_LABELS: Partial<Record<ChannelType, { icon: string; label: st
   [ChannelType.PrivateThread]: { icon: '🔒 #', label: 'Luồng riêng tư' },
 };
 
-function getChannelLabel(type: ChannelType): string {
-  const meta = CHANNEL_TYPE_LABELS[type];
-  if (meta) return `${meta.icon} (${meta.label})`;
-  return `📁 (Type ${type})`;
-}
 
 async function dumpGuild(guildId: string, client: Client): Promise<string> {
   const guild = await client.guilds.fetch({ guild: guildId, force: true });
@@ -92,7 +81,9 @@ async function dumpGuild(guildId: string, client: Client): Promise<string> {
   lines.push('');
   lines.push(`- **Server ID:** \`${guild.id}\``);
   lines.push(`- **Tổng số kênh:** ${normalChannels.length} kênh (${categories.length} danh mục)`);
-  lines.push(`- **Thời gian xuất:** ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })} (UTC+7)`);
+  lines.push(
+    `- **Thời gian xuất:** ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })} (UTC+7)`,
+  );
   lines.push('');
   lines.push('---');
   lines.push('');
@@ -101,6 +92,7 @@ async function dumpGuild(guildId: string, client: Client): Promise<string> {
   const noCatChannels = channelsByCategory.get(null) || [];
   if (noCatChannels.length > 0) {
     lines.push('## 📂 (Không có danh mục)');
+    lines.push('');
     for (const ch of noCatChannels) {
       const typeInfo = CHANNEL_TYPE_LABELS[ch.type]?.icon || '•';
       lines.push(`- ${typeInfo} **${ch.name}** \`(ID: ${ch.id})\``);
@@ -111,6 +103,7 @@ async function dumpGuild(guildId: string, client: Client): Promise<string> {
   // 2. Kênh theo từng danh mục
   for (const cat of categories) {
     lines.push(`## 📁 ${cat.name} \`(ID: ${cat.id})\``);
+    lines.push('');
     const catChannels = channelsByCategory.get(cat.id) || [];
     if (catChannels.length === 0) {
       lines.push('- _(Danh mục trống)_');
@@ -124,7 +117,7 @@ async function dumpGuild(guildId: string, client: Client): Promise<string> {
   }
 
   const markdown = lines.join('\n');
-  const safeGuildName = guild.name.replace(/[^a-zA-Z0-9_\-\u00C0-\u1EF9]/g, '_');
+  const safeGuildName = guild.name.replace(/[^\p{L}\p{N}_\-]/gu, '_');
   const fileName = `${safeGuildName}_channels.md`;
   const filePath = path.resolve(process.cwd(), fileName);
 
@@ -134,7 +127,8 @@ async function dumpGuild(guildId: string, client: Client): Promise<string> {
 }
 
 async function main() {
-  const targetGuildId = process.argv[2] || (botConfig.guildId !== '000000000000000000' ? botConfig.guildId : undefined);
+  const targetGuildId =
+    process.argv[2] || (botConfig.guildId !== '000000000000000000' ? botConfig.guildId : undefined);
 
   logger.info('Khởi động Discord Client để lấy cấu trúc server...');
   const client = new Client({
