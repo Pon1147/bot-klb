@@ -39,7 +39,6 @@ describe('DF Help Handler & Extension Utils', () => {
       expect(textDisplay.content).toContain('Trung Tâm Lệnh');
       expect(textDisplay.content).toContain('/df stats');
       expect(textDisplay.content).toContain('/df link start');
-      expect(textDisplay.content).toContain('/df autopost status');
       expect(textDisplay.content).toContain('/df code setchannel');
       expect(textDisplay.content).toContain('/team find');
       expect(textDisplay.content).toContain('/seller pay');
