@@ -57,19 +57,22 @@ describe('df-autopost.handler', () => {
   });
 
   describe('Bot Owner subcommands', () => {
-    it('subcommand "set" cập nhật interval và bật autopost', async () => {
-      const mockReply = jest.fn().mockResolvedValue({});
+    it('subcommand "set" cập nhật interval, phát sóng ngay và bật autopost', async () => {
+      const mockDeferReply = jest.fn().mockResolvedValue({});
+      const mockEditReply = jest.fn().mockResolvedValue({});
       const mockInteraction: any = {
         user: { id: botConfig.botOwnerId },
         options: {
           getSubcommand: () => 'set',
           getString: (name: string) => (name === 'type' ? 'map' : null),
           getInteger: (name: string) => (name === 'interval_hours' ? 8 : null),
+          getBoolean: (name: string) => (name === 'broadcast_now' ? true : null),
         },
         client: {
           guilds: { cache: new Map([['g1', {}]]) },
         },
-        reply: mockReply,
+        deferReply: mockDeferReply,
+        editReply: mockEditReply,
       };
 
       await execute(mockInteraction, db);
@@ -82,9 +85,15 @@ describe('df-autopost.handler', () => {
         db,
         'map',
       );
-      expect(mockReply).toHaveBeenCalledWith(
+      expect(scheduler.broadcastAutoPost).toHaveBeenCalledWith(
+        mockInteraction.client,
+        db,
+        'map',
+        { delayMs: 800 },
+      );
+      expect(mockDeferReply).toHaveBeenCalled();
+      expect(mockEditReply).toHaveBeenCalledWith(
         expect.objectContaining({
-          flags: expect.any(Number),
           components: expect.any(Array),
         }),
       );

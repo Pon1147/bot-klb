@@ -24,3 +24,10 @@ export {
   insertSellerReviewToMongo,
   loadAllSellerReviewsFromMongo,
 } from './seller.repo.js';
+
+export {
+  saveAutoPostConfigToMongo,
+  saveAutoPostMessageToMongo,
+  deleteAutoPostMessageFromMongo,
+  syncAutoPostFromMongoToSqlite,
+} from './autopost.repo.js';

@@ -26,7 +26,11 @@ import {
   getSellerDb,
   syncSellerFromMongoToSqlite,
 } from '../database/seller.db.js';
-import { connectMongo, initMongoIndexes } from '../database/mongo/index.js';
+import {
+  connectMongo,
+  initMongoIndexes,
+  syncAutoPostFromMongoToSqlite,
+} from '../database/mongo/index.js';
 import { SettingsService, setSettingsService } from '../services/settings.service.js';
 import {
   CommandModule,
@@ -111,6 +115,12 @@ export async function bootstrap(): Promise<Client> {
         const syncedSeller = await syncSellerFromMongoToSqlite(database);
         logger.info(
           `Synced ${syncedSeller.profiles} seller profile(s), ${syncedSeller.transactions} transaction(s), ${syncedSeller.reviews} review(s) from MongoDB to local SQLite`,
+        );
+
+        // Đồng bộ AutoPost configs và message history từ MongoDB sang SQLite
+        const syncedAutoPost = await syncAutoPostFromMongoToSqlite(database);
+        logger.info(
+          `Synced ${syncedAutoPost.configs} autopost config(s), ${syncedAutoPost.messages} autopost message(s) from MongoDB to local SQLite`,
         );
       } else {
         logger.warn('⚠ MongoDB connection returned null — skipping indexes and sync');

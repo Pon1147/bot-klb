@@ -4,6 +4,11 @@
  */
 
 import Database from 'better-sqlite3';
+import {
+  saveAutoPostConfigToMongo,
+  saveAutoPostMessageToMongo,
+  deleteAutoPostMessageFromMongo,
+} from './mongo/index.js';
 
 export type AutoPostContentType = 'map' | 'gun';
 
@@ -134,6 +139,13 @@ export function updateAutoPostConfig(
     `,
     )
     .run(type, newEnabled, newInterval, newLastRun);
+
+  // Lưu bền vững lên MongoDB (không chặn luồng)
+  saveAutoPostConfigToMongo(type, {
+    enabled: Boolean(newEnabled),
+    intervalHours: newInterval,
+    lastRunAt: newLastRun,
+  }).catch(() => {});
 }
 
 export interface AutoPostLastMessage {
@@ -197,6 +209,9 @@ export function saveAutoPostLastMessage(
     `,
     )
     .run(guildId, type, channelId, messageId);
+
+  // Lưu bền vững lên MongoDB (không chặn luồng)
+  saveAutoPostMessageToMongo(guildId, type, channelId, messageId).catch(() => {});
 }
 
 /**
@@ -210,4 +225,7 @@ export function deleteAutoPostLastMessage(
   database
     .prepare('DELETE FROM df_autopost_messages WHERE guild_id = ? AND type = ?')
     .run(guildId, type);
+
+  // Xóa khỏi MongoDB (không chặn luồng)
+  deleteAutoPostMessageFromMongo(guildId, type).catch(() => {});
 }

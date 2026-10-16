@@ -38,4 +38,8 @@ export {
   loadAllSellerTransactionsFromMongo,
   insertSellerReviewToMongo,
   loadAllSellerReviewsFromMongo,
+  saveAutoPostConfigToMongo,
+  saveAutoPostMessageToMongo,
+  deleteAutoPostMessageFromMongo,
+  syncAutoPostFromMongoToSqlite,
 } from './repositories/index.js';

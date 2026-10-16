@@ -13,6 +13,8 @@ export const MONGO_COLLECTIONS = {
   SELLER_PROFILES: 'seller_profiles',
   SELLER_TRANSACTIONS: 'seller_transactions',
   SELLER_REVIEWS: 'seller_reviews',
+  AUTOPOST_CONFIG: 'df_autopost_config',
+  AUTOPOST_MESSAGES: 'df_autopost_messages',
 } as const;
 
 /**
@@ -135,4 +137,28 @@ export interface SellerReviewDocument {
   rating: number;
   comment: string | null;
   created_at: Date;
+}
+
+/**
+ * Schema document cho AutoPost config toàn hệ thống ('map' | 'gun').
+ */
+export interface AutoPostConfigDocument {
+  _id: string; // 'map' hoặc 'gun'
+  type: string;
+  enabled: boolean;
+  interval_hours: number;
+  last_run_at: string | null;
+  updated_at: Date;
+}
+
+/**
+ * Schema document lưu vết tin nhắn AutoPost mới nhất để dọn dẹp.
+ */
+export interface AutoPostMessageDocument {
+  _id: string; // `${guild_id}_${type}`
+  guild_id: string;
+  type: string;
+  channel_id: string;
+  message_id: string;
+  updated_at: Date;
 }

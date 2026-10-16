@@ -144,6 +144,12 @@ function buildAutopostGroup(
             .setRequired(true)
             .setMinValue(1)
             .setMaxValue(24),
+        )
+        .addBooleanOption((opt) =>
+          opt
+            .setName('broadcast_now')
+            .setDescription('Phát sóng ngay lập tức đợt đầu tiên? (Mặc định: True)')
+            .setRequired(false),
         ),
     )
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>

@@ -29,6 +29,32 @@ export function isBotOwner(userId: string): boolean {
 }
 
 /**
+ * Tính toán timestamp Unix (giây) của lần chạy cron tiếp theo dựa trên chu kỳ giờ.
+ */
+export function getNextCronRunTimestamp(intervalHours: number): number {
+  const now = new Date();
+  if (intervalHours === 24) {
+    const next = new Date(now);
+    next.setHours(8, 0, 0, 0);
+    if (next.getTime() <= now.getTime()) {
+      next.setDate(next.getDate() + 1);
+    }
+    return Math.floor(next.getTime() / 1000);
+  }
+
+  const safeHours = Math.max(1, Math.min(23, Math.floor(intervalHours)));
+  const next = new Date(now);
+  next.setMinutes(0, 0, 0);
+  let nextHour = (Math.floor(now.getHours() / safeHours) + 1) * safeHours;
+  if (nextHour >= 24) {
+    next.setDate(next.getDate() + 1);
+    nextHour = nextHour % 24;
+  }
+  next.setHours(nextHour);
+  return Math.floor(next.getTime() / 1000);
+}
+
+/**
  * Xử lý subcommand /df autopost set.
  */
 async function handleSet(
@@ -37,19 +63,34 @@ async function handleSet(
 ): Promise<void> {
   const type = interaction.options.getString('type', true) as AutoPostContentType;
   const intervalHours = interaction.options.getInteger('interval_hours', true);
+  const broadcastNow = interaction.options.getBoolean('broadcast_now') ?? true;
+
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   updateAutoPostConfig(db, type, { enabled: true, intervalHours });
   rescheduleDfAutoPost(interaction.client, db, type);
 
+  let broadcastSummary = '';
+  if (broadcastNow) {
+    const broadcastResult = await broadcastAutoPost(interaction.client, db, type, { delayMs: 800 });
+    broadcastSummary = `• **Phát sóng đợt 1 ngay:** 🟢 ${broadcastResult.successCount} thành công, 🔴 ${broadcastResult.failedCount} thất bại / tổng số ${broadcastResult.totalGuilds} máy chủ.\n`;
+  }
+
   const typeName = TYPE_NAMES[type] ?? type;
+  const nextRun = `<t:${getNextCronRunTimestamp(intervalHours)}:R> (<t:${getNextCronRunTimestamp(intervalHours)}:t>)`;
+
   const content = [
-    '## ✅ Cập Nhật Lịch Auto-Post Global Thành Công',
+    '## ✅ Cập Nhật & Kích Hoạt Auto-Post Toàn Hệ Thống Thành Công',
     '',
     `• **Loại nội dung:** ${typeName}`,
     `• **Chu kỳ lặp lại:** Mỗi **${intervalHours} giờ**`,
-    `• **Trạng thái:** 🟢 Đang Bật (Enabled)`,
-    `• **Phạm vi:** Tự động gửi tới kênh thông báo của **${interaction.client.guilds.cache.size} máy chủ** có bot.`,
-  ].join('\n');
+    `• **Trạng thái:** 🟢 Đang Bật (Đã đồng bộ lưu MongoDB vĩnh viễn)`,
+    broadcastSummary.trim(),
+    `• **Đợt phát sóng tiếp theo:** ${nextRun}`,
+    `• **Phạm vi:** Tự động phát tới toàn bộ **${interaction.client.guilds.cache.size} máy chủ** có bot.`,
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   const result = makeResult(
     [
@@ -65,9 +106,8 @@ async function handleSet(
     [],
   );
 
-  await sendReply(interaction, {
+  await interaction.editReply({
     components: result.toJSON(),
-    flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
   });
 }
 
@@ -88,7 +128,7 @@ async function handleToggle(
   const statusStr = enabled ? '🟢 ĐÃ BẬT' : '🔴 ĐÃ TẮT';
 
   await sendReply(interaction, {
-    content: `✅ Đã chuyển trạng thái Auto-Post của **${typeName}** sang: **${statusStr}**.`,
+    content: `✅ Đã chuyển trạng thái Auto-Post của **${typeName}** sang: **${statusStr}** (Đã đồng bộ MongoDB vĩnh viễn).`,
     flags: MessageFlags.Ephemeral,
   });
 }
@@ -109,11 +149,15 @@ async function handleStatus(
     const lastRun = cfg.lastRunAt
       ? `<t:${Math.floor(new Date(cfg.lastRunAt).getTime() / 1000)}:R>`
       : '_Chưa chạy_';
+    const nextRun = cfg.enabled
+      ? `<t:${getNextCronRunTimestamp(cfg.intervalHours)}:R>`
+      : '_Đang tắt_';
     return [
       `### ${typeName}`,
       `• **Trạng thái:** ${statusIcon}`,
       `• **Chu kỳ:** Mỗi **${cfg.intervalHours} giờ**`,
       `• **Lần chạy gần nhất:** ${lastRun}`,
+      `• **Lần phát tiếp theo:** ${nextRun}`,
     ].join('\n');
   });
 
@@ -124,7 +168,7 @@ async function handleStatus(
     '',
     ...lines,
     '',
-    '> 💡 *Nội dung sẽ được tự động gửi lần lượt vào kênh thông báo phù hợp nhất của từng máy chủ.*',
+    '> 💡 *Dữ liệu đã được lưu trữ vĩnh viễn trên MongoDB — không bị mất khi bot khởi động lại.*',
   ].join('\n');
 
   const result = makeResult(
