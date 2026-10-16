@@ -38,6 +38,7 @@ import {
   loadCommands,
 } from '../infrastructure/discord/command-loader.js';
 import { loadEvents } from '../infrastructure/discord/event-loader.js';
+import { startHttpServer } from '../infrastructure/http/http-server.js';
 import { createLogger } from '../utils/logger.js';
 import { startSessionCleanup } from '../features/container/index.js';
 import {
@@ -227,6 +228,13 @@ export async function bootstrap(): Promise<Client> {
   logger.info('Starting global df-autopost scheduler...');
   startDfAutoPostScheduler(client, database);
   logger.info('Global df-autopost scheduler started');
+
+  // Khởi động HTTP server cho Extension API & Railway health check
+  try {
+    await startHttpServer(client);
+  } catch (err) {
+    logger.warn('Không thể khởi động HTTP server: ' + (err as Error).message);
+  }
 
   return client;
 }

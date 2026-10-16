@@ -12,7 +12,8 @@
     "https://account.garena.com/*",
     "https://auth.garena.com/*",
     "https://common-web.intlgame.com/*",
-    "https://discord.com/*"
+    "https://bot-klb-production.up.railway.app/*",
+    "http://localhost/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js"
@@ -33,11 +34,6 @@
         "content/link-page-capture.js",
         "content/link-content.js"
       ],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": ["https://discord.com/*"],
-      "js": ["content/discord-token-capture.js"],
       "run_at": "document_idle"
     },
     {

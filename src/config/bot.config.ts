@@ -55,10 +55,13 @@ export const botConfig = {
   commandScope:
     (process.env.COMMAND_SCOPE?.toLowerCase() as 'global' | 'guild' | undefined) ||
     (process.env.DEV_GUILD_ID || process.env.NODE_ENV === 'development' ? 'guild' : 'global'),
-  // Discord Webhook handoff config
+  // Discord Webhook handoff config (legacy fallback)
   dfWebhookSecret: process.env.DF_WEBHOOK_SECRET || '',
   dfLinkChannelId: process.env.DF_LINK_CHANNEL_ID || '',
   dfWebhookUrl: process.env.DF_CLAIM_WEBHOOK_URL || '',
   // Bot Owner / Developer Discord User ID
   botOwnerId: process.env.BOT_OWNER_ID || '418779992290492416',
+  // HTTP Server Configuration
+  port: parseInt(process.env.PORT || '8080', 10),
+  botPublicApiUrl: process.env.BOT_PUBLIC_API_URL || 'https://bot-klb-production.up.railway.app',
 };

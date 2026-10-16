@@ -7,14 +7,7 @@
  * - manual: Fallback tech — user paste openid + token
  */
 
-import {
-  ActionRowBuilder,
-  AttachmentBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ChatInputCommandInteraction,
-  MessageFlags,
-} from 'discord.js';
+import { AttachmentBuilder, ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import Database from 'better-sqlite3';
 import {
   buildErrorContainer,
@@ -61,13 +54,6 @@ async function handleStart(
 
   const code = generateCode(database, interaction.user.id);
 
-  // Xây button để hiển thị webhook URL (ephemeral reply, button disable sau click)
-  const revealButton = new ButtonBuilder()
-    .setCustomId('df_link_show_webhook')
-    .setLabel('Hiện Webhook URL')
-    .setStyle(ButtonStyle.Secondary);
-  const row = new ActionRowBuilder().addComponents(revealButton);
-
   const zipPath = getExtensionZipPath();
   const files = zipPath
     ? [
@@ -79,18 +65,16 @@ async function handleStart(
     : [];
 
   const info = buildInfoContainer(
-    `**Liên kết tài khoản Delta Force**\n\n` +
-      `**Mã claim: \`${code}\`** (hết hạn sau 10 phút)\n\n` +
-      '1. Tải và giải nén file **`DF-Extension.zip`** đính kèm (nếu chưa cài tiện ích)\n' +
-      '2. Mở `chrome://extensions/` → Bật Developer mode → Load unpacked thư mục vừa giải nén\n' +
-      '3. Mở [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html) → đăng nhập\n' +
-      '4. Mở popup tiện ích → paste Webhook URL (nhấn nút bên dưới) → Lưu\n' +
-      '5. Tab **Link** trong tiện ích → dán mã claim → bấm **Liên kết Discord**\n' +
-      '6. Chờ thông báo xác nhận thành công từ bot!\n\n' +
-      '> Nhấn button bên dưới để hiện Webhook URL (chỉ hiện 1 lần)',
+    `## 🔗 Liên Kết Tài Khoản Delta Force\n\n` +
+      `**Mã liên kết của bạn: \`${code}\`** (có hiệu lực trong 10 phút)\n\n` +
+      '**Hướng dẫn 3 bước cực kỳ đơn giản:**\n' +
+      '1. Tải và giải nén tệp **`DF-Extension.zip`** đính kèm (nếu chưa cài tiện ích vào trình duyệt Chrome/Edge/Brave).\n' +
+      '2. Đăng nhập vào trang sự kiện [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html).\n' +
+      `3. Nhập mã \`${code}\` vào bảng tiện ích trên trang HQ và nhấn **Liên kết Discord**.\n\n` +
+      '✨ *Bot sẽ tự động xác thực và gửi tin nhắn DM xác nhận ngay khi hoàn tất!*',
   );
   await interaction.reply({
-    components: [...info.toJSON(), row.toJSON()],
+    components: info.toJSON(),
     flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
   } as Parameters<typeof interaction.reply>[0]);
 
