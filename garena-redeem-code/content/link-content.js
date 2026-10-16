@@ -148,12 +148,25 @@
     }
   }
 
-  // ===== C. Submit claim → Gửi trực tiếp lên Bot Server API =====
-  const BOT_API_URL = 'https://bot-klb-production.up.railway.app/api/v1/auth/claim';
+  // ===== C. Submit claim → Gửi qua Service Worker để tránh CORS của trang web =====
+  function handleClaimFailure(rawError) {
+    state.status = 'error';
+    const claimErrorMap = {
+      invalid_claim_code: 'Mã claim không đúng hoặc đã hết hạn.',
+      account_linked_to_other_discord: 'Tài khoản Garena này đã liên kết với Discord khác.',
+      already_linked: 'Tài khoản này đã được liên kết trước đó.',
+    };
+    const msg = claimErrorMap[rawError] || rawError || 'Lỗi liên kết. Vui lòng thử lại sau.';
+    renderPanel();
+    const errEl = document.querySelector('#df-link-status');
+    if (errEl) {
+      errEl.textContent = '❌ ' + msg;
+      errEl.style.color = '#f44336';
+    }
+  }
 
   async function handleSubmit() {
     const codeInput = document.querySelector('#df-link-code');
-    const submitBtn = document.querySelector('#df-link-submit');
     const statusEl = document.querySelector('#df-link-status');
 
     const code = codeInput ? codeInput.value.trim() : '';
@@ -169,53 +182,33 @@
     renderPanel();
 
     try {
-      const claimPayload = {
-        code,
-        openid: state.candidate.openid || null,
-        token: state.candidate.token || null,
-        ts: state.candidate.ts || null,
-        s: state.candidate.s || null,
-        u: state.candidate.u || null,
-        a: state.candidate.a || null,
-        game_id: state.candidate.game_id || null,
-        source_endpoint: state.endpoint || null,
-      };
+      // Gửi qua background Service Worker (chống hoàn toàn CORS vì Service Worker chạy độc lập với trang web)
+      chrome.runtime.sendMessage(
+        {
+          type: 'DF_CLAIM',
+          code,
+          credential: state.candidate,
+          source_endpoint: state.endpoint,
+        },
+        (response) => {
+          if (chrome.runtime.lastError || !response) {
+            const errMsg =
+              chrome.runtime.lastError?.message || 'Không thể kết nối tới Service Worker';
+            handleClaimFailure(errMsg);
+            return;
+          }
 
-      const response = await fetch(BOT_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(claimPayload),
-      });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (response.ok && data.ok) {
-        state.status = 'success';
-        state.candidate = null;
-        renderPanel();
-      } else {
-        state.status = 'error';
-        const claimErrorMap = {
-          invalid_claim_code: 'Mã claim không đúng hoặc đã hết hạn.',
-          account_linked_to_other_discord: 'Tài khoản Garena này đã liên kết với Discord khác.',
-          already_linked: 'Tài khoản này đã được liên kết trước đó.',
-        };
-        const msg = claimErrorMap[data.error] || data.error || 'Lỗi liên kết. Vui lòng thử lại sau.';
-        renderPanel();
-        const errEl = document.querySelector('#df-link-status');
-        if (errEl) {
-          errEl.textContent = '❌ ' + msg;
-          errEl.style.color = '#f44336';
-        }
-      }
+          if (response.ok) {
+            state.status = 'success';
+            state.candidate = null;
+            renderPanel();
+          } else {
+            handleClaimFailure(response.error);
+          }
+        },
+      );
     } catch (err) {
-      state.status = 'error';
-      renderPanel();
-      const errEl = document.querySelector('#df-link-status');
-      if (errEl) {
-        errEl.textContent = '❌ Không thể kết nối tới Bot: ' + (err.message || 'Lỗi mạng');
-        errEl.style.color = '#f44336';
-      }
+      handleClaimFailure(err.message || 'Lỗi kết nối nội bộ extension');
     }
   }
 

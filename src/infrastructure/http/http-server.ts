@@ -23,10 +23,13 @@ const MAX_PAYLOAD_SIZE = 64 * 1024;
 /**
  * Gán các header CORS cho response để Chrome Extension gọi API trơn tru.
  */
-function setCorsHeaders(res: http.ServerResponse): void {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+function setCorsHeaders(req: http.IncomingMessage, res: http.ServerResponse): void {
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.setHeader('Vary', 'Origin');
 }
 
 /**
@@ -64,7 +67,7 @@ function readJsonBody(req: http.IncomingMessage): Promise<unknown> {
  */
 export function createRequestHandler(client: Client): http.RequestListener {
   return async (req: http.IncomingMessage, res: http.ServerResponse): Promise<void> => {
-    setCorsHeaders(res);
+    setCorsHeaders(req, res);
 
     // Xử lý Preflight OPTIONS request từ trình duyệt
     if (req.method === 'OPTIONS') {
