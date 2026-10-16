@@ -21,7 +21,6 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "dev:preview": "tsx scripts/dev-preview.ts",
     "deploy:guild": "tsx scripts/deploy-commands.ts",
-    "migrate:mongo": "tsx scripts/migrate-sqlite-to-mongo.ts",
     "test:mongo": "tsx scripts/test-mongo.ts",
     "package:extension": "tsx scripts/package-extension.ts",
     "dump:server": "tsx scripts/dump-server.ts",
