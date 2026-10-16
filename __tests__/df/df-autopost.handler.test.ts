@@ -94,7 +94,7 @@ describe('df-autopost.handler', () => {
       expect(mockDeferReply).toHaveBeenCalled();
       expect(mockEditReply).toHaveBeenCalledWith(
         expect.objectContaining({
-          components: expect.any(Array),
+          content: expect.stringContaining('✅ Cập Nhật & Kích Hoạt Auto-Post Toàn Hệ Thống Thành Công'),
         }),
       );
     });
@@ -143,7 +143,7 @@ describe('df-autopost.handler', () => {
 
       expect(mockReply).toHaveBeenCalledWith(
         expect.objectContaining({
-          components: expect.any(Array),
+          content: expect.stringContaining('🛡️ Bảng Điều Khiển Auto-Post Global'),
         }),
       );
     });

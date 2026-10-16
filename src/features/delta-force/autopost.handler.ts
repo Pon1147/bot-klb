@@ -3,11 +3,9 @@
  * Chỉ dành riêng cho Bot Owner quản lý lịch phát tự động map/gun tới toàn bộ các máy chủ.
  */
 
-import { ChatInputCommandInteraction, ComponentType, MessageFlags } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import Database from 'better-sqlite3';
 import { botConfig } from '../../config/bot.config.js';
-import { COLORS } from '../../config/container.variables.js';
-import { makeResult } from '../../utils/container.utils.js';
 import { sendReply } from '../../utils/reply.utils.js';
 import {
   AutoPostContentType,
@@ -92,22 +90,8 @@ async function handleSet(
     .filter(Boolean)
     .join('\n');
 
-  const result = makeResult(
-    [
-      {
-        type: ComponentType.Container,
-        components: [
-          { type: ComponentType.TextDisplay, content },
-          { type: ComponentType.Separator, accentColor: COLORS.SUCCESS },
-        ],
-      },
-    ],
-    MessageFlags.IsComponentsV2,
-    [],
-  );
-
   await interaction.editReply({
-    components: result.toJSON(),
+    content,
   });
 }
 
@@ -171,23 +155,9 @@ async function handleStatus(
     '> 💡 *Dữ liệu đã được lưu trữ vĩnh viễn trên MongoDB — không bị mất khi bot khởi động lại.*',
   ].join('\n');
 
-  const result = makeResult(
-    [
-      {
-        type: ComponentType.Container,
-        components: [
-          { type: ComponentType.TextDisplay, content },
-          { type: ComponentType.Separator, accentColor: COLORS.INFO },
-        ],
-      },
-    ],
-    MessageFlags.IsComponentsV2,
-    [],
-  );
-
   await sendReply(interaction, {
-    components: result.toJSON(),
-    flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+    content,
+    flags: MessageFlags.Ephemeral,
   });
 }
 
