@@ -15,7 +15,7 @@ import { COLORS } from '../../config/container.variables.js';
 import { requireGuild } from '../../utils/df-guards.js';
 
 /** Link trang chủ website duy nhất tính hoa hồng qua UTM source */
-export const MAP_HOMEPAGE_URL = 'https://deltaforcetools.gg/?utm_source=PonNè';
+export const MAP_HOMEPAGE_URL = 'https://deltaforcetools.gg/vi?utm_source=PonNè';
 
 /** Đường dẫn tới ảnh banner 3D Interactive Map */
 export const BANNER_IMAGE_FILENAME = 'banner_3d_map.png';

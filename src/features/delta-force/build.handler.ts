@@ -16,7 +16,7 @@ import { requireGuild } from '../../utils/df-guards.js';
 
 /** Link thư viện build súng server Garena có gắn ref hoa hồng */
 export const WEAPON_BUILDS_URL =
-  'https://deltaforcetools.gg/weapon-builds?server_region=Garena&utm_source=PonNè';
+  'https://deltaforcetools.gg/vi/weapon-builds?page=1&server_region=Garena&utm_source=PonNè';
 
 /** Đường dẫn tới ảnh preview danh sách build súng */
 export const BUILD_IMAGE_FILENAME = 'weapon_builds_preview.png';

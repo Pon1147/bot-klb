@@ -122,7 +122,7 @@ describe('code.renderer', () => {
       const actionRow = json[1] as any;
       expect(actionRow.type).toBe(1); // ActionRow type
       expect(actionRow.components[0].style).toBe(5); // Link button
-      expect(actionRow.components[0].url).toContain('deltaforcetools.gg/?utm_source=');
+      expect(actionRow.components[0].url).toContain('deltaforcetools.gg/vi?utm_source=');
     });
 
     it('khi hasCodes = false, render container rỗng/thông báo không tìm thấy mật khẩu hôm nay', () => {

@@ -18,7 +18,7 @@ import { makeResult, type BuildContainerResult } from '../../utils/container.uti
 export { MAP_DISPLAY };
 
 /** Link trang chủ website chứa mục Daily Codes và thông tin chi tiết */
-export const MAP_CODES_URL = 'https://deltaforcetools.gg/?utm_source=PonN%C3%A8';
+export const MAP_CODES_URL = 'https://deltaforcetools.gg/vi?utm_source=PonN%C3%A8';
 
 /**
  * Kiểm tra xem DailyCodes có ít nhất 1 mã hợp lệ hay không.
