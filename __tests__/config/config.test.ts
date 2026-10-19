@@ -10,6 +10,11 @@ import {
   CONTAINER_COLORS,
 } from '../../src/config/container.variables.js';
 import { LOG_COLORS, LEVEL_BADGES, LEVEL_ICONS } from '../../src/config/logger.variables.js';
+import {
+  resolveEnvironment,
+  resolveCommandScope,
+  resolvePublicApiUrl,
+} from '../../src/config/bot.config.js';
 
 describe('Config - Default Settings', () => {
   describe('defaultGuildSettings', () => {
@@ -184,5 +189,32 @@ describe('Config - Logger Variables', () => {
       expect(LEVEL_ICONS.debug).toBeDefined();
       expect(LEVEL_ICONS.fatal).toBeDefined();
     });
+  });
+});
+
+describe('Config - Environment Resolution', () => {
+  it('resolveEnvironment nhận diện đúng dev, stage, product', () => {
+    expect(resolveEnvironment('dev')).toBe('dev');
+    expect(resolveEnvironment('stage')).toBe('stage');
+    expect(resolveEnvironment('staging')).toBe('stage');
+    expect(resolveEnvironment('product')).toBe('product');
+    expect(resolveEnvironment('production')).toBe('product');
+    expect(resolveEnvironment('prod')).toBe('product');
+    expect(resolveEnvironment('unknown')).toBe('dev');
+  });
+
+  it('resolveCommandScope trả về guild cho dev/stage và global cho product', () => {
+    delete process.env.COMMAND_SCOPE;
+    delete process.env.DEV_GUILD_ID;
+    expect(resolveCommandScope('dev')).toBe('guild');
+    expect(resolveCommandScope('stage')).toBe('guild');
+    expect(resolveCommandScope('product')).toBe('global');
+  });
+
+  it('resolvePublicApiUrl tự động phân giải URL theo môi trường', () => {
+    delete process.env.BOT_PUBLIC_API_URL;
+    expect(resolvePublicApiUrl('product')).toBe('https://bot-klb-production.up.railway.app');
+    expect(resolvePublicApiUrl('stage')).toBe('https://bot-klb-stage.up.railway.app');
+    expect(resolvePublicApiUrl('dev')).toContain('http://localhost:');
   });
 });

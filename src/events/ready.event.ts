@@ -1,5 +1,6 @@
 import { Client, Events } from 'discord.js';
 import { createLogger } from '../utils/logger.js';
+import { botConfig } from '../config/bot.config.js';
 
 const logger = createLogger('Ready');
 
@@ -12,6 +13,9 @@ export async function execute(client: Client): Promise<void> {
   const user = client.user;
   logger.divider();
   logger.info(`✓ Logged in as ${user?.tag ?? 'Unknown'} (ID: ${user?.id ?? 'N/A'})`);
+  logger.info(
+    `[ENV: ${botConfig.env.toUpperCase()}] Scope: [${botConfig.commandScope}] | DB: [${botConfig.databasePath}]`,
+  );
 
   const guilds = client.guilds.cache;
   logger.info(`Connected to ${guilds.size} guild(s):`);

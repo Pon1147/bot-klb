@@ -96,7 +96,7 @@ export async function syncWeaponLoadouts(
   token?: string,
   serverRegion: string = 'Garena',
 ): Promise<{ success: boolean; totalSynced: number; error?: string }> {
-  const authToken = token || botConfig.weaponLoadoutsToken;
+  const authToken = token !== undefined ? token : botConfig.weaponLoadoutsToken;
 
   if (!authToken) {
     logger.warn('Chưa cấu hình WEAPON_LOADOUTS_TOKEN — bỏ qua đồng bộ từ API.');
