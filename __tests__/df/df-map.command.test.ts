@@ -25,7 +25,7 @@ describe('df-map.handler', () => {
     const container = json[0] as any;
     expect(container.type).toBe(17); // Container
     expect(container.components[0].content).toContain('Trình Mô Phỏng Bản Đồ 3D');
-    expect(container.components[0].content).toContain('bấm trực tiếp vào banner "3D Interactive Map"');
+    expect(container.components[0].content).toContain('3D Interactive Map');
     expect(container.components[0].content).toContain('Đập Nước Zero');
     expect(container.components[0].content).toContain('Thung Lũng Layali');
 

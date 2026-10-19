@@ -26,20 +26,16 @@ export const BUILD_IMAGE_FILENAME = 'weapon_builds_preview.png';
  */
 export function buildWeaponContainer(): BuildContainerResult {
   const content = [
-    '## 🔫 Thư Viện Build Súng & Mã Gunsmith Meta (Server Garena)',
+    '# 🔫 Thư Viện Build Súng & Mã Gunsmith Meta (Bản Tiếng Việt)',
     '',
-    '🎉 **TIN VUI:** Sau một thời gian làm việc và thống nhất cùng đội ngũ **DeltaForceTools**, thư viện súng đã chính thức hỗ trợ **Giao diện Tiếng Việt hoàn chỉnh** cho anh em game thủ Việt Nam!',
+    '🔥 **Chính thức:** Thư viện build súng Garena chuẩn meta đã có **100% Tiếng Việt** sau thời gian hợp tác cùng **DeltaForceTools**!',
     '',
-    '🎯 **Cách lấy & áp dụng Mã Build Súng trong Game:**',
-    '1. Nhấn nút **"Xem Thư Viện Build Súng (Garena)"** bên dưới để mở danh sách bằng tiếng Việt.',
-    '2. Tìm khẩu súng bạn muốn chơi (CAR-15, M4A1, AKM, K416, AUG, CI-19, MP5...).',
-    '3. Bấm nút **"Copies"** (Sao chép mã) trên thẻ súng để copy mã Gunsmith Code.',
-    '4. Mở game **Delta Force** ➔ Chọn súng ➔ Bấm **Nhập mã (Import Code)** để tự động trang bị nguyên bộ phụ kiện chuẩn meta!',
+    '⚡ **Tại sao nên xem ngay?**',
+    '• 🏆 **Chuẩn Meta Server Garena:** Đầy đủ CAR-15, M4A1, AKM, K416, AUG... với dàn phụ kiện sấy siêu đầm tay hoặc đẩy nhà cực gắt.',
+    '• 📋 **Copy 1-Click cực nhanh:** Bấm **"Copies"** (Sao chép mã) trên web là có ngay mã Gunsmith.',
+    '• 🎯 **Dán là xong:** Vào game ➔ Nhập mã ➔ Tự động lên đồ chuẩn meta trong 1 giây!',
     '',
-    '🔥 **Các kiểu Build phổ biến theo lối chơi:**',
-    '• **Ổn Định Cao (High Stability):** Triệt tiêu tối đa độ giật, sấy đầm tay cho giao tranh tầm trung & xa.',
-    '• **Cơ Động Cận Chiến (Fast ADS / CQB):** Tối ưu tốc độ ngắm bắn và độ cơ động cho các pha công nhà.',
-    '• **Tiết Kiệm / Tân Thủ (Budget Friendly):** Cấu hình phụ kiện tối ưu ngân sách, dễ mở khóa cho tân binh.',
+    '👉 **Lấy mã súng ngay:** Bấm nút **"🔫 Khám Phá Build Súng Chuẩn Meta"** bên dưới! 👇',
   ].join('\n');
 
   const files: AttachmentBuilder[] = [];
@@ -66,7 +62,7 @@ export function buildWeaponContainer(): BuildContainerResult {
   const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setStyle(ButtonStyle.Link)
-      .setLabel('🔫 Xem Thư Viện Build Súng (Garena)')
+      .setLabel('🔫 Khám Phá Build Súng Chuẩn Meta (Garena)')
       .setURL(WEAPON_BUILDS_URL),
   );
 

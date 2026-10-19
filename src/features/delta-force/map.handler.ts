@@ -26,24 +26,16 @@ export const BANNER_IMAGE_FILENAME = 'banner_3d_map.png';
  */
 export function buildMapContainer(): BuildContainerResult {
   const content = [
-    '## 🗺️ Trình Mô Phỏng Bản Đồ 3D & Cẩm Nang Tác Chiến (Delta Force)',
+    '# 🗺️ Trình Mô Phỏng Bản Đồ 3D (Đã có Tiếng Việt!)',
     '',
-    '🎉 **TIN VUI:** Sau một thời gian làm việc và kết nối cùng đội ngũ **DeltaForceTools**, website đã chính thức ra mắt **phiên bản Tiếng Việt 100%** dành riêng cho cộng đồng game thủ Việt Nam chúng ta!',
+    '🔥 **Chính thức:** Sau thời gian kết nối cùng **DeltaForceTools**, bản đồ tương tác đã có **100% Tiếng Việt** cho anh em!',
     '',
-    '🎮 **Cách mở Trình Giả Lập Di Chuyển 3D (Luyện tập Zero-Risk):**',
-    '1. Nhấn nút **"Mở Website DeltaForceTools"** bên dưới để truy cập bản đồ tiếng Việt.',
-    '2. Tại đầu trang web, **bấm trực tiếp vào banner "3D Interactive Map"** (Bản đồ tương tác 3D).',
-    '3. Trải nghiệm di chuyển tự do (FPS / Top-down) để thuộc lòng địa hình mà không sợ mất đồ!',
+    '✨ **Lợi ích khi mở bản đồ 3D:**',
+    '• 📍 **Soi sạch Két Sắt & Hòm Báu:** Khỏi lo lạc đường, thuộc trọn tọa độ loot ngon (Đập Nước Zero, Thung Lũng Layali...).',
+    '• 🚪 **Nắm chắc Điểm Rút Quân:** Nhận biết lối thoát an toàn, né góc camp phục kích.',
+    '• 🎮 **Tập chạy Zero-Risk:** Luyện tập góc kê, cao độ tự do (FPS / Top-down) mà không sợ mất đồ.',
     '',
-    '💡 **Lợi ích khi luyện tập qua Bản đồ 3D:**',
-    '• **Soi vị trí Két Sắt & Hòm Giá Trị:** Nắm trước toạ độ két sắt, Safe Box để lên lộ trình loot tối ưu.',
-    '• **Định vị Điểm Rút Quân An Toàn:** Biết trước các cửa thoát hiểm, điều kiện rút quân và tránh điểm phục kích.',
-    '• **Tập di chuyển không rủi ro (Zero-Risk):** Soi trước mọi góc kê, cầu thang, cao độ để hạn chế bị bắn lén.',
-    '',
-    '🔰 **Gợi ý chọn map cho Tân thủ:**',
-    '• **Đập Nước Zero:** Địa hình công trình khép kín dễ nhớ, đường rút quân thuận tiện.',
-    '• **Thung Lũng Layali:** Không gian đồi núi rộng mở, cần chú ý các mỏm đá bắn tỉa.',
-    '• **Phố Cổ Brakkesh:** Đô thị giao tranh tầm gần (CQB), rất nhiều góc nấp trong nhà.',
+    '👉 **Cách mở:** Bấm nút bên dưới ➔ Chọn banner **"3D Interactive Map"** (Bản đồ tương tác 3D) để khám phá ngay! 👇',
   ].join('\n');
 
   const files: AttachmentBuilder[] = [];
