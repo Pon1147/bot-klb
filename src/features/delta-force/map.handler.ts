@@ -28,6 +28,8 @@ export function buildMapContainer(): BuildContainerResult {
   const content = [
     '## 🗺️ Trình Mô Phỏng Bản Đồ 3D & Cẩm Nang Tác Chiến (Delta Force)',
     '',
+    '🎉 **TIN VUI:** Sau một thời gian làm việc và kết nối cùng đội ngũ **DeltaForceTools**, website đã chính thức ra mắt **phiên bản Tiếng Việt 100%** dành riêng cho cộng đồng game thủ Việt Nam chúng ta!',
+    '',
     '🎮 **Cách mở Trình Giả Lập Di Chuyển 3D (Luyện tập Zero-Risk):**',
     '1. Nhấn nút **"Mở Website DeltaForceTools"** bên dưới để truy cập bản đồ tiếng Việt.',
     '2. Tại đầu trang web, **bấm trực tiếp vào banner "3D Interactive Map"** (Bản đồ tương tác 3D).',

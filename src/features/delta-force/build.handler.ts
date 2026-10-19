@@ -28,8 +28,10 @@ export function buildWeaponContainer(): BuildContainerResult {
   const content = [
     '## 🔫 Thư Viện Build Súng & Mã Gunsmith Meta (Server Garena)',
     '',
+    '🎉 **TIN VUI:** Sau một thời gian làm việc và thống nhất cùng đội ngũ **DeltaForceTools**, thư viện súng đã chính thức hỗ trợ **Giao diện Tiếng Việt hoàn chỉnh** cho anh em game thủ Việt Nam!',
+    '',
     '🎯 **Cách lấy & áp dụng Mã Build Súng trong Game:**',
-    '1. Nhấn nút **"Xem Thư Viện Build Súng (Garena)"** bên dưới để mở danh sách.',
+    '1. Nhấn nút **"Xem Thư Viện Build Súng (Garena)"** bên dưới để mở danh sách bằng tiếng Việt.',
     '2. Tìm khẩu súng bạn muốn chơi (CAR-15, M4A1, AKM, K416, AUG, CI-19, MP5...).',
     '3. Bấm nút **"Copies"** (Sao chép mã) trên thẻ súng để copy mã Gunsmith Code.',
     '4. Mở game **Delta Force** ➔ Chọn súng ➔ Bấm **Nhập mã (Import Code)** để tự động trang bị nguyên bộ phụ kiện chuẩn meta!',
