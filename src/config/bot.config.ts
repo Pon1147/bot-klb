@@ -64,4 +64,6 @@ export const botConfig = {
   // HTTP Server Configuration
   port: parseInt(process.env.PORT || '8080', 10),
   botPublicApiUrl: process.env.BOT_PUBLIC_API_URL || 'https://bot-klb-production.up.railway.app',
+  // DeltaForceTools Weapon Loadouts API Token
+  weaponLoadoutsToken: process.env.WEAPON_LOADOUTS_TOKEN || '',
 };

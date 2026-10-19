@@ -21,6 +21,7 @@ import {
 } from '../database/df-binding.db.js';
 import { initializeCaptureEventsTable } from '../database/df-telemetry.db.js';
 import { initializeAutoPostTable } from '../database/df-autopost.db.js';
+import { initializeWeaponLoadoutsTable } from '../database/df-loadouts.db.js';
 import {
   initializeSellerTables,
   getSellerDb,
@@ -90,7 +91,8 @@ export async function bootstrap(): Promise<Client> {
   initializeSellerTables(database);
   getSellerDb(database);
   initializeAutoPostTable(database);
-  logger.info('DF Link, Seller & AutoPost tables ready');
+  initializeWeaponLoadoutsTable(database);
+  logger.info('DF Link, Seller, AutoPost & WeaponLoadouts tables ready');
 
   // Step 2d: Kết nối MongoDB (nếu MONGODB_URI / MONGO_URL được cấu hình trên Railway)
   if (botConfig.mongoUri) {

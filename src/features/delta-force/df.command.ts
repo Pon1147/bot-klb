@@ -228,10 +228,38 @@ export const data = new SlashCommandBuilder()
     sub.setName('map').setDescription('Mô phỏng bản đồ 3D tương tác và cẩm nang học map.'),
   )
   .addSubcommand((sub) =>
-    sub.setName('build').setDescription('Thư viện build súng và mã Gunsmith meta (Garena).'),
+    sub
+      .setName('build')
+      .setDescription('Thư viện build súng và mã Gunsmith meta (Garena).')
+      .addStringOption((opt) =>
+        opt
+          .setName('weapon')
+          .setDescription('Tên súng cần tra cứu (ví dụ: AKM, M4A1, CAR-15...)')
+          .setRequired(false),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('mode')
+          .setDescription('Chế độ chơi (ví dụ: Hazard Operations, Havoc Warfare...)')
+          .setRequired(false),
+      ),
   )
   .addSubcommand((sub) =>
-    sub.setName('gun').setDescription('Thư viện build súng và mã Gunsmith meta (Garena).'),
+    sub
+      .setName('gun')
+      .setDescription('Thư viện build súng và mã Gunsmith meta (Garena).')
+      .addStringOption((opt) =>
+        opt
+          .setName('weapon')
+          .setDescription('Tên súng cần tra cứu (ví dụ: AKM, M4A1, CAR-15...)')
+          .setRequired(false),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('mode')
+          .setDescription('Chế độ chơi (ví dụ: Hazard Operations, Havoc Warfare...)')
+          .setRequired(false),
+      ),
   )
   .addSubcommandGroup(buildCodeGroup)
   .addSubcommandGroup(buildLinkGroup)

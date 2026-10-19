@@ -5,6 +5,7 @@
 
 import {
   buildWeaponContainer,
+  buildSpecificWeaponContainer,
   execute,
   WEAPON_BUILDS_URL,
 } from '../../src/features/delta-force/build.handler.js';
@@ -40,6 +41,43 @@ describe('df-build.handler', () => {
     expect(actionRow.components[0].url).toContain('server_region=Garena');
   });
 
+  it('buildSpecificWeaponContainer trả về Container chi tiết khi có dữ liệu súng', () => {
+    const mockLoadouts = [
+      {
+        weapon_name: 'AKM',
+        weapon_type: 'Assault Rifle',
+        game_mode: 'Hazard Operations',
+        loadout_code: 'AKM-666-META',
+        tags: 'Meta, Budget',
+        description: 'Sấy siêu đầm tay',
+        image_url: '',
+        author: 'deltaforcetools.gg',
+        server_region: 'Garena',
+      },
+    ];
+
+    const result = buildSpecificWeaponContainer('AKM', mockLoadouts);
+    expect(result).toBeDefined();
+    const json = result.toJSON();
+    expect(json).toHaveLength(2);
+
+    const container = json[0] as any;
+    expect(container.components[0].content).toContain('Build Súng: AKM (Assault Rifle)');
+    expect(container.components[0].content).toContain('AKM-666-META');
+    expect(container.components[0].content).toContain('Meta, Budget');
+  });
+
+  it('buildSpecificWeaponContainer trả về thông báo hướng dẫn khi không tìm thấy súng', () => {
+    const result = buildSpecificWeaponContainer('RocketLauncher', []);
+    expect(result).toBeDefined();
+    const json = result.toJSON();
+    expect(json).toHaveLength(2);
+
+    const container = json[0] as any;
+    expect(container.components[0].content).toContain('Không Tìm Thấy Build Súng: "RocketLauncher"');
+    expect(container.components[0].content).toContain('Chưa có dữ liệu mã Gunsmith');
+  });
+
   it('execute từ chối khi gọi ngoài guild (DM)', async () => {
     const mockReply = jest.fn().mockResolvedValue(undefined);
     const mockInteraction: any = {
@@ -71,6 +109,44 @@ describe('df-build.handler', () => {
         flags: MessageFlags.IsComponentsV2,
         components: expect.any(Array),
         files: expect.any(Array),
+      }),
+    );
+  });
+
+  it('execute tra cứu súng cụ thể khi truyền option weapon', async () => {
+    const mockReply = jest.fn().mockResolvedValue(undefined);
+    const mockDb: any = {
+      prepare: jest.fn().mockReturnValue({
+        all: jest.fn().mockReturnValue([
+          {
+            weapon_name: 'CAR-15',
+            weapon_type: 'Assault Rifle',
+            game_mode: 'Hazard Operations',
+            loadout_code: 'CAR-15-CODE',
+            tags: 'Meta',
+            description: 'Đầm tay',
+            image_url: '',
+            author: 'deltaforcetools.gg',
+            server_region: 'Garena',
+          },
+        ]),
+      }),
+    };
+
+    const mockInteraction: any = {
+      guild: { id: 'guild-123' },
+      reply: mockReply,
+      options: {
+        getString: (name: string) => (name === 'weapon' ? 'CAR-15' : null),
+      },
+    };
+
+    await execute(mockInteraction, mockDb);
+
+    expect(mockReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        flags: MessageFlags.IsComponentsV2,
+        components: expect.any(Array),
       }),
     );
   });
