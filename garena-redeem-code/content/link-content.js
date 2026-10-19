@@ -26,6 +26,7 @@
     if (d.type !== 'CREDENTIAL_CANDIDATE') return;
     if (!d.credential?.openid || !d.credential?.token) return;
 
+    console.log(`[LinkContent] Captured credentials from ${d.endpoint}: openid=${d.credential.openid.slice(0, 4)}***`);
     state.candidate = d.credential;
     state.endpoint = d.endpoint;
     state.status = 'ready';
@@ -181,6 +182,9 @@
     state.status = 'submitting';
     renderPanel();
 
+    const maskedOpenid = state.candidate?.openid ? `${state.candidate.openid.slice(0, 4)}***` : 'missing';
+    console.log(`[LinkContent] Submitting claim via SW: code=${code}, openid=${maskedOpenid}`);
+
     try {
       // Gửi qua background Service Worker (chống hoàn toàn CORS vì Service Worker chạy độc lập với trang web)
       chrome.runtime.sendMessage(
@@ -191,23 +195,28 @@
           source_endpoint: state.endpoint,
         },
         (response) => {
+          console.log('[LinkContent] Received response from SW:', response, 'lastError:', chrome.runtime.lastError);
           if (chrome.runtime.lastError || !response) {
             const errMsg =
               chrome.runtime.lastError?.message || 'Không thể kết nối tới Service Worker';
+            console.error('[LinkContent] SW communication error:', errMsg);
             handleClaimFailure(errMsg);
             return;
           }
 
           if (response.ok) {
+            console.log('[LinkContent] Claim completed successfully!');
             state.status = 'success';
             state.candidate = null;
             renderPanel();
           } else {
+            console.warn('[LinkContent] Claim rejected by Bot Server:', response.error);
             handleClaimFailure(response.error);
           }
         },
       );
     } catch (err) {
+      console.error('[LinkContent] Internal extension error:', err);
       handleClaimFailure(err.message || 'Lỗi kết nối nội bộ extension');
     }
   }

@@ -69,15 +69,19 @@ export function createRequestHandler(client: Client): http.RequestListener {
   return async (req: http.IncomingMessage, res: http.ServerResponse): Promise<void> => {
     setCorsHeaders(req, res);
 
+    const parsedUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    const pathname = parsedUrl.pathname;
+    const origin = req.headers.origin || 'none';
+
     // Xử lý Preflight OPTIONS request từ trình duyệt
     if (req.method === 'OPTIONS') {
+      logger.info(`[HttpServer] OPTIONS ${pathname} preflight handled (Origin: ${origin})`);
       res.writeHead(204);
       res.end();
       return;
     }
 
-    const parsedUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
-    const pathname = parsedUrl.pathname;
+    logger.info(`[HttpServer] Incoming ${req.method} ${pathname} (Origin: ${origin})`);
 
     // ─── Health Check Route ──────────────────────────────────────────
     if (req.method === 'GET' && (pathname === '/health' || pathname === '/')) {
@@ -97,7 +101,17 @@ export function createRequestHandler(client: Client): http.RequestListener {
     if (req.method === 'POST' && pathname === '/api/v1/auth/claim') {
       try {
         const body = await readJsonBody(req);
+        const record = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
+        const maskedOpenid =
+          typeof record.openid === 'string' ? `${record.openid.slice(0, 4)}***` : 'missing';
+        logger.info(
+          `[HttpServer] Processing claim: code=${record.code ?? 'missing'}, openid=${maskedOpenid}, hasToken=${Boolean(record.token)}`,
+        );
+
         const result = await handleClaim(body, client.database, client);
+        logger.info(
+          `[HttpServer] Claim result: status=${result.status}, ok=${result.body.ok}${result.body.error ? `, error=${result.body.error}` : ''}`,
+        );
 
         res.writeHead(result.status, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(result.body));
@@ -119,6 +133,7 @@ export function createRequestHandler(client: Client): http.RequestListener {
     }
 
     // ─── Route Không tồn tại (404) ───────────────────────────────────
+    logger.warn(`[HttpServer] 404 Not Found: ${req.method} ${pathname}`);
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: false, error: 'Not found' }));
   };

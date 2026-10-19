@@ -48,6 +48,9 @@ const defaultState = {
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   // --- DF_CLAIM: Gửi trực tiếp lên Bot Server API ---
   if (msg?.type === 'DF_CLAIM') {
+    const maskedOpenid = msg.credential?.openid ? `${msg.credential.openid.slice(0, 4)}***` : 'missing';
+    console.log(`[SW] Received DF_CLAIM: code=${msg.code}, openid=${maskedOpenid}, source=${msg.source_endpoint || 'unknown'}`);
+
     (async () => {
       try {
         const credential = msg.credential || {};
@@ -63,16 +66,27 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           source_endpoint: msg.source_endpoint || null,
         };
 
-        const res = await fetch('https://bot-klb-production.up.railway.app/api/v1/auth/claim', {
+        const targetUrl = 'https://bot-klb-production.up.railway.app/api/v1/auth/claim';
+        console.log(`[SW] Sending claim to Bot API: ${targetUrl}`);
+
+        const res = await fetch(targetUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
 
-        const data = await res.json().catch(() => ({}));
+        console.log(`[SW] Bot API response status: ${res.status} ${res.statusText}`);
+
+        const data = await res.json().catch((err) => {
+          console.warn('[SW] Failed to parse JSON response from Bot API:', err);
+          return {};
+        });
+
+        console.log('[SW] Bot API response data:', data);
         sendResponse({ ok: res.ok && data.ok, error: data.error });
       } catch (e) {
-        sendResponse({ ok: false, error: 'Mạng không ổn định. Thử lại sau.' });
+        console.error('[SW] Network error when calling Bot API:', e);
+        sendResponse({ ok: false, error: 'Mạng không ổn định hoặc Bot API chưa sẵn sàng. Thử lại sau.' });
       }
     })();
 
