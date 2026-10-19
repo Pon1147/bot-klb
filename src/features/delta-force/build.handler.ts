@@ -30,14 +30,14 @@ export function buildWeaponContainer(): BuildContainerResult {
     '',
     '🎯 **Cách lấy & áp dụng Mã Build Súng trong Game:**',
     '1. Nhấn nút **"Xem Thư Viện Build Súng (Garena)"** bên dưới để mở danh sách.',
-    '2. Tìm khẩu súng bạn muốn chơi (CAR-15, CI-19, AUG, M4A1, AKM, K416, MP5...).',
-    '3. Bấm nút **"Copies"** màu xanh để sao chép mã code build súng (Gunsmith Code).',
-    '4. Vào game **Delta Force** -> Chọn súng -> Bấm **Nhập mã (Import/Paste Code)** để tự động trang bị nguyên bộ phụ kiện chuẩn meta!',
+    '2. Tìm khẩu súng bạn muốn chơi (CAR-15, M4A1, AKM, K416, AUG, CI-19, MP5...).',
+    '3. Bấm nút **"Copies"** (Sao chép mã) trên thẻ súng để copy mã Gunsmith Code.',
+    '4. Mở game **Delta Force** ➔ Chọn súng ➔ Bấm **Nhập mã (Import Code)** để tự động trang bị nguyên bộ phụ kiện chuẩn meta!',
     '',
-    '🔥 **Các kiểu Build phổ biến trên DeltaForceTools:**',
-    '• **Meta Build / High Stability:** Giảm tối đa độ giật, sấy đầm tay cho giao tranh tầm trung & xa.',
-    '• **High Burst / Close-Range:** Tối ưu tốc độ ngắm (ADS) và hỏa lực cận chiến cho các pha đẩy nhà (CQB).',
-    '• **Beginner-Friendly:** Cấu hình phụ kiện tối ưu ngân sách, dễ mở khóa cho tân thủ.',
+    '🔥 **Các kiểu Build phổ biến theo lối chơi:**',
+    '• **Ổn Định Cao (High Stability):** Triệt tiêu tối đa độ giật, sấy đầm tay cho giao tranh tầm trung & xa.',
+    '• **Cơ Động Cận Chiến (Fast ADS / CQB):** Tối ưu tốc độ ngắm bắn và độ cơ động cho các pha công nhà.',
+    '• **Tiết Kiệm / Tân Thủ (Budget Friendly):** Cấu hình phụ kiện tối ưu ngân sách, dễ mở khóa cho tân binh.',
   ].join('\n');
 
   const files: AttachmentBuilder[] = [];

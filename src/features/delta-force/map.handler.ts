@@ -26,20 +26,21 @@ export const BANNER_IMAGE_FILENAME = 'banner_3d_map.png';
  */
 export function buildMapContainer(): BuildContainerResult {
   const content = [
-    '## 🗺️ Trình Mô Phỏng Bản Đồ 3D & Cẩm Nang Học Map (Delta Force)',
+    '## 🗺️ Trình Mô Phỏng Bản Đồ 3D & Cẩm Nang Tác Chiến (Delta Force)',
     '',
-    '🎮 **Cách mở Trình Giả Lập Di Chuyển 3D cho Newbie:**',
-    '1. Nhấn nút **"Mở Website DeltaForceTools"** bên dưới để truy cập trang chủ.',
-    '2. Tại đầu trang web, **bấm trực tiếp vào banner "3D Interactive Map"** (hình minh họa bên dưới).',
-    '3. Trang web sẽ mở ra trình giả lập 3D: cho phép bạn di chuyển tự do (FPS / Top-down) để luyện tập thuộc địa hình mà không sợ mất đồ!',
+    '🎮 **Cách mở Trình Giả Lập Di Chuyển 3D (Luyện tập Zero-Risk):**',
+    '1. Nhấn nút **"Mở Website DeltaForceTools"** bên dưới để truy cập bản đồ tiếng Việt.',
+    '2. Tại đầu trang web, **bấm trực tiếp vào banner "3D Interactive Map"** (Bản đồ tương tác 3D).',
+    '3. Trải nghiệm di chuyển tự do (FPS / Top-down) để thuộc lòng địa hình mà không sợ mất đồ!',
     '',
     '💡 **Lợi ích khi luyện tập qua Bản đồ 3D:**',
-    '• **Tập di chuyển không rủi ro (Zero-Risk):** Soi trước mọi ngóc ngách, cầu thang, cao độ để tránh bị bắn lén.',
-    '• **Định vị điểm Loot & Rút quân:** Nhớ sẵn vị trí két sắt, hòm Safe Box và các lối thoát hiểm an toàn.',
+    '• **Soi vị trí Két Sắt & Hòm Giá Trị:** Nắm trước toạ độ két sắt, Safe Box để lên lộ trình loot tối ưu.',
+    '• **Định vị Điểm Rút Quân An Toàn:** Biết trước các cửa thoát hiểm, điều kiện rút quân và tránh điểm phục kích.',
+    '• **Tập di chuyển không rủi ro (Zero-Risk):** Soi trước mọi góc kê, cầu thang, cao độ để hạn chế bị bắn lén.',
     '',
     '🔰 **Gợi ý chọn map cho Tân thủ:**',
-    '• **Đập Nước Zero:** Địa hình công trình dễ nhớ, đường rút quân thuận tiện.',
-    '• **Thung Lũng Layali:** Không gian rộng mở, cần chú ý các mỏm đá bắn tỉa.',
+    '• **Đập Nước Zero:** Địa hình công trình khép kín dễ nhớ, đường rút quân thuận tiện.',
+    '• **Thung Lũng Layali:** Không gian đồi núi rộng mở, cần chú ý các mỏm đá bắn tỉa.',
     '• **Phố Cổ Brakkesh:** Đô thị giao tranh tầm gần (CQB), rất nhiều góc nấp trong nhà.',
   ].join('\n');
 
@@ -67,7 +68,7 @@ export function buildMapContainer(): BuildContainerResult {
   const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setStyle(ButtonStyle.Link)
-      .setLabel('🗺️ Mở Website DeltaForceTools (Vào Giả Lập 3D)')
+      .setLabel('🗺️ Mở Bản Đồ 3D (DeltaForceTools)')
       .setURL(MAP_HOMEPAGE_URL),
   );
 
