@@ -26,16 +26,18 @@ export const BUILD_IMAGE_FILENAME = 'weapon_builds_preview.png';
  */
 export function buildWeaponContainer(): BuildContainerResult {
   const content = [
-    '# 🔫 Thư Viện Build Súng & Mã Gunsmith Meta (Bản Tiếng Việt)',
+    '## 🔫 Thư Viện Build Súng & Mã Gunsmith Meta (Bản Tiếng Việt)',
+    '> 🇻🇳 **ĐÃ CÓ BẢN TIẾNG VIỆT:** Hợp tác chính thức cùng **DeltaForceTools** mang trọn bộ build súng chuẩn meta đến game thủ Garena!',
     '',
-    '🔥 **Chính thức:** Thư viện build súng Garena chuẩn meta đã có **100% Tiếng Việt** sau thời gian hợp tác cùng **DeltaForceTools**!',
+    '### ⚡ Lợi Thế Vượt Trội Cho Bạn:',
+    '- 🏆 **Chuẩn Meta Server Garena:** Tuyển tập CAR-15, M4A1, AKM, K416, AUG... với phụ kiện tối ưu độ giật, sấy siêu đầm tay hoặc càn quét cự ly gần cực gắt.',
+    '- 📋 **Copy 1-Click Cực Tiện:** Chọn súng ➔ Bấm **"Copies"** (Sao chép mã) trên web là có ngay mã Gunsmith.',
+    '- 🎯 **Áp Dụng Trong 1 Giây:** Vào game ➔ Dán mã ➔ Tự động lên đầy đủ phụ kiện tuyển thủ mà không tốn công mò mẫm.',
     '',
-    '⚡ **Tại sao nên xem ngay?**',
-    '• 🏆 **Chuẩn Meta Server Garena:** Đầy đủ CAR-15, M4A1, AKM, K416, AUG... với dàn phụ kiện sấy siêu đầm tay hoặc đẩy nhà cực gắt.',
-    '• 📋 **Copy 1-Click cực nhanh:** Bấm **"Copies"** (Sao chép mã) trên web là có ngay mã Gunsmith.',
-    '• 🎯 **Dán là xong:** Vào game ➔ Nhập mã ➔ Tự động lên đồ chuẩn meta trong 1 giây!',
+    '### 🚀 Nâng Cấp Hỏa Lực Ngay:',
+    'Bấm nút **"🔫 Khám Phá Build Súng Chuẩn Meta"** bên dưới để sao chép mã và leo rank ngay hôm nay! 👇',
     '',
-    '👉 **Lấy mã súng ngay:** Bấm nút **"🔫 Khám Phá Build Súng Chuẩn Meta"** bên dưới! 👇',
+    '-# 💡 Mẹo: Danh sách được cập nhật liên tục theo các bản vá cân bằng súng mới nhất.',
   ].join('\n');
 
   const files: AttachmentBuilder[] = [];

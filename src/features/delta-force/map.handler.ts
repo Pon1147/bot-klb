@@ -26,16 +26,18 @@ export const BANNER_IMAGE_FILENAME = 'banner_3d_map.png';
  */
 export function buildMapContainer(): BuildContainerResult {
   const content = [
-    '# 🗺️ Trình Mô Phỏng Bản Đồ 3D (Đã có Tiếng Việt!)',
+    '## 🗺️ Trình Mô Phỏng Bản Đồ 3D (Bản Tiếng Việt)',
+    '> 🇻🇳 **ĐÃ CÓ BẢN TIẾNG VIỆT:** Toàn bộ bản đồ tương tác chiến thuật từ **DeltaForceTools** đã hỗ trợ **100% Tiếng Việt**!',
     '',
-    '🔥 **Chính thức:** Sau thời gian kết nối cùng **DeltaForceTools**, bản đồ tương tác đã có **100% Tiếng Việt** cho anh em!',
+    '### 🧭 Trở Thành Bậc Thầy Chiến Trường & Sinh Tồn:',
+    '- 📍 **Soi Sạch Két Sắt & Hòm Báu:** Nắm trọn tọa độ loot đỏ giá trị cao tại Đập Nước Zero, Thung Lũng Layali, Phố Cổ Brakkesh...',
+    '- 🚪 **Làm Chủ Điểm Rút Quân:** Định vị lối thoát hiểm an toàn nhất, bắt bài mọi góc phục kích hiểm hóc của đối phương.',
+    '- 🎮 **Tập Chạy Zero-Risk (3D):** Khám phá địa hình thực tế với góc nhìn tự do (FPS / Top-down) mà không sợ rủi ro mất đồ.',
     '',
-    '✨ **Lợi ích khi mở bản đồ 3D:**',
-    '• 📍 **Soi sạch Két Sắt & Hòm Báu:** Khỏi lo lạc đường, thuộc trọn tọa độ loot ngon (Đập Nước Zero, Thung Lũng Layali...).',
-    '• 🚪 **Nắm chắc Điểm Rút Quân:** Nhận biết lối thoát an toàn, né góc camp phục kích.',
-    '• 🎮 **Tập chạy Zero-Risk:** Luyện tập góc kê, cao độ tự do (FPS / Top-down) mà không sợ mất đồ.',
+    '### 🚀 Bắt Đầu Khám Phá Ngay:',
+    'Bấm nút bên dưới ➔ Chọn banner **"3D Interactive Map"** để mở trình mô phỏng 3D tương tác! 👇',
     '',
-    '👉 **Cách mở:** Bấm nút bên dưới ➔ Chọn banner **"3D Interactive Map"** (Bản đồ tương tác 3D) để khám phá ngay! 👇',
+    '-# 💡 Mẹo: Hỗ trợ hiển thị đầy đủ trên cả PC và thiết bị di động.',
   ].join('\n');
 
   const files: AttachmentBuilder[] = [];
