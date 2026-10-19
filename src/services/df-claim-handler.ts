@@ -123,8 +123,9 @@ export async function handleClaim(
   }
 
   const { code, openid, token } = parsed;
+  const maskedOpenid = openid.slice(0, 4) + '***';
 
-  logger.info('Claim received: code=' + code + ', openid=' + openid);
+  logger.info('Claim received: code=' + code + ', openid=' + maskedOpenid);
 
   // 2. Atomic consume (lock + update trong 1 SQL)
   const claimRow = database
@@ -175,7 +176,7 @@ export async function handleClaim(
   if (existingByOpenid) {
     logger.warn(
       'Garena account already linked: openid=' +
-        openid +
+        maskedOpenid +
         ' discordId=' +
         discordId +
         ' existingDiscordId=' +

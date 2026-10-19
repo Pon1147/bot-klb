@@ -27,13 +27,9 @@ chrome.runtime.onInstalled.addListener((details) => {
     }
   });
 
-  // First-run: mở popup để user paste webhook URL
+  // First-run: mở popup onboarding nếu cần
   if (details.reason === 'install') {
-    chrome.storage.local.get('webhookUrl', (result) => {
-      if (!result.webhookUrl) {
-        chrome.tabs.create({ url: 'popup/popup.html' });
-      }
-    });
+    chrome.tabs.create({ url: 'popup/popup.html' });
   }
 });
 
@@ -50,45 +46,47 @@ const defaultState = {
 
 // ===== MESSAGE HANDLER: DF_CLAIM + Auth Investigator =====
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  // --- DF_CLAIM: Handle from link-content.js → POST Discord Webhook ---
-  // Gửi raw credential (bot sẽ encrypt trước khi lưu). Webhook là private endpoint,
-  // message bị xóa ngay sau khi bot xử lý.
+  // --- DF_CLAIM: Gửi trực tiếp lên Bot Server API ---
   if (msg?.type === 'DF_CLAIM') {
+    const maskedOpenid = msg.credential?.openid ? `${msg.credential.openid.slice(0, 4)}***` : 'missing';
+    console.log(`[SW] Received DF_CLAIM: code=${msg.code}, openid=${maskedOpenid}, source=${msg.source_endpoint || 'unknown'}`);
+
     (async () => {
       try {
-        const { webhookUrl } = await chrome.storage.local.get('webhookUrl');
-        if (!webhookUrl) {
-          sendResponse({ ok: false, error: 'webhookUrl not configured' });
-          return;
-        }
-
         const credential = msg.credential || {};
         const payload = {
-          content: JSON.stringify({
-            type: 'df_claim',
-            secret: 'df-link-2026-pon1147',
-            code: msg.code,
-            openid: credential.openid || null,
-            token: credential.token || null,
-            ts: credential.ts || null,
-            s: credential.s || null,
-            u: credential.u || null,
-            source_endpoint: msg.source_endpoint || null,
-            captured_at: Date.now(),
-          }),
+          code: msg.code,
+          openid: credential.openid || null,
+          token: credential.token || null,
+          ts: credential.ts || null,
+          s: credential.s || null,
+          u: credential.u || null,
+          a: credential.a || null,
+          game_id: credential.game_id || null,
+          source_endpoint: msg.source_endpoint || null,
         };
 
-        await fetch(webhookUrl, {
+        const targetUrl = 'https://bot-klb-production.up.railway.app/api/v1/auth/claim';
+        console.log(`[SW] Sending claim to Bot API: ${targetUrl}`);
+
+        const res = await fetch(targetUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
 
-        // 204 = Discord đã nhận → bot xử lý async
-        // KHÔNG trả result ở đây — content script poll Discord API cho bot reply
-        sendResponse({ ok: true });
+        console.log(`[SW] Bot API response status: ${res.status} ${res.statusText}`);
+
+        const data = await res.json().catch((err) => {
+          console.warn('[SW] Failed to parse JSON response from Bot API:', err);
+          return {};
+        });
+
+        console.log('[SW] Bot API response data:', data);
+        sendResponse({ ok: res.ok && data.ok, error: data.error });
       } catch (e) {
-        sendResponse({ ok: false, error: 'Mạng không ổn định. Thử lại sau.' });
+        console.error('[SW] Network error when calling Bot API:', e);
+        sendResponse({ ok: false, error: 'Mạng không ổn định hoặc Bot API chưa sẵn sàng. Thử lại sau.' });
       }
     })();
 
