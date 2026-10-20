@@ -7,10 +7,15 @@ const mockSettingsService = {
   get: jest.fn((guildId: string) => ({
     welcome: { enabled: true, channelId: 'ch-1', roleId: 'role-1' },
     booster: { enabled: false, channelId: null, roleId: null },
+    leave: { enabled: true, channelId: 'ch-1' },
   })),
   update: jest.fn(),
   getWelcome: jest.fn(),
   getBooster: jest.fn(),
+  getLeave: jest.fn(),
+  buildWelcomeContainer: jest.fn(() => ({ toJSON: () => [], flags: 65536, files: [] })),
+  buildBoosterContainer: jest.fn(() => ({ toJSON: () => [], flags: 65536, files: [] })),
+  buildLeaveContainer: jest.fn(() => ({ toJSON: () => [], flags: 65536, files: [] })),
 };
 
 jest.mock('../../src/services/settings.service.js', () => ({
@@ -44,6 +49,7 @@ jest.mock('discord.js', () => {
     toJSON() { return { name: this._name, description: this._desc, options: this._options }; }
   }
   return {
+    GuildMember: class GuildMember {},
     MessageFlags: { Ephemeral: 64 },
     PermissionFlagsBits: { Administrator: 0x8 },
     SlashCommandBuilder,
@@ -73,6 +79,13 @@ describe('section-config — getBoosterConfig, getWelcomeConfig', () => {
     expect(config.displayName).toBe('Booster');
   });
 
+  it('nên trả về leave config', () => {
+    const { getLeaveConfig } = require('../../src/utils/section-config.handlers.js');
+    const config = getLeaveConfig();
+    expect(config.sectionKey).toBe('leave');
+    expect(config.displayName).toBe('Leave');
+  });
+
   it('nên trả về welcome config (line 47)', () => {
     const { getWelcomeConfig } = require('../../src/utils/section-config.handlers.js');
     const config = getWelcomeConfig();
@@ -83,9 +96,29 @@ describe('section-config — getBoosterConfig, getWelcomeConfig', () => {
 
 // ─── Handler tests ────────────────────────────────────────────────
 
+const mockTestChannel = {
+  id: 'ch-1',
+  isTextBased: () => true,
+  send: jest.fn().mockResolvedValue({}),
+};
+
 const mockReply = jest.fn();
 const mockInteraction = {
-  guild: { id: 'guild-1' },
+  guild: {
+    id: 'guild-1',
+    channels: {
+      cache: {
+        get: jest.fn((id: string) => (id === 'ch-1' ? mockTestChannel : null)),
+      },
+    },
+    members: {
+      cache: {
+        get: jest.fn(),
+      },
+    },
+  },
+  member: { id: 'user-1', displayName: 'TestUser', user: { id: 'user-1', tag: 'Test#0001' }, permissions: { has: () => true } },
+  user: { id: 'user-1', username: 'TestUser' },
   options: {
     getChannel: jest.fn(),
     getRole: jest.fn(),
@@ -179,6 +212,40 @@ describe('section-config — handleSectionStatus', () => {
   });
 });
 
+describe('section-config — handleSectionTest', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('welcome test: gửi tin nhắn đến kênh đã cấu hình', async () => {
+    const { handleSectionTest, getWelcomeConfig } = require('../../src/utils/section-config.handlers.js');
+    await handleSectionTest(mockInteraction, 'guild-1', getWelcomeConfig());
+    expect(mockSettingsService.buildWelcomeContainer).toHaveBeenCalled();
+    expect(mockTestChannel.send).toHaveBeenCalled();
+    expect(mockReply).toHaveBeenCalled();
+  });
+
+  it('leave test: gửi tin nhắn đến kênh đã cấu hình', async () => {
+    const { handleSectionTest, getLeaveConfig } = require('../../src/utils/section-config.handlers.js');
+    await handleSectionTest(mockInteraction, 'guild-1', getLeaveConfig());
+    expect(mockSettingsService.buildLeaveContainer).toHaveBeenCalled();
+    expect(mockTestChannel.send).toHaveBeenCalled();
+    expect(mockReply).toHaveBeenCalled();
+  });
+
+  it('booster test: gửi bản xem trước (preview) khi kênh chưa cấu hình', async () => {
+    const { handleSectionTest, getBoosterConfig } = require('../../src/utils/section-config.handlers.js');
+    await handleSectionTest(mockInteraction, 'guild-1', getBoosterConfig());
+    expect(mockSettingsService.buildBoosterContainer).toHaveBeenCalled();
+    expect(mockTestChannel.send).not.toHaveBeenCalled();
+    expect(mockReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('Kênh Booster chưa được cấu hình'),
+      }),
+    );
+  });
+});
+
 describe('section-config — executeSectionCommand', () => {
   it('nên reply error khi không có guild', async () => {
     const { executeSectionCommand, getBoosterConfig } = require('../../src/utils/section-config.handlers.js');
@@ -268,6 +335,18 @@ describe('section-config — executeSectionCommand', () => {
     };
     await executeSectionCommand(interaction, null, getWelcomeConfig());
     expect(mockReply).toHaveBeenCalled();
+  });
+
+  it('nên gọi test subcommand', async () => {
+    const { executeSectionCommand, getWelcomeConfig } = require('../../src/utils/section-config.handlers.js');
+    const interaction = {
+      ...mockInteraction,
+      member: { permissions: { has: () => true } },
+      options: { ...mockInteraction.options, getSubcommand: () => 'test' },
+      replied: false,
+    };
+    await executeSectionCommand(interaction, null, getWelcomeConfig());
+    expect(mockTestChannel.send).toHaveBeenCalled();
   });
 
   it('nên reply error khi subcommand không hợp lệ', async () => {

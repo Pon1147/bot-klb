@@ -76,6 +76,9 @@ export const DEFAULT_PERMISSIONS: PermissionsConfig = {
     booster: {
       requiredRoles: ['Owner', 'Moderator'],
     },
+    leave: {
+      requiredRoles: ['Owner', 'Moderator'],
+    },
     welcome: {
       requiredRoles: ['Owner', 'Moderator'],
     },
@@ -177,11 +180,18 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'config.welcome.setrole': Policy.MANAGE_CONFIG,
   'config.welcome.toggle': Policy.MANAGE_CONFIG,
   'config.welcome.status': Policy.MANAGE_CONFIG,
+  'config.welcome.test': Policy.MANAGE_CONFIG,
+
+  'config.leave.setchannel': Policy.MANAGE_CONFIG,
+  'config.leave.toggle': Policy.MANAGE_CONFIG,
+  'config.leave.status': Policy.MANAGE_CONFIG,
+  'config.leave.test': Policy.MANAGE_CONFIG,
 
   'config.booster.setchannel': Policy.MANAGE_CONFIG,
   'config.booster.setrole': Policy.MANAGE_CONFIG,
   'config.booster.toggle': Policy.MANAGE_CONFIG,
   'config.booster.status': Policy.MANAGE_CONFIG,
+  'config.booster.test': Policy.MANAGE_CONFIG,
 
   'config.container.edit': Policy.MANAGE_CONFIG,
   'config.container.reset': Policy.MANAGE_CONFIG,

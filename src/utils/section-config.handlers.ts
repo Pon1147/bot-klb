@@ -1,5 +1,6 @@
 import {
   ChatInputCommandInteraction,
+  GuildMember,
   SlashCommandBuilder,
   SlashCommandSubcommandsOnlyBuilder,
 } from 'discord.js';
@@ -20,7 +21,7 @@ import { getCommandPath } from './command-path.utils.js';
 import { resolveCommandPolicy } from '../config/permissions.js';
 
 export interface SectionConfig {
-  sectionKey: 'welcome' | 'booster' | 'dfCodes';
+  sectionKey: 'welcome' | 'booster' | 'leave' | 'dfCodes';
   displayName: string;
   statusEmoji: string;
   statusColor: number;
@@ -46,6 +47,17 @@ export function getConfig(config: SectionConfig): SectionConfig {
 
 export function getBoosterConfig(): SectionConfig {
   return BOOSTER_CONFIG;
+}
+
+const LEAVE_CONFIG: SectionConfig = {
+  sectionKey: 'leave',
+  displayName: 'Leave',
+  statusEmoji: '👋',
+  statusColor: COLORS.LEAVE,
+};
+
+export function getLeaveConfig(): SectionConfig {
+  return LEAVE_CONFIG;
 }
 
 export function getWelcomeConfig(): SectionConfig {
@@ -127,13 +139,77 @@ export async function handleSectionStatus(
     `**${config.statusEmoji} Cấu hình ${config.displayName} hiện tại:**`,
     '',
     `**Trạng thái:** ${settings.enabled ? 'Bật' : 'Tắt'}`,
-    `**Kênh codes:** ${channelName}`,
-    `**Role:** ${roleName}`,
+    `**${config.sectionKey === 'dfCodes' ? 'Kênh codes' : 'Kênh'}:** ${channelName}`,
+    ...(config.sectionKey !== 'leave' ? [`**Role:** ${roleName}`] : []),
     scheduleTimeLine,
     adminChannelLine,
-  ].join('\n');
+  ]
+    .filter((line) => line !== undefined && line !== null)
+    .join('\n');
   const container = buildTextOnlyContainer(statusContent, config.statusColor);
   await sendReply(interaction, { components: container.toJSON() });
+}
+
+export async function handleSectionTest(
+  interaction: ChatInputCommandInteraction,
+  guildId: string,
+  config: SectionConfig,
+): Promise<void> {
+  const guild = interaction.guild!;
+  const settingsService = getSettingsService();
+  const member = (
+    interaction.member instanceof GuildMember
+      ? interaction.member
+      : (guild.members.cache.get(interaction.user.id) ?? interaction.member)
+  ) as GuildMember;
+  const context = { member, guild };
+
+  let containerResult;
+  switch (config.sectionKey) {
+    case 'welcome':
+      containerResult = settingsService.buildWelcomeContainer(guildId, context);
+      break;
+    case 'booster':
+      containerResult = settingsService.buildBoosterContainer(guildId, context);
+      break;
+    case 'leave':
+      containerResult = settingsService.buildLeaveContainer(guildId, context);
+      break;
+    default:
+      await sendReply(interaction, {
+        components: buildErrorContainer('Tính năng này không hỗ trợ test container.').toJSON(),
+      });
+      return;
+  }
+
+  const settings = settingsService.get(guildId)[config.sectionKey];
+  const targetChannelId = settings.channelId;
+
+  if (targetChannelId) {
+    const targetChannel = guild.channels.cache.get(targetChannelId);
+    if (targetChannel && targetChannel.isTextBased()) {
+      await (targetChannel as import('discord.js').TextChannel).send({
+        components: containerResult.toJSON(),
+        flags: containerResult.flags,
+        files: containerResult.files,
+      });
+      const successContainer = buildSuccessContainer(
+        `Đã gửi tin nhắn thử nghiệm ${config.displayName} đến kênh <#${targetChannelId}> thành công!`,
+      );
+      await sendReply(interaction, {
+        components: successContainer.toJSON(),
+      });
+      return;
+    }
+  }
+
+  await sendReply(interaction, {
+    content: targetChannelId
+      ? `⚠️ Kênh đã cấu hình (<#${targetChannelId}>) không khả dụng. Dưới đây là bản xem trước ${config.displayName}:`
+      : `ℹ️ Kênh ${config.displayName} chưa được cấu hình. Dưới đây là bản xem trước:`,
+    components: containerResult.toJSON(),
+    files: containerResult.files,
+  });
 }
 
 export async function executeSectionCommand(
@@ -161,6 +237,9 @@ export async function executeSectionCommand(
         break;
       case 'toggle':
         await handleSectionToggle(interaction, guildIdentifier, config);
+        break;
+      case 'test':
+        await handleSectionTest(interaction, guildIdentifier, config);
         break;
       case 'status':
         await handleSectionStatus(interaction, guildIdentifier, config);

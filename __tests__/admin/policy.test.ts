@@ -528,8 +528,8 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
   // ─── 7. PHASE 4: Command Path Policy Mapping ──────────────────────
   describe('PHASE 4 — Command Path Policy Mapping', () => {
-    it('COMMAND_PATH_POLICIES chứa đúng 42 canonical command paths', () => {
-      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(42);
+    it('COMMAND_PATH_POLICIES chứa đúng 48 canonical command paths', () => {
+      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(48);
     });
 
     it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds, config.bot.announce, config.bot.setannouncechannel và df.autopost.*', () => {
@@ -549,11 +549,18 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(resolveCommandPolicy('config.welcome.setrole')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.welcome.toggle')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.welcome.status')).toBe(Policy.MANAGE_CONFIG);
+      expect(resolveCommandPolicy('config.welcome.test')).toBe(Policy.MANAGE_CONFIG);
+
+      expect(resolveCommandPolicy('config.leave.setchannel')).toBe(Policy.MANAGE_CONFIG);
+      expect(resolveCommandPolicy('config.leave.toggle')).toBe(Policy.MANAGE_CONFIG);
+      expect(resolveCommandPolicy('config.leave.status')).toBe(Policy.MANAGE_CONFIG);
+      expect(resolveCommandPolicy('config.leave.test')).toBe(Policy.MANAGE_CONFIG);
 
       expect(resolveCommandPolicy('config.booster.setchannel')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.booster.setrole')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.booster.toggle')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.booster.status')).toBe(Policy.MANAGE_CONFIG);
+      expect(resolveCommandPolicy('config.booster.test')).toBe(Policy.MANAGE_CONFIG);
 
       expect(resolveCommandPolicy('config.container.edit')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.container.reset')).toBe(Policy.MANAGE_CONFIG);

@@ -43,6 +43,7 @@ import { sendReply } from '../../utils/reply.utils.js';
 import {
   executeSectionCommand,
   getBoosterConfig,
+  getLeaveConfig,
   getWelcomeConfig,
 } from '../../utils/section-config.handlers.js';
 import { startInteractiveEdit } from '../container/container-edit.handler.js';
@@ -118,6 +119,40 @@ function buildWelcomeGroup(
     )
     .addSubcommand((sub) =>
       sub.setName('status').setDescription('Xem trạng thái cấu hình chào mừng hiện tại.'),
+    )
+    .addSubcommand((sub) =>
+      sub.setName('test').setDescription('Gửi tin nhắn chào mừng thử nghiệm để kiểm tra hiển thị.'),
+    );
+}
+
+/** Nhóm leave: cấu hình hệ thống tạm biệt thành viên rời server */
+function buildLeaveGroup(
+  group: SlashCommandSubcommandGroupBuilder,
+): SlashCommandSubcommandGroupBuilder {
+  return group
+    .setName('leave')
+    .setDescription('Cấu hình hệ thống tạm biệt khi thành viên rời server.')
+    .addSubcommand((sub) =>
+      sub
+        .setName('setchannel')
+        .setDescription('Chọn kênh gửi tin nhắn tạm biệt.')
+        .addChannelOption((opt) =>
+          opt.setName('channel').setDescription('Kênh tin nhắn').setRequired(true),
+        ),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('toggle')
+        .setDescription('Bật hoặc tắt hệ thống tạm biệt.')
+        .addBooleanOption((opt) =>
+          opt.setName('enabled').setDescription('Bật (true) hoặc Tắt (false)').setRequired(true),
+        ),
+    )
+    .addSubcommand((sub) =>
+      sub.setName('status').setDescription('Xem trạng thái cấu hình tạm biệt hiện tại.'),
+    )
+    .addSubcommand((sub) =>
+      sub.setName('test').setDescription('Gửi tin nhắn tạm biệt thử nghiệm để kiểm tra hiển thị.'),
     );
 }
 
@@ -154,6 +189,11 @@ function buildBoosterGroup(
     )
     .addSubcommand((sub) =>
       sub.setName('status').setDescription('Xem trạng thái cấu hình Booster hiện tại.'),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('test')
+        .setDescription('Gửi tin nhắn cảm ơn Booster thử nghiệm để kiểm tra hiển thị.'),
     );
 }
 
@@ -225,6 +265,7 @@ export const data = new SlashCommandBuilder()
   .setDescription('Quản lý cấu hình bot, roles, welcome, booster, và container.')
   .addSubcommandGroup(buildRolesGroup)
   .addSubcommandGroup(buildWelcomeGroup)
+  .addSubcommandGroup(buildLeaveGroup)
   .addSubcommandGroup(buildBoosterGroup)
   .addSubcommandGroup(buildContainerGroup)
   .addSubcommandGroup(buildBotGroup);
@@ -369,6 +410,11 @@ export async function execute(
       } else if (subcommand === 'view') {
         await handleRolesView(interaction, db);
       }
+      break;
+    }
+
+    case 'leave': {
+      await executeSectionCommand(interaction, db, getLeaveConfig());
       break;
     }
 

@@ -89,9 +89,9 @@ describe('/config command — Structure & Builder', () => {
     expect(json.default_member_permissions).toBeUndefined();
   });
 
-  it('phải có đúng 5 SubcommandGroups: roles, welcome, booster, container, bot', () => {
+  it('phải có đúng 6 SubcommandGroups: roles, welcome, leave, booster, container, bot', () => {
     const groupNames = json.options?.map((opt: any) => opt.name);
-    expect(groupNames).toEqual(['roles', 'welcome', 'booster', 'container', 'bot']);
+    expect(groupNames).toEqual(['roles', 'welcome', 'leave', 'booster', 'container', 'bot']);
     json.options?.forEach((opt: any) => {
       expect(opt.type).toBe(2); // 2 = SUB_COMMAND_GROUP
     });
@@ -127,18 +127,27 @@ describe('/config command — Structure & Builder', () => {
   describe('welcome group structure', () => {
     const welcomeGroup = json.options?.find((o: any) => o.name === 'welcome');
 
-    it('phải chứa subcommands: setchannel, setrole, toggle, status', () => {
+    it('phải chứa subcommands: setchannel, setrole, toggle, status, test', () => {
       const subNames = welcomeGroup?.options?.map((s: any) => s.name);
-      expect(subNames).toEqual(['setchannel', 'setrole', 'toggle', 'status']);
+      expect(subNames).toEqual(['setchannel', 'setrole', 'toggle', 'status', 'test']);
+    });
+  });
+
+  describe('leave group structure', () => {
+    const leaveGroup = json.options?.find((o: any) => o.name === 'leave');
+
+    it('phải chứa subcommands: setchannel, toggle, status, test', () => {
+      const subNames = leaveGroup?.options?.map((s: any) => s.name);
+      expect(subNames).toEqual(['setchannel', 'toggle', 'status', 'test']);
     });
   });
 
   describe('booster group structure', () => {
     const boosterGroup = json.options?.find((o: any) => o.name === 'booster');
 
-    it('phải chứa subcommands: setchannel, setrole, toggle, status', () => {
+    it('phải chứa subcommands: setchannel, setrole, toggle, status, test', () => {
       const subNames = boosterGroup?.options?.map((s: any) => s.name);
-      expect(subNames).toEqual(['setchannel', 'setrole', 'toggle', 'status']);
+      expect(subNames).toEqual(['setchannel', 'setrole', 'toggle', 'status', 'test']);
     });
   });
 
@@ -300,6 +309,23 @@ describe('/config command — Execute Dispatch', () => {
       interaction,
       expect.anything(),
       expect.objectContaining({ sectionKey: 'welcome' }),
+    );
+  });
+
+  it('leave group: phải dispatch tới executeSectionCommand với leave config', async () => {
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommandGroup: jest.fn().mockReturnValue('leave'),
+        getSubcommand: jest.fn().mockReturnValue('status'),
+      },
+    });
+
+    await execute(interaction);
+
+    expect(executeSectionCommand).toHaveBeenCalledWith(
+      interaction,
+      expect.anything(),
+      expect.objectContaining({ sectionKey: 'leave' }),
     );
   });
 
