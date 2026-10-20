@@ -17,6 +17,9 @@ describe('features/admin/guild-create.handler', () => {
       expect(jsonStr).toContain('/config roles set');
       expect(jsonStr).toContain('/config bot setannouncechannel');
       expect(jsonStr).toContain('/config welcome');
+      expect(jsonStr).toContain('/config leave');
+      expect(jsonStr).toContain('/config booster');
+      expect(jsonStr).toContain('/df build');
       expect(jsonStr).toContain('/df help');
     });
   });

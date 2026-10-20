@@ -38,12 +38,14 @@ describe('DF Help Handler & Extension Utils', () => {
       expect(textDisplay).toBeDefined();
       expect(textDisplay.content).toContain('Trung Tâm Lệnh');
       expect(textDisplay.content).toContain('/df stats');
+      expect(textDisplay.content).toContain('/df build');
       expect(textDisplay.content).toContain('/df link start');
       expect(textDisplay.content).toContain('/df code setchannel');
       expect(textDisplay.content).toContain('/team find');
       expect(textDisplay.content).toContain('/seller pay');
       expect(textDisplay.content).toContain('/config bot guilds');
       expect(textDisplay.content).toContain('/config bot setannouncechannel');
+      expect(textDisplay.content).toContain('/config welcome / leave / booster');
     });
 
     it('xây dựng container V2 cho tab guide với hướng dẫn 5 bước cài tiện ích', () => {
