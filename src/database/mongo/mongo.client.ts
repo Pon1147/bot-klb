@@ -12,7 +12,7 @@ let isConnected = false;
  * Ket noi den MongoDB instance.
  * Ho tro connection string tu Railway (MONGODB_URI hoac MONGO_URL).
  */
-export async function connectMongo(uri?: string): Promise<Db | null> {
+export async function connectMongo(uri?: string, dbName?: string): Promise<Db | null> {
   if (isConnected && db) {
     return db;
   }
@@ -33,7 +33,8 @@ export async function connectMongo(uri?: string): Promise<Db | null> {
     });
 
     await client.connect();
-    db = client.db();
+    const targetDbName = dbName !== undefined ? dbName : process.env.MONGODB_DB_NAME;
+    db = targetDbName ? client.db(targetDbName) : client.db();
     isConnected = true;
 
     // Ping kiem tra ket noi

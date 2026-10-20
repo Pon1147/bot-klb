@@ -14,6 +14,7 @@ import {
   resolveEnvironment,
   resolveCommandScope,
   resolvePublicApiUrl,
+  resolveMongoDbName,
 } from '../../src/config/bot.config.js';
 
 describe('Config - Default Settings', () => {
@@ -216,5 +217,16 @@ describe('Config - Environment Resolution', () => {
     expect(resolvePublicApiUrl('product')).toBe('https://bot-klb-production.up.railway.app');
     expect(resolvePublicApiUrl('stage')).toBe('https://bot-klb-stage.up.railway.app');
     expect(resolvePublicApiUrl('dev')).toContain('http://localhost:');
+  });
+
+  it('resolveMongoDbName tự động phân giải tên database MongoDB theo môi trường', () => {
+    delete process.env.MONGODB_DB_NAME;
+    expect(resolveMongoDbName('dev')).toBe('bot_klb_dev');
+    expect(resolveMongoDbName('stage')).toBe('bot_klb_stage');
+    expect(resolveMongoDbName('product')).toBe('bot_klb_prod');
+
+    process.env.MONGODB_DB_NAME = 'custom_db';
+    expect(resolveMongoDbName('dev')).toBe('custom_db');
+    delete process.env.MONGODB_DB_NAME;
   });
 });

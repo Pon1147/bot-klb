@@ -86,6 +86,20 @@ export function resolvePublicApiUrl(env: AppEnvironment = currentEnv): string {
 }
 
 /**
+ * Phân giải tên database MongoDB theo môi trường nhằm cách ly hoàn toàn dữ liệu giữa dev, stage và production:
+ * - dev: 'bot_klb_dev'
+ * - stage: 'bot_klb_stage'
+ * - product: 'bot_klb_prod'
+ * (Nếu biến MONGODB_DB_NAME được khai báo tường minh, sẽ ưu tiên sử dụng).
+ */
+export function resolveMongoDbName(env: AppEnvironment = currentEnv): string {
+  if (process.env.MONGODB_DB_NAME) return process.env.MONGODB_DB_NAME.trim();
+  if (env === 'product') return 'bot_klb_prod';
+  if (env === 'stage') return 'bot_klb_stage';
+  return 'bot_klb_dev';
+}
+
+/**
  * Bot configuration from environment variables.
  * All values are loaded from .env file, never hardcoded.
  * Tests can run with fallback values.
@@ -108,6 +122,8 @@ export const botConfig = {
   mongoUri: (process.env.MONGODB_URI || process.env.MONGO_URL || '').includes('${{')
     ? null
     : process.env.MONGODB_URI || process.env.MONGO_URL || null,
+  // Tên database MongoDB được cách ly theo môi trường
+  mongoDbName: resolveMongoDbName(currentEnv),
   // DF Link crypto key (32 bytes, Base64-encoded)
   dfCredKeyV1: process.env.DF_CRED_KEY_V1 || null,
   // Command deployment scope: 'global' | 'guild' (tự động theo môi trường)

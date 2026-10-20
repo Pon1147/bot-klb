@@ -98,7 +98,7 @@ export async function bootstrap(): Promise<Client> {
   if (botConfig.mongoUri) {
     logger.info('Connecting to MongoDB...');
     try {
-      const mongoDb = await connectMongo(botConfig.mongoUri);
+      const mongoDb = await connectMongo(botConfig.mongoUri, botConfig.mongoDbName);
 
       if (mongoDb) {
         logger.info('✓ MongoDB connected');

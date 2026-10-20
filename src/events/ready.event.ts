@@ -13,8 +13,9 @@ export async function execute(client: Client): Promise<void> {
   const user = client.user;
   logger.divider();
   logger.info(`✓ Logged in as ${user?.tag ?? 'Unknown'} (ID: ${user?.id ?? 'N/A'})`);
+  const mongoInfo = botConfig.mongoUri ? ` | Mongo: [${botConfig.mongoDbName}]` : '';
   logger.info(
-    `[ENV: ${botConfig.env.toUpperCase()}] Scope: [${botConfig.commandScope}] | DB: [${botConfig.databasePath}]`,
+    `[ENV: ${botConfig.env.toUpperCase()}] Scope: [${botConfig.commandScope}] | DB: [${botConfig.databasePath}]${mongoInfo}`,
   );
 
   const guilds = client.guilds.cache;
