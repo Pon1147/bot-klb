@@ -127,6 +127,7 @@ export function buildStatsContainer(
 /** Build season select menu */
 export function buildSeasonSelectMenu(
   selectedValue: string,
+  userId?: string,
 ): ActionRowBuilder<StringSelectMenuBuilder> {
   const options = buildSeasonOptions().map((opt) =>
     new StringSelectMenuOptionBuilder().setLabel(opt.label).setValue(opt.value),
@@ -136,7 +137,7 @@ export function buildSeasonSelectMenu(
 
   return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
     new StringSelectMenuBuilder()
-      .setCustomId(DF_STATS_SELECT_ID)
+      .setCustomId(userId ? `${DF_STATS_SELECT_ID}:${userId}` : DF_STATS_SELECT_ID)
       .setPlaceholder(`Đang chọn: ${label}`)
       .addOptions(options),
   );
@@ -152,7 +153,7 @@ export async function execute(
     const seasonLabel = getSeasonLabel('overview');
 
     const result = buildStatsContainer(data, seasonLabel);
-    const selectMenu = buildSeasonSelectMenu('overview');
+    const selectMenu = buildSeasonSelectMenu('overview', interaction.user.id);
 
     return {
       components: [...result.components, selectMenu.toJSON()],

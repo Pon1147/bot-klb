@@ -14,6 +14,8 @@ import { getActiveBinding } from '../../database/df-binding.db.js';
 import { decryptCredential } from '../../services/df-crypto.js';
 import { getDfToken } from '../../database/df.token.db.js';
 import { sendReply } from '../../utils/reply.utils.js';
+import { hasPolicy, Policy } from '../../config/permissions.js';
+import { getSettingsService } from '../../services/settings.service.js';
 import { TTLStore } from '../../utils/ttl-store.js';
 
 const logger = createLogger('DfStatsSelect');
@@ -33,17 +35,63 @@ export async function handleDfStatsSelect(
   interaction: StringSelectMenuInteraction,
   database: Database.Database,
 ): Promise<{ handled: boolean }> {
-  if (interaction.customId !== DF_STATS_SELECT_ID) {
+  if (!interaction.customId.startsWith(DF_STATS_SELECT_ID)) {
     return { handled: false };
   }
 
   const selectedSeason = interaction.values[0];
-  const userId = interaction.user.id;
+  // 1. Phân giải Owner ID từ customId (format: df_stats_season_select:userId) hoặc message interaction metadata
+  const parts = interaction.customId.split(':');
+  const customIdOwnerId = parts[1] || null;
+  const messageOwnerId =
+    (
+      interaction.message as unknown as {
+        interactionMetadata?: { user?: { id?: string } };
+        interaction?: { user?: { id?: string } };
+      }
+    )?.interactionMetadata?.user?.id ??
+    (interaction.message as unknown as { interaction?: { user?: { id?: string } } })?.interaction
+      ?.user?.id ??
+    null;
+  const ownerUserId = customIdOwnerId ?? messageOwnerId;
+
+  // 2. Kiểm tra phân quyền RBAC (Policy.DF_ACCESS) cho người dùng đang click tương tác
+  if (interaction.guildId) {
+    let guildRbac = undefined;
+    try {
+      const settingsService = getSettingsService();
+      guildRbac = settingsService.get(interaction.guildId).rbac;
+    } catch {
+      // fallback nếu settingsService chưa khả dụng
+    }
+    const policyResult = hasPolicy(interaction, Policy.DF_ACCESS, guildRbac);
+    if (!policyResult.allowed) {
+      await sendReply(interaction, {
+        content:
+          policyResult.reason ??
+          '🔒 Bạn không có quyền truy cập tính năng Delta Force của máy chủ này.',
+        flags: 64,
+      });
+      return { handled: true };
+    }
+  }
+
+  // 3. Kiểm tra quyền sở hữu (Ownership Check): Chỉ người dùng gọi lệnh mới được thao tác trên bảng stats của họ
+  if (ownerUserId && interaction.user.id !== ownerUserId) {
+    await sendReply(interaction, {
+      content:
+        '❌ Bạn không thể thao tác trên bảng thống kê của người khác! Hãy dùng lệnh `/df stats` để xem thống kê của riêng bạn.',
+      flags: 64,
+    });
+    return { handled: true };
+  }
+
+  const targetUserId = ownerUserId ?? interaction.user.id;
 
   // Lấy token từ binding hoặc legacy token
   let token: ReturnType<typeof getDfToken> | null = null;
   try {
-    const binding = getActiveBinding(database, userId);
+    const binding = getActiveBinding(database, targetUserId);
     if (binding) {
       const decrypted = decryptCredential(
         binding.cred_nonce,
@@ -54,7 +102,7 @@ export async function handleDfStatsSelect(
       );
       const cred = JSON.parse(decrypted);
       token = {
-        discord_id: userId,
+        discord_id: targetUserId,
         openid: binding.openid,
         token: cred.token,
         ts: cred.ts || null,
@@ -64,10 +112,10 @@ export async function handleDfStatsSelect(
         last_used_at: null,
       };
     } else {
-      token = getDfToken(database, userId) ?? null;
+      token = getDfToken(database, targetUserId) ?? null;
     }
   } catch {
-    token = getDfToken(database, userId) ?? null;
+    token = getDfToken(database, targetUserId) ?? null;
   }
 
   if (!token) {
@@ -79,7 +127,7 @@ export async function handleDfStatsSelect(
   }
 
   // Disable select menu ngay để tránh user click nhiều lần
-  const disabledMenu = buildSeasonSelectMenu(selectedSeason);
+  const disabledMenu = buildSeasonSelectMenu(selectedSeason, targetUserId);
   disabledMenu.components[0].setDisabled(true);
 
   // deferUpdate trước API call để cập nhật message hiện tại và tránh interaction timeout (>3s)
@@ -87,7 +135,7 @@ export async function handleDfStatsSelect(
     await interaction.deferUpdate();
   } catch {
     // deferUpdate fail — interaction đã expire, không làm gì thêm
-    logger.warn('deferUpdate failed for user ' + userId + ', interaction may have expired');
+    logger.warn('deferUpdate failed for user ' + targetUserId + ', interaction may have expired');
     return { handled: true };
   }
 
@@ -95,11 +143,11 @@ export async function handleDfStatsSelect(
     const apiToken = buildDfApiToken(token);
 
     // Kiểm tra cache trước khi gọi API
-    const cached = statsCache.get(userId + ':' + selectedSeason);
+    const cached = statsCache.get(targetUserId + ':' + selectedSeason);
     if (cached) {
       const seasonLabel = getSeasonLabel(selectedSeason);
       const result = buildStatsContainer(cached.data, seasonLabel);
-      const selectMenu = buildSeasonSelectMenu(selectedSeason);
+      const selectMenu = buildSeasonSelectMenu(selectedSeason, targetUserId);
       await interaction.editReply({
         components: [...result.components, selectMenu.toJSON()],
       } as Parameters<typeof interaction.editReply>[0]);
@@ -112,21 +160,21 @@ export async function handleDfStatsSelect(
         : await getSeasonData(apiToken, selectedSeason);
 
     // Lưu vào cache với TTL 5 phút
-    statsCache.set(userId + ':' + selectedSeason, {
+    statsCache.set(targetUserId + ':' + selectedSeason, {
       data,
       expiresAt: Date.now() + 5 * 60 * 1000,
     });
 
     const seasonLabel = getSeasonLabel(selectedSeason);
     const result = buildStatsContainer(data, seasonLabel);
-    const selectMenu = buildSeasonSelectMenu(selectedSeason);
+    const selectMenu = buildSeasonSelectMenu(selectedSeason, targetUserId);
 
     await interaction.editReply({
       components: [...result.components, selectMenu.toJSON()],
     } as Parameters<typeof interaction.editReply>[0]);
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    logger.error('df-stats select failed for user ' + userId + ': ' + errMsg);
+    logger.error('df-stats select failed for user ' + targetUserId + ': ' + errMsg);
     // Hiển thị lỗi cho user + giữ menu disabled
     await interaction.editReply({
       content: 'Lỗi khi tải dữ liệu: ' + errMsg,
