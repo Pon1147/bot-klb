@@ -56,7 +56,7 @@ function makeSettings(overrides: Partial<GuildSettings> = {}): GuildSettings {
       container: { accentColor: 0x5865f2, headerTemplate: '## Xin chào {username}!', contentLines: ['Chào mừng!'], mediaUrl: null, mediaDescription: null, showSeparator: true },
       ...overrides.welcome,
     },
-    leave: { enabled: false, channelId: null, container: { accentColor: 0xff0000, headerTemplate: null, contentLines: [], mediaUrl: null, mediaDescription: null, showSeparator: false } },
+    leave: { enabled: false, channelId: null, container: { accentColor: 0xff0000, headerTemplate: null, contentLines: [], mediaUrl: null, mediaDescription: null, showSeparator: false }, ...overrides.leave },
     booster: {
       enabled: false,
       channelId: null,
@@ -257,6 +257,128 @@ describe('Events E2E — guildMemberAdd', () => {
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('Failed to assign role'),
     );
+  });
+});
+
+// ── guildMemberRemove ─────────────────────────────────────────────
+
+describe('Events E2E — guildMemberRemove', () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    jest.resetModules();
+    db = createTestDb();
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  function setupSettingsService() {
+    const { SettingsService, setSettingsService } = require('../../src/services/settings.service');
+    setSettingsService(new SettingsService(db));
+  }
+
+  it('phải gửi leave message khi cấu hình đầy đủ', async () => {
+    setupSettingsService();
+
+    const channel = createMockTextChannel({ id: 'channel-leave' });
+
+    seedGuildSettings(db, 'guild-123', makeSettings({
+      leave: {
+        enabled: true,
+        channelId: 'channel-leave',
+        container: { accentColor: 0xed4245, headerTemplate: '{username} đã rời', contentLines: ['Tạm biệt!'], mediaUrl: null, mediaDescription: null, showSeparator: false },
+      },
+    }));
+
+    const member = createMockGuildMember({
+      userId: 'user-456',
+      username: 'LeavingMember',
+      bot: false,
+      guildId: 'guild-123',
+    });
+    member.guild.channels.cache.get.mockImplementation((id: string) => id === 'channel-leave' ? channel : undefined);
+
+    const { execute } = require('../../src/events/guildMemberRemove.event');
+    await execute({}, member);
+
+    expect(channel.send).toHaveBeenCalled();
+  });
+
+  it('phải bỏ qua khi member là bot', async () => {
+    setupSettingsService();
+    seedGuildSettings(db, 'guild-123', makeSettings({
+      leave: { enabled: true, channelId: 'channel-leave', container: { accentColor: 0xed4245, headerTemplate: null, contentLines: [], mediaUrl: null, mediaDescription: null, showSeparator: false } },
+    }));
+
+    const member = createMockGuildMember({ bot: true, guildId: 'guild-123' });
+    const { execute } = require('../../src/events/guildMemberRemove.event');
+    await expect(execute({}, member)).resolves.not.toThrow();
+  });
+
+  it('phải bỏ qua khi leave bị tắt', async () => {
+    setupSettingsService();
+    seedGuildSettings(db, 'guild-123', makeSettings({
+      leave: { enabled: false, channelId: 'channel-leave', container: { accentColor: 0xed4245, headerTemplate: null, contentLines: [], mediaUrl: null, mediaDescription: null, showSeparator: false } },
+    }));
+
+    const member = createMockGuildMember({ bot: false, guildId: 'guild-123' });
+    const { execute } = require('../../src/events/guildMemberRemove.event');
+    await expect(execute({}, member)).resolves.not.toThrow();
+  });
+
+  it('phải bỏ qua khi chưa có channel', async () => {
+    setupSettingsService();
+    seedGuildSettings(db, 'guild-123', makeSettings({
+      leave: { enabled: true, channelId: null, container: { accentColor: 0xed4245, headerTemplate: null, contentLines: [], mediaUrl: null, mediaDescription: null, showSeparator: false } },
+    }));
+
+    const member = createMockGuildMember({ bot: false, guildId: 'guild-123' });
+    const { execute } = require('../../src/events/guildMemberRemove.event');
+    await expect(execute({}, member)).resolves.not.toThrow();
+  });
+
+  it('phải bỏ qua khi channel không phải text-based', async () => {
+    setupSettingsService();
+
+    const notTextChannel = { isTextBased: () => false };
+    const member = createMockGuildMember({
+      bot: false,
+      guildId: 'guild-123',
+    });
+    member.guild.channels.cache.get.mockImplementation(() => notTextChannel);
+
+    seedGuildSettings(db, 'guild-123', makeSettings({
+      leave: { enabled: true, channelId: 'channel-leave', container: { accentColor: 0xed4245, headerTemplate: null, contentLines: [], mediaUrl: null, mediaDescription: null, showSeparator: false } },
+    }));
+
+    const { execute } = require('../../src/events/guildMemberRemove.event');
+    await execute({}, member);
+
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it('phải xử lý lỗi khi channel.send ném exception', async () => {
+    setupSettingsService();
+
+    const channel = createMockTextChannel({ id: 'channel-leave' });
+    channel.send.mockRejectedValue(new Error('channel send failed'));
+
+    const member = createMockGuildMember({
+      bot: false,
+      guildId: 'guild-123',
+    });
+    member.guild.channels.cache.get.mockImplementation((id: string) => id === 'channel-leave' ? channel : undefined);
+
+    seedGuildSettings(db, 'guild-123', makeSettings({
+      leave: { enabled: true, channelId: 'channel-leave', container: { accentColor: 0xed4245, headerTemplate: null, contentLines: [], mediaUrl: null, mediaDescription: null, showSeparator: false } },
+    }));
+
+    const { execute } = require('../../src/events/guildMemberRemove.event');
+    await execute({}, member);
+
+    expect(console.error).toHaveBeenCalled();
   });
 });
 

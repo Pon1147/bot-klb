@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import {
   GuildSettings,
   WelcomeSettings,
+  LeaveSettings,
   BoosterSettings,
   SellerSettings,
   TemplateContext,
@@ -68,6 +69,13 @@ export class SettingsService {
    */
   getWelcome(guildId: string): WelcomeSettings {
     return this.get(guildId).welcome;
+  }
+
+  /**
+   * Lấy leave settings cụ thể.
+   */
+  getLeave(guildId: string): LeaveSettings {
+    return this.get(guildId).leave;
   }
 
   /**
@@ -172,6 +180,15 @@ export class SettingsService {
   buildBoosterContainer(guildId: string, context: TemplateContext): BuildContainerResult {
     const booster = this.getBooster(guildId);
     return this.buildContainer(booster.container, context);
+  }
+
+  /**
+   * Build leave container V2 cho guild + member cụ thể.
+   * Shortcut kết hợp getLeave + buildContainer.
+   */
+  buildLeaveContainer(guildId: string, context: TemplateContext): BuildContainerResult {
+    const leave = this.getLeave(guildId);
+    return this.buildContainer(leave.container, context);
   }
 
   /**
