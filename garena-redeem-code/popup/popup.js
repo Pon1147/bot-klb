@@ -7,6 +7,11 @@ if (!window.AuthUtils) {
 
 // ===== CONSTANTS =====
 const DEFAULT_CODES = [
+  'HITTHEROADTODFI',
+  'POCS2S2',
+  'WHOISPOCKING',
+  'POCISHERE',
+  'POCSEEYOUTMR',
   'AKHIPFIRERIP',
   'AUGTUTO',
   'DAISUAK12YOR',
