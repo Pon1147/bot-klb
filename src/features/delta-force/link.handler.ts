@@ -65,13 +65,33 @@ async function handleStart(
     : [];
 
   const info = buildInfoContainer(
-    `## 🔗 Liên Kết Tài Khoản Delta Force\n\n` +
-      `**Mã liên kết của bạn: \`${code}\`** (có hiệu lực trong 10 phút)\n\n` +
-      '**Hướng dẫn 3 bước cực kỳ đơn giản:**\n' +
-      '1. Tải và giải nén tệp **`DF-Extension.zip`** đính kèm (nếu chưa cài tiện ích vào trình duyệt Chrome/Edge/Brave).\n' +
-      '2. Đăng nhập vào trang sự kiện [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html).\n' +
-      `3. Nhập mã \`${code}\` vào bảng tiện ích trên trang HQ và nhấn **Liên kết Discord**.\n\n` +
-      '✨ *Bot sẽ tự động xác thực và gửi tin nhắn DM xác nhận ngay khi hoàn tất!*',
+    [
+      '## 🔗 Liên Kết Tài Khoản Delta Force (Garena)',
+      '',
+      `🔑 **Mã liên kết của bạn: \`${code}\`** *(Có hiệu lực trong 10 phút)*`,
+      '',
+      '### 📌 3 Bước Thực Hiện Nhanh (Dành cho người mới):',
+      '**1. Cài tiện ích (Chỉ làm 1 lần trên máy tính):**',
+      '• Tải tệp **`DF-Extension.zip`** (ở tin nhắn ngay bên dưới) và giải nén ra một thư mục.',
+      '• Mở trình duyệt (Chrome/Cốc Cốc/Edge), truy cập `chrome://extensions/` (hoặc `edge://extensions/`).',
+      '• Bật **Chế độ dành cho nhà phát triển** (**Developer mode**) ở góc phải -> Nhấn **Tải tiện ích đã giải nén** (**Load unpacked**) và chọn thư mục vừa giải nén.',
+      '',
+      '**2. Mở cổng sự kiện game chính thức:**',
+      '• Bấm vào trang: [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html) và đăng nhập nick Garena của bạn.',
+      '',
+      '**3. Nhập mã & Hoàn tất:**',
+      `• Nhìn vào **góc dưới bên phải màn hình web**, bảng **"DF Toolbox"** sẽ tự động xuất hiện.`,
+      `• Nhập mã **\`${code}\`** vào ô và bấm **"Liên kết Discord"**.`,
+      '• Bot sẽ gửi tin nhắn xác nhận thành công ngay lập tức!',
+      '',
+      '---',
+      '🛡️ **CAM KẾT AN TOÀN & BẢO MẬT 100%:**',
+      '• **Không bao giờ hỏi mật khẩu:** Bạn chỉ đăng nhập trực tiếp trên cổng chính thức của Garena. Bot và tiện ích tuyệt đối **không xem, không hỏi và không lưu** mật khẩu hay mã OTP của bạn.',
+      '• **Trang web chính chủ:** `playdeltaforce.com` là cổng sự kiện chính thức do Tencent Games & Garena quản lý.',
+      '• **Mục đích:** Chỉ lấy mã định danh nhân vật (OpenID) để bot hiển thị K/D (`/df stats`), lịch sử đấu (`/df history`) và tự động nhận quà xưởng (`/df workshop`).',
+      '',
+      '> 💡 *Nếu bạn cần xem chi tiết từng bước bằng hình ảnh, hãy dùng lệnh `/df help` (chọn tab **🧩 Hướng Dẫn Liên Kết**).*',
+    ].join('\n'),
   );
   await interaction.reply({
     components: info.toJSON(),
@@ -82,7 +102,11 @@ async function handleStart(
   if (files.length > 0) {
     await interaction.followUp({
       content:
-        '📦 **Tệp cài đặt Tiện ích mở rộng Delta Force (Extension):**\n> Tải tệp đính kèm bên dưới, giải nén và làm theo hướng dẫn ở trên để liên kết.',
+        '📦 **Tệp cài đặt Tiện ích mở rộng Delta Force (Extension):**\n' +
+        '> 1. Tải tệp **`DF-Extension.zip`** đính kèm bên dưới về máy tính.\n' +
+        '> 2. Nhấp chuột phải vào file đã tải -> Chọn **Extract All... (Giải nén)**.\n' +
+        '> 3. Mở `chrome://extensions/` -> Bật **Developer mode** -> Chọn **Load unpacked** và chọn thư mục vừa giải nén.\n' +
+        '> 🛡️ *Tệp cài đặt sạch 100%, chạy cục bộ trên máy và hoàn toàn không can thiệp vào tài khoản hay mật khẩu của bạn.*',
       files,
       flags: MessageFlags.Ephemeral,
     });
