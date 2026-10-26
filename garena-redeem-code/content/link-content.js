@@ -116,8 +116,8 @@
       <input type="text" id="df-link-code" placeholder="Dán claim code từ Discord" maxlength="6" />
       <button id="df-link-submit" ${state.status !== 'ready' ? 'disabled' : ''}>Liên kết Discord</button>
       <div class="hint">
-        <strong>Bắt buộc:</strong> Chạy /df-link start trên Discord trước<br>
-        1. Chạy /df-link start → nhận code<br>
+        <strong>Bắt buộc:</strong> Chạy /df link start trên Discord trước<br>
+        1. Chạy /df link start → nhận code<br>
         2. Dán code ở trên<br>
         3. Nhấn Liên kết Discord<br>
         4. Chờ DM "Chúc mừng liên kết thành công"

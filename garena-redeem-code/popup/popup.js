@@ -353,7 +353,7 @@ function detectSiteFromUrl(url) {
  * Chỉ show section phù hợp với website hiện tại.
  */
 function showSectionForSite(site) {
-  const sections = document.querySelectorAll('.section[data-site]');
+  const sections = document.querySelectorAll('[data-site]');
   sections.forEach((section) => {
     const siteKey = section.getAttribute('data-site');
     if (site && siteKey === site) {
@@ -445,7 +445,12 @@ function renderRedeemSummary() {
 initDynamicUI();
 chrome.storage.local.get(['redeem_codes', 'webhookUrl'], (result) => {
   // Load codes
-  const codes = result.redeem_codes;
+  const storedCodes = Array.isArray(result.redeem_codes) ? result.redeem_codes : [];
+  const mergedCodes = [...new Set([...DEFAULT_CODES, ...storedCodes])];
+  const codes = mergedCodes;
+  if (mergedCodes.length !== storedCodes.length) {
+    saveCodes(mergedCodes);
+  }
   if (codes && codes.length > 0) {
     codesInput.value = codes.join('\n');
   } else {

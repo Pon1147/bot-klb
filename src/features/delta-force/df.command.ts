@@ -14,7 +14,6 @@
  * /df code setadminchannel <channel>
  * /df link start
  * /df link status
- * /df link manual <token> [openid]
  */
 
 import {
@@ -103,17 +102,6 @@ function buildLinkGroup(
     )
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub.setName('status').setDescription('Kiểm tra trạng thái liên kết hiện tại.'),
-    )
-    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
-      sub
-        .setName('manual')
-        .setDescription('Liên kết bằng cách nhập token (fallback).')
-        .addStringOption((opt) =>
-          opt.setName('token').setDescription('Token authentication (hex)').setRequired(true),
-        )
-        .addStringOption((opt) =>
-          opt.setName('openid').setDescription('OpenID của tài khoản HQ').setRequired(false),
-        ),
     );
 }
 
@@ -282,17 +270,6 @@ export async function execute(
   }
 
   if (group === 'link') {
-    // Nếu gọi /df link manual mà không truyền openid, fallback sang userId để tránh lỗi NOT NULL DB
-    if (subcommand === 'manual' && !interaction.options.getString('openid')) {
-      const origGetString = interaction.options.getString.bind(interaction.options);
-      (interaction.options as unknown as Record<string, unknown>).getString = (
-        name: string,
-        required?: boolean,
-      ) => {
-        if (name === 'openid') return interaction.user.id;
-        return origGetString(name as never, required as never);
-      };
-    }
     await executeLink(interaction, db);
     return;
   }

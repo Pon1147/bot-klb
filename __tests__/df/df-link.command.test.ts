@@ -1,7 +1,7 @@
 /**
  * Unit tests cho df-link.command.ts — /df-link slash command.
  *
- * Subcommands: start, status, unlink, manual.
+ * Subcommands: start, status, unlink.
  */
 
 jest.mock('discord.js', () => ({
@@ -255,98 +255,6 @@ describe('df-link.command', () => {
       await execute(interaction, mockDb);
 
       expect(mockReply).toHaveBeenCalled();
-    });
-  });
-
-  describe('subcommand: manual', () => {
-    it('nên lưu token và trả về success khi validate thành công', async () => {
-      const mockEditReply = jest.fn().mockResolvedValue(undefined);
-      const interaction = createMockInteraction({
-        options: {
-          getSubcommand: jest.fn(() => 'manual'),
-          getString: jest.fn((name: string) => {
-            if (name === 'openid') return '123456789';
-            if (name === 'token') return 'abcdef1234567890abcdef1234567890abcdef1234567890';
-            return undefined;
-          }),
-        },
-        editReply: mockEditReply,
-      });
-
-      await execute(interaction, mockDb);
-
-      expect(saveDfToken).toHaveBeenCalledWith(
-        mockDb,
-        '222',
-        '123456789',
-        'abcdef1234567890abcdef1234567890abcdef1234567890',
-      );
-      expect(mockDeferReply).toHaveBeenCalled();
-      expect(mockEditReply).toHaveBeenCalled();
-    });
-
-    it('nên từ chối token không đúng format hex', async () => {
-      const interaction = createMockInteraction({
-        options: {
-          getSubcommand: jest.fn(() => 'manual'),
-          getString: jest.fn((name: string) => {
-            if (name === 'openid') return '123';
-            if (name === 'token') return 'not-a-hex-token!!';
-            return undefined;
-          }),
-        },
-      });
-
-      await execute(interaction, mockDb);
-
-      expect(saveDfToken).not.toHaveBeenCalled();
-      expect(mockReply).toHaveBeenCalledWith(
-        expect.objectContaining({ flags: expect.any(Number) }),
-      );
-    });
-
-    it('nửa từ chối token quá ngắn', async () => {
-      const interaction = createMockInteraction({
-        options: {
-          getSubcommand: jest.fn(() => 'manual'),
-          getString: jest.fn((name: string) => {
-            if (name === 'openid') return '123';
-            if (name === 'token') return 'abcdef1234';
-            return undefined;
-          }),
-        },
-      });
-
-      await execute(interaction, mockDb);
-
-      expect(saveDfToken).not.toHaveBeenCalled();
-      expect(mockReply).toHaveBeenCalled();
-    });
-
-    it('nên trả về error khi saveDfToken throw', async () => {
-      const mockEditReply = jest.fn().mockResolvedValue(undefined);
-      (saveDfToken as jest.Mock).mockImplementation(() => {
-        throw new Error('DB write failed');
-      });
-
-      const interaction = createMockInteraction({
-        options: {
-          getSubcommand: jest.fn(() => 'manual'),
-          getString: jest.fn((name: string) => {
-            if (name === 'openid') return '123456789';
-            if (name === 'token') return 'abcdef1234567890abcdef1234567890abcdef1234567890';
-            return undefined;
-          }),
-        },
-        editReply: mockEditReply,
-        deferred: true,
-      });
-
-      await execute(interaction, mockDb);
-
-      expect(mockEditReply).toHaveBeenCalled();
-      const editCall = mockEditReply.mock.calls[0][0];
-      expect(editCall.components).toBeDefined();
     });
   });
 });

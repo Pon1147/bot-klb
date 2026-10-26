@@ -84,7 +84,7 @@ async function sendLinkedDm(client: Client, userId: string, _openid: string): Pr
     await dm.send({
       content:
         `**Chúc mừng bạn đã liên kết thành công account đến Delta Force HQ!**\n\n` +
-        `Bây giờ bạn có thể dùng các lệnh \`/df-daily\`, \`/df-stats\`, \`/df-history\` mà không cần mở HQ.`,
+        `Bây giờ bạn có thể dùng các lệnh \`/df daily\`, \`/df stats\`, \`/df history\` mà không cần mở HQ.`,
     });
   } catch (error) {
     logger.warn(

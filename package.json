@@ -6,6 +6,7 @@
   "scripts": {
     "prepare": "husky",
     "clean": "rimraf dist",
+    "prebuild": "npm run package:extension",
     "build": "tsc",
     "rebuild": "npm run clean && npm run build",
     "start": "node dist/index.js",
@@ -30,6 +31,9 @@
     "src/**/*.ts": [
       "eslint --fix",
       "prettier --write"
+    ],
+    "garena-redeem-code/**/*": [
+      "tsx scripts/package-extension.ts"
     ]
   },
   "dependencies": {

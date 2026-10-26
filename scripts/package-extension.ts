@@ -40,6 +40,12 @@ export async function packageExtension(): Promise<string> {
     output.on('close', () => {
       const sizeKb = (archive.pointer() / 1024).toFixed(2);
       console.log(`✓ Đã đóng gói thành công: ${targetZipPath} (${sizeKb} KB)`);
+      try {
+        const { execSync } = require('node:child_process');
+        execSync(`git add "${targetZipPath}"`, { stdio: 'ignore' });
+      } catch {
+        // Bỏ qua nếu không có git CLI (môi trường container production)
+      }
       resolve(targetZipPath);
     });
 

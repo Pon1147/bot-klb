@@ -155,16 +155,9 @@ describe('/df command — Structure & Builder', () => {
   describe('link group structure', () => {
     const linkGroup = json.options?.find((o: any) => o.name === 'link');
 
-    it('phải có subcommands: start, status, manual', () => {
+    it('phải có subcommands: start, status', () => {
       const subNames = linkGroup.options?.map((s: any) => s.name);
-      expect(subNames).toEqual(['start', 'status', 'manual']);
-    });
-
-    it('subcommand "manual" phải có option "token" (STRING, required)', () => {
-      const manualSub = linkGroup.options?.find((s: any) => s.name === 'manual');
-      const tokenOpt = manualSub.options?.find((o: any) => o.name === 'token');
-      expect(tokenOpt.type).toBe(3); // STRING
-      expect(tokenOpt.required).toBe(true);
+      expect(subNames).toEqual(['start', 'status']);
     });
   });
 });
@@ -257,26 +250,6 @@ describe('/df command — Execute Dispatch', () => {
 
     await execute(interaction);
     expect(executeLink).toHaveBeenCalledWith(interaction, expect.anything());
-  });
-
-  it('link manual: fallback openid thành user.id nếu không cung cấp', async () => {
-    let capturedOpenId: string | null = null;
-    (executeLink as jest.Mock).mockImplementationOnce((inter: any) => {
-      capturedOpenId = inter.options.getString('openid');
-      return Promise.resolve();
-    });
-
-    const interaction = createMockInteraction({
-      user: { id: 'user-fallback-123' },
-      options: {
-        getSubcommandGroup: jest.fn().mockReturnValue('link'),
-        getSubcommand: jest.fn().mockReturnValue('manual'),
-        getString: jest.fn((name: string) => (name === 'token' ? 'hex-token' : null)),
-      },
-    });
-    await execute(interaction);
-    expect(executeLink).toHaveBeenCalled();
-    expect(capturedOpenId).toBe('user-fallback-123');
   });
 
   it('phải dispatch tới executeHelp khi chọn subcommand "help"', async () => {

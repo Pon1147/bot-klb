@@ -85,9 +85,9 @@ describe('getCommandPath — Three-level commands (Root + Group + Subcommand)', 
     expect(getCommandPath(interaction)).toBe('df.code.show');
   });
 
-  it('df link manual → df.link.manual', () => {
-    const interaction = createMockInteraction('df', 'link', 'manual');
-    expect(getCommandPath(interaction)).toBe('df.link.manual');
+  it('df link start → df.link.start', () => {
+    const interaction = createMockInteraction('df', 'link', 'start');
+    expect(getCommandPath(interaction)).toBe('df.link.start');
   });
 });
 

@@ -528,8 +528,8 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
   // ─── 7. PHASE 4: Command Path Policy Mapping ──────────────────────
   describe('PHASE 4 — Command Path Policy Mapping', () => {
-    it('COMMAND_PATH_POLICIES chứa đúng 48 canonical command paths', () => {
-      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(48);
+    it('COMMAND_PATH_POLICIES chứa đúng 47 canonical command paths', () => {
+      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(47);
     });
 
     it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds, config.bot.announce, config.bot.setannouncechannel và df.autopost.*', () => {
@@ -586,7 +586,7 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(resolveCommandPolicy('df.help')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.link.start')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.link.status')).toBe(Policy.DF_ACCESS);
-      expect(resolveCommandPolicy('df.link.manual')).toBe(Policy.DF_ACCESS);
+      expect(resolveCommandPolicy('df.link.start')).toBe(Policy.DF_ACCESS);
     });
 
     it('TEAM_ACCESS policy mapping cho team.find', () => {

@@ -637,8 +637,8 @@ describe('Phase 5: Exhaustive Canonical Paths & Router Hardening', () => {
     expect(mockDfExecute).toHaveBeenCalled();
   });
 
-  it('df.link subcommands (start, status, manual): được bảo vệ bởi DF_ACCESS', async () => {
-    for (const sub of ['start', 'status', 'manual']) {
+  it('df.link subcommands (start, status): được bảo vệ bởi DF_ACCESS', async () => {
+    for (const sub of ['start', 'status']) {
       mockDfExecute.mockClear();
       const interaction = createMockInteraction({
         commandName: 'df',
