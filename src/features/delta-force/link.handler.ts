@@ -6,7 +6,14 @@
  * - status: Kiểm tra trạng thái link (mask identifier, last_ok_at)
  */
 
-import { AttachmentBuilder, ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+import {
+  ActionRowBuilder,
+  AttachmentBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ChatInputCommandInteraction,
+  MessageFlags,
+} from 'discord.js';
 import Database from 'better-sqlite3';
 import { buildInfoContainer } from '../../utils/container.utils.js';
 import { requireGuild } from '../../utils/df-guards.js';
@@ -52,35 +59,51 @@ async function handleStart(
 
   const info = buildInfoContainer(
     [
-      '## 🔗 Liên Kết Tài Khoản Delta Force (Garena)',
+      '## 🔗 Hướng Dẫn Liên Kết Tài Khoản Delta Force (Garena)',
       '',
-      `🔑 **Mã liên kết của bạn: \`${code}\`** *(Có hiệu lực trong 10 phút)*`,
-      '',
-      '### 📌 3 Bước Thực Hiện Nhanh (Dành cho người mới):',
-      '**1. Cài tiện ích (Chỉ làm 1 lần trên máy tính):**',
-      '• Tải tệp **`DF-Extension.zip`** (ở tin nhắn ngay bên dưới) và giải nén ra một thư mục.',
-      '• Mở trình duyệt (Chrome/Cốc Cốc/Edge), truy cập `chrome://extensions/` (hoặc `edge://extensions/`).',
-      '• Bật **Chế độ dành cho nhà phát triển** (**Developer mode**) ở góc phải -> Nhấn **Tải tiện ích đã giải nén** (**Load unpacked**) và chọn thư mục vừa giải nén.',
-      '',
-      '**2. Mở cổng sự kiện game chính thức:**',
-      '• Bấm vào trang: [Delta Force HQ](https://www.playdeltaforce.com/events/hq/vi/index.html) và đăng nhập nick Garena của bạn.',
-      '',
-      '**3. Nhập mã & Hoàn tất:**',
-      `• Nhìn vào **góc dưới bên phải màn hình web**, bảng **"DF Toolbox"** sẽ tự động xuất hiện.`,
-      `• Nhập mã **\`${code}\`** vào ô và bấm **"Liên kết Discord"**.`,
-      '• Bot sẽ gửi tin nhắn xác nhận thành công ngay lập tức!',
+      '🛡️ **CAM KẾT AN TOÀN TUYỆT ĐỐI (100% Yên Tâm):**',
+      '• **Không bao giờ hỏi mật khẩu:** Bạn chỉ đăng nhập tài khoản trực tiếp trên cổng Garena chính thức (`sso.garena.com`). Bot và tiện ích **tuyệt đối không xem, không hỏi và không lưu** mật khẩu hay mã OTP của bạn.',
+      '• **Trang web chính chủ:** Cổng sự kiện `playdeltaforce.com` do Tencent Games & Garena trực tiếp quản lý.',
+      '• **Mục đích duy nhất:** Chỉ kết nối mã nhân vật (OpenID) để bot hiển thị K/D (`/df stats`), lịch sử đấu (`/df history`) và tự động nhận quà xưởng (`/df workshop`).',
       '',
       '---',
-      '🛡️ **CAM KẾT AN TOÀN & BẢO MẬT 100%:**',
-      '• **Không bao giờ hỏi mật khẩu:** Bạn chỉ đăng nhập trực tiếp trên cổng chính thức của Garena. Bot và tiện ích tuyệt đối **không xem, không hỏi và không lưu** mật khẩu hay mã OTP của bạn.',
-      '• **Trang web chính chủ:** `playdeltaforce.com` là cổng sự kiện chính thức do Tencent Games & Garena quản lý.',
-      '• **Mục đích:** Chỉ lấy mã định danh nhân vật (OpenID) để bot hiển thị K/D (`/df stats`), lịch sử đấu (`/df history`) và tự động nhận quà xưởng (`/df workshop`).',
+      '',
+      `🔑 **MÃ LIÊN KẾT CỦA BẠN:** **\`${code}\`** *(Bấm vào mã để sao chép • Hiệu lực 10 phút)*`,
+      '',
+      '---',
+      '',
+      '### 📌 3 Bước Thực Hiện Nhanh (Chỉ mất 1 phút):',
+      '**1. Cài tiện ích vào trình duyệt (Chỉ cần làm 1 lần duy nhất trên máy tính):**',
+      '• Tải tệp **`DF-Extension.zip`** ở tin nhắn bên dưới -> Nhấp chuột phải chọn **Extract All... (Giải nén)**.',
+      '• Trên trình duyệt (Chrome, Cốc Cốc, Edge), vào địa chỉ: `chrome://extensions/`',
+      '• Bật công tắc **Chế độ cho nhà phát triển** (**Developer mode**) ở góc trên bên phải.',
+      '• Bấm nút **Tải tiện ích đã giải nén** (**Load unpacked**) ở góc trên bên trái -> Chọn thư mục bạn vừa giải nén.',
+      '',
+      '**2. Mở cổng sự kiện chính thức:**',
+      '• Bấm nút **"🌐 1. Mở Cổng Sự Kiện Garena"** ở bên dưới và đăng nhập nick game của bạn.',
+      '',
+      '**3. Nhập mã & Hoàn tất:**',
+      `• Bảng màu đen **"DF Toolbox"** sẽ tự động xuất hiện ở **góc dưới bên phải màn hình web**.`,
+      `• Nhập mã **\`${code}\`** vào ô và bấm **"Liên kết Discord"**.`,
+      '• ✨ Bot sẽ gửi tin nhắn chúc mừng thành công ngay lập tức!',
       '',
       '> 💡 *Nếu bạn cần xem chi tiết từng bước bằng hình ảnh, hãy dùng lệnh `/df help` (chọn tab **🧩 Hướng Dẫn Liên Kết**).*',
     ].join('\n'),
   );
+
+  const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setStyle(ButtonStyle.Link)
+      .setLabel('🌐 1. Mở Cổng Sự Kiện Garena')
+      .setURL('https://www.playdeltaforce.com/events/hq/vi/index.html'),
+    new ButtonBuilder()
+      .setStyle(ButtonStyle.Link)
+      .setLabel('💬 2. Kênh Hỗ Trợ 1-1 (KLB Community)')
+      .setURL('https://discord.gg/vz6w6c3Xe3'),
+  );
+
   await interaction.reply({
-    components: info.toJSON(),
+    components: [...info.toJSON(), actionRow.toJSON()],
     flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
   } as Parameters<typeof interaction.reply>[0]);
 
@@ -88,7 +111,7 @@ async function handleStart(
   if (files.length > 0) {
     await interaction.followUp({
       content:
-        '📦 **Tệp cài đặt Tiện ích mở rộng Delta Force (Extension):**\n' +
+        '📦 **Tệp Cài Đặt Tiện Ích Mở Rộng (DF-Extension.zip):**\n' +
         '> 1. Tải tệp **`DF-Extension.zip`** đính kèm bên dưới về máy tính.\n' +
         '> 2. Nhấp chuột phải vào file đã tải -> Chọn **Extract All... (Giải nén)**.\n' +
         '> 3. Mở `chrome://extensions/` -> Bật **Developer mode** -> Chọn **Load unpacked** và chọn thư mục vừa giải nén.\n' +

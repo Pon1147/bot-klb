@@ -113,22 +113,10 @@ export function buildHelpContainer(tab: HelpTab): BuildContainerResult {
     '',
     '---',
     '',
-    '🎬 **Video Hướng Dẫn & Hỗ Trợ:**',
-    '> Bạn có thể xem video mẫu thao tác từng bước tại clip đính kèm trong máy chủ hoặc liên hệ hỗ trợ viên Discord: `crushpon` / [KLB Community](https://discord.gg/vz6w6c3Xe3) để được hỗ trợ 1-1.',
+    '🎬 **Video Thao Tác Mẫu & Trợ Giúp:**',
+    '> Bạn có thể xem clip hướng dẫn thao tác chi tiết được chia sẻ tại máy chủ hoặc bấm nút **"💬 Hỗ Trợ 1-1"** bên dưới để được hỗ trợ viên trực tiếp hỗ trợ.',
     '',
-
-    '',
-
-    '',
-
-    '',
-
-    '',
-
-    '',
-
-    '',
-    '> 💬 **Hỗ trợ & Thắc mắc:** Vui lòng liên hệ Discord: `crushpon` hoặc tham gia server [KLB Community](https://discord.gg/vz6w6c3Xe3) để được hỗ trợ.',
+    '> 💬 **Hỗ trợ & Thắc mắc:** Vui lòng liên hệ Discord: `crushpon` hoặc tham gia server [KLB Community](https://discord.gg/vz6w6c3Xe3).',
   ].join('\n');
 
   return makeResult(
@@ -163,6 +151,22 @@ export function buildHelpActionRow(currentTab: HelpTab): ActionRowBuilder<Button
 }
 
 /**
+ * Xây dựng ActionRow chứa các liên kết trực tiếp (Cổng sự kiện Garena + Support Discord).
+ */
+export function buildHelpLinksActionRow(): ActionRowBuilder<ButtonBuilder> {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setStyle(ButtonStyle.Link)
+      .setLabel('🌐 Mở Cổng Sự Kiện Garena')
+      .setURL('https://www.playdeltaforce.com/events/hq/vi/index.html'),
+    new ButtonBuilder()
+      .setStyle(ButtonStyle.Link)
+      .setLabel('💬 Hỗ Trợ 1-1 (KLB Community)')
+      .setURL('https://discord.gg/vz6w6c3Xe3'),
+  );
+}
+
+/**
  * Handler thực thi khi người dùng gõ /df help.
  */
 export async function execute(
@@ -173,6 +177,7 @@ export async function execute(
 
   const container = buildHelpContainer('commands');
   const row = buildHelpActionRow('commands');
+  const linksRow = buildHelpLinksActionRow();
 
   const zipPath = getExtensionZipPath();
   const files = zipPath
@@ -185,7 +190,7 @@ export async function execute(
     : [];
 
   await interaction.reply({
-    components: [...container.toJSON(), row.toJSON()],
+    components: [...container.toJSON(), row.toJSON(), linksRow.toJSON()],
     flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
   } as Parameters<typeof interaction.reply>[0]);
 
@@ -220,10 +225,11 @@ export async function handleHelpButton(
   const tab: HelpTab = interaction.customId === 'df_help_tab_commands' ? 'commands' : 'guide';
   const container = buildHelpContainer(tab);
   const row = buildHelpActionRow(tab);
+  const linksRow = buildHelpLinksActionRow();
 
   try {
     await interaction.update({
-      components: [...container.toJSON(), row.toJSON()],
+      components: [...container.toJSON(), row.toJSON(), linksRow.toJSON()],
     });
   } catch (error) {
     if (!isIgnorableInteractionError(error)) {

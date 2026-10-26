@@ -116,11 +116,11 @@
       <input type="text" id="df-link-code" placeholder="Dán claim code từ Discord" maxlength="6" />
       <button id="df-link-submit" ${state.status !== 'ready' ? 'disabled' : ''}>Liên kết Discord</button>
       <div class="hint">
-        <strong>Bắt buộc:</strong> Chạy /df link start trên Discord trước<br>
-        1. Chạy /df link start → nhận code<br>
-        2. Dán code ở trên<br>
-        3. Nhấn Liên kết Discord<br>
-        4. Chờ DM "Chúc mừng liên kết thành công"
+        <strong>🛡️ An toàn 100%:</strong> Tuyệt đối không lưu mật khẩu<br>
+        1. Gõ <strong>/df link start</strong> trên Discord để lấy mã 6 ký tự<br>
+        2. Dán mã vào ô phía trên<br>
+        3. Bấm nút <strong>Liên kết Discord</strong><br>
+        4. Kiểm tra tin nhắn riêng chúc mừng từ bot!
       </div>
     `;
 

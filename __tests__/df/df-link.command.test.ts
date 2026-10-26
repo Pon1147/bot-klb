@@ -37,16 +37,21 @@ jest.mock('discord.js', () => ({
       this._data.style = v;
       return this;
     }
+    setURL(v: string) {
+      this._data.url = v;
+      return this;
+    }
     toJSON() {
       return {
         type: 2,
         custom_id: this._data.customId,
         label: this._data.label,
         style: this._data.style,
+        url: this._data.url,
       };
     }
   },
-  ButtonStyle: { Primary: 1, Secondary: 2 },
+  ButtonStyle: { Primary: 1, Secondary: 2, Link: 5 },
   SlashCommandBuilder: class {
     setName() {
       return this;
@@ -204,10 +209,11 @@ describe('df-link.command', () => {
 
       const replyCall = mockReply.mock.calls[0];
       expect(replyCall[0].components).toBeDefined();
-      expect(replyCall[0].components).toHaveLength(1);
-      // component là container với TextDisplay chứa claim code
+      expect(replyCall[0].components).toHaveLength(2);
+      // component đầu tiên là container với TextDisplay chứa claim code, component thứ 2 là ActionRow chứa link buttons
       const infoComp = replyCall[0].components[0];
       expect(infoComp.type).toBe(17); // Container
+      expect(replyCall[0].components[1].type).toBe(1); // ActionRow
       // Tìm TextDisplay trong nested components
       const textDisplay = infoComp.components?.find((c: any) => c.content?.includes('ABC123'));
       expect(textDisplay).toBeDefined();

@@ -107,3 +107,7 @@ codes-output.txt
 Thumbs.db
 Desktop.ini
 .DS_Store
+# Large video clips
+src/assets/clips/
+*.mkv
+*.mp4
