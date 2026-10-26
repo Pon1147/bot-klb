@@ -66,7 +66,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           source_endpoint: msg.source_endpoint || null,
         };
 
-        const targetUrl = 'https://bot-klb-production.up.railway.app/api/v1/auth/claim';
+        // Hỗ trợ dynamic endpoint cho Dev/Staging qua chrome.storage.local (fallback sang Production)
+        const storageConfig = await chrome.storage.local.get(['claim_api_url']);
+        const targetUrl = (storageConfig.claim_api_url && typeof storageConfig.claim_api_url === 'string')
+          ? storageConfig.claim_api_url.trim()
+          : 'https://bot-klb-production.up.railway.app/api/v1/auth/claim';
         console.log(`[SW] Sending claim to Bot API: ${targetUrl}`);
 
         const res = await fetch(targetUrl, {

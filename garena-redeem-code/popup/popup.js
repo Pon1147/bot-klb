@@ -331,8 +331,6 @@ const $ = (sel) => document.querySelector(sel);
 const codesInput = $('#codesInput');
 const btnSave = $('#btnSave');
 const btnReset = $('#btnReset');
-const webhookUrlInput = $('#webhookUrlInput');
-const btnSaveWebhook = $('#btnSaveWebhook');
 const codeCounter = $('#codeCounter');
 const statusDot = $('#statusDot');
 const statusLabel = $('#statusLabel');
@@ -443,7 +441,7 @@ function renderRedeemSummary() {
 
 // ===== INIT: load từ storage + detect site =====
 initDynamicUI();
-chrome.storage.local.get(['redeem_codes', 'webhookUrl'], (result) => {
+chrome.storage.local.get(['redeem_codes'], (result) => {
   // Load codes
   const storedCodes = Array.isArray(result.redeem_codes) ? result.redeem_codes : [];
   const mergedCodes = [...new Set([...DEFAULT_CODES, ...storedCodes])];
@@ -456,11 +454,6 @@ chrome.storage.local.get(['redeem_codes', 'webhookUrl'], (result) => {
   } else {
     codesInput.value = DEFAULT_CODES.join('\n');
   }
-  // Load webhook URL (legacy fallback)
-  if (result.webhookUrl && webhookUrlInput) {
-    webhookUrlInput.value = result.webhookUrl;
-  }
-
   // Render redeem summary
   renderRedeemSummary();
   updateCodeCounter();
@@ -542,31 +535,6 @@ btnSave.addEventListener('click', async () => {
     btnSave.style.background = '';
   }, 1500);
 });
-
-// ===== SAVE WEBHOOK URL (Legacy) =====
-if (btnSaveWebhook && webhookUrlInput) {
-  btnSaveWebhook.addEventListener('click', () => {
-    const url = webhookUrlInput.value.trim();
-    if (!url) {
-      alert('Vui lòng nhập Webhook URL!');
-      return;
-    }
-    if (!url.startsWith('https://discord.com/api/webhooks/')) {
-      alert('URL không hợp lệ. Phải có dạng: https://discord.com/api/webhooks/.../...');
-      return;
-    }
-    chrome.storage.local.set({ webhookUrl: url }, () => {
-      btnSaveWebhook.textContent = '✅ Đã lưu!';
-      btnSaveWebhook.style.background = '#22c55e';
-      // Ẩn input để tránh lộ URL
-      webhookUrlInput.value = '';
-      setTimeout(() => {
-        btnSaveWebhook.textContent = '💾 Lưu Webhook URL';
-        btnSaveWebhook.style.background = '';
-      }, 1500);
-    });
-  });
-}
 
 // ===== RESET TO DEFAULT (KHÔNG auto-save) =====
 btnReset.addEventListener('click', () => {
