@@ -12,6 +12,41 @@ export interface EventModule {
 }
 
 /**
+ * Bọc event listener trong wrapper an toàn:
+ * - Bắt synchronous exception (try/catch)
+ * - Bắt asynchronous rejection (then/catch)
+ * - Ghi log đầy đủ event name, error message và stack trace
+ * - Tuyệt đối không để exception thoát ra ngoài làm crash tiến trình
+ */
+export function wrapSafeEventListener(
+  eventName: string,
+  executeFn: (...args: unknown[]) => unknown,
+  loggerInstance = logger,
+): (...args: unknown[]) => void {
+  return (...args: unknown[]) => {
+    try {
+      const result = executeFn(...args);
+      // Hỗ trợ cả Native Promise và bất kỳ Thenable tuân thủ Promises/A+ nào
+      if (result && typeof (result as Record<string, any>).then === 'function') {
+        Promise.resolve(result).catch((asyncError: unknown) => {
+          loggerInstance.error(`[Event: ${eventName}] Asynchronous error in event listener:`, {
+            event: eventName,
+            error: asyncError instanceof Error ? asyncError.message : String(asyncError),
+            stack: asyncError instanceof Error ? asyncError.stack : undefined,
+          });
+        });
+      }
+    } catch (syncError: unknown) {
+      loggerInstance.error(`[Event: ${eventName}] Synchronous error in event listener:`, {
+        event: eventName,
+        error: syncError instanceof Error ? syncError.message : String(syncError),
+        stack: syncError instanceof Error ? syncError.stack : undefined,
+      });
+    }
+  };
+}
+
+/**
  * Recursively collect all event files from a directory.
  */
 function collectEventFiles(dirPath: string): string[] {
@@ -99,11 +134,12 @@ export function loadEvents(botClient: Client, customEventsPath?: string): void {
 
       // Bind client as first argument so events can access client.commands, client.database
       const boundExecute = eventModule.execute.bind(null, botClient);
+      const safeListener = wrapSafeEventListener(eventName, boundExecute);
 
       if (shouldOnce) {
-        botClient.once(eventName, boundExecute);
+        botClient.once(eventName, safeListener);
       } else {
-        botClient.on(eventName, boundExecute);
+        botClient.on(eventName, safeListener);
       }
 
       loadedCount++;

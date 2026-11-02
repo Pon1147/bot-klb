@@ -250,6 +250,42 @@ async function handleModalSubmit(interaction: ModalSubmitInteraction): Promise<v
 /**
  * Handle slash commands (ChatInputCommandInteraction) with RBAC and error handling.
  */
+/**
+ * Phản hồi an toàn khi interaction gặp lỗi:
+ * - Nếu interaction đã deferred nhưng chưa reply: dùng editReply()
+ * - Nếu chưa reply và chưa deferred: dùng reply({ flags: MessageFlags.Ephemeral })
+ * - Nếu đã replied: không gửi thêm để tránh lỗi "Interaction already replied"
+ * - Bắt và bỏ qua các lỗi interaction token expired (10062) để không tạo unhandled rejection
+ */
+export async function sendInteractionErrorFallback(
+  interaction:
+    | ButtonInteraction
+    | StringSelectMenuInteraction
+    | ChatInputCommandInteraction
+    | ModalSubmitInteraction,
+  message = 'Đã xảy ra lỗi khi xử lý tương tác này.',
+): Promise<void> {
+  try {
+    if (interaction.deferred && !interaction.replied) {
+      await interaction.editReply({
+        content: message,
+      });
+    } else if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({
+        content: message,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+  } catch (err) {
+    if (isIgnorableInteractionError(err)) {
+      return;
+    }
+    logger.warn('Không thể gửi thông báo lỗi fallback cho interaction:', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
 async function handleChatInputCommand(
   client: Client,
   interaction: ChatInputCommandInteraction,
@@ -334,12 +370,10 @@ async function handleChatInputCommand(
   const database = client.database;
   if (!database) {
     logger.error('Database not attached to client. Cannot execute command.');
-    if (!interaction.replied && !interaction.deferred) {
-      await interaction.reply({
-        content: 'Cơ sở dữ liệu không khả dụng. Vui lòng liên hệ quản trị viên.',
-        flags: MessageFlags.Ephemeral,
-      });
-    }
+    await sendInteractionErrorFallback(
+      interaction,
+      'Cơ sở dữ liệu không khả dụng. Vui lòng liên hệ quản trị viên.',
+    );
     return;
   }
 
@@ -352,16 +386,7 @@ async function handleChatInputCommand(
     const errMessage = error instanceof Error ? error.message : String(error);
     logger.error(`Error executing command ${commandPath}: ${errMessage}`);
 
-    if (!interaction.replied && !interaction.deferred) {
-      try {
-        await interaction.reply({
-          content: 'Đã xảy ra lỗi khi thực thi lệnh này.',
-          flags: MessageFlags.Ephemeral,
-        });
-      } catch {
-        // reply có thể fail nếu interaction đã expire
-      }
-    }
+    await sendInteractionErrorFallback(interaction, 'Đã xảy ra lỗi khi thực thi lệnh này.');
   }
 }
 
@@ -410,5 +435,7 @@ export async function routeInteraction(
       customId: 'customId' in interaction ? interaction.customId : undefined,
       error: error instanceof Error ? error.message : String(error),
     });
+
+    await sendInteractionErrorFallback(interaction);
   }
 }

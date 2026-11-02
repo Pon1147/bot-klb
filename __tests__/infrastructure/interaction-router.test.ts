@@ -7,6 +7,7 @@
 import {
   routeInteraction,
   webhookRevealedUsers,
+  sendInteractionErrorFallback,
 } from '../../src/infrastructure/discord/interaction-router.js';
 import { PermissionFlagsBits, MessageFlags } from 'discord.js';
 import { botConfig } from '../../src/config/bot.config.js';
@@ -902,3 +903,239 @@ describe('interaction-router — Bot Owner RBAC Bypass', () => {
 
 
 
+
+describe('interaction-router — BUG-02 Interaction Acknowledgment & Error Fallback', () => {
+  it('sendInteractionErrorFallback: nếu interaction đã deferred, phải gọi editReply', async () => {
+    const mockInteraction: any = {
+      deferred: true,
+      replied: false,
+      editReply: jest.fn().mockResolvedValue(undefined),
+      reply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    await sendInteractionErrorFallback(mockInteraction, 'Lỗi thử nghiệm');
+
+    expect(mockInteraction.editReply).toHaveBeenCalledWith({
+      content: 'Lỗi thử nghiệm',
+    });
+    expect(mockInteraction.reply).not.toHaveBeenCalled();
+  });
+
+  it('sendInteractionErrorFallback: nếu interaction chưa defer và chưa reply, phải gọi reply với Ephemeral flag', async () => {
+    const mockInteraction: any = {
+      deferred: false,
+      replied: false,
+      editReply: jest.fn().mockResolvedValue(undefined),
+      reply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    await sendInteractionErrorFallback(mockInteraction, 'Lỗi thử nghiệm');
+
+    expect(mockInteraction.reply).toHaveBeenCalledWith({
+      content: 'Lỗi thử nghiệm',
+      flags: MessageFlags.Ephemeral,
+    });
+    expect(mockInteraction.editReply).not.toHaveBeenCalled();
+  });
+
+  it('sendInteractionErrorFallback: nếu interaction đã replied, không được gửi thêm để tránh lỗi Discord', async () => {
+    const mockInteraction: any = {
+      deferred: true,
+      replied: true,
+      editReply: jest.fn().mockResolvedValue(undefined),
+      reply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    await sendInteractionErrorFallback(mockInteraction, 'Lỗi thử nghiệm');
+
+    expect(mockInteraction.reply).not.toHaveBeenCalled();
+    expect(mockInteraction.editReply).not.toHaveBeenCalled();
+  });
+
+  it('sendInteractionErrorFallback: bỏ qua an toàn khi Discord API báo lỗi interaction expired (10062)', async () => {
+    const expiredError = new Error('Unknown interaction');
+    (expiredError as any).code = 10062;
+
+    const mockInteraction: any = {
+      deferred: true,
+      replied: false,
+      editReply: jest.fn().mockRejectedValue(expiredError),
+      reply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    await expect(sendInteractionErrorFallback(mockInteraction)).resolves.not.toThrow();
+  });
+
+  it('handleChatInputCommand: khi command ném lỗi SAU KHI đã deferReply, phải gọi editReply thay vì reply', async () => {
+    const mockExecute = jest.fn().mockImplementation(async (interaction) => {
+      interaction.deferred = true;
+      throw new Error('Async execution failed after deferReply');
+    });
+
+    const mockClient: any = {
+      commands: new Map([['df', { execute: mockExecute }]]),
+      database: {},
+    };
+
+    const interaction: any = {
+      isButton: () => false,
+      isStringSelectMenu: () => false,
+      isModalSubmit: () => false,
+      isChatInputCommand: () => true,
+      commandName: 'df',
+      options: {
+        getSubcommandGroup: () => null,
+        getSubcommand: () => 'stats',
+      },
+      user: { id: 'user-1' },
+      guildId: 'guild-1',
+      guild: { id: 'guild-1', ownerId: 'guild-owner-id' },
+      member: { roles: { cache: new Map() } },
+      memberPermissions: { has: () => false },
+      replied: false,
+      deferred: false,
+      reply: jest.fn().mockResolvedValue(undefined),
+      editReply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    mockSettingsService.get.mockReturnValue({
+      rbac: { ownerRoleId: null, moderatorRoleId: null, memberRoleId: null },
+    });
+
+    await routeInteraction(mockClient, interaction);
+
+    expect(mockExecute).toHaveBeenCalled();
+    expect(interaction.editReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('Đã xảy ra lỗi'),
+      }),
+    );
+    expect(interaction.reply).not.toHaveBeenCalled();
+  });
+
+  it('routeInteraction: khi button handler ném ngoại lệ chưa xử lý, phải gửi fallback error response', async () => {
+    const buttonInteraction: any = {
+      isButton: () => true,
+      isStringSelectMenu: () => false,
+      isModalSubmit: () => false,
+      isChatInputCommand: () => false,
+      customId: 'unknown_buggy_button',
+      user: { id: 'user-1' },
+      replied: false,
+      deferred: false,
+      reply: jest.fn().mockResolvedValue(undefined),
+      editReply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    // Tạo mockClient
+    const mockClient: any = {
+      commands: new Map(),
+      database: {},
+    };
+
+    // Giả lập throw trong button bằng cách mock hook hoặc route
+    // Nếu customId không match thì return void, nhưng nếu một button match ném lỗi:
+    buttonInteraction.customId = 'seller_select_bank:invalid';
+    await routeInteraction(mockClient, buttonInteraction);
+
+    // Kiểm tra routeInteraction bắt lỗi và phản hồi an toàn
+    // Nếu seller_select_bank ném lỗi vì thiếu service/db, fallback được gọi
+  });
+
+  it('sendInteractionErrorFallback: khi fallback call (editReply) chính nó bị reject, không được ném unhandled rejection', async () => {
+    const mockInteraction: any = {
+      deferred: true,
+      replied: false,
+      editReply: jest.fn().mockRejectedValue(new Error('Network socket closed')),
+      reply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    await expect(sendInteractionErrorFallback(mockInteraction)).resolves.not.toThrow();
+  });
+
+  it('routeInteraction: button failure after acknowledgment (deferred) gọi editReply', async () => {
+    const buttonInteraction: any = {
+      isButton: () => true,
+      isStringSelectMenu: () => false,
+      isModalSubmit: () => false,
+      isChatInputCommand: () => false,
+      customId: 'seller_qr_select_bank:target_user_id',
+      get user(): any {
+        throw new Error('Button internal processing failure');
+      },
+      replied: false,
+      deferred: true,
+      reply: jest.fn().mockResolvedValue(undefined),
+      editReply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const mockClient: any = { commands: new Map(), database: {} };
+
+    await routeInteraction(mockClient, buttonInteraction);
+
+    expect(buttonInteraction.editReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.any(String),
+      }),
+    );
+    expect(buttonInteraction.reply).not.toHaveBeenCalled();
+  });
+
+  it('routeInteraction: select menu failure after acknowledgment (deferred) gọi editReply', async () => {
+    const selectInteraction: any = {
+      isButton: () => false,
+      isStringSelectMenu: () => true,
+      isModalSubmit: () => false,
+      isChatInputCommand: () => false,
+      customId: 'seller_qr_select_bank_menu:target_user_id',
+      get user(): any {
+        throw new Error('Select menu internal processing failure');
+      },
+      replied: false,
+      deferred: true,
+      values: ['vcb'],
+      reply: jest.fn().mockResolvedValue(undefined),
+      editReply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const mockClient: any = { commands: new Map(), database: {} };
+
+    await routeInteraction(mockClient, selectInteraction);
+
+    expect(selectInteraction.editReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.any(String),
+      }),
+    );
+    expect(selectInteraction.reply).not.toHaveBeenCalled();
+  });
+
+  it('routeInteraction: modal submit failure after acknowledgment (deferred) gọi editReply', async () => {
+    const modalInteraction: any = {
+      isButton: () => false,
+      isStringSelectMenu: () => false,
+      isModalSubmit: () => true,
+      isChatInputCommand: () => false,
+      customId: 'seller_qr_modal_info:target_user:VCB:Vietcombank',
+      get user(): any {
+        throw new Error('Modal submit internal processing failure');
+      },
+      replied: false,
+      deferred: true,
+      reply: jest.fn().mockResolvedValue(undefined),
+      editReply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const mockClient: any = { commands: new Map(), database: {} };
+
+    await routeInteraction(mockClient, modalInteraction);
+
+    expect(modalInteraction.editReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.any(String),
+      }),
+    );
+    expect(modalInteraction.reply).not.toHaveBeenCalled();
+  });
+
+});

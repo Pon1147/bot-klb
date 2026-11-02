@@ -16,6 +16,8 @@ import {
   getWorkshopRecommendations,
   getWorkbenchList,
   setAxiosCreatorForTest,
+  sanitizeAxiosError,
+  sanitizeUrl,
 } from '../../src/services/deltaforce.api.js';
 
 const MOCK_TOKEN = { openid: '1234567890', token: 'abc123def456' };
@@ -177,4 +179,193 @@ describe('deltaforce.api', () => {
       );
     });
   });
+
+  describe('NEW-05 Sensitive Token Redaction & Sanitization', () => {
+    it('sanitizeUrl: phải che giấu token, signature và openid trong URL query params', () => {
+      const sensitiveUrl =
+        'https://api.deltaforce.com/GetMyData?openid=1234567890&token=very_secret_token_123&s=sig_secret_xyz&game_id=1001';
+      const cleanUrl = sanitizeUrl(sensitiveUrl);
+
+      expect(cleanUrl).not.toContain('very_secret_token_123');
+      expect(cleanUrl).not.toContain('sig_secret_xyz');
+      expect(cleanUrl).toContain('token=***REDACTED***');
+      expect(cleanUrl).toContain('s=***REDACTED***');
+      expect(cleanUrl).toContain('openid=1234****7890');
+      expect(cleanUrl).toContain('game_id=1001');
+    });
+
+    it('sanitizeAxiosError: phải khử nhạy cảm trong error.config.params, data và request.path', () => {
+      const axiosError: any = {
+        name: 'AxiosError',
+        message: 'Request failed with status code 500: https://api.com?token=secret_in_message',
+        config: {
+          url: '/GetMyData?token=secret_in_url',
+          params: {
+            openid: '1234567890',
+            token: 'super_secret_token',
+            s: 'signature_abc',
+            ts: '12345',
+          },
+          data: JSON.stringify({
+            openid: '1234567890',
+            token: 'super_secret_token',
+            game_id: 1001,
+          }),
+        },
+        request: {
+          path: '/GetMyData?openid=1234567890&token=super_secret_token&s=sig_123',
+        },
+      };
+
+      const sanitized: any = sanitizeAxiosError(axiosError);
+
+      expect(sanitized.config.params.token).toBe('***REDACTED***');
+      expect(sanitized.config.params.s).toBe('***REDACTED***');
+      expect(sanitized.config.params.openid).toBe('1234****7890');
+      expect(sanitized.config.params.ts).toBe('12345');
+
+      const sanitizedBody = JSON.parse(sanitized.config.data);
+      expect(sanitizedBody.token).toBe('***REDACTED***');
+      expect(sanitizedBody.openid).toBe('1234****7890');
+
+      expect(sanitized.request.path).not.toContain('super_secret_token');
+      expect(sanitized.request.path).toContain('token=***REDACTED***');
+      expect(sanitized.message).not.toContain('secret_in_message');
+    });
+
+    it('outbound request: không làm thay đổi các parameters thực tế gửi đi tới API Garena', async () => {
+      mockPost.mockResolvedValueOnce({ data: { code: 0, msg: 'ok', data: { test: true } } });
+
+      await getMyData(MOCK_TOKEN);
+
+      // Kiểm tra config truyền vào axiosCreator chứa token thô chính xác
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          params: expect.objectContaining({
+            openid: '1234567890',
+            token: 'abc123def456',
+          }),
+        }),
+      );
+    });
+
+    it('network failure: khi Axios request bị reject, error trả về phải được sanitize sạch', async () => {
+      const rawAxiosError: any = new Error('Network Timeout');
+      rawAxiosError.config = {
+        params: {
+          openid: '1234567890',
+          token: 'leak_candidate_token',
+          s: 'leak_sig',
+        },
+      };
+      mockPost.mockRejectedValueOnce(rawAxiosError);
+
+      await expect(getMyData(MOCK_TOKEN)).rejects.toThrow();
+
+      // Kiểm tra error config đã được redact
+      expect(rawAxiosError.config.params.token).toBe('***REDACTED***');
+      expect(rawAxiosError.config.params.s).toBe('***REDACTED***');
+      expect(rawAxiosError.config.params.openid).toBe('1234****7890');
+    });
+  });
+
+
+    it('sanitizeAxiosError: phải khử nhạy cảm headers, response.data, stack và toJSON()', () => {
+      const axiosError: any = {
+        name: 'AxiosError',
+        message: 'Request failed with 500: https://api.deltaforce.com?token=super_secret_token_123',
+        stack: 'AxiosError: Request failed: https://api.deltaforce.com?token=super_secret_token_123\n    at post (api.ts:50)',
+        config: {
+          url: '/GetMyData?token=super_secret_token_123',
+          headers: {
+            token: 'header_secret_token',
+            authorization: 'Bearer secret_auth_header',
+            cookie: 'session_token=123',
+            'content-type': 'application/json',
+          },
+          params: {
+            token: 'super_secret_token_123',
+            openid: '1234567890',
+          },
+        },
+        request: {
+          path: '/GetMyData?token=super_secret_token_123',
+          _header: 'GET /GetMyData?token=super_secret_token_123 HTTP/1.1\r\n',
+        },
+        response: {
+          data: {
+            token: 'echoed_secret_token',
+            s: 'echoed_sig',
+          },
+        },
+        toJSON: function() {
+          return {
+            message: this.message,
+            config: this.config,
+          };
+        },
+      };
+
+      const sanitized: any = sanitizeAxiosError(axiosError);
+
+      // Check headers
+      expect(sanitized.config.headers.token).toBe('***REDACTED***');
+      expect(sanitized.config.headers.authorization).toBe('***REDACTED***');
+      expect(sanitized.config.headers.cookie).toBe('***REDACTED***');
+      expect(sanitized.config.headers['content-type']).toBe('application/json');
+
+      // Check request._header
+      expect(sanitized.request._header).not.toContain('super_secret_token_123');
+      expect(sanitized.request._header).toContain('token=***REDACTED***');
+
+      // Check response.data
+      expect(sanitized.response.data.token).toBe('***REDACTED***');
+      expect(sanitized.response.data.s).toBe('***REDACTED***');
+
+      // Check stack
+      expect(sanitized.stack).not.toContain('super_secret_token_123');
+      expect(sanitized.stack).toContain('token=***REDACTED***');
+
+      // Check JSON.stringify serialization
+      const jsonStr = JSON.stringify(sanitized);
+      expect(jsonStr).not.toContain('super_secret_token_123');
+      expect(jsonStr).not.toContain('header_secret_token');
+      expect(jsonStr).not.toContain('echoed_secret_token');
+
+      // Check toJSON() method serialization
+      const jsonFromMethod = sanitized.toJSON();
+      expect(jsonFromMethod.config.params.token).toBe('***REDACTED***');
+      expect(JSON.stringify(jsonFromMethod)).not.toContain('super_secret_token_123');
+    });
+
+    it('retry sau khi thất bại: request thứ 2 vẫn gửi token chính xác và thành công', async () => {
+      // Giả lập lần 1 thất bại
+      const networkErr = new Error('502 Bad Gateway');
+      (networkErr as any).config = { params: { token: 'abc123def456', openid: '1234567890' } };
+      mockPost.mockRejectedValueOnce(networkErr);
+
+      await expect(getMyData(MOCK_TOKEN)).rejects.toThrow();
+
+      // Giả lập lần 2 (retry) thành công
+      const mockSuccessData = {
+        player_info: { nickname: 'RetryPlayer', level: 60, avatar: '', play_duration: '200', register_time: '1609459200' },
+        rank_data: { current_rank: 'Vàng', current_rank_score: 2500, highest_rank: 'Kim Cương', highest_rank_season_id: 8 },
+        summary_data: { bf_combat: null, combat: null, economy: null, performance: null, team: null, total_match_count: 300, vehicle: null },
+      };
+      mockSuccess(mockSuccessData);
+
+      const result = await getMyData(MOCK_TOKEN);
+      expect(result).toEqual(mockSuccessData);
+
+      // Xác nhận lần 2 vẫn truyền token thô chính xác vào axios
+      expect(mockCreate).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          params: expect.objectContaining({
+            token: 'abc123def456',
+            openid: '1234567890',
+          }),
+        }),
+      );
+    });
+
 });
