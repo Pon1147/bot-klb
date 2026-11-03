@@ -41,8 +41,8 @@ describe('DF Help Handler & Extension Utils', () => {
       expect(textDisplay.content).toContain('/df build');
       expect(textDisplay.content).toContain('/df link start');
       expect(textDisplay.content).toContain('/df code setchannel');
+      expect(textDisplay.content).toContain('/df autopost set');
       expect(textDisplay.content).toContain('/team find');
-      expect(textDisplay.content).toContain('/seller pay');
       expect(textDisplay.content).toContain('/config bot guilds');
       expect(textDisplay.content).toContain('/config bot setannouncechannel');
       expect(textDisplay.content).toContain('/config welcome / leave / booster');
