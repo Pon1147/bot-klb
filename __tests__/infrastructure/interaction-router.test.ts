@@ -1,4 +1,4 @@
-/// <reference types="jest" />
+﻿/// <reference types="jest" />
 /**
  * Unit tests cho interaction-router.ts.
  * Kiểm tra phân luồng interaction và RBAC per-guild cho ChatInputCommand.
@@ -1138,4 +1138,29 @@ describe('interaction-router — BUG-02 Interaction Acknowledgment & Error Fallb
     expect(modalInteraction.reply).not.toHaveBeenCalled();
   });
 
+
+  it('routeInteraction: button df_history_view_all gui huong dan va link xem lich su', async () => {
+    const buttonInteraction: any = {
+      isButton: () => true,
+      isStringSelectMenu: () => false,
+      isModalSubmit: () => false,
+      isChatInputCommand: () => false,
+      customId: 'df_history_view_all',
+      user: { id: 'user-hist' },
+      replied: false,
+      deferred: false,
+      reply: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const mockClient: any = { commands: new Map(), database: {} };
+
+    await routeInteraction(mockClient, buttonInteraction);
+
+    expect(buttonInteraction.reply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('playdeltaforce.com'),
+        flags: MessageFlags.Ephemeral,
+      }),
+    );
+  });
 });

@@ -151,6 +151,15 @@ async function handleButton(interaction: ButtonInteraction): Promise<void> {
   // DF Help tab switch buttons
   if ((await handleHelpButton(interaction)).handled) return;
 
+  // DF History buttons
+  if (interaction.customId === 'df_history_view_all') {
+    await interaction.reply({
+      content: 'Bạn có thể xem chi tiết toàn bộ lịch sử đấu tại: https://www.playdeltaforce.com',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
   // Seller buttons
   if (interaction.customId.startsWith(`${SELLER_QR_IDS.SELECT_BANK}:`)) {
     const targetUserId = interaction.customId.slice(`${SELLER_QR_IDS.SELECT_BANK}:`.length);
