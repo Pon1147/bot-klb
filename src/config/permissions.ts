@@ -70,6 +70,18 @@ export const DEFAULT_PERMISSIONS: PermissionsConfig = {
     'df-code': {
       requiredRoles: ['Member'],
     },
+    'df-vault': {
+      requiredRoles: ['Member'],
+    },
+    'df-match': {
+      requiredRoles: ['Member'],
+    },
+    'df.vault': {
+      requiredRoles: ['Member'],
+    },
+    'df.match': {
+      requiredRoles: ['Member'],
+    },
     'team-find': {
       requiredRoles: ['Member'],
     },

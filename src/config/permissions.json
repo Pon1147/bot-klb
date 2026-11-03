@@ -57,6 +57,26 @@
         "Owner",
         "Moderator"
       ]
+    },
+    "df-vault": {
+      "requiredRoles": [
+        "Member"
+      ]
+    },
+    "df-match": {
+      "requiredRoles": [
+        "Member"
+      ]
+    },
+    "df.vault": {
+      "requiredRoles": [
+        "Member"
+      ]
+    },
+    "df.match": {
+      "requiredRoles": [
+        "Member"
+      ]
     }
   }
 }
