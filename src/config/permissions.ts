@@ -198,6 +198,8 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'df.map': Policy.DF_ACCESS,
   'df.build': Policy.DF_ACCESS,
   'df.gun': Policy.DF_ACCESS,
+  'df.vault': Policy.DF_ACCESS,
+  'df.match': Policy.DF_ACCESS,
   'df.help': Policy.DF_ACCESS,
 
   'df.code.show': Policy.DF_ACCESS,

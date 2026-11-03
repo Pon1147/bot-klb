@@ -5,6 +5,7 @@ import type {
   DfMatchListResponse,
   DfCollectionResponse,
   DfDailyReportResponse,
+  DfMatchDetailResponse,
   DfApiToken,
   DfWorkshopRecommendationResponse,
 } from '../types/deltaforce.types.js';
@@ -457,6 +458,34 @@ export async function getWorkbenchList(
   if (resData.code !== 0) {
     logger.info('GetWorkbenchList failed: code=' + resData.code + ', msg=' + resData.msg);
     throw new Error(`GetWorkbenchList failed: code=${resData.code} msg=${resData.msg}`);
+  }
+  return resData.data;
+}
+
+/**
+ * Call DfTools/GetMatchDetail to fetch full details of a specific match room.
+ */
+export async function getMatchDetail(
+  token: DfApiToken,
+  roomId: string,
+): Promise<DfMatchDetailResponse> {
+  const instance = buildInstance(token);
+  const body = {
+    openid: token.openid,
+    token: token.token,
+    game_id: GAME_ID,
+    channel: DF_CHANNEL,
+    account_type: Number(ACCOUNT_TYPE),
+    lang_type: LANG_TYPE,
+    needLogin: true,
+    report_type: 1,
+    room_id: roomId,
+  };
+
+  const resData = await postSafe<DfMatchDetailResponse>(instance, '/GetMatchDetail', body);
+  if (resData.code !== 0) {
+    logger.info('GetMatchDetail failed: code=' + resData.code + ', msg=' + resData.msg);
+    throw new Error(`GetMatchDetail failed: code=${resData.code} msg=${resData.msg}`);
   }
   return resData.data;
 }

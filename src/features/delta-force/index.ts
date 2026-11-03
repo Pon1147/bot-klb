@@ -21,6 +21,8 @@ export * as helpHandler from './help.handler.js';
 export * as mapHandler from './map.handler.js';
 export * as buildHandler from './build.handler.js';
 export * as autopostHandler from './autopost.handler.js';
+export * as vaultHandler from './vault.handler.js';
+export * as matchHandler from './match.handler.js';
 export * as weaponLoadoutsService from './weapon-loadouts.service.js';
 
 // Interaction handlers & IDs

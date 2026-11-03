@@ -35,6 +35,8 @@ import { execute as executeHelp } from './help.handler.js';
 import { execute as executeMap } from './map.handler.js';
 import { execute as executeBuild } from './build.handler.js';
 import { execute as executeAutopost } from './autopost.handler.js';
+import { execute as executeVault } from './vault.handler.js';
+import { execute as executeMatch } from './match.handler.js';
 
 import { MAX_HISTORY_PAGE } from '../../config/app.constants.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
@@ -202,6 +204,22 @@ export const data = new SlashCommandBuilder()
       ),
   )
   .addSubcommand((sub) =>
+    sub
+      .setName('vault')
+      .setDescription('Sảnh Triển Lãm Đồ Đỏ: Xem bộ sưu tập đồ đỏ và tổng giá trị kho báu.'),
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName('match')
+      .setDescription('Xem chi tiết kết quả và thành tích trận đấu.')
+      .addStringOption((opt) =>
+        opt
+          .setName('match_id')
+          .setDescription('Mã ID trận đấu cần tra cứu (để trống để lấy trận gần nhất)')
+          .setRequired(false),
+      ),
+  )
+  .addSubcommand((sub) =>
     sub.setName('workshop').setDescription('Xem thông tin sản xuất tại Xưởng Căn Cứ Ngầm.'),
   )
   .addSubcommand((sub) =>
@@ -289,6 +307,12 @@ export async function execute(
       return;
     case 'history':
       await executeHistory(interaction, db);
+      return;
+    case 'vault':
+      await executeVault(interaction, db);
+      return;
+    case 'match':
+      await executeMatch(interaction, db);
       return;
     case 'workshop':
       await executeWorkshop(interaction, db);

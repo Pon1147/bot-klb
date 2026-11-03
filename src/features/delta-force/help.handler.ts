@@ -35,6 +35,8 @@ export function buildHelpContainer(tab: HelpTab): BuildContainerResult {
       '- `/df stats`: Xem thống kê tổng quan (K/D, tỷ lệ rút quân, cấp bậc) & đổi mùa giải độc quyền.',
       '- `/df daily`: Xem trạng thái chiến đấu hàng ngày.',
       '- `/df history [limit]`: Xem lịch sử các trận đấu gần đây (1-20 trận).',
+      '- `/df match [match_id]`: Chi tiết kết quả trận đấu (thành tích cá nhân, loot mang ra & thông số tiểu đội).',
+      '- `/df vault`: Sảnh Triển Lãm Đồ Đỏ — Thống kê kho đồ đỏ, tổng giá trị & danh sách món quý giá.',
       '- `/df workshop`: Xem tình trạng sản xuất tại Xưởng Căn Cứ Ngầm.',
       '- `/df code show`: Xem mật khẩu các khu vực & két sắt hôm nay.',
       '- `/df code setchannel`: Thiết lập kênh tự động nhận mật mã két sắt hàng ngày (Dành cho Quản trị viên).',

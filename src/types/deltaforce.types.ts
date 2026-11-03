@@ -81,6 +81,34 @@ export interface DfCollectionItem {
 
 export interface DfCollectionResponse {
   collection_list: DfCollectionItem[];
+  dahong_total_count?: number;
+  dahong_type_count?: number;
+  dahong_total_value?: string | number;
+}
+
+export interface DfMatchMember {
+  nickname: string;
+  operator_id: string;
+  is_self?: boolean;
+  carry_out_value: string | number;
+  kill_operator: number;
+  kill_other: number;
+  survival_duration?: number;
+  rescue?: number;
+  revive?: number;
+}
+
+export interface DfMatchDetailResponse {
+  room_id: string;
+  map_id: number | string;
+  match_time: string | number;
+  match_duration?: number;
+  result: number; // 1: Win / Thắng, 2: Defeat / Tử trận
+  net_income?: string | number;
+  carry_out_value?: string | number;
+  kill_count?: number;
+  operator_id?: string;
+  members?: DfMatchMember[];
 }
 
 export interface DfApiToken {

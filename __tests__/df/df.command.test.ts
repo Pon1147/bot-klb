@@ -15,6 +15,8 @@ import { execute as executeLink } from '../../src/features/delta-force/link.hand
 import { execute as executeHelp } from '../../src/features/delta-force/help.handler.js';
 import { execute as executeMap } from '../../src/features/delta-force/map.handler.js';
 import { execute as executeAutopost } from '../../src/features/delta-force/autopost.handler.js';
+import { execute as executeVault } from '../../src/features/delta-force/vault.handler.js';
+import { execute as executeMatch } from '../../src/features/delta-force/match.handler.js';
 
 jest.mock('../../src/features/delta-force/stats.handler.js', () => ({
   execute: jest.fn().mockResolvedValue(undefined),
@@ -56,6 +58,14 @@ jest.mock('../../src/features/delta-force/autopost.handler.js', () => ({
   execute: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('../../src/features/delta-force/vault.handler.js', () => ({
+  execute: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../../src/features/delta-force/match.handler.js', () => ({
+  execute: jest.fn().mockResolvedValue(undefined),
+}));
+
 function createMockInteraction(overrides: Record<string, unknown> = {}): any {
   const base: Record<string, unknown> = {
     guild: { id: 'guild-123' },
@@ -89,6 +99,8 @@ describe('/df command — Structure & Builder', () => {
       'stats',
       'daily',
       'history',
+      'vault',
+      'match',
       'workshop',
       'unlink',
       'help',
@@ -201,6 +213,30 @@ describe('/df command — Execute Dispatch', () => {
 
     await execute(interaction);
     expect(executeHistory).toHaveBeenCalledWith(interaction, expect.anything());
+  });
+
+  it('phải dispatch tới executeVault khi chọn subcommand "vault"', async () => {
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommandGroup: jest.fn().mockReturnValue(null),
+        getSubcommand: jest.fn().mockReturnValue('vault'),
+      },
+    });
+
+    await execute(interaction);
+    expect(executeVault).toHaveBeenCalledWith(interaction, expect.anything());
+  });
+
+  it('phải dispatch tới executeMatch khi chọn subcommand "match"', async () => {
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommandGroup: jest.fn().mockReturnValue(null),
+        getSubcommand: jest.fn().mockReturnValue('match'),
+      },
+    });
+
+    await execute(interaction);
+    expect(executeMatch).toHaveBeenCalledWith(interaction, expect.anything());
   });
 
   it('phải dispatch tới executeWorkshop khi chọn subcommand "workshop"', async () => {
