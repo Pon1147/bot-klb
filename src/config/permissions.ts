@@ -151,12 +151,7 @@ export type AuthorityLevel =
  * - TEAM_ACCESS: Quyền tìm đồng đội (Mặc định Everyone, hoặc Member role nếu cấu hình)
  */
 export type Policy =
-  | 'MANAGE_RBAC'
-  | 'MANAGE_CONFIG'
-  | 'MANAGE_DF_CODE'
-  | 'DF_ACCESS'
-  | 'TEAM_ACCESS'
-  | 'SELLER_ACCESS';
+  'MANAGE_RBAC' | 'MANAGE_CONFIG' | 'MANAGE_DF_CODE' | 'DF_ACCESS' | 'TEAM_ACCESS';
 
 export const Policy = {
   MANAGE_RBAC: 'MANAGE_RBAC',
@@ -164,7 +159,6 @@ export const Policy = {
   MANAGE_DF_CODE: 'MANAGE_DF_CODE',
   DF_ACCESS: 'DF_ACCESS',
   TEAM_ACCESS: 'TEAM_ACCESS',
-  SELLER_ACCESS: 'SELLER_ACCESS',
 } as const;
 
 // ─── Command Path → Policy Mapping (PHASE 4) ──────────────────────
@@ -221,12 +215,6 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'df.autopost.run': Policy.MANAGE_RBAC,
 
   'team.find': Policy.TEAM_ACCESS,
-
-  'seller.pay': Policy.SELLER_ACCESS,
-  'seller.qr': Policy.SELLER_ACCESS,
-  'seller.history': Policy.SELLER_ACCESS,
-  'seller.top': Policy.SELLER_ACCESS,
-  'seller.config.setrole': Policy.MANAGE_RBAC,
 };
 
 /**
@@ -340,8 +328,7 @@ export function resolvePolicy(policy: Policy, options: ResolvePolicyOptions): Re
     }
 
     case 'DF_ACCESS':
-    case 'TEAM_ACCESS':
-    case 'SELLER_ACCESS': {
+    case 'TEAM_ACCESS': {
       // Moderator cũng có toàn quyền truy cập game
       if (hasModerator) {
         return { allowed: true, matchedAuthority: 'MODERATOR' };

@@ -1035,7 +1035,7 @@ describe('interaction-router — BUG-02 Interaction Acknowledgment & Error Fallb
 
     // Giả lập throw trong button bằng cách mock hook hoặc route
     // Nếu customId không match thì return void, nhưng nếu một button match ném lỗi:
-    buttonInteraction.customId = 'seller_select_bank:invalid';
+    buttonInteraction.customId = 'unknown_button:invalid';
     await routeInteraction(mockClient, buttonInteraction);
 
     // Kiểm tra routeInteraction bắt lỗi và phản hồi an toàn
@@ -1059,7 +1059,7 @@ describe('interaction-router — BUG-02 Interaction Acknowledgment & Error Fallb
       isStringSelectMenu: () => false,
       isModalSubmit: () => false,
       isChatInputCommand: () => false,
-      customId: 'seller_qr_select_bank:target_user_id',
+      customId: 'df_link_show_webhook',
       get user(): any {
         throw new Error('Button internal processing failure');
       },
@@ -1087,7 +1087,7 @@ describe('interaction-router — BUG-02 Interaction Acknowledgment & Error Fallb
       isStringSelectMenu: () => true,
       isModalSubmit: () => false,
       isChatInputCommand: () => false,
-      customId: 'seller_qr_select_bank_menu:target_user_id',
+      customId: 'team-find-rank:session123',
       get user(): any {
         throw new Error('Select menu internal processing failure');
       },
@@ -1116,7 +1116,7 @@ describe('interaction-router — BUG-02 Interaction Acknowledgment & Error Fallb
       isStringSelectMenu: () => false,
       isModalSubmit: () => true,
       isChatInputCommand: () => false,
-      customId: 'seller_qr_modal_info:target_user:VCB:Vietcombank',
+      customId: 'container_modal_lines',
       get user(): any {
         throw new Error('Modal submit internal processing failure');
       },

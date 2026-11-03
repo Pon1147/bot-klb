@@ -135,12 +135,5 @@ async function handleJoinVoice(interaction: ButtonInteraction): Promise<TeamFind
 export async function handleTeamFindSelect(
   interaction: StringSelectMenuInteraction,
 ): Promise<void> {
-  try {
-    await handleTeamFindInteraction(interaction);
-  } catch (error) {
-    logger.error(
-      'Error in team-find select handler: ' +
-        (error instanceof Error ? error.message : String(error)),
-    );
-  }
+  await handleTeamFindInteraction(interaction);
 }

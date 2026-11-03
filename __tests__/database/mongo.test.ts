@@ -548,7 +548,7 @@ describe('MongoDB Module & Fallbacks', () => {
       _setTestDb(mockDbInstance);
       const ok = await initMongoIndexes();
       expect(ok).toBe(true);
-      expect(mockDbInstance.collection).toHaveBeenCalledTimes(8);
+      expect(mockDbInstance.collection).toHaveBeenCalledTimes(5);
     });
 
     it('initMongoIndexes phai bat loi va tra ve false khi createIndex that bai', async () => {

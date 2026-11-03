@@ -23,11 +23,6 @@ import { initializeCaptureEventsTable } from '../database/df-telemetry.db.js';
 import { initializeAutoPostTable } from '../database/df-autopost.db.js';
 import { initializeWeaponLoadoutsTable } from '../database/df-loadouts.db.js';
 import {
-  initializeSellerTables,
-  getSellerDb,
-  syncSellerFromMongoToSqlite,
-} from '../database/seller.db.js';
-import {
   connectMongo,
   initMongoIndexes,
   syncAutoPostFromMongoToSqlite,
@@ -88,11 +83,9 @@ export async function bootstrap(): Promise<Client> {
   migrateClaimSessionsToNumeric(database);
   initializeAccountBindingsTable(database);
   initializeCaptureEventsTable(database);
-  initializeSellerTables(database);
-  getSellerDb(database);
   initializeAutoPostTable(database);
   initializeWeaponLoadoutsTable(database);
-  logger.info('DF Link, Seller, AutoPost & WeaponLoadouts tables ready');
+  logger.info('DF Link, AutoPost & WeaponLoadouts tables ready');
 
   // Step 2d: Kết nối MongoDB (nếu MONGODB_URI / MONGO_URL được cấu hình trên Railway)
   if (botConfig.mongoUri) {
@@ -113,12 +106,6 @@ export async function bootstrap(): Promise<Client> {
         // Đồng bộ account bindings từ MongoDB sang SQLite
         const syncedBindings = await syncBindingsFromMongoToSqlite(database);
         logger.info(`Synced ${syncedBindings} account binding(s) from MongoDB to local SQLite`);
-
-        // Đồng bộ Seller profiles, transactions, reviews từ MongoDB sang SQLite
-        const syncedSeller = await syncSellerFromMongoToSqlite(database);
-        logger.info(
-          `Synced ${syncedSeller.profiles} seller profile(s), ${syncedSeller.transactions} transaction(s), ${syncedSeller.reviews} review(s) from MongoDB to local SQLite`,
-        );
 
         // Đồng bộ AutoPost configs và message history từ MongoDB sang SQLite
         const syncedAutoPost = await syncAutoPostFromMongoToSqlite(database);

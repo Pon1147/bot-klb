@@ -5,9 +5,6 @@ export {
   type ClaimSessionDocument,
   type CaptureEventDocument,
   type DfTokenDocument,
-  type SellerProfileDocument,
-  type SellerTransactionDocument,
-  type SellerReviewDocument,
 } from './collections.js';
 
 export {
@@ -34,13 +31,6 @@ export {
   type MongoBindingUpdateResult,
   createClaimSessionInMongo,
   consumeClaimSessionAtomicInMongo,
-  upsertSellerProfileToMongo,
-  deleteSellerProfileFromMongo,
-  loadAllSellerProfilesFromMongo,
-  upsertSellerTransactionToMongo,
-  loadAllSellerTransactionsFromMongo,
-  insertSellerReviewToMongo,
-  loadAllSellerReviewsFromMongo,
   saveAutoPostConfigToMongo,
   saveAutoPostMessageToMongo,
   deleteAutoPostMessageFromMongo,
