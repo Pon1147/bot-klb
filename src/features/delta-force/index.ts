@@ -48,7 +48,10 @@ export {
 } from '../../services/df-autopost-scheduler.js';
 export * from '../../services/df-crypto.js';
 export * from '../../services/df-claim-handler.js';
-export { cleanup as cleanupTeamFindSessions } from '../../services/team-find-session.js';
+export {
+  startSessionCleanup as startTeamFindCleanup,
+  stopSessionCleanup as stopTeamFindCleanup,
+} from '../../services/team-find-session.js';
 export {
   startCleanup as startClaimCleanup,
   stopCleanup as stopClaimCleanup,

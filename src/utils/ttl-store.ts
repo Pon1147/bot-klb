@@ -64,17 +64,21 @@ export class TTLStore<K extends string, V extends ExpiryEntry | TouchEntry> {
   touch(key: K): void {
     const entry = this.store.get(key);
     if (entry && 'lastInteractionAt' in entry) {
-      (entry as TouchEntry).lastInteractionAt = Date.now();
+      const now = Date.now();
+      (entry as TouchEntry).lastInteractionAt = now;
+      if ('expiresAt' in entry) {
+        (entry as unknown as ExpiryEntry).expiresAt = now + this.options.ttlMs;
+      }
     }
   }
 
   /** Check if an entry is expired. */
   private isExpired(entry: V): boolean {
-    if ('expiresAt' in entry) {
-      return Date.now() > (entry as ExpiryEntry).expiresAt;
-    }
     if ('lastInteractionAt' in entry) {
       return Date.now() - (entry as TouchEntry).lastInteractionAt > this.options.ttlMs;
+    }
+    if ('expiresAt' in entry) {
+      return Date.now() > (entry as ExpiryEntry).expiresAt;
     }
     return false;
   }

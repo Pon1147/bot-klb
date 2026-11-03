@@ -39,12 +39,11 @@ import { createLogger } from '../utils/logger.js';
 import { startSessionCleanup } from '../features/container/index.js';
 import {
   initCryptoKey,
-  cleanupTeamFindSessions,
+  startTeamFindCleanup,
   startClaimCleanup,
   startDfCodesScheduler,
   startDfAutoPostScheduler,
 } from '../features/delta-force/index.js';
-import { TEAM_FIND_CLEANUP_INTERVAL_MS } from '../config/app.constants.js';
 
 const logger = createLogger('Bootstrap');
 
@@ -186,8 +185,8 @@ export async function bootstrap(): Promise<Client> {
   startSessionCleanup();
   logger.info('Session cleanup started');
 
-  // Step 7b: Start team-find session cleanup
-  setInterval(cleanupTeamFindSessions, TEAM_FIND_CLEANUP_INTERVAL_MS);
+  // Step 7b: Start team-find session cleanup via TTLStore
+  startTeamFindCleanup();
   logger.info('Team-find session cleanup started');
 
   // Step 7c: Start claim code cleanup

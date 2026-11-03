@@ -72,7 +72,17 @@ export function isDone(session: TeamFindSession): boolean {
   return session.map !== null && session.mode !== null;
 }
 
-/** Cleanup expired sessions (deprecated — TTLStore handles this automatically) */
-export function cleanup(): void {
-  sessions.cleanupExpired();
+/** Bắt đầu định kỳ dọn dẹp sessions qua TTLStore */
+export function startSessionCleanup(): void {
+  sessions.startCleanup();
+}
+
+/** Dừng định kỳ dọn dẹp sessions */
+export function stopSessionCleanup(): void {
+  sessions.stopCleanup();
+}
+
+/** Xóa tất cả sessions (dùng cho test) */
+export function _clearSessionsForTest(): void {
+  sessions.clear();
 }
