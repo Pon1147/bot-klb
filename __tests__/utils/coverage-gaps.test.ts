@@ -43,6 +43,8 @@ describe('df.token.db — migration columns', () => {
 
     const { initializeDfTokensTable } = require('../../src/database/df.token.db.js');
     initializeDfTokensTable(db);
+    // Quick Fix test: verify idempotent call does not throw or duplicate columns
+    expect(() => initializeDfTokensTable(db)).not.toThrow();
 
     const info = db.pragma("table_info('df_tokens')") as Array<{ name: string }>;
     const columns = new Set(info.map((c) => c.name));
@@ -71,6 +73,8 @@ describe('df.token.db — migration columns', () => {
 
     const { initializeDfTokensTable } = require('../../src/database/df.token.db.js');
     initializeDfTokensTable(db);
+    // Quick Fix test: verify idempotent call does not throw or duplicate columns
+    expect(() => initializeDfTokensTable(db)).not.toThrow();
 
     const info = db.pragma("table_info('df_tokens')") as Array<{ name: string }>;
     expect(info.length).toBe(8);
