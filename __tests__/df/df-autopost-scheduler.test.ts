@@ -9,6 +9,8 @@ import {
   getActiveAutoPostTypes,
   startDfAutoPostScheduler,
   rescheduleDfAutoPost,
+  isAutoPostBroadcasting,
+  AutoPostBroadcastInProgressError,
 } from '../../src/services/df-autopost-scheduler.js';
 import {
   initializeAutoPostTable,
@@ -215,5 +217,122 @@ describe('df-autopost-scheduler', () => {
       expect(getActiveAutoPostTypes()).toHaveLength(0);
     });
   });
-});
 
+  describe('Concurrency & Mutual Exclusion (BUG-08)', () => {
+    it('chặn các đợt phát sóng cùng loại chạy đồng thời (throws AutoPostBroadcastInProgressError)', async () => {
+      let resolveFirst: (() => void) | undefined;
+      const firstSendPromise = new Promise<void>((resolve) => {
+        resolveFirst = resolve;
+      });
+
+      const slowSend = jest.fn().mockImplementation(async () => {
+        await firstSendPromise;
+        return { id: 'msg-slow' };
+      });
+
+      const mockChannel = {
+        id: 'chan-slow',
+        name: 'game-chat',
+        send: slowSend,
+        messages: { fetch: jest.fn().mockResolvedValue(null) },
+      };
+
+      (findAutoPostTargetChannel as jest.Mock).mockReturnValue({
+        channel: mockChannel,
+        matchTier: 'content',
+      });
+
+      const mockClient: any = {
+        guilds: {
+          cache: new Map([['guild-1', { id: 'guild-1', name: 'Server 1', channels: { cache: new Map() } }]]),
+        },
+        channels: { fetch: jest.fn().mockResolvedValue(mockChannel) },
+      };
+
+      // Bắt đầu đợt broadcast 1 nhưng chưa giải quyết send
+      const firstBroadcast = broadcastAutoPost(mockClient, db, 'map', { delayMs: 0 });
+
+      // Lúc này broadcast đang in-flight
+      expect(isAutoPostBroadcasting('map')).toBe(true);
+
+      // Gọi broadcast lần 2 cùng loại 'map' -> phải ném AutoPostBroadcastInProgressError ngay lập tức
+      await expect(broadcastAutoPost(mockClient, db, 'map', { delayMs: 0 })).rejects.toThrow(
+        AutoPostBroadcastInProgressError,
+      );
+
+      // Cho phép đợt 1 hoàn tất
+      resolveFirst!();
+      const firstResult = await firstBroadcast;
+
+      expect(firstResult.successCount).toBe(1);
+      // Khi đợt 1 xong, lock phải được giải phóng
+      expect(isAutoPostBroadcasting('map')).toBe(false);
+
+      // Gọi lần tiếp theo sau khi lock giải phóng phải thành công bình thường
+      slowSend.mockResolvedValueOnce({ id: 'msg-subsequent' });
+      const subsequentResult = await broadcastAutoPost(mockClient, db, 'map', { delayMs: 0 });
+      expect(subsequentResult.successCount).toBe(1);
+    });
+
+    it('giải phóng lock ngay cả khi broadcast phát sinh lỗi ngoại lệ không lường trước', async () => {
+      const mockClient: any = {
+        get guilds(): any {
+          throw new Error('Fatal Guilds Cache Crash');
+        },
+      };
+
+      await expect(broadcastAutoPost(mockClient, db, 'map')).rejects.toThrow('Fatal Guilds Cache Crash');
+      // Lock phải được dọn dẹp sạch sẽ trong finally
+      expect(isAutoPostBroadcasting('map')).toBe(false);
+    });
+
+    it('cho phép phát sóng map và gun độc lập đồng thời không bị block lẫn nhau', async () => {
+      let resolveMap: (() => void) | undefined;
+      const mapPromise = new Promise<void>((resolve) => {
+        resolveMap = resolve;
+      });
+
+      const mapSend = jest.fn().mockImplementation(async () => {
+        await mapPromise;
+        return { id: 'msg-map' };
+      });
+
+      const gunSend = jest.fn().mockResolvedValue({ id: 'msg-gun' });
+
+      (findAutoPostTargetChannel as jest.Mock).mockImplementation((_g, type) => ({
+        channel: {
+          id: `chan-${type}`,
+          name: `channel-${type}`,
+          send: type === 'map' ? mapSend : gunSend,
+          messages: { fetch: jest.fn().mockResolvedValue(null) },
+        },
+        matchTier: 'content',
+      }));
+
+      const mockClient: any = {
+        guilds: {
+          cache: new Map([['guild-1', { id: 'guild-1', name: 'Server 1', channels: { cache: new Map() } }]]),
+        },
+        channels: { fetch: jest.fn().mockResolvedValue(null) },
+      };
+
+      // Chạy map (bị delay bởi mapPromise)
+      const mapBroadcast = broadcastAutoPost(mockClient, db, 'map', { delayMs: 0 });
+      expect(isAutoPostBroadcasting('map')).toBe(true);
+      expect(isAutoPostBroadcasting('gun')).toBe(false);
+
+      // Chạy gun song song: gun không bị block bởi map
+      const gunResult = await broadcastAutoPost(mockClient, db, 'gun', { delayMs: 0 });
+      expect(gunResult.successCount).toBe(1);
+      expect(isAutoPostBroadcasting('gun')).toBe(false);
+      expect(isAutoPostBroadcasting('map')).toBe(true);
+
+      // Giải phóng map
+      resolveMap!();
+      const mapResult = await mapBroadcast;
+      expect(mapResult.successCount).toBe(1);
+      expect(isAutoPostBroadcasting('map')).toBe(false);
+    });
+  });
+
+});

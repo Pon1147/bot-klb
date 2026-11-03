@@ -27,6 +27,30 @@ type CronTask = ReturnType<typeof cron.schedule>;
 /** Quản lý các active cron jobs theo từng loại nội dung ('map' | 'gun') */
 const activeTasks = new Map<AutoPostContentType, CronTask>();
 
+/** Mutex lock chống race-condition chạy chồng chéo đợt phát sóng cho từng content type */
+const inFlightBroadcasts = new Set<AutoPostContentType>();
+
+/**
+ * Lỗi phát sinh khi có một tiến trình phát sóng cùng loại nội dung đang diễn ra.
+ */
+export class AutoPostBroadcastInProgressError extends Error {
+  readonly code = 'BROADCAST_ALREADY_IN_PROGRESS';
+
+  constructor(public readonly contentType: AutoPostContentType) {
+    super(
+      `Đợt phát sóng cho nội dung "${contentType}" đang được thực thi. Vui lòng chờ đợt phát sóng hoàn tất.`,
+    );
+    this.name = 'AutoPostBroadcastInProgressError';
+  }
+}
+
+/**
+ * Kiểm tra xem một loại nội dung có đang trong tiến trình phát sóng hay không.
+ */
+export function isAutoPostBroadcasting(type: AutoPostContentType): boolean {
+  return inFlightBroadcasts.has(type);
+}
+
 /** Timezone chuẩn Việt Nam (UTC+7) */
 export const SCHEDULER_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
@@ -71,104 +95,119 @@ export async function broadcastAutoPost(
   type: AutoPostContentType,
   options: { delayMs?: number } = {},
 ): Promise<BroadcastResult> {
-  const delayMs = options.delayMs ?? 1000;
-  const guilds = Array.from(client.guilds.cache.values());
-  const settingsService = getSettingsService();
+  if (inFlightBroadcasts.has(type)) {
+    logger.warn(
+      `[Broadcast][type=${type}] Đang có một tiến trình phát sóng cùng loại đang chạy. Bỏ qua yêu cầu phát sóng trùng lặp.`,
+    );
+    throw new AutoPostBroadcastInProgressError(type);
+  }
 
-  logger.info(`[Broadcast][type=${type}] Bắt đầu phát sóng tới ${guilds.length} máy chủ...`);
+  inFlightBroadcasts.add(type);
 
-  const containerResult = type === 'map' ? buildMapContainer() : buildWeaponContainer();
-  const results: BroadcastResult['details'] = [];
+  try {
+    const delayMs = options.delayMs ?? 1000;
+    const guilds = Array.from(client.guilds.cache.values());
+    const settingsService = getSettingsService();
 
-  for (let i = 0; i < guilds.length; i++) {
-    const guild = guilds[i];
-    try {
-      const guildSettings = settingsService.get(guild.id);
-      const dfCodesChannelId = guildSettings.dfCodes?.channelId;
-      const botAnnounceChannelId = guildSettings.botAnnounce?.channelId;
+    logger.info(`[Broadcast][type=${type}] Bắt đầu phát sóng tới ${guilds.length} máy chủ...`);
 
-      const { channel, reason, matchReason } = findAutoPostTargetChannel(guild, type, {
-        dfCodesChannelId,
-        botAnnounceChannelId,
-      });
+    const containerResult = type === 'map' ? buildMapContainer() : buildWeaponContainer();
+    const results: BroadcastResult['details'] = [];
 
-      if (!channel) {
+    for (let i = 0; i < guilds.length; i++) {
+      const guild = guilds[i];
+      try {
+        const guildSettings = settingsService.get(guild.id);
+        const dfCodesChannelId = guildSettings.dfCodes?.channelId;
+        const botAnnounceChannelId = guildSettings.botAnnounce?.channelId;
+
+        const { channel, reason, matchReason } = findAutoPostTargetChannel(guild, type, {
+          dfCodesChannelId,
+          botAnnounceChannelId,
+        });
+
+        if (!channel) {
+          results.push({
+            guildId: guild.id,
+            guildName: guild.name,
+            success: false,
+            reason: reason || 'Không tìm thấy kênh game hoặc chat cộng đồng thích hợp',
+          });
+          continue;
+        }
+
+        // Dọn dẹp tin nhắn Auto-Post cũ của loại này (nếu có) trước khi gửi mới để chống trôi kênh
+        const lastMsg = getAutoPostLastMessage(database, guild.id, type);
+        if (lastMsg) {
+          try {
+            const oldChannel = (guild.channels.cache.get(lastMsg.channelId) ??
+              (await client.channels.fetch(lastMsg.channelId).catch(() => null))) as any;
+            if (oldChannel && typeof oldChannel.messages?.fetch === 'function') {
+              const oldMessage = await oldChannel.messages
+                .fetch(lastMsg.messageId)
+                .catch(() => null);
+              if (oldMessage && typeof oldMessage.delete === 'function') {
+                await oldMessage.delete().catch(() => null);
+              }
+            }
+          } catch {
+            // Bỏ qua lỗi dọn dẹp nếu tin nhắn cũ đã bị xóa thủ công hoặc kênh không còn tồn tại
+          }
+        }
+
+        const sentMessage = await channel.send({
+          components: containerResult.toJSON(),
+          files: containerResult.files,
+          flags: MessageFlags.IsComponentsV2,
+        });
+
+        // Lưu lại ID tin nhắn mới để phục vụ dọn dẹp ở chu kỳ phát tiếp theo
+        if (sentMessage?.id) {
+          saveAutoPostLastMessage(database, guild.id, type, channel.id, sentMessage.id);
+        }
+
+        results.push({
+          guildId: guild.id,
+          guildName: guild.name,
+          channelName: channel.name,
+          matchReason,
+          success: true,
+        });
+
+        // Nghỉ nhẹ giữa các guild để chống rate-limit nếu còn guild tiếp theo
+        if (i < guilds.length - 1 && delayMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+      } catch (err) {
         results.push({
           guildId: guild.id,
           guildName: guild.name,
           success: false,
-          reason: reason || 'Không tìm thấy kênh game hoặc chat cộng đồng thích hợp',
+          reason: err instanceof Error ? err.message : String(err),
         });
-        continue;
       }
-
-      // Dọn dẹp tin nhắn Auto-Post cũ của loại này (nếu có) trước khi gửi mới để chống trôi kênh
-      const lastMsg = getAutoPostLastMessage(database, guild.id, type);
-      if (lastMsg) {
-        try {
-          const oldChannel = (guild.channels.cache.get(lastMsg.channelId) ??
-            (await client.channels.fetch(lastMsg.channelId).catch(() => null))) as any;
-          if (oldChannel && typeof oldChannel.messages?.fetch === 'function') {
-            const oldMessage = await oldChannel.messages.fetch(lastMsg.messageId).catch(() => null);
-            if (oldMessage && typeof oldMessage.delete === 'function') {
-              await oldMessage.delete().catch(() => null);
-            }
-          }
-        } catch {
-          // Bỏ qua lỗi dọn dẹp nếu tin nhắn cũ đã bị xóa thủ công hoặc kênh không còn tồn tại
-        }
-      }
-
-      const sentMessage = await channel.send({
-        components: containerResult.toJSON(),
-        files: containerResult.files,
-        flags: MessageFlags.IsComponentsV2,
-      });
-
-      // Lưu lại ID tin nhắn mới để phục vụ dọn dẹp ở chu kỳ phát tiếp theo
-      if (sentMessage?.id) {
-        saveAutoPostLastMessage(database, guild.id, type, channel.id, sentMessage.id);
-      }
-
-      results.push({
-        guildId: guild.id,
-        guildName: guild.name,
-        channelName: channel.name,
-        matchReason,
-        success: true,
-      });
-
-      // Nghỉ nhẹ giữa các guild để chống rate-limit nếu còn guild tiếp theo
-      if (i < guilds.length - 1 && delayMs > 0) {
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-      }
-    } catch (err) {
-      results.push({
-        guildId: guild.id,
-        guildName: guild.name,
-        success: false,
-        reason: err instanceof Error ? err.message : String(err),
-      });
     }
+
+    const successCount = results.filter((r) => r.success).length;
+    const failedCount = results.filter((r) => !r.success).length;
+
+    // Cập nhật thời điểm chạy gần nhất vào DB
+    updateAutoPostConfig(database, type, { lastRunAt: new Date().toISOString() });
+
+    logger.info(
+      `[Broadcast][type=${type}] Hoàn tất: ${successCount} thành công, ${failedCount} thất bại / tổng số ${guilds.length} máy chủ`,
+    );
+
+    return {
+      type,
+      totalGuilds: guilds.length,
+      successCount,
+      failedCount,
+      details: results,
+    };
+  } finally {
+    inFlightBroadcasts.delete(type);
   }
-
-  const successCount = results.filter((r) => r.success).length;
-  const failedCount = results.filter((r) => !r.success).length;
-
-  // Cập nhật thời điểm chạy gần nhất vào DB
-  updateAutoPostConfig(database, type, { lastRunAt: new Date().toISOString() });
-
-  logger.info(
-    `[Broadcast][type=${type}] Hoàn tất: ${successCount} thành công, ${failedCount} thất bại / tổng số ${guilds.length} máy chủ`,
-  );
-
-  return {
-    type,
-    totalGuilds: guilds.length,
-    successCount,
-    failedCount,
-    details: results,
-  };
 }
 
 /**
@@ -233,6 +272,12 @@ export function scheduleAutoPostTask(
       try {
         await broadcastAutoPost(client, database, type);
       } catch (error) {
+        if (error instanceof AutoPostBroadcastInProgressError) {
+          logger.warn(
+            `[Cron Trigger][type=${type}] Bỏ qua chu kỳ phát sóng định kỳ do đợt phát sóng trước đó hoặc thủ công vẫn đang chạy.`,
+          );
+          return;
+        }
         logger.error(`[Cron Trigger][type=${type}] Lỗi khi phát sóng: ${(error as Error).message}`);
       }
     },

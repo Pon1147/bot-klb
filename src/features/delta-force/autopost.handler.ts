@@ -12,7 +12,11 @@ import {
   getAllAutoPostConfigs,
   updateAutoPostConfig,
 } from '../../database/df-autopost.db.js';
-import { broadcastAutoPost, rescheduleDfAutoPost } from '../../services/df-autopost-scheduler.js';
+import {
+  broadcastAutoPost,
+  rescheduleDfAutoPost,
+  AutoPostBroadcastInProgressError,
+} from '../../services/df-autopost-scheduler.js';
 
 const TYPE_NAMES: Record<AutoPostContentType, string> = {
   map: '🗺️ Mô Phỏng Bản Đồ 3D (/df map)',
@@ -70,8 +74,23 @@ async function handleSet(
 
   let broadcastSummary = '';
   if (broadcastNow) {
-    const broadcastResult = await broadcastAutoPost(interaction.client, db, type, { delayMs: 800 });
-    broadcastSummary = `• **Phát sóng đợt 1 ngay:** 🟢 ${broadcastResult.successCount} thành công, 🔴 ${broadcastResult.failedCount} thất bại / tổng số ${broadcastResult.totalGuilds} máy chủ.\n`;
+    try {
+      const broadcastResult = await broadcastAutoPost(interaction.client, db, type, {
+        delayMs: 800,
+      });
+      broadcastSummary = `• **Phát sóng đợt 1 ngay:** 🟢 ${broadcastResult.successCount} thành công, 🔴 ${broadcastResult.failedCount} thất bại / tổng số ${broadcastResult.totalGuilds} máy chủ.\n`;
+    } catch (err) {
+      if (
+        err instanceof AutoPostBroadcastInProgressError ||
+        (err instanceof Error &&
+          (err.message.includes('BROADCAST_ALREADY_IN_PROGRESS') ||
+            (err as any).code === 'BROADCAST_ALREADY_IN_PROGRESS'))
+      ) {
+        broadcastSummary = `• **Phát sóng đợt 1:** ⚠️ Bị hoãn vì một đợt phát sóng cho nội dung này đang chạy.\n`;
+      } else {
+        throw err;
+      }
+    }
   }
 
   const typeName = TYPE_NAMES[type] ?? type;
@@ -173,7 +192,23 @@ async function handleRun(
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const result = await broadcastAutoPost(interaction.client, db, type);
+  let result;
+  try {
+    result = await broadcastAutoPost(interaction.client, db, type);
+  } catch (err) {
+    if (
+      err instanceof AutoPostBroadcastInProgressError ||
+      (err instanceof Error &&
+        (err.message.includes('BROADCAST_ALREADY_IN_PROGRESS') ||
+          (err as any).code === 'BROADCAST_ALREADY_IN_PROGRESS'))
+    ) {
+      await interaction.editReply({
+        content: `⚠️ **Phát sóng không thể thực hiện**: Đợt phát sóng tự động cho **${typeName}** đang diễn ra trên hệ thống. Vui lòng đợi hoàn tất trước khi thử lại.`,
+      });
+      return;
+    }
+    throw err;
+  }
 
   const detailLines = result.details.map((d, idx) => {
     if (d.success) {

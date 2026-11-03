@@ -6,7 +6,17 @@ import { initializeAutoPostTable, getAutoPostConfig } from '../../src/database/d
 import * as scheduler from '../../src/services/df-autopost-scheduler.js';
 import { MessageFlags } from 'discord.js';
 
-jest.mock('../../src/services/df-autopost-scheduler.js', () => ({
+jest.mock('../../src/services/df-autopost-scheduler.js', () => {
+  class AutoPostBroadcastInProgressError extends Error {
+    readonly code = 'BROADCAST_ALREADY_IN_PROGRESS';
+    constructor(public contentType: string) {
+      super(`Broadcast in progress: ${contentType}`);
+      this.name = 'AutoPostBroadcastInProgressError';
+    }
+  }
+
+  return {
+    AutoPostBroadcastInProgressError,
   rescheduleDfAutoPost: jest.fn(),
   broadcastAutoPost: jest.fn().mockResolvedValue({
     type: 'map',
@@ -19,7 +29,8 @@ jest.mock('../../src/services/df-autopost-scheduler.js', () => ({
       { guildId: 'g3', guildName: 'G3', channelName: 'announcements', success: true },
     ],
   }),
-}));
+  };
+});
 
 describe('df-autopost.handler', () => {
   let db: Database.Database;
@@ -177,4 +188,59 @@ describe('df-autopost.handler', () => {
       );
     });
   });
+
+    it('subcommand "run" thông báo lỗi an toàn khi có đợt phát sóng cùng loại đang diễn ra', async () => {
+      const mockDeferReply = jest.fn().mockResolvedValue({});
+      const mockEditReply = jest.fn().mockResolvedValue({});
+      const mockInteraction: any = {
+        user: { id: botConfig.botOwnerId },
+        options: {
+          getSubcommand: () => 'run',
+          getString: (name: string) => (name === 'type' ? 'map' : null),
+        },
+        client: { guilds: { cache: new Map([['g1', {}]]) } },
+        deferReply: mockDeferReply,
+        editReply: mockEditReply,
+      };
+
+      const err = new (scheduler as any).AutoPostBroadcastInProgressError('map');
+      (scheduler.broadcastAutoPost as jest.Mock).mockRejectedValueOnce(err);
+
+      await execute(mockInteraction, db);
+
+      expect(mockEditReply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('Phát sóng không thể thực hiện'),
+        }),
+      );
+    });
+
+    it('subcommand "set" với broadcastNow thông báo hoãn đợt 1 nếu broadcast đang in-flight', async () => {
+      const mockDeferReply = jest.fn().mockResolvedValue({});
+      const mockEditReply = jest.fn().mockResolvedValue({});
+      const mockInteraction: any = {
+        user: { id: botConfig.botOwnerId },
+        options: {
+          getSubcommand: () => 'set',
+          getString: (name: string) => (name === 'type' ? 'gun' : null),
+          getInteger: (name: string) => (name === 'interval_hours' ? 4 : null),
+          getBoolean: (name: string) => (name === 'broadcast_now' ? true : null),
+        },
+        client: { guilds: { cache: new Map() } },
+        deferReply: mockDeferReply,
+        editReply: mockEditReply,
+      };
+
+      const err = new (scheduler as any).AutoPostBroadcastInProgressError('gun');
+      (scheduler.broadcastAutoPost as jest.Mock).mockRejectedValueOnce(err);
+
+      await execute(mockInteraction, db);
+
+      expect(mockEditReply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('Bị hoãn vì một đợt phát sóng cho nội dung này đang chạy'),
+        }),
+      );
+    });
+
 });
