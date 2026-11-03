@@ -14,6 +14,7 @@ import {
   getActiveBinding,
   getActiveBindingByOpenid,
 } from '../database/df-binding.db.js';
+import { upsertAccountBindingToMongo, isMongoConnected } from '../database/mongo/index.js';
 import { encryptCredential } from './df-crypto.js';
 import { validateToken } from './deltaforce.api.js';
 import { createLogger } from '../utils/logger.js';
@@ -103,7 +104,7 @@ async function sendLinkedDm(client: Client, userId: string, _openid: string): Pr
  * 1. Validate body
  * 2. Atomic consume claim code
  * 3. Encrypt credential (AES-256-GCM)
- * 4. Upsert AccountBinding
+ * 4. Persistent Store First (MongoDB) -> SQLite Cache
  * 5. Send DM notification
  * 6. Return { ok: true }
  */
@@ -140,6 +141,25 @@ export async function handleClaim(
     };
   }
 
+  // BUG-01 Fix: Kiểm tra trước xem Garena account đã bị liên kết bởi Discord user KHÁC chưa
+  // Nếu là chính chủ re-link (existingByOpenid.discord_user_id === claimRow.discord_user_id) thì cho phép.
+  // Nếu bị chiếm bởi user khác, trả về 409 NGAY LẬP TỨC và KHÔNG consume mã (không đốt code của user).
+  const existingByOpenid = getActiveBindingByOpenid(database, openid);
+  if (existingByOpenid && existingByOpenid.discord_user_id !== claimRow.discord_user_id) {
+    logger.warn(
+      'Garena account already linked to another Discord user: openid=' +
+        maskedOpenid +
+        ' requestingDiscordId=' +
+        claimRow.discord_user_id +
+        ' existingDiscordId=' +
+        existingByOpenid.discord_user_id,
+    );
+    return {
+      status: 409,
+      body: { ok: false, error: 'account_linked_to_other_discord' },
+    };
+  }
+
   const discordId = atomicConsumeClaim(database, code);
   if (!discordId) {
     if (claimRow.status === 'consumed') {
@@ -171,24 +191,7 @@ export async function handleClaim(
     };
   }
 
-  // 3. Check xem Garena account đã được link với Discord user nào chưa
-  const existingByOpenid = getActiveBindingByOpenid(database, openid);
-  if (existingByOpenid) {
-    logger.warn(
-      'Garena account already linked: openid=' +
-        maskedOpenid +
-        ' discordId=' +
-        discordId +
-        ' existingDiscordId=' +
-        existingByOpenid.discord_user_id,
-    );
-    return {
-      status: 409,
-      body: { ok: false, error: 'account_linked_to_other_discord' },
-    };
-  }
-
-  // 4. Encrypt credential (AES-256-GCM)
+  // 3. Encrypt credential (AES-256-GCM)
   const credBlob = JSON.stringify({ token, ts: parsed.ts, s: parsed.s, u: parsed.u });
   let encrypted;
   try {
@@ -201,16 +204,44 @@ export async function handleClaim(
     };
   }
 
-  // 5. Upsert AccountBinding
+  // 5. Upsert AccountBinding: Persistent Store First (MongoDB) nếu Mongo đang kết nối
+  if (isMongoConnected()) {
+    const mongoSuccess = await upsertAccountBindingToMongo({
+      discord_user_id: discordId,
+      openid,
+      cred_nonce: encrypted.nonce,
+      cred_ciphertext: encrypted.ciphertext,
+      cred_tag: encrypted.tag,
+      key_version: 'v1',
+    });
+    if (!mongoSuccess) {
+      logger.error('Lỗi khi ghi binding lên MongoDB persistent store');
+      return {
+        status: 503,
+        body: { ok: false, error: 'database_unavailable' },
+      };
+    }
+  }
+
+  // Ghi vào SQLite runtime cache
   try {
-    upsertAccountBinding(
+    const sqliteOk = upsertAccountBinding(
       database,
       discordId,
       openid,
       encrypted.nonce,
       encrypted.ciphertext,
       encrypted.tag,
+      'v1',
+      false, // Bỏ qua sync MongoDB vì đã ghi thành công ở trên
     );
+    if (!sqliteOk) {
+      logger.error('Ghi SQLite runtime cache thất bại (changes === 0)');
+      return {
+        status: 500,
+        body: { ok: false, error: 'server_error' },
+      };
+    }
   } catch (error) {
     logger.error('DB write failed: ' + (error instanceof Error ? error.message : String(error)));
     return {
@@ -219,10 +250,10 @@ export async function handleClaim(
     };
   }
 
-  // 5. Send DM
+  // 6. Send DM
   void sendLinkedDm(client, discordId, openid);
 
-  // 6. Return success
+  // 7. Return success
   logger.info('Claim success: user=' + discordId);
   return {
     status: 200,
