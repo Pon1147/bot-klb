@@ -139,20 +139,44 @@ export function loadCommands(
  * Tạo fingerprint (string so sánh) cho một command.
  * Dùng để phát hiện thay đổi giữa local và Discord.
  */
+function normalizeOptions(options: unknown[] = []): unknown[] {
+  return options.map((item) => {
+    const opt = item as Record<string, unknown>;
+    const normalized: Record<string, unknown> = {
+      type: Number(opt.type),
+      name: opt.name,
+      description: opt.description,
+      required: !!opt.required,
+    };
+    if (Array.isArray(opt.options) && opt.options.length > 0) {
+      normalized.options = normalizeOptions(opt.options);
+    }
+    if (Array.isArray(opt.choices) && opt.choices.length > 0) {
+      normalized.choices = (opt.choices as Array<{ name: string; value: unknown }>).map((c) => ({
+        name: c.name,
+        value: c.value,
+      }));
+    }
+    return normalized;
+  });
+}
+
 function commandFingerprint(
   commandData: SlashCommandBuilder | APIApplicationCommand | Record<string, unknown>,
 ): string {
   const raw =
-    'toJSON' in commandData && typeof commandData.toJSON === 'function'
-      ? (commandData.toJSON() as Record<string, unknown>)
+    commandData && typeof (commandData as { toJSON?: () => unknown }).toJSON === 'function'
+      ? ((commandData as { toJSON: () => unknown }).toJSON() as Record<string, unknown>)
       : (commandData as Record<string, unknown>);
 
   // Chỉ so sánh các trường cấu hình cốt lõi của command (bỏ qua id, application_id, version do Discord cấp)
   const normalized = {
     name: raw.name,
     description: raw.description,
-    options: raw.options || [],
-    default_member_permissions: raw.default_member_permissions ?? null,
+    options: normalizeOptions((raw.options as unknown[]) || []),
+    default_member_permissions: raw.default_member_permissions
+      ? String(raw.default_member_permissions)
+      : null,
     nsfw: !!raw.nsfw,
   };
   return JSON.stringify(normalized);

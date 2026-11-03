@@ -123,5 +123,50 @@ describe('deployCommands (Hybrid Scope: Guild vs Global)', () => {
     expect(mockGet).toHaveBeenCalled();
     expect(mockPut).not.toHaveBeenCalled();
   });
+
+  it('BUG-07: khop fingerprint giua SlashCommandBuilder instance va REST API raw object', async () => {
+    botConfig.commandScope = 'guild';
+    botConfig.guildId = '123456789012345678';
+
+    mockGet.mockResolvedValueOnce([
+      {
+        id: '123',
+        name: 'df',
+        description: 'Delta Force command',
+        options: [
+          {
+            type: 1,
+            name: 'stats',
+            description: 'Show stats',
+            required: false,
+            options: [],
+          },
+        ],
+        default_member_permissions: null,
+      },
+    ]);
+
+    const col = new Collection<string, CommandModule>();
+    col.set('df', {
+      data: {
+        name: 'df',
+        description: 'Delta Force command',
+        options: [{ type: 1, name: 'stats', description: 'Show stats' }],
+        toJSON() {
+          return {
+            name: 'df',
+            description: 'Delta Force command',
+            options: [{ type: 1, name: 'stats', description: 'Show stats' }],
+          };
+        },
+      } as any,
+      execute: jest.fn(),
+    });
+
+    await deployCommands(col);
+
+    expect(mockGet).toHaveBeenCalled();
+    expect(mockPut).not.toHaveBeenCalled();
+  });
 });
 
