@@ -455,7 +455,7 @@ describe('Events E2E — guildMemberUpdate', () => {
     await expect(execute({}, oldMember, newMember)).resolves.not.toThrow();
   });
 
-  it('phải dọn dẹp team-find message và session khi user rời voice channel', async () => {
+  it('phải dọn dẹp team-find message và session khi user rời voice channel (voiceStateUpdate)', async () => {
     const { storeMessage } = require('../../src/services/team-find-message-store');
     const { createSession, getSession } = require('../../src/services/team-find-session');
 
@@ -467,35 +467,37 @@ describe('Events E2E — guildMemberUpdate', () => {
       },
     };
 
-    const oldMember: any = {
-      guild: {
-        id: 'guild-123',
-        channels: {
-          fetch: jest.fn().mockResolvedValue(mockMsgChannel),
-        },
+    const mockGuild = {
+      id: 'guild-123',
+      channels: {
+        fetch: jest.fn().mockResolvedValue(mockMsgChannel),
       },
-      user: { id: 'user-voice-1', bot: false },
-      voice: { channelId: 'voice-room-old' },
-      premiumSince: null,
     };
 
-    const newMember: any = {
-      guild: oldMember.guild,
-      user: oldMember.user,
-      voice: { channelId: null }, // Đã rời voice
-      premiumSince: null,
+    const oldState: any = {
+      id: 'user-voice-1',
+      guild: mockGuild,
+      member: { id: 'user-voice-1', user: { id: 'user-voice-1', bot: false } },
+      channelId: 'voice-room-old',
+    };
+
+    const newState: any = {
+      id: 'user-voice-1',
+      guild: mockGuild,
+      member: { id: 'user-voice-1', user: { id: 'user-voice-1', bot: false } },
+      channelId: null, // Đã rời voice
     };
 
     // Đăng ký message ref và session
     storeMessage('guild-123', 'user-voice-1', 'msg-team', 'ch-team');
     createSession('user-voice-1', 'guild-123', 'msg-menu', 'ch-menu');
 
-    const { execute } = require('../../src/events/guildMemberUpdate.event');
-    await execute({}, oldMember, newMember);
+    const { execute } = require('../../src/events/voiceStateUpdate.event');
+    await execute({}, oldState, newState);
 
     // Session phải bị xóa
     expect(getSession('user-voice-1')).toBeUndefined();
-    expect(oldMember.guild.channels.fetch).toHaveBeenCalledWith('ch-team');
+    expect(mockGuild.channels.fetch).toHaveBeenCalledWith('ch-team');
     expect(msgDeleteMock).toHaveBeenCalled();
   });
 });
