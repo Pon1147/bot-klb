@@ -347,12 +347,51 @@ async function executeHistory(interaction: ChatInputCommandInteraction): Promise
   const statusFilter = interaction.options.getString('status') as any;
 
   const sellerDb = getSellerDb();
-  const transactions = sellerDb.getTransactions({
-    guildId,
-    sellerId: targetUser.id,
-    status: statusFilter,
-    limit: 10,
-  });
+
+  // Kiểm tra vai trò thợ kéo: qua role guild hoặc seller profile
+  let isSeller = false;
+  if (interaction.guild && interaction.guildId) {
+    try {
+      const settingsService = getSettingsService();
+      const sellerSettings = settingsService.getSeller(interaction.guildId);
+      if (sellerSettings.roleId) {
+        const member =
+          interaction.guild.members.cache.get(targetUser.id) ??
+          (await interaction.guild.members.fetch(targetUser.id).catch(() => null));
+        if (member?.roles.cache.has(sellerSettings.roleId)) {
+          isSeller = true;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!isSeller) {
+    const profile = sellerDb.getProfile(targetUser.id, guildId);
+    if (profile) {
+      isSeller = true;
+    }
+  }
+
+  // Nếu là seller, ưu tiên tra cứu đơn nhận kéo (sellerId). Nếu không có hoặc là buyer, tra cứu đơn thuê (buyerId).
+  let transactions = isSeller
+    ? sellerDb.getTransactions({
+        guildId,
+        sellerId: targetUser.id,
+        status: statusFilter,
+        limit: 10,
+      })
+    : [];
+
+  if (transactions.length === 0) {
+    transactions = sellerDb.getTransactions({
+      guildId,
+      buyerId: targetUser.id,
+      status: statusFilter,
+      limit: 10,
+    });
+  }
 
   const embed = buildSellerHistoryEmbed(transactions, targetUser.tag);
 

@@ -450,6 +450,45 @@ describe('SellerCommand (/seller)', () => {
       );
     });
 
+    it('thực thi /seller history cho buyer trả về danh sách đơn đã mua', async () => {
+      // Tạo 1 đơn giao dịch với buyerId = 'buyer-1' và sellerId = 'seller-99'
+      sellerDb.createTransaction({
+        txId: 'TXBUYERTEST1',
+        guildId: 'guild-123',
+        channelId: 'chan-123',
+        messageId: null,
+        buyerId: 'buyer-1',
+        sellerId: 'seller-99',
+        amount: 50000,
+        description: 'Kéo 2 trận',
+        status: 'confirmed',
+        note: null,
+        processedBy: null,
+        createdAt: Date.now(),
+        processedAt: null,
+      });
+
+      const interaction = createMockInteraction({
+        subcommand: 'history',
+        userId: 'buyer-1',
+        guildId: 'guild-123',
+      });
+
+      await execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          embeds: expect.arrayContaining([
+            expect.objectContaining({
+              data: expect.objectContaining({
+                description: expect.stringContaining('TXBUYERTEST1'),
+              }),
+            }),
+          ]),
+        }),
+      );
+    });
+
     it('thực thi /seller top trả về bảng xếp hạng', async () => {
       const interaction = createMockInteraction({
         subcommand: 'top',
