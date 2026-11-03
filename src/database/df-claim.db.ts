@@ -130,3 +130,27 @@ export function invalidateUserClaims(database: Database.Database, discordUserId:
     )
     .run(discordUserId);
 }
+
+/**
+ * Xóa các claim sessions đã hết hạn hoặc đã hoàn tất vượt quá thời gian lưu trữ (retention window).
+ * Mặc định: 7 ngày (maxAgeDays = 7).
+ * Trả về số lượng bản ghi đã được dọn dẹp.
+ */
+export function cleanupExpiredClaimSessions(
+  database: Database.Database,
+  maxAgeDays: number = 7,
+): number {
+  if (!database || ('open' in database && !database.open)) return 0;
+
+  const safeDays =
+    typeof maxAgeDays === 'number' && Number.isFinite(maxAgeDays) && maxAgeDays > 0
+      ? maxAgeDays
+      : 7;
+  const cutoffSeconds = Math.floor(Date.now() / 1000) - Math.floor(safeDays * 86400);
+
+  const result = database
+    .prepare('DELETE FROM df_claim_sessions WHERE expires_at <= ?')
+    .run(cutoffSeconds);
+
+  return result.changes;
+}

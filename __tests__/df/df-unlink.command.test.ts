@@ -22,6 +22,7 @@ jest.mock('../../src/database/df.token.db.js', () => ({
 jest.mock('../../src/database/df-binding.db.js', () => ({
   getActiveBinding: jest.fn(),
   revokeBinding: jest.fn(),
+  revokeBindingAsync: jest.fn().mockResolvedValue({ success: true }),
 }));
 
 jest.mock('../../src/utils/container.utils.js', () => ({
@@ -52,7 +53,7 @@ jest.mock('../../src/utils/container.utils.js', () => ({
 }));
 
 import { execute } from '../../src/features/delta-force/unlink.handler.js';
-import { getActiveBinding, revokeBinding } from '../../src/database/df-binding.db.js';
+import { getActiveBinding, revokeBindingAsync } from '../../src/database/df-binding.db.js';
 import { MessageFlags } from 'discord.js';
 
 describe('df-unlink.command', () => {
@@ -73,6 +74,7 @@ describe('df-unlink.command', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (revokeBindingAsync as jest.Mock).mockResolvedValue({ success: true });
   });
 
   describe('guild check', () => {
@@ -99,7 +101,7 @@ describe('df-unlink.command', () => {
       const interaction = createMockInteraction();
       await execute(interaction, mockDb);
 
-      expect(revokeBinding).toHaveBeenCalledWith(mockDb, '222');
+      expect(revokeBindingAsync).toHaveBeenCalledWith(mockDb, '222');
       expect(mockReply).toHaveBeenCalled();
     });
 
@@ -114,8 +116,8 @@ describe('df-unlink.command', () => {
       const interaction = createMockInteraction();
       await execute(interaction, mockDb);
 
-      // requireDfBinding trả về false (có token) → execute tiếp tục → revokeBinding được gọi
-      expect(revokeBinding).toHaveBeenCalledWith(mockDb, '222');
+      // requireDfBinding trả về false (có token) → execute tiếp tục → revokeBindingAsync được gọi
+      expect(revokeBindingAsync).toHaveBeenCalledWith(mockDb, '222');
       expect(mockReply).toHaveBeenCalled();
     });
 
@@ -126,8 +128,56 @@ describe('df-unlink.command', () => {
       const interaction = createMockInteraction();
       await execute(interaction, mockDb);
 
-      expect(revokeBinding).not.toHaveBeenCalled();
+      expect(revokeBindingAsync).not.toHaveBeenCalled();
       expect(mockReply).toHaveBeenCalled();
+    });
+
+    it('nên trả về thông báo lỗi khi MongoDB gặp sự cố (database_unavailable)', async () => {
+      (getActiveBinding as jest.Mock).mockReturnValue({
+        id: 1,
+        discord_user_id: '222',
+        openid: 'garena123',
+        status: 'active',
+      });
+      (revokeBindingAsync as jest.Mock).mockResolvedValueOnce({
+        success: false,
+        error: 'database_unavailable',
+      });
+
+      const interaction = createMockInteraction();
+      await execute(interaction, mockDb);
+
+      expect(revokeBindingAsync).toHaveBeenCalledWith(mockDb, '222');
+      const { buildErrorContainer } = require('../../src/utils/container.utils.js');
+      expect(buildErrorContainer).toHaveBeenCalledWith(
+        expect.stringContaining('Cơ sở dữ liệu tạm thời không khả dụng'),
+      );
+    });
+
+    it('khi generation_mismatch: trả về error container và không vô tình báo thành công', async () => {
+      (getActiveBinding as jest.Mock).mockReturnValue({
+        id: 1,
+        discord_user_id: '222',
+        openid: 'garena123',
+        status: 'active',
+      });
+      (revokeBindingAsync as jest.Mock).mockResolvedValueOnce({
+        success: false,
+        error: 'generation_mismatch',
+      });
+
+      const interaction = createMockInteraction();
+      await execute(interaction, mockDb);
+
+      expect(revokeBindingAsync).toHaveBeenCalledWith(mockDb, '222');
+      const {
+        buildErrorContainer,
+        buildSuccessContainer,
+      } = require('../../src/utils/container.utils.js');
+      expect(buildErrorContainer).toHaveBeenCalledWith(
+        expect.stringContaining('Phiên liên kết đã thay đổi hoặc đã được cập nhật mới'),
+      );
+      expect(buildSuccessContainer).not.toHaveBeenCalled();
     });
   });
 });

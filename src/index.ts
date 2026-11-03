@@ -1,6 +1,7 @@
 import { bootstrap } from './app/bootstrap.js';
 import { createLogger } from './utils/logger.js';
 import { disconnectMongo } from './database/mongo/index.js';
+import { stopClaimCleanup } from './features/delta-force/index.js';
 
 const logger = createLogger('Bot');
 
@@ -18,6 +19,9 @@ bootstrap()
 
       logger.info(`Nhận tín hiệu ${signal}. Đang đóng ứng dụng an toàn (graceful shutdown)...`);
       try {
+        // Dừng và chờ toàn bộ background cleanup task hoàn tất trước khi đóng kết nối DB
+        await stopClaimCleanup();
+
         if (client.database) {
           try {
             client.database.close();

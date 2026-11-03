@@ -8,9 +8,12 @@ export {
   getAccountBindingFromMongo,
   getAccountBindingByOpenidFromMongo,
   upsertAccountBindingToMongo,
+  expireAccountBindingInMongo,
   revokeAccountBindingInMongo,
   touchLastOkInMongo,
   loadAllActiveBindingsFromMongo,
+  type MongoNotMatchedReason,
+  type MongoBindingUpdateResult,
 } from './df-binding.repo.js';
 
 export { createClaimSessionInMongo, consumeClaimSessionAtomicInMongo } from './df-claim.repo.js';

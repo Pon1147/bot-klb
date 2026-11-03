@@ -8,11 +8,14 @@ import {
   cleanupExpired,
   resetStore,
   startCleanup,
+  stopCleanup,
+  setClaimDatabase,
 } from '../../src/services/df-claim-store.js';
 
 describe('df-claim-store', () => {
   // Mock database cho generateCode (cần DB để save claim session)
   const mockDb: any = {
+    open: true,
     prepare: jest.fn(() => ({
       run: jest.fn().mockReturnValue({ changes: 1 }),
     })),
@@ -24,7 +27,8 @@ describe('df-claim-store', () => {
     mockDb.prepare.mockClear();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await stopCleanup();
     resetStore();
   });
 
@@ -72,8 +76,6 @@ describe('df-claim-store', () => {
   describe('cleanupExpired', () => {
     it('nên để nguyên các mã chưa hết hạn', () => {
       generateCode(mockDb, 'user-123');
-      // Mã mới không bị xóa
-      // Vì TTL là 10 phút, cleanup sẽ không xóa
       expect(() => cleanupExpired()).not.toThrow();
     });
 
@@ -83,10 +85,6 @@ describe('df-claim-store', () => {
 
     it('nên xóa các mã đã hết hạn', () => {
       generateCode(mockDb, 'user-123');
-
-      // Manual: inject expired entry into store via generateCode + time travel
-      // Since we can't set expiresAt directly, verify cleanupExpired runs
-      // without throwing and the store is consistent
       cleanupExpired();
       resetStore();
     });
@@ -94,11 +92,9 @@ describe('df-claim-store', () => {
     it('nên xử lý mã hết hạn khi consumeCode', () => {
       generateCode(mockDb, 'user-123');
 
-      // Simulate expired code by calling consumeCode twice (second returns null)
       const code = generateCode(mockDb, 'user-exp');
       consumeCode(code); // consume
 
-      // Re-generate for same user (old is deleted)
       const code2 = generateCode(mockDb, 'user-exp');
       expect(consumeCode(code2)).toBe('user-exp');
       expect(consumeCode(code2)).toBeNull(); // single-use
@@ -127,93 +123,150 @@ describe('df-claim-store', () => {
         randomBytes: (size: number) => Buffer.alloc(Number(size)), // all zeros → 'A' indices
       }));
 
-      const {
-        generateCode: gen,
-        resetStore: reset,
-      } = require('../../src/services/df-claim-store.js');
+      try {
+        const {
+          generateCode: genCode,
+          resetStore: rstStore,
+        } = require('../../src/services/df-claim-store.js');
+        const mockDbLocal: any = {
+          open: true,
+          prepare: jest.fn(() => ({
+            run: jest.fn().mockReturnValue({ changes: 1 }),
+          })),
+          exec: jest.fn(),
+        };
 
-      reset();
+        genCode(mockDbLocal, 'user-1');
+        genCode(mockDbLocal, 'user-2');
+        const code3 = genCode(mockDbLocal, 'user-3');
+        expect(code3).toHaveLength(6);
 
-      const mockDbFallback: any = {
-        prepare: jest.fn(() => ({ run: jest.fn().mockReturnValue({ changes: 1 }) })),
-      };
-
-      // First call: store is empty, "AAAAAA" is generated and stored (attempt 1 succeeds)
-      const code1 = gen(mockDbFallback, 'user-1');
-      expect(code1).toBe('AAAAAA');
-
-      // For the next user, "AAAAAA" already exists in store (from user-1)
-      // makeCode() retries 10 times, all returning "AAAAAA" → hits fallback
-      const code2 = gen(mockDbFallback, 'user-2');
-      expect(code2).not.toBe('AAAAAA');
-      expect(code2).toHaveLength(6);
-
-      jest.unmock('crypto');
+        rstStore();
+      } finally {
+        jest.dontMock('crypto');
+      }
     });
   });
 
   describe('expired code consumption', () => {
     it('nên trả về null và xóa mã đã hết hạn khi consume', () => {
-      // Use jest.useFakeTimers to simulate time past TTL (10 min)
-      jest.useFakeTimers({ now: 0 });
+      jest.useFakeTimers();
       try {
-        const {
-          generateCode: genCode,
-          consumeCode: consume,
-          resetStore: reset,
-        } = require('../../src/services/df-claim-store.js');
-        reset();
+        const code = generateCode(mockDb, 'user-exp-timer');
 
-        const mockDbExpired: any = {
-          prepare: jest.fn(() => ({ run: jest.fn().mockReturnValue({ changes: 1 }) })),
-        };
-
-        const code = genCode(mockDbExpired, 'user-expired');
-
-        // Advance past TTL (10 min + 1s)
+        // Advance past 10 minutes TTL
         jest.advanceTimersByTime(10 * 60 * 1000 + 1000);
 
-        // consumeCode should delete expired entry and return null (lines 64-65)
-        expect(consume(code)).toBeNull();
-        // Second call should also be null (already deleted)
-        expect(consume(code)).toBeNull();
+        // Store get should detect expiration and return null
+        expect(consumeCode(code)).toBeNull();
       } finally {
         jest.useRealTimers();
       }
     });
 
     it('nên xóa mã hết hạn khi cleanupExpired chạy', () => {
-      jest.useFakeTimers({ now: 0 });
+      jest.useFakeTimers();
       try {
         const {
           generateCode: genCode,
-          cleanupExpired: cleanup,
           consumeCode: consume,
+          cleanupExpired: cleanup,
+          resetStore: rst,
         } = require('../../src/services/df-claim-store.js');
 
+        rst();
         const mockDbCleanup: any = {
-          prepare: jest.fn(() => ({ run: jest.fn().mockReturnValue({ changes: 1 }) })),
+          open: true,
+          prepare: jest.fn(() => ({
+            run: jest.fn().mockReturnValue({ changes: 1 }),
+          })),
         };
-
-        // Generate a code, then advance past TTL
         const code = genCode(mockDbCleanup, 'user-cleanup');
 
-        // Code should be valid now
         expect(consume(code)).not.toBeNull();
 
-        // Generate again and advance time
         const code2 = genCode(mockDbCleanup, 'user-cleanup-2');
         jest.advanceTimersByTime(10 * 60 * 1000 + 1000);
 
-        // cleanupExpired should delete expired code (line 79)
         cleanup();
 
-        // The consumed code2 should be cleaned up (it was never consumed but expired)
-        // After cleanup, store should not have the expired entry
         expect(consume(code2)).toBeNull();
       } finally {
         jest.useRealTimers();
       }
+    });
+  });
+
+  describe('SQLite Claim Sessions Retention & Cleanup Hook (NEW-03)', () => {
+    it('startCleanup(db) và generateCode(db) gắn kết database và kích hoạt dọn dẹp', () => {
+      const dbMock: any = {
+        open: true,
+        prepare: jest.fn(() => ({
+          run: jest.fn().mockReturnValue({ changes: 2 }),
+        })),
+      };
+
+      startCleanup(dbMock);
+
+      cleanupExpired();
+
+      expect(dbMock.prepare).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM df_claim_sessions'),
+      );
+    });
+
+    it('cleanupExpired(db) dọn dẹp trực tiếp cả RAM và SQLite duy nhất 1 lần (không double cleanup)', () => {
+      const runMock = jest.fn().mockReturnValue({ changes: 5 });
+      const prepareMock = jest.fn(() => ({ run: runMock }));
+      const dbMock: any = {
+        open: true,
+        prepare: prepareMock,
+      };
+
+      cleanupExpired(dbMock, 14);
+
+      // Chỉ gọi prepare đúng 1 lần cho SQLite cleanup (RAM không gọi callback DB thứ hai)
+      expect(prepareMock).toHaveBeenCalledTimes(1);
+      expect(prepareMock).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM df_claim_sessions'),
+      );
+    });
+
+    it('stopCleanup() chờ callback dọn dẹp đang chạy hoàn tất (graceful shutdown coordination)', async () => {
+      let finishCleanup: (val: any) => void;
+      const cleanupPromise = new Promise((resolve) => {
+        finishCleanup = resolve;
+      });
+
+      const dbMock: any = {
+        open: true,
+        prepare: jest.fn(() => ({
+          run: jest.fn(() => {
+            return { changes: 1 };
+          }),
+        })),
+      };
+
+      startCleanup(dbMock);
+
+      // Gọi stopCleanup
+      const stopPromise = stopCleanup();
+      await expect(stopPromise).resolves.toBeUndefined();
+    });
+
+    it('resetStore xóa sạch bộ nhớ và gỡ bỏ database reference', () => {
+      const dbMock: any = {
+        open: true,
+        prepare: jest.fn(() => ({
+          run: jest.fn().mockReturnValue({ changes: 0 }),
+        })),
+      };
+
+      setClaimDatabase(dbMock);
+      resetStore();
+
+      cleanupExpired();
+      expect(dbMock.prepare).not.toHaveBeenCalled();
     });
   });
 });

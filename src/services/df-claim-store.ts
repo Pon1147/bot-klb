@@ -6,7 +6,11 @@
 import { randomBytes } from 'crypto';
 import Database from 'better-sqlite3';
 import { TTLStore } from '../utils/ttl-store.js';
-import { createClaimSession, invalidateUserClaims } from '../database/df-claim.db.js';
+import {
+  createClaimSession,
+  invalidateUserClaims,
+  cleanupExpiredClaimSessions,
+} from '../database/df-claim.db.js';
 import {
   CLAIM_CODE_TTL_MS,
   CLAIM_CODE_CLEANUP_INTERVAL_MS,
@@ -14,13 +18,25 @@ import {
 } from '../config/app.constants.js';
 
 const CODE_LENGTH = 6;
-const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // loại trừ ky tu de nhuan (I/1, O/0)
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // loại trừ ký tự dễ nhầm (I/1, O/0)
 
 interface ClaimEntry {
   discordId: string;
   expiresAt: number;
 }
 
+let claimDb: Database.Database | null = null;
+let dbCleanupInterval: NodeJS.Timeout | null = null;
+let cleanupInProgress: Promise<number> | null = null;
+
+/**
+ * Thiết lập kết nối SQLite database phục vụ dọn dẹp các session claim hết hạn.
+ */
+export function setClaimDatabase(database: Database.Database): void {
+  claimDb = database;
+}
+
+// TTLStore quản lý pure in-memory RAM
 const store = new TTLStore<string, ClaimEntry>({
   ttlMs: CLAIM_CODE_TTL_MS,
   cleanupIntervalMs: CLAIM_CODE_CLEANUP_INTERVAL_MS,
@@ -28,7 +44,30 @@ const store = new TTLStore<string, ClaimEntry>({
 });
 
 /**
- * Sinh ma claim 6 ky tu. Neu trung → sinh lai (max 10 lan).
+ * Chạy dọn dẹp database nền có tracking in-flight operation để shutdown an toàn.
+ */
+async function runDbCleanup(): Promise<number> {
+  if (!claimDb || ('open' in claimDb && !claimDb.open)) return 0;
+  if (cleanupInProgress) return cleanupInProgress;
+
+  cleanupInProgress = (async () => {
+    try {
+      if (claimDb && (!('open' in claimDb) || claimDb.open)) {
+        return cleanupExpiredClaimSessions(claimDb, 7);
+      }
+      return 0;
+    } catch {
+      return 0;
+    } finally {
+      cleanupInProgress = null;
+    }
+  })();
+
+  return cleanupInProgress;
+}
+
+/**
+ * Sinh mã claim 6 ký tự. Nếu trùng -> sinh lại (max 10 lần).
  */
 function makeCode(): string {
   let attempts = 0;
@@ -44,18 +83,22 @@ function makeCode(): string {
     }
     attempts++;
   }
-  // fallback: dung timestamp hash (rat hiem khi den day)
+  // fallback: dùng timestamp hash
   return randomBytes(4).toString('hex').toUpperCase().slice(0, CODE_LENGTH);
 }
 
 /**
- * Tao ma claim moi cho user Discord.
+ * Tạo mã claim mới cho user Discord.
  */
 export function generateCode(database: Database.Database, discordId: string): string {
+  if (!claimDb) {
+    claimDb = database;
+  }
+
   // Invalidate old claim sessions trong DB (tránh dùng code cũ sau khi start mới)
   invalidateUserClaims(database, discordId);
 
-  // Xoa ma cuo cua user neu con (1 user = 1 ma tai 1 thoi diem)
+  // Xóa mã cũ của user nếu còn (1 user = 1 mã tại 1 thời điểm)
   for (const [code, entry] of store.entries()) {
     if (entry.discordId === discordId) {
       store.delete(code);
@@ -76,43 +119,75 @@ export function generateCode(database: Database.Database, discordId: string): st
 }
 
 /**
- * Bat dau cleanup tu dong moi 5 phut.
+ * Bắt đầu cleanup tự động mỗi 5 phút (RAM qua TTLStore và SQLite qua interval riêng).
  */
-export function startCleanup(): void {
+export function startCleanup(database?: Database.Database): void {
+  if (database) {
+    claimDb = database;
+  }
   store.startCleanup();
+  if (!dbCleanupInterval) {
+    dbCleanupInterval = setInterval(() => {
+      void runDbCleanup();
+    }, CLAIM_CODE_CLEANUP_INTERVAL_MS);
+  }
 }
 
 /**
- * Dung ma claim. Tra ve discordId neu thanh cong, null neu ma sai/het han/da dung.
+ * Dùng mã claim. Trả về discordId nếu thành công, null nếu mã sai/hết hạn/đã dùng.
  */
 export function consumeCode(code: string): string | null {
   const entry = store.get(code);
   if (!entry) {
     return null;
   }
-  // Single-use: xoa ngay sau khi consume
+  // Single-use: xóa ngay sau khi consume
   store.delete(code);
   return entry.discordId;
 }
 
 /**
- * Xoa cac ma het han (de tiep muc de tuong thich voi code cu).
+ * Xóa các mã hết hạn (dọn RAM và SQLite đúng 1 lần với maxAgeDays chỉ định).
  */
-export function cleanupExpired(): void {
+export function cleanupExpired(database?: Database.Database, maxAgeDays?: number): void {
+  if (database) {
+    claimDb = database;
+  }
   store.cleanupExpired();
+  if (claimDb && (!('open' in claimDb) || claimDb.open)) {
+    try {
+      cleanupExpiredClaimSessions(claimDb, maxAgeDays);
+    } catch {
+      // Bỏ qua lỗi DB trong cleanup
+    }
+  }
 }
 
 /**
- * Dung cleanup timer.
+ * Dừng cleanup timer và chờ callback đang chạy hoàn tất (Graceful shutdown coordination).
  */
-export function stopCleanup(): void {
+export async function stopCleanup(): Promise<void> {
   store.stopCleanup();
+  if (dbCleanupInterval) {
+    clearInterval(dbCleanupInterval);
+    dbCleanupInterval = null;
+  }
+  if (cleanupInProgress) {
+    try {
+      await cleanupInProgress;
+    } catch {
+      // Bỏ qua trong quá trình shutdown
+    }
+  }
 }
 
 /**
- * Don sach toan bo store (dung cho test).
+ * Dọn sạch toàn bộ store (dùng cho test).
  */
 export function resetStore(): void {
-  stopCleanup();
+  void stopCleanup();
   store.clear();
+  claimDb = null;
 }
+
+export { cleanupExpiredClaimSessions } from '../database/df-claim.db.js';

@@ -25,6 +25,7 @@ import {
   getAccountBindingFromMongo,
   getAccountBindingByOpenidFromMongo,
   upsertAccountBindingToMongo,
+  expireAccountBindingInMongo,
   revokeAccountBindingInMongo,
   touchLastOkInMongo,
   loadAllActiveBindingsFromMongo,
@@ -83,7 +84,7 @@ describe('MongoDB Module & Fallbacks', () => {
       expect(bindingByOpenid).toBeNull();
 
       const all = await loadAllActiveBindingsFromMongo();
-      expect(all).toEqual([]);
+      expect(all).toBeNull();
 
       await expect(
         upsertAccountBindingToMongo({
@@ -160,7 +161,22 @@ describe('MongoDB Module & Fallbacks', () => {
           }),
           updateOne: jest.fn(async (filter: any, update: any, options?: any) => {
             const id = filter._id || filter.discord_user_id || JSON.stringify(filter);
-            let existing = store.get(id) || { _id: filter._id, ...filter };
+            let existing = store.get(id);
+
+            // Kiểm tra điều kiện filter nếu không phải upsert tạo mới
+            if (existing) {
+              for (const [k, v] of Object.entries(filter)) {
+                if (k !== '_id' && existing[k] !== v) {
+                  return { acknowledged: true, matchedCount: 0, modifiedCount: 0, upsertedCount: 0 };
+                }
+              }
+            } else if (!options?.upsert) {
+              return { acknowledged: true, matchedCount: 0, modifiedCount: 0, upsertedCount: 0 };
+            }
+
+            if (!existing) {
+              existing = { _id: filter._id, ...filter };
+            }
             if (update.$set) {
               existing = { ...existing, ...update.$set };
             }
@@ -168,7 +184,12 @@ describe('MongoDB Module & Fallbacks', () => {
               existing = { ...existing, ...update.$setOnInsert };
             }
             store.set(id, existing);
-            return { acknowledged: true, modifiedCount: 1, upsertedCount: options?.upsert ? 1 : 0 };
+            return {
+              acknowledged: true,
+              matchedCount: 1,
+              modifiedCount: 1,
+              upsertedCount: options?.upsert && !store.has(id) ? 1 : 0,
+            };
           }),
           insertOne: jest.fn(async (doc: any) => {
             const id = doc.code || doc._id || String(Date.now());
@@ -266,11 +287,46 @@ describe('MongoDB Module & Fallbacks', () => {
       expect(touched?.last_ok_at).toBeDefined();
 
       const allActive = await loadAllActiveBindingsFromMongo();
-      expect(allActive.length).toBe(1);
+      expect(allActive?.length).toBe(1);
 
       await revokeAccountBindingInMongo('user-999');
       const revoked = mockCollections['account_bindings']._store.get('user-999');
       expect(revoked.status).toBe('revoked');
+    });
+
+    it('df-binding repo conditional expire va revoke voi expectedNonce', async () => {
+      await upsertAccountBindingToMongo({
+        discord_user_id: 'user-cond',
+        openid: 'op-cond',
+        cred_nonce: 'nonce-v1',
+        cred_ciphertext: 'c',
+        cred_tag: 't',
+      });
+
+      // Mismatch expectedNonce
+      const mismatchRes = await expireAccountBindingInMongo('user-cond', 'nonce-WRONG');
+      expect(mismatchRes.success).toBe(false);
+      if (!mismatchRes.success) {
+        expect(mismatchRes.reason).toBe('generation_mismatch');
+      }
+
+      // Match expectedNonce
+      const matchRes = await expireAccountBindingInMongo('user-cond', 'nonce-v1');
+      expect(matchRes.success).toBe(true);
+
+      // Already inactive
+      const alreadyRes = await revokeAccountBindingInMongo('user-cond', 'nonce-v1');
+      expect(alreadyRes.success).toBe(false);
+      if (!alreadyRes.success) {
+        expect(alreadyRes.reason).toBe('already_inactive');
+      }
+
+      // User not found
+      const notFoundRes = await revokeAccountBindingInMongo('user-ghost', 'nonce-ghost');
+      expect(notFoundRes.success).toBe(false);
+      if (!notFoundRes.success) {
+        expect(notFoundRes.reason).toBe('user_not_found');
+      }
     });
 
     it('df-claim repo phai insert va atomic consume thanh cong', async () => {
@@ -339,7 +395,11 @@ describe('MongoDB Module & Fallbacks', () => {
       ).resolves.not.toThrow();
 
       bindingColl.updateOne.mockRejectedValueOnce(new Error('Revoke error'));
-      await expect(revokeAccountBindingInMongo('err-u')).resolves.not.toThrow();
+      const revokeErrRes = await revokeAccountBindingInMongo('err-u');
+      expect(revokeErrRes.success).toBe(false);
+      if (!revokeErrRes.success) {
+        expect(revokeErrRes.reason).toBe('unavailable');
+      }
 
       bindingColl.updateOne.mockRejectedValueOnce(new Error('Touch error'));
       await expect(touchLastOkInMongo('err-u')).resolves.not.toThrow();
@@ -347,7 +407,7 @@ describe('MongoDB Module & Fallbacks', () => {
       bindingColl.find.mockReturnValueOnce({
         toArray: jest.fn().mockRejectedValueOnce(new Error('Cursor error')),
       });
-      expect(await loadAllActiveBindingsFromMongo()).toEqual([]);
+      expect(await loadAllActiveBindingsFromMongo()).toBeNull();
 
       guildColl.findOne.mockRejectedValueOnce(new Error('Guild find error'));
       expect(await getGuildSettingsFromMongo('guild-err')).toBeNull();

@@ -205,7 +205,7 @@ export async function bootstrap(): Promise<Client> {
 
   // Step 7c: Start claim code cleanup
   logger.info('Starting claim code cleanup...');
-  startClaimCleanup();
+  startClaimCleanup(database);
   logger.info('Claim code cleanup started');
 
   // Attach database to client

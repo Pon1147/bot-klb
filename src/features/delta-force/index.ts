@@ -39,6 +39,8 @@ export {
   startDfAutoPostScheduler,
   rescheduleDfAutoPost,
   broadcastAutoPost,
+  isAutoPostBroadcasting,
+  AutoPostBroadcastInProgressError,
   stopAutoPostTask,
   stopAllAutoPostTasks,
   getActiveAutoPostTypes,
@@ -47,4 +49,8 @@ export {
 export * from '../../services/df-crypto.js';
 export * from '../../services/df-claim-handler.js';
 export { cleanup as cleanupTeamFindSessions } from '../../services/team-find-session.js';
-export { startCleanup as startClaimCleanup } from '../../services/df-claim-store.js';
+export {
+  startCleanup as startClaimCleanup,
+  stopCleanup as stopClaimCleanup,
+  cleanupExpiredClaimSessions,
+} from '../../services/df-claim-store.js';
