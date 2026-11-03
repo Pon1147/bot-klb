@@ -658,17 +658,21 @@ export async function handleBotAnnounce(interaction: ChatInputCommandInteraction
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const container = buildAnnouncementContainer(customMessage, false);
-  const guilds = interaction.client.guilds.cache;
+  const guildList = Array.from(interaction.client.guilds.cache.values());
+  const totalGuildCount = interaction.client.guilds.cache.size;
   const settingsService = getSettingsService();
+  const delayMs = process.env.NODE_ENV === 'test' ? 0 : 1000;
   const results: {
     guildName: string;
     channelName?: string;
+    channelId?: string;
     success: boolean;
     reason?: string;
     isConfigured: boolean;
   }[] = [];
 
-  for (const guild of guilds.values()) {
+  for (let i = 0; i < guildList.length; i++) {
+    const guild = guildList[i];
     try {
       const configuredChannelId = settingsService.get(guild.id).botAnnounce?.channelId;
       const { channel, reason, isConfigured } = findAnnouncementChannel(guild, configuredChannelId);
@@ -691,9 +695,15 @@ export async function handleBotAnnounce(interaction: ChatInputCommandInteraction
       results.push({
         guildName: guild.name,
         channelName: channel.name,
+        channelId: channel.id,
         success: true,
         isConfigured,
       });
+
+      // Throttle nhẹ giữa các guild để chống Discord rate limit
+      if (i < guildList.length - 1 && delayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
     } catch (err) {
       results.push({
         guildName: guild.name,
@@ -710,7 +720,8 @@ export async function handleBotAnnounce(interaction: ChatInputCommandInteraction
   const summaryLines = results.map((r, idx) => {
     if (r.success) {
       const tag = r.isConfigured ? '*(Kênh đã cấu hình)*' : '*(Kênh tự động)*';
-      return `**${idx + 1}. ${r.guildName}**: ✅ Đã gửi → <#${r.channelName ? r.channelName : ''}> (#${r.channelName}) ${tag}`;
+      const channelMention = r.channelId ? `<#${r.channelId}>` : `#${r.channelName ?? 'kênh'}`;
+      return `**${idx + 1}. ${r.guildName}**: ✅ Đã gửi → ${channelMention} (#${r.channelName}) ${tag}`;
     }
     const tag = r.isConfigured ? ' *(Kênh đã cấu hình)*' : '';
     return `**${idx + 1}. ${r.guildName}**: ⚠️ Bỏ qua → ${r.reason}${tag}`;
@@ -722,8 +733,8 @@ export async function handleBotAnnounce(interaction: ChatInputCommandInteraction
     `> ⏱️ **Thời gian thực hiện:** <t:${nowUnix}:f> (<t:${nowUnix}:R>)`,
     ``,
     `### 📊 Thống Kê Tổng Hợp:`,
-    `• 🌐 Tổng số máy chủ bot có mặt: **${guilds.size}**`,
-    `• ✅ Gửi thành công: **${successCount} / ${guilds.size}** máy chủ`,
+    `• 🌐 Tổng số máy chủ bot có mặt: **${totalGuildCount}**`,
+    `• ✅ Gửi thành công: **${successCount} / ${totalGuildCount}** máy chủ`,
     `• ⚠️ Thất bại / Bỏ qua: **${failCount}** máy chủ`,
     ``,
     `### 📋 Chi Tiết Từng Máy Chủ:`,

@@ -485,6 +485,7 @@ describe('/config command — Execute Dispatch', () => {
 
     it('broadcast tới toàn bộ máy chủ (preview: false) nếu là Bot Owner', async () => {
       const mockChannel = {
+        id: 'chan-1',
         name: 'thông-báo',
         isTextBased: () => true,
         isDMBased: () => false,
@@ -525,7 +526,11 @@ describe('/config command — Execute Dispatch', () => {
 
       expect(interaction.deferReply).toHaveBeenCalled();
       expect(mockChannel.send).toHaveBeenCalled();
-      expect(interaction.editReply).toHaveBeenCalled();
+      expect(interaction.editReply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('<#chan-1> (#thông-báo)'),
+        }),
+      );
     });
   });
 });
