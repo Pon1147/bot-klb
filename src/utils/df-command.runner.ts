@@ -94,7 +94,7 @@ export async function runDfCommand(
           `Decrypt binding failed for user ${ctx.userId}: ${(decryptError as Error).message}`,
         );
         const warnErr = buildErrorContainer(
-          'Binding bị corrupt. Vui lòng unlink và link lại qua `/df-link start`.',
+          'Binding bị corrupt. Vui lòng unlink và link lại qua `/df link start`.',
         );
         await sendReply(ctx.interaction, { components: warnErr.toJSON() });
         return true;
@@ -110,7 +110,7 @@ export async function runDfCommand(
 
   if (!token) {
     const err = buildErrorContainer(
-      'Bạn chưa liên kết tài khoản. Dùng `/df-link start` hoặc `/df-link manual` để bắt đầu.',
+      'Bạn chưa liên kết tài khoản. Dùng `/df link start` để bắt đầu.',
     );
     await sendReply(ctx.interaction, { components: err.toJSON() });
     return true;
@@ -140,7 +140,7 @@ export async function runDfCommand(
     if (isTokenExpiredError(error as Error)) {
       logger.info(`Token hết hạn/invalid cho user ${ctx.userId} — chỉ warn, không tự xóa binding.`);
       const err = buildErrorContainer(
-        'Token hiện đã hết hạn. Vui lòng sử dụng `/df-link start` để liên kết lại.',
+        'Token hiện đã hết hạn. Vui lòng sử dụng `/df link start` để liên kết lại.',
       );
       await ctx.interaction.editReply({
         components: err.toJSON(),

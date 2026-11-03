@@ -120,7 +120,7 @@ export async function handleDfStatsSelect(
 
   if (!token) {
     await sendReply(interaction, {
-      content: 'Chưa liên kết tài khoản. Dùng `/df-link start`.',
+      content: 'Chưa liên kết tài khoản. Dùng `/df link start`.',
       flags: 64,
     });
     return { handled: true };

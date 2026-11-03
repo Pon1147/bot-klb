@@ -8,7 +8,7 @@ export const VOICE_CHANNEL_FULL_MESSAGE = 'Phòng thoại đã đầy (99 ngư�
 export const INVALID_TOKEN_MESSAGE =
   'Format token không hợp lệ. Token phải là chuỗi hex (40-64 ký tự).';
 export const INVALID_CLAIM_MESSAGE =
-  'Mã claim không hợp lệ hoặc đã hết hạn. Hãy dùng /df-link start để nhận mã mới.';
+  'Mã claim không hợp lệ hoặc đã hết hạn. Hãy dùng /df link start để nhận mã mới.';
 export const SESSION_EXPIRED_MESSAGE = 'Session đã hết hạn. Dùng `/team-find` để bắt đầu lại.';
 export const CONTAINER_SESSION_EXPIRED_MESSAGE =
   'Session edit đã hết hạn. Vui lòng bắt đầu lại với /container edit.';
