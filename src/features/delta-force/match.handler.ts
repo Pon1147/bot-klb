@@ -225,13 +225,16 @@ export async function handleMatchSelect(
   interaction: StringSelectMenuInteraction,
   database: Database.Database,
 ): Promise<void> {
+  // ACK ngay lập tức để chống timeout 3s của Discord
+  await interaction.deferUpdate().catch(() => {});
+
   const customId = interaction.customId;
   const parts = customId.split(':');
   const ownerId = parts[1];
 
   // Bảo vệ: Chỉ người gọi lệnh mới được đổi trận trong menu này
   if (ownerId && interaction.user.id !== ownerId) {
-    await interaction.reply({
+    await interaction.followUp({
       content:
         '❌ Bạn không thể thao tác trên danh sách trận đấu của người khác! Hãy dùng `/df match` để xem của riêng bạn.',
       flags: MessageFlags.Ephemeral,
@@ -241,8 +244,6 @@ export async function handleMatchSelect(
 
   const selectedRoomId = interaction.values[0];
   if (!selectedRoomId) return;
-
-  await interaction.deferUpdate();
 
   // Lấy token của user để gọi API
   const apiToken = resolveUserDfToken(database, interaction.user.id);

@@ -7,6 +7,8 @@ if (!window.AuthUtils) {
 
 // ===== CONSTANTS =====
 const DEFAULT_CODES = [
+  'WELCOMEDFMY',
+  'DFPSS1301026',
   'ga_zenith',
   'ga_aurora',
   'ga_martelo',

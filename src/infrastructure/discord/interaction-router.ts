@@ -29,6 +29,8 @@ import {
   handleTeamFindSelect,
   handleDfStatsSelect,
   handleHelpButton,
+  handleMatchSelect,
+  MATCH_SELECT_PREFIX,
 } from '../../features/delta-force/index.js';
 import { hasPolicy, resolveCommandPolicy } from '../../config/permissions.js';
 import { getCommandPath } from '../../utils/command-path.utils.js';
@@ -158,6 +160,10 @@ async function handleStringSelectMenu(
   client: Client,
   interaction: StringSelectMenuInteraction,
 ): Promise<void> {
+  if (interaction.customId.startsWith(MATCH_SELECT_PREFIX)) {
+    await handleMatchSelect(interaction, client.database);
+    return;
+  }
   if (interaction.customId.startsWith(TeamFindIds.RANK)) {
     await handleTeamFindSelect(interaction);
     return;
