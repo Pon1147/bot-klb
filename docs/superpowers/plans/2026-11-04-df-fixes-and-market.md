@@ -1,6 +1,6 @@
 # Kế hoạch Triển khai: Sửa lỗi Hiển thị, Tối ưu Extension Capture và Tính năng `/df market`
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Khắc phục lỗi hiển thị đặc vụ & nút link trên Discord (`/df history`), sửa luồng bắt token tức thì trong Extension DF Toolbox, và triển khai tính năng tra cứu thị trường chế tác `/df market` realtime không cần auth.
 
@@ -37,13 +37,13 @@
 - Modify: `src/infrastructure/discord/interaction-router.ts`
 - Test: `__tests__/df/df-operator.utils.test.ts` (hoặc test tương ứng)
 
-- [ ] **Step 1: Viết test kiểm tra tên đặc vụ 30011 và cấu trúc button trong history**
-- [ ] **Step 2: Chạy test để xác nhận fail hoặc thiếu kiểm chứng**
-- [ ] **Step 3: Cập nhật `df-operator.utils.ts`**: Đổi tên đặc vụ `30011` từ `'Thiết Bị'` thành `'Gizmo (Thiết Bị)'`
-- [ ] **Step 4: Cập nhật `history.handler.ts`**: Chuyển button `df_history_view_all` từ `ButtonStyle.Secondary` sang `ButtonStyle.Link` trỏ thẳng tới `https://www.playdeltaforce.com/events/hq/vi/index.html`
-- [ ] **Step 5: Dọn dẹp code thừa trong `interaction-router.ts`**: Xóa nhánh `if (interaction.customId === 'df_history_view_all')` vì button link do Discord client tự mở web
-- [ ] **Step 6: Chạy test xác minh pass 100%**
-- [ ] **Step 7: Commit**: `git commit -m "fix(df-history): sua ten dac vu Gizmo va chuyen nut view all thanh link button"`
+- [x] **Step 1: Viết test kiểm tra tên đặc vụ 30011 và cấu trúc button trong history**
+- [x] **Step 2: Chạy test để xác nhận fail hoặc thiếu kiểm chứng**
+- [x] **Step 3: Cập nhật `df-operator.utils.ts`**: Đổi tên đặc vụ `30011` từ `'Thiết Bị'` thành `'Gizmo (Thiết Bị)'`
+- [x] **Step 4: Cập nhật `history.handler.ts`**: Chuyển button `df_history_view_all` từ `ButtonStyle.Secondary` sang `ButtonStyle.Link` trỏ thẳng tới `https://www.playdeltaforce.com/events/hq/vi/index.html`
+- [x] **Step 5: Dọn dẹp code thừa trong `interaction-router.ts`**: Xóa nhánh `if (interaction.customId === 'df_history_view_all')` vì button link do Discord client tự mở web
+- [x] **Step 6: Chạy test xác minh pass 100%**
+- [x] **Step 7: Commit**: `git commit -m "fix(df-history): sua ten dac vu Gizmo va chuyen nut view all thanh link button"`
 
 ---
 
@@ -53,12 +53,12 @@
 - Modify: `garena-redeem-code/content/link-page-capture.js`
 - Build Output: `assets/DF-Extension.zip`
 
-- [ ] **Step 1: Bổ sung hook bắt response từ `iegg.garena.com/v2/auth/login`**
+- [x] **Step 1: Bổ sung hook bắt response từ `iegg.garena.com/v2/auth/login`**
   - Khi có response trả về từ `https://intlsdk-new.iegg.garena.com/v2/auth/login`, trích xuất `data.openid` và `data.token`.
-- [ ] **Step 2: Bổ sung listener lắng nghe `window.addEventListener('message')` từ popup callback `garenalogincallback.html`**
-- [ ] **Step 3: Gửi `CREDENTIAL_CANDIDATE` về `link-content.js` ngay lập tức**
-- [ ] **Step 4: Chạy script đóng gói extension**: `npm run package:extension`
-- [ ] **Step 5: Commit**: `git commit -m "feat(extension): bat credential tuc thi tu auth login response va callback"`
+- [x] **Step 2: Bổ sung listener lắng nghe `window.addEventListener('message')` từ popup callback `garenalogincallback.html`**
+- [x] **Step 3: Gửi `CREDENTIAL_CANDIDATE` về `link-content.js` ngay lập tức**
+- [x] **Step 4: Chạy script đóng gói extension**: `npm run package:extension`
+- [x] **Step 5: Commit**: `git commit -m "feat(extension): bat credential tuc thi tu auth login response va callback"`
 
 ---
 
@@ -72,15 +72,15 @@
 - Modify: `src/features/delta-force/df.command.ts`
 - Test: `__tests__/df/df-market.test.ts`
 
-- [ ] **Step 1: Viết test cho API `getManufactureDetail` và handler `/df market`**
-- [ ] **Step 2: Chạy test xác nhận fail**
-- [ ] **Step 3: Bổ sung hàm API trong `deltaforce.api.ts`**:
+- [x] **Step 1: Viết test cho API `getManufactureDetail` và handler `/df market`**
+- [x] **Step 2: Chạy test xác nhận fail**
+- [x] **Step 3: Bổ sung hàm API trong `deltaforce.api.ts`**:
   - `getManufactureDetail(itemId: string)` gọi `POST /api/proxy_direct/logicial/DfTools/GetManufactureDetail`
   - `getManufactureRecommendationListNoAuth()` gọi `POST /api/proxy_direct/logicial/DfTools/GetManufactureRecommendationListNoAuth`
-- [ ] **Step 4: Viết `market.handler.ts`**:
+- [x] **Step 4: Viết `market.handler.ts`**:
   - Truy xuất dữ liệu chi tiết chế tác của item.
   - Render Container V2: Tên vật phẩm, ảnh, giá bán, chi phí sản xuất, thuế phí, thu nhập/giờ (`hourly_income`), giá cao nhất/thấp nhất trong 24h, danh sách nguyên liệu.
-- [ ] **Step 5: Đăng ký subcommand `market` vào `df.command.ts`** kèm autocomplete gợi ý vật phẩm.
-- [ ] **Step 6: Cấu hình RBAC permissions**: Thêm `df.market` role `Member` vào `permissions.json` và `permissions.ts`.
-- [ ] **Step 7: Chạy kiểm thử xác minh `npm test __tests__/df/df-market.test.ts` và `npm run check`**
-- [ ] **Step 8: Commit**: `git commit -m "feat(df-market): them tinh nang tra cuu ban che tac va gia cho realtime"`
+- [x] **Step 5: Đăng ký subcommand `market` vào `df.command.ts`** kèm autocomplete gợi ý vật phẩm.
+- [x] **Step 6: Cấu hình RBAC permissions**: Thêm `df.market` role `Member` vào `permissions.json` và `permissions.ts`.
+- [x] **Step 7: Chạy kiểm thử xác minh `npm test __tests__/df/df-market.test.ts` và `npm run check`**
+- [x] **Step 8: Commit**: `git commit -m "feat(df-market): them tinh nang tra cuu ban che tac va gia cho realtime"`
