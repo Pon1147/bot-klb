@@ -332,7 +332,7 @@ export async function execute(
       await executeWorkshop(interaction, db);
       return;
     case 'market':
-      await executeMarket(interaction);
+      await executeMarket(interaction, db);
       return;
     case 'unlink':
       await executeUnlink(interaction, db);

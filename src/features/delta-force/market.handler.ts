@@ -13,6 +13,7 @@ import {
   ComponentType,
   MessageFlags,
 } from 'discord.js';
+import Database from 'better-sqlite3';
 import {
   getManufactureDetail,
   getManufactureRecommendationListNoAuth,
@@ -22,6 +23,7 @@ import {
   getItemImageUrl,
   searchCraftItems,
 } from '../../services/workshop-data.service.js';
+import { resolveUserDfToken } from '../../utils/df-token.utils.js';
 import { buildErrorContainer, makeResult } from '../../utils/container.utils.js';
 
 function formatCoin(num: number | string): string {
@@ -64,8 +66,14 @@ export async function handleMarketAutocomplete(
 /**
  * Thực thi lệnh /df market
  */
-export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
+export async function execute(
+  interaction: ChatInputCommandInteraction,
+  database?: Database.Database,
+): Promise<void> {
   await interaction.deferReply();
+
+  const db = (database ?? interaction.client?.database) as Database.Database | undefined;
+  const userToken = db ? resolveUserDfToken(db, interaction.user.id) : null;
 
   let itemId = interaction.options.getString('item');
 
@@ -88,7 +96,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   }
 
   try {
-    const detail = await getManufactureDetail(itemId);
+    const { detail, isPersonal } = await getManufactureDetail(itemId, userToken || undefined);
     const itemName = await getWorkshopItemName(detail.item_id).catch(
       () => `Vật phẩm #${detail.item_id}`,
     );
@@ -138,9 +146,18 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     const profitIcon = income >= 0 ? '📈' : '📉';
     const profitSign = income >= 0 ? '+' : '';
 
+    const marketBadge = isPersonal
+      ? '🟢 **Thị trường:** `Garena SEA (Đã liên kết)`'
+      : '⚪ **Thị trường:** `Global Quốc Tế (Chưa liên kết)`';
+
+    const footerText = isPersonal
+      ? `-# ⓘ Dữ liệu chốt lúc: \`${lastUpdatedText}\` (Đồng bộ cụm Garena SEA từ Delta Force HQ).`
+      : `-# ⓘ Dữ liệu chốt lúc: \`${lastUpdatedText}\` (Cụm Global · Dùng \`/df link start\` để xem giá cụm Garena).`;
+
     const sectionContent = [
       `# 🛠️ Bàn Chế Tác: **${itemName}**`,
       `-# ID: \`${detail.item_id}\`  ·  Thời gian sản xuất: \`${formatDuration(detail.total_duration)}\``,
+      marketBadge,
       '',
       `💰 **Tổng giá bán (cả mẻ):** \`${formatCoin(sellPrice)}\` Coin`,
       `📊 **Biến động đơn giá 24h:** Đỉnh \`${formatCoin(maxPrice)}\`  ·  Đáy \`${formatCoin(minPrice)}\` Coin/món`,
@@ -151,7 +168,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       '',
       `> ⚙️ **Chi phí sản xuất:** \`${formatCoin(cost)}\` Coin  ·  **Phí & Tiền cọc:** \`${formatCoin(fee + deposit)}\` Coin`,
       '',
-      `-# ⓘ Dữ liệu chốt lúc: \`${lastUpdatedText}\` (Đồng bộ theo chu kỳ 1 giờ từ Delta Force HQ).`,
+      footerText,
     ].join('\n');
 
     const innerComponents: unknown[] = [

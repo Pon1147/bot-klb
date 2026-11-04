@@ -528,10 +528,51 @@ export async function getManufactureRecommendationListNoAuth(): Promise<DfWorksh
   return resData.data;
 }
 
+export interface DfManufactureDetailResult {
+  detail: DfManufactureDetailResponse;
+  isPersonal: boolean;
+}
+
 /**
- * Call DfTools/GetManufactureDetail to fetch price fluctuation and recipe profit details (no auth required).
+ * Call DfTools/GetManufactureDetail to fetch price fluctuation and recipe profit details.
+ * Ưu tiên gọi qua cổng Auth Proxy (Garena) nếu có token người dùng, tự động fallback sang Direct API (Global).
  */
-export async function getManufactureDetail(itemId: string): Promise<DfManufactureDetailResponse> {
+export async function getManufactureDetail(
+  itemId: string,
+  token?: DfApiToken,
+): Promise<DfManufactureDetailResult> {
+  if (token) {
+    try {
+      const instance = buildInstance(token);
+      const body = {
+        openid: token.openid,
+        token: token.token,
+        game_id: GAME_ID,
+        channel: DF_CHANNEL,
+        account_type: Number(ACCOUNT_TYPE),
+        lang_type: LANG_TYPE,
+        needLogin: true,
+        item_id: itemId,
+      };
+      const res = await postSafe<DfManufactureDetailResponse>(
+        instance,
+        '/GetManufactureDetail',
+        body,
+      );
+      if (res.code === 0 && res.data) {
+        return { detail: res.data, isPersonal: true };
+      }
+      logger.info(
+        `Personal GetManufactureDetail returned code=${res.code} msg=${res.msg}, falling back to Direct`,
+      );
+    } catch (err) {
+      logger.warn(
+        `Personal GetManufactureDetail failed: ${(err as Error).message}, falling back to Direct`,
+      );
+    }
+  }
+
+  // Fallback sang Direct API (NoAuth)
   const instance = axiosCreator({
     baseURL: DIRECT_API_URL,
     headers: HEADERS,
@@ -551,9 +592,9 @@ export async function getManufactureDetail(itemId: string): Promise<DfManufactur
     '/GetManufactureDetail',
     body,
   );
-  if (resData.code !== 0) {
+  if (resData.code !== 0 || !resData.data) {
     logger.info('GetManufactureDetail failed: code=' + resData.code + ', msg=' + resData.msg);
     throw new Error(`GetManufactureDetail failed: code=${resData.code} msg=${resData.msg}`);
   }
-  return resData.data;
+  return { detail: resData.data, isPersonal: false };
 }

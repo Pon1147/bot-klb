@@ -267,7 +267,7 @@ describe('/df command — Execute Dispatch', () => {
     });
 
     await execute(interaction);
-    expect(executeMarket).toHaveBeenCalledWith(interaction);
+    expect(executeMarket).toHaveBeenCalledWith(interaction, expect.anything());
   });
 
   it('phải dispatch tới executeUnlink khi chọn subcommand "unlink"', async () => {
