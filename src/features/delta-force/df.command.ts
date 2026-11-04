@@ -37,6 +37,7 @@ import { execute as executeBuild } from './build.handler.js';
 import { execute as executeAutopost } from './autopost.handler.js';
 import { execute as executeVault } from './vault.handler.js';
 import { execute as executeMatch } from './match.handler.js';
+import { execute as executeMarket } from './market.handler.js';
 
 import { MAX_HISTORY_PAGE } from '../../config/app.constants.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
@@ -224,6 +225,18 @@ export const data = new SlashCommandBuilder()
     sub.setName('workshop').setDescription('Xem thông tin sản xuất tại Xưởng Căn Cứ Ngầm.'),
   )
   .addSubcommand((sub) =>
+    sub
+      .setName('market')
+      .setDescription('Tra cứu giá thị trường và bàn chế tác realtime.')
+      .addStringOption((opt) =>
+        opt
+          .setName('item')
+          .setDescription('Tên hoặc mã vật phẩm cần tra cứu.')
+          .setAutocomplete(true)
+          .setRequired(false),
+      ),
+  )
+  .addSubcommand((sub) =>
     sub.setName('unlink').setDescription('Hủy liên kết tài khoản Delta Force.'),
   )
   .addSubcommand((sub) =>
@@ -317,6 +330,9 @@ export async function execute(
       return;
     case 'workshop':
       await executeWorkshop(interaction, db);
+      return;
+    case 'market':
+      await executeMarket(interaction);
       return;
     case 'unlink':
       await executeUnlink(interaction, db);

@@ -82,6 +82,12 @@ export const DEFAULT_PERMISSIONS: PermissionsConfig = {
     'df.match': {
       requiredRoles: ['Member'],
     },
+    'df-market': {
+      requiredRoles: ['Member'],
+    },
+    'df.market': {
+      requiredRoles: ['Member'],
+    },
     'team-find': {
       requiredRoles: ['Member'],
     },

@@ -17,6 +17,7 @@ import { execute as executeMap } from '../../src/features/delta-force/map.handle
 import { execute as executeAutopost } from '../../src/features/delta-force/autopost.handler.js';
 import { execute as executeVault } from '../../src/features/delta-force/vault.handler.js';
 import { execute as executeMatch } from '../../src/features/delta-force/match.handler.js';
+import { execute as executeMarket } from '../../src/features/delta-force/market.handler.js';
 
 jest.mock('../../src/features/delta-force/stats.handler.js', () => ({
   execute: jest.fn().mockResolvedValue(undefined),
@@ -66,6 +67,11 @@ jest.mock('../../src/features/delta-force/match.handler.js', () => ({
   execute: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('../../src/features/delta-force/market.handler.js', () => ({
+  execute: jest.fn().mockResolvedValue(undefined),
+  handleMarketAutocomplete: jest.fn().mockResolvedValue(undefined),
+}));
+
 function createMockInteraction(overrides: Record<string, unknown> = {}): any {
   const base: Record<string, unknown> = {
     guild: { id: 'guild-123' },
@@ -102,6 +108,7 @@ describe('/df command — Structure & Builder', () => {
       'vault',
       'match',
       'workshop',
+      'market',
       'unlink',
       'help',
       'map',
@@ -249,6 +256,18 @@ describe('/df command — Execute Dispatch', () => {
 
     await execute(interaction);
     expect(executeWorkshop).toHaveBeenCalledWith(interaction, expect.anything());
+  });
+
+  it('phải dispatch tới executeMarket khi chọn subcommand "market"', async () => {
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommandGroup: jest.fn().mockReturnValue(null),
+        getSubcommand: jest.fn().mockReturnValue('market'),
+      },
+    });
+
+    await execute(interaction);
+    expect(executeMarket).toHaveBeenCalledWith(interaction);
   });
 
   it('phải dispatch tới executeUnlink khi chọn subcommand "unlink"', async () => {

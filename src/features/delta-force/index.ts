@@ -23,6 +23,7 @@ export * as buildHandler from './build.handler.js';
 export * as autopostHandler from './autopost.handler.js';
 export * as vaultHandler from './vault.handler.js';
 export * as matchHandler from './match.handler.js';
+export * as marketHandler from './market.handler.js';
 export * as weaponLoadoutsService from './weapon-loadouts.service.js';
 
 // Interaction handlers & IDs

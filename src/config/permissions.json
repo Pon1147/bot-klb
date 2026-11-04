@@ -77,6 +77,16 @@
       "requiredRoles": [
         "Member"
       ]
+    },
+    "df-market": {
+      "requiredRoles": [
+        "Member"
+      ]
+    },
+    "df.market": {
+      "requiredRoles": [
+        "Member"
+      ]
     }
   }
 }

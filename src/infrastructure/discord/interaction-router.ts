@@ -32,6 +32,7 @@ import {
   handleMatchSelect,
   MATCH_SELECT_PREFIX,
 } from '../../features/delta-force/index.js';
+import { handleMarketAutocomplete } from '../../features/delta-force/market.handler.js';
 import { hasPolicy, resolveCommandPolicy } from '../../config/permissions.js';
 import { getCommandPath } from '../../utils/command-path.utils.js';
 import { TTLStore, ExpiryEntry } from '../../utils/ttl-store.js';
@@ -374,6 +375,17 @@ async function handleAutocomplete(
         await interaction.respond([]).catch(() => {});
         return;
       }
+    }
+  }
+
+  if (commandName === 'df' && subcommand === 'market') {
+    try {
+      await handleMarketAutocomplete(interaction);
+      return;
+    } catch (err) {
+      logger.debug('Market autocomplete failed: ' + (err as Error).message);
+      await interaction.respond([]).catch(() => {});
+      return;
     }
   }
 

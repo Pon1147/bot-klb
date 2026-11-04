@@ -8,9 +8,11 @@ import type {
   DfMatchDetailResponse,
   DfApiToken,
   DfWorkshopRecommendationResponse,
+  DfManufactureDetailResponse,
 } from '../types/deltaforce.types.js';
 import {
   BASE_API_URL,
+  DIRECT_API_URL,
   GAME_ID,
   DF_CHANNEL,
   ACCOUNT_TYPE,
@@ -486,6 +488,72 @@ export async function getMatchDetail(
   if (resData.code !== 0) {
     logger.info('GetMatchDetail failed: code=' + resData.code + ', msg=' + resData.msg);
     throw new Error(`GetMatchDetail failed: code=${resData.code} msg=${resData.msg}`);
+  }
+  return resData.data;
+}
+
+/**
+ * Call DfTools/GetManufactureRecommendationListNoAuth to fetch top profitable workbench items (no auth required).
+ */
+export async function getManufactureRecommendationListNoAuth(): Promise<DfWorkshopRecommendationResponse> {
+  const instance = axiosCreator({
+    baseURL: DIRECT_API_URL,
+    headers: HEADERS,
+    timeout: API_TIMEOUT_MS,
+  });
+  const body = {
+    game_id: GAME_ID,
+    channel: DF_CHANNEL,
+    account_type: ACCOUNT_TYPE,
+    account_a: ACCOUNT_A_PARAM,
+    lang_type: LANG_TYPE,
+  };
+
+  const resData = await postSafe<DfWorkshopRecommendationResponse>(
+    instance,
+    '/GetManufactureRecommendationListNoAuth',
+    body,
+  );
+  if (resData.code !== 0) {
+    logger.info(
+      'GetManufactureRecommendationListNoAuth failed: code=' +
+        resData.code +
+        ', msg=' +
+        resData.msg,
+    );
+    throw new Error(
+      `GetManufactureRecommendationListNoAuth failed: code=${resData.code} msg=${resData.msg}`,
+    );
+  }
+  return resData.data;
+}
+
+/**
+ * Call DfTools/GetManufactureDetail to fetch price fluctuation and recipe profit details (no auth required).
+ */
+export async function getManufactureDetail(itemId: string): Promise<DfManufactureDetailResponse> {
+  const instance = axiosCreator({
+    baseURL: DIRECT_API_URL,
+    headers: HEADERS,
+    timeout: API_TIMEOUT_MS,
+  });
+  const body = {
+    game_id: GAME_ID,
+    channel: DF_CHANNEL,
+    account_type: ACCOUNT_TYPE,
+    account_a: ACCOUNT_A_PARAM,
+    lang_type: LANG_TYPE,
+    item_id: itemId,
+  };
+
+  const resData = await postSafe<DfManufactureDetailResponse>(
+    instance,
+    '/GetManufactureDetail',
+    body,
+  );
+  if (resData.code !== 0) {
+    logger.info('GetManufactureDetail failed: code=' + resData.code + ', msg=' + resData.msg);
+    throw new Error(`GetManufactureDetail failed: code=${resData.code} msg=${resData.msg}`);
   }
   return resData.data;
 }

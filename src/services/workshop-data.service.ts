@@ -165,6 +165,28 @@ export async function getWorkshopItemInfo(itemId: string): Promise<DfItemInfo | 
   return currentCache.items[itemId] || null;
 }
 
+/** Tìm kiếm danh sách vật phẩm theo tên phục vụ autocomplete */
+export async function searchCraftItems(
+  query: string,
+  limit = 25,
+): Promise<Array<{ id: string; name: string }>> {
+  const currentCache = await ensureCache();
+  const q = query.toLowerCase().trim();
+  const results: Array<{ id: string; name: string }> = [];
+
+  for (const [id, name] of Object.entries(currentCache.data)) {
+    if (!q || name.toLowerCase().includes(q) || id.includes(q)) {
+      results.push({ id, name });
+      if (results.length >= limit) break;
+    }
+  }
+
+  return results;
+}
+
+/** Alias for getWorkshopItemImage */
+export const getItemImageUrl = getWorkshopItemImage;
+
 /** Clear cache — useful for testing or forcing reload */
 export function clearWorkshopDataCache(): void {
   cache = null;

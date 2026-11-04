@@ -155,6 +155,32 @@ export interface DfWorkshopRecommendationResponse {
   workbench_list: DfWorkbenchItem[];
 }
 
+export interface DfManufactureMaterial {
+  material_count: number;
+  material_id: string;
+  total_price: string;
+  unit_price: string;
+}
+
+export interface DfPriceFluctuation {
+  hour_timestamp: string;
+  price: string;
+}
+
+export interface DfManufactureDetailResponse {
+  deposit: string;
+  handling_fee: string;
+  hourly_income: string;
+  item_id: string;
+  manufacture_cost: string;
+  material_list: DfManufactureMaterial[];
+  price_fluctuation_list: DfPriceFluctuation[];
+  recommended_recipe_id: string;
+  total_duration: number;
+  total_income: string;
+  total_sell_price: string;
+}
+
 /** Generic API response wrapper */
 export interface DfApiResponse<T = unknown> {
   code: number;

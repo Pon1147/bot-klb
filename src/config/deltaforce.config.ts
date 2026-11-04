@@ -5,6 +5,7 @@
 
 // ===== API Base =====
 export const BASE_API_URL = 'https://sg-act.playerinfinite.com/api/proxy/logicial/DfTools';
+export const DIRECT_API_URL = 'https://sg-act.playerinfinite.com/api/proxy_direct/logicial/DfTools';
 
 // ===== Request Params (cố định cho mọi request) =====
 export const GAME_ID = '30150';
