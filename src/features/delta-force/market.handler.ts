@@ -106,6 +106,18 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     const maxPrice = prices.length ? Math.max(...prices) : sellPrice;
     const minPrice = prices.length ? Math.min(...prices) : sellPrice;
 
+    // Lấy thời điểm chốt giá gần nhất từ server game
+    const lastPoint = (detail.price_fluctuation_list || []).slice(-1)[0];
+    const lastUpdatedText = lastPoint?.hour_timestamp
+      ? new Date(Number(lastPoint.hour_timestamp) * 1000).toLocaleString('vi-VN', {
+          timeZone: 'Asia/Ho_Chi_Minh',
+          hour: '2-digit',
+          minute: '2-digit',
+          day: '2-digit',
+          month: '2-digit',
+        })
+      : 'Gần nhất';
+
     // Danh sách nguyên liệu cần thiết
     const materialLines = await Promise.all(
       (detail.material_list || []).map(async (m) => {
@@ -130,8 +142,8 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       `# 🛠️ Bàn Chế Tác: **${itemName}**`,
       `-# ID: \`${detail.item_id}\`  ·  Thời gian sản xuất: \`${formatDuration(detail.total_duration)}\``,
       '',
-      `💰 **Tổng giá bán:** \`${formatCoin(sellPrice)}\` Coin`,
-      `📊 **Biến động 24h:** Đỉnh \`${formatCoin(maxPrice)}\`  ·  Đáy \`${formatCoin(minPrice)}\` Coin`,
+      `💰 **Tổng giá bán (cả mẻ):** \`${formatCoin(sellPrice)}\` Coin`,
+      `📊 **Biến động đơn giá 24h:** Đỉnh \`${formatCoin(maxPrice)}\`  ·  Đáy \`${formatCoin(minPrice)}\` Coin/món`,
       `${profitIcon} **Lợi nhuận ròng:** \`${profitSign}${formatCoin(income)}\` Coin *(Thu nhập: \`~${formatCoin(hourly)}/giờ\`)*`,
       '',
       `### 🧱 Vật Liệu Sản Xuất Cần Dùng:`,
@@ -139,7 +151,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       '',
       `> ⚙️ **Chi phí sản xuất:** \`${formatCoin(cost)}\` Coin  ·  **Phí & Tiền cọc:** \`${formatCoin(fee + deposit)}\` Coin`,
       '',
-      '-# ⓘ Dữ liệu giá thị trường được cập nhật realtime từ cổng chính thức Delta Force.',
+      `-# ⓘ Dữ liệu chốt lúc: \`${lastUpdatedText}\` (Đồng bộ theo chu kỳ 1 giờ từ Delta Force HQ).`,
     ].join('\n');
 
     const innerComponents: unknown[] = [
