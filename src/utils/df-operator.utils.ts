@@ -66,7 +66,7 @@ const OPERATORS: DfOperator[] = [
   },
   {
     operatorId: '30011',
-    name: 'Thiết Bị',
+    name: 'Gizmo (Thiết Bị)',
     avatarUrl:
       'https://www.playdeltaforce.com/basic_info/operators_791425e6c061485479652e6d2bee5547.png',
   },

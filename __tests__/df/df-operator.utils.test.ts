@@ -11,6 +11,11 @@ describe('df-operator.utils — resolveOperator', () => {
     expect(op.operatorId).toBe('20003');
   });
 
+  it('nên trả về tên Gizmo (Thiết Bị) cho operator ID 30011', () => {
+    const op = resolveOperator('30011');
+    expect(op.name).toBe('Gizmo (Thiết Bị)');
+  });
+
   it('nên trả về operator cho các ID trong danh sách', () => {
     const knownIds = [
       '20003',

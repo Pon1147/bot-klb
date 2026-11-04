@@ -67,9 +67,9 @@ function buildMatchItemSection(match: DfMatchEntry): Record<string, unknown> {
 function buildViewAllButtonRow(): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId('df_history_view_all')
-      .setLabel('Xem tất cả')
-      .setStyle(ButtonStyle.Secondary),
+      .setStyle(ButtonStyle.Link)
+      .setLabel('🌐 Mở Trang Lịch Sử Đấu (Web) ↗')
+      .setURL('https://www.playdeltaforce.com/events/hq/vi/index.html'),
   );
 }
 
