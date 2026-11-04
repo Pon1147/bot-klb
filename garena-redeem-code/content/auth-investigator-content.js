@@ -59,7 +59,6 @@
   function saveEvent(eventData) {
     // Check extension context trước khi save (tránh lỗi "Extension context invalidated")
     if (!chrome.runtime?.id) {
-      console.warn('[DF Investigator] Extension context invalidated, skipping save');
       return;
     }
 
