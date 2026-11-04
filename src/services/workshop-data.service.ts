@@ -19,6 +19,7 @@ export interface DfItemInfo {
   imageUrl?: string;
   value?: number;
   grade?: string;
+  description?: string;
 }
 
 interface CacheEntry {
@@ -56,12 +57,18 @@ export function parseCollectionsJs(text: string): {
           );
           if (name) {
             names[id] = name;
+            const rawDesc = item.description_i18n?.vi || '';
+            const description =
+              rawDesc.replace(/\\u[\dA-F]{4}/gi, (m: string) =>
+                String.fromCharCode(parseInt(m.slice(2), 16)),
+              ) || undefined;
             items[id] = {
               id,
               name,
               imageUrl: item.image_url || undefined,
               value: typeof item.value === 'number' ? item.value : Number(item.value) || undefined,
               grade: item.grade ? String(item.grade) : undefined,
+              description,
             };
           }
         }
