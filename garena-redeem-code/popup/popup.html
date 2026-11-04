@@ -6,7 +6,7 @@
     <title>Config — Garena Redeem</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
-  <body style="width: 440px; min-height: 520px; max-height: 700px; overflow-x: hidden">
+  <body>
     <div class="app">
       <!-- Header -->
       <header class="header">
@@ -93,23 +93,75 @@
         </section>
 
         <!-- Codes Section -->
-        <section class="card input-section" data-site="garena">
+        <section class="card input-section" data-site="garena" id="codesSection">
           <div class="section-header">
-            <h3 class="section-title">Redeem Codes</h3>
-            <span class="section-subtitle">One code per line</span>
+            <div>
+              <h3 class="section-title">Redeem Codes</h3>
+              <span class="section-subtitle" id="codesSubtitle">277 mã trong danh sách</span>
+            </div>
+            <!-- View Mode Toggle -->
+            <div class="view-mode-toggle" id="viewModeToggle">
+              <button class="mode-btn active" id="btnModePaged" type="button" title="Xem danh sách phân trang">
+                <span>📋 Danh sách</span>
+              </button>
+              <button class="mode-btn" id="btnModeRaw" type="button" title="Soạn thảo / Dán nhiều mã">
+                <span>✏️ Soạn thảo</span>
+              </button>
+            </div>
           </div>
-          <div class="input-group">
-            <textarea
-              class="textarea-monospace"
-              id="codesInput"
-              placeholder="DFSL9304&#10;DFSL6257&#10;..."
-              spellcheck="false"
-            ></textarea>
-            <div class="textarea-footer">
-              <span class="code-counter" id="codeCounter">0 codes</span>
-              <div class="actions">
-                <button class="btn btn-primary" id="btnSave">Save Codes</button>
-                <button class="btn btn-ghost" id="btnReset">Reset</button>
+
+          <!-- 1. Paginated List View -->
+          <div class="codes-paged-view" id="codesPagedView">
+            <div class="search-filter-bar">
+              <input
+                type="text"
+                class="search-input"
+                id="codesSearchInput"
+                placeholder="🔍 Tìm kiếm mã code..."
+                spellcheck="false"
+              />
+              <select class="filter-select" id="codesFilterStatus">
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="UNTESTED">Chưa test</option>
+                <option value="REDEEMED">Đã nhận</option>
+                <option value="DEAD">Đã hỏng / Hết hạn</option>
+                <option value="RETRYABLE">Thử lại</option>
+              </select>
+            </div>
+
+            <!-- List of codes for current page -->
+            <div class="code-cards-list" id="codeCardsList"></div>
+
+            <!-- Bottom Pagination Bar -->
+            <div class="pagination-bar" id="paginationBar">
+              <div class="pagination-info" id="paginationInfo">1 - 10 / 277 mã</div>
+              <div class="pagination-controls">
+                <button class="btn-page" id="btnFirstPage" title="Trang đầu">&laquo;</button>
+                <button class="btn-page" id="btnPrevPage" title="Trang trước">&lsaquo;</button>
+                <span class="pagination-current">
+                  Trang <span id="pageCurrentDisplay">1</span> / <span id="pageTotalDisplay">28</span>
+                </span>
+                <button class="btn-page" id="btnNextPage" title="Trang sau">&rsaquo;</button>
+                <button class="btn-page" id="btnLastPage" title="Trang cuối">&raquo;</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Raw Textarea Editor View -->
+          <div class="codes-raw-view hidden" id="codesRawView">
+            <div class="input-group">
+              <textarea
+                class="textarea-monospace"
+                id="codesInput"
+                placeholder="DFSL9304&#10;DFSL6257&#10;..."
+                spellcheck="false"
+              ></textarea>
+              <div class="textarea-footer">
+                <span class="code-counter" id="codeCounter">0 codes</span>
+                <div class="actions">
+                  <button class="btn btn-primary" id="btnSave">Save Codes</button>
+                  <button class="btn btn-ghost" id="btnReset">Reset</button>
+                </div>
               </div>
             </div>
           </div>

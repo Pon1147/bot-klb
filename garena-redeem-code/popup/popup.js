@@ -357,6 +357,225 @@ const codeCounter = $('#codeCounter');
 const statusDot = $('#statusDot');
 const statusLabel = $('#statusLabel');
 
+// ===== PAGINATION & VIEW MODE ELEMENTS =====
+const PAGE_SIZE = 6;
+let currentViewMode = 'paged'; // 'paged' | 'raw'
+let currentPage = 1;
+let currentCodes = [];
+let searchQuery = '';
+let statusFilter = 'ALL';
+const codeStatesMap = new Map(); // code -> { status, reason }
+
+const codesSubtitle = $('#codesSubtitle');
+const btnModePaged = $('#btnModePaged');
+const btnModeRaw = $('#btnModeRaw');
+const codesPagedView = $('#codesPagedView');
+const codesRawView = $('#codesRawView');
+const codesSearchInput = $('#codesSearchInput');
+const codesFilterStatus = $('#codesFilterStatus');
+const codeCardsList = $('#codeCardsList');
+const paginationInfo = $('#paginationInfo');
+const btnFirstPage = $('#btnFirstPage');
+const btnPrevPage = $('#btnPrevPage');
+const btnNextPage = $('#btnNextPage');
+const btnLastPage = $('#btnLastPage');
+const pageCurrentDisplay = $('#pageCurrentDisplay');
+const pageTotalDisplay = $('#pageTotalDisplay');
+
+function updateCodeStatesMap(centralState) {
+  codeStatesMap.clear();
+  if (centralState && Array.isArray(centralState.codeStates)) {
+    centralState.codeStates.forEach((cs) => {
+      let badgeStatus = 'UNTESTED';
+      if (cs.status === CODE_STATUSES.SUCCESS) {
+        badgeStatus = 'REDEEMED';
+      } else if (cs.status === CODE_STATUSES.FAILED) {
+        const isRetry =
+          cs.reason &&
+          (cs.reason.includes('bảo trì') ||
+            cs.reason.includes('quá nhanh') ||
+            cs.reason.includes('thử lại') ||
+            cs.reason.includes('maintenance') ||
+            cs.reason.includes('rate limit'));
+        badgeStatus = isRetry ? 'RETRYABLE' : 'DEAD';
+      }
+      codeStatesMap.set(cs.redeemCode.trim(), { status: badgeStatus, reason: cs.reason });
+    });
+  }
+}
+
+function getFilteredCodes() {
+  return currentCodes.filter((code) => {
+    if (searchQuery && !code.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    if (statusFilter !== 'ALL') {
+      const info = codeStatesMap.get(code);
+      const codeStatus = info ? info.status : 'UNTESTED';
+      if (codeStatus !== statusFilter) return false;
+    }
+    return true;
+  });
+}
+
+function renderPaginatedCodes() {
+  if (!codeCardsList) return;
+  const filtered = getFilteredCodes();
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  if (codesSubtitle) {
+    codesSubtitle.textContent = `${currentCodes.length} mã trong danh sách`;
+  }
+
+  if (totalItems === 0) {
+    codeCardsList.innerHTML = `
+      <div class="code-empty-state">
+        <span style="font-size: 24px;">🔍</span>
+        <div>Không tìm thấy mã code nào phù hợp</div>
+      </div>
+    `;
+    if (paginationInfo) paginationInfo.textContent = '0 / 0 mã';
+    if (pageCurrentDisplay) pageCurrentDisplay.textContent = '0';
+    if (pageTotalDisplay) pageTotalDisplay.textContent = '0';
+    if (btnFirstPage) btnFirstPage.disabled = true;
+    if (btnPrevPage) btnPrevPage.disabled = true;
+    if (btnNextPage) btnNextPage.disabled = true;
+    if (btnLastPage) btnLastPage.disabled = true;
+    return;
+  }
+
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, totalItems);
+  const pageItems = filtered.slice(start, end);
+
+  const statusLabels = {
+    UNTESTED: { cls: 'untested', text: 'Chưa test' },
+    REDEEMED: { cls: 'redeemed', text: 'Đã nhận' },
+    DEAD: { cls: 'dead', text: 'Hết hạn/Hỏng' },
+    RETRYABLE: { cls: 'retryable', text: 'Thử lại' },
+  };
+
+  codeCardsList.innerHTML = pageItems
+    .map((code, idx) => {
+      const globalIdx = currentCodes.indexOf(code) + 1;
+      const idxDisplay =
+        globalIdx > 0
+          ? `#${String(globalIdx).padStart(3, '0')}`
+          : `#${String(start + idx + 1).padStart(3, '0')}`;
+      const info = codeStatesMap.get(code);
+      const st = info ? info.status : 'UNTESTED';
+      const badge = statusLabels[st] || statusLabels.UNTESTED;
+
+      return `
+        <div class="code-card-item">
+          <div class="code-card-left">
+            <span class="code-card-index">${idxDisplay}</span>
+            <span class="code-card-text" title="${escapeHtml(code)}">${escapeHtml(code)}</span>
+          </div>
+          <div class="code-card-right">
+            <span class="code-status-pill ${badge.cls}">${badge.text}</span>
+            <button class="code-copy-btn" data-code="${escapeHtml(code)}" title="Copy mã">📋</button>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  // Copy click handler
+  codeCardsList.querySelectorAll('.code-copy-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const codeToCopy = btn.getAttribute('data-code');
+      try {
+        await navigator.clipboard.writeText(codeToCopy);
+        btn.textContent = '✓';
+        btn.style.color = '#00e599';
+        setTimeout(() => {
+          btn.textContent = '📋';
+          btn.style.color = '';
+        }, 1200);
+      } catch (err) {
+        console.error('Copy failed:', err);
+      }
+    });
+  });
+
+  // Update bottom pagination bar
+  if (paginationInfo) {
+    paginationInfo.textContent = `${start + 1} - ${end} / ${totalItems} mã`;
+  }
+  if (pageCurrentDisplay) pageCurrentDisplay.textContent = currentPage;
+  if (pageTotalDisplay) pageTotalDisplay.textContent = totalPages;
+
+  if (btnFirstPage) btnFirstPage.disabled = currentPage === 1;
+  if (btnPrevPage) btnPrevPage.disabled = currentPage === 1;
+  if (btnNextPage) btnNextPage.disabled = currentPage === totalPages;
+  if (btnLastPage) btnLastPage.disabled = currentPage === totalPages;
+}
+
+function switchViewMode(mode) {
+  currentViewMode = mode;
+  if (mode === 'paged') {
+    btnModePaged?.classList.add('active');
+    btnModeRaw?.classList.remove('active');
+    codesPagedView?.classList.remove('hidden');
+    codesRawView?.classList.add('hidden');
+    renderPaginatedCodes();
+  } else {
+    btnModeRaw?.classList.add('active');
+    btnModePaged?.classList.remove('active');
+    codesRawView?.classList.remove('hidden');
+    codesPagedView?.classList.add('hidden');
+    if (codesInput) {
+      codesInput.value = currentCodes.join('\n');
+      updateCodeCounter();
+    }
+  }
+}
+
+// Event listeners for view mode & pagination
+btnModePaged?.addEventListener('click', () => switchViewMode('paged'));
+btnModeRaw?.addEventListener('click', () => switchViewMode('raw'));
+
+btnFirstPage?.addEventListener('click', () => {
+  currentPage = 1;
+  renderPaginatedCodes();
+});
+btnPrevPage?.addEventListener('click', () => {
+  if (currentPage > 1) {
+    currentPage--;
+    renderPaginatedCodes();
+  }
+});
+btnNextPage?.addEventListener('click', () => {
+  const totalPages = Math.max(1, Math.ceil(getFilteredCodes().length / PAGE_SIZE));
+  if (currentPage < totalPages) {
+    currentPage++;
+    renderPaginatedCodes();
+  }
+});
+btnLastPage?.addEventListener('click', () => {
+  const totalPages = Math.max(1, Math.ceil(getFilteredCodes().length / PAGE_SIZE));
+  currentPage = totalPages;
+  renderPaginatedCodes();
+});
+
+codesSearchInput?.addEventListener('input', (e) => {
+  searchQuery = e.target.value.trim();
+  currentPage = 1;
+  renderPaginatedCodes();
+});
+
+codesFilterStatus?.addEventListener('change', (e) => {
+  statusFilter = e.target.value;
+  currentPage = 1;
+  renderPaginatedCodes();
+});
+
 // ===== SITE DETECTION =====
 /**
  * Detect website hiện tại từ active tab URL → trả về 'playdeltaforce' | 'garena' | null
@@ -416,8 +635,12 @@ function renderRedeemSummary() {
   chrome.storage.local.get('centralState', (result) => {
     const state = result.centralState;
     if (!state || !Array.isArray(state.codeStates)) {
+      renderPaginatedCodes();
       return; // chưa có redeem run
     }
+
+    updateCodeStatesMap(state);
+    renderPaginatedCodes();
 
     const { redeemed, dead, retryable, untested } = classifyCodes(state);
 
@@ -468,6 +691,7 @@ chrome.storage.local.get(['redeem_codes'], (result) => {
   const storedCodes = Array.isArray(result.redeem_codes) ? result.redeem_codes : [];
   const mergedCodes = [...new Set([...DEFAULT_CODES, ...storedCodes])];
   const codes = mergedCodes;
+  currentCodes = codes;
   if (mergedCodes.length !== storedCodes.length) {
     saveCodes(mergedCodes);
   }
@@ -476,8 +700,9 @@ chrome.storage.local.get(['redeem_codes'], (result) => {
   } else {
     codesInput.value = DEFAULT_CODES.join('\n');
   }
-  // Render redeem summary
+  // Render redeem summary & pagination
   renderRedeemSummary();
+  renderPaginatedCodes();
   updateCodeCounter();
   updateStatusHeader();
 });
@@ -540,6 +765,7 @@ btnSave.addEventListener('click', async () => {
 
   // Save codes to redeem_codes key
   await saveCodes(codes);
+  currentCodes = codes;
   console.log('[Popup] Codes saved:', codes.length);
 
   // Reset session: new sessionId, reset stats/logs, status = READY
@@ -547,8 +773,10 @@ btnSave.addEventListener('click', async () => {
   await setCentralState(newState);
   console.log('[Popup] CentralState set, status:', newState.status, 'total:', newState.stats.total);
 
-  // Re-render summary
+  // Re-render summary & pagination
   renderRedeemSummary();
+  renderPaginatedCodes();
+  updateCodeCounter();
 
   btnSave.textContent = '✅ Đã lưu!';
   btnSave.style.background = '#10b981';
@@ -569,7 +797,10 @@ codesInput.addEventListener('keydown', (e) => {
 // ===== RESET TO DEFAULT (KHÔNG auto-save) =====
 btnReset.addEventListener('click', () => {
   if (!confirm('Reset về codes mặc định?')) return;
+  currentCodes = [...DEFAULT_CODES];
   codesInput.value = DEFAULT_CODES.join('\n');
+  updateCodeCounter();
+  renderPaginatedCodes();
   btnReset.textContent = '✅ Done!';
   setTimeout(() => {
     btnReset.textContent = '🔄 Reset default';
