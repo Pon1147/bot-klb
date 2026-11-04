@@ -21,9 +21,10 @@ jest.mock('discord.js', () => ({
     setCustomId() { return this; }
     setLabel() { return this; }
     setStyle() { return this; }
+    setURL() { return this; }
     toJSON() { return {}; }
   },
-  ButtonStyle: { Secondary: 2 },
+  ButtonStyle: { Secondary: 2, Link: 5 },
 }));
 
 jest.mock('../../src/database/df.token.db.js', () => ({

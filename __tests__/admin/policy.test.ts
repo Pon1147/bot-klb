@@ -528,8 +528,8 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
   // ─── 7. PHASE 4: Command Path Policy Mapping ──────────────────────
   describe('PHASE 4 — Command Path Policy Mapping', () => {
-    it('COMMAND_PATH_POLICIES chứa đúng 44 canonical command paths', () => {
-      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(44);
+    it('COMMAND_PATH_POLICIES chứa đúng 45 canonical command paths', () => {
+      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(45);
     });
 
     it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds, config.bot.announce, config.bot.setannouncechannel và df.autopost.*', () => {
@@ -585,6 +585,7 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(resolveCommandPolicy('df.gun')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.vault')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.match')).toBe(Policy.DF_ACCESS);
+      expect(resolveCommandPolicy('df.market')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.help')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.link.start')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.link.status')).toBe(Policy.DF_ACCESS);
