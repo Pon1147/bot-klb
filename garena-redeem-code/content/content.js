@@ -314,7 +314,7 @@
       <div class="grd-current-code"></div>
       <div class="grd-header">
         <div class="grd-status-dot"></div>
-        <span class="grd-title">Garena Redeem</span>
+        <span class="grd-title">DF Toolbox</span>
         <span class="grd-status-text"></span>
       </div>
       <div class="grd-stats">
