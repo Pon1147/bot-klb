@@ -592,6 +592,16 @@ function computeStatsFromEvents(events) {
     return false;
   });
 
+  const tokenEvents = authEvents.filter((e) => {
+    return Boolean(
+      (e.auth && (e.auth.hasAccessToken || e.auth.hasRefreshToken)) ||
+        e.hasAccessToken ||
+        e.hasRefreshToken ||
+        e.token ||
+        e.auth?.token,
+    );
+  });
+
   // Identity mapping — delegate to AuthUtils
   let identity = { garenaHash: '—', dfToolsHash: '—', match: 'Chưa đủ dữ liệu' };
   let garenaHash = '—';
