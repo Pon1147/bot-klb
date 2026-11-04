@@ -12,6 +12,7 @@
 import http from 'node:http';
 import { Client } from 'discord.js';
 import { botConfig } from '../../config/bot.config.js';
+import { BOT_VERSION, EXTENSION_VERSION } from '../../config/version.js';
 import { handleClaim } from '../../services/df-claim-handler.js';
 import { createLogger } from '../../utils/logger.js';
 
@@ -89,6 +90,8 @@ export function createRequestHandler(client: Client): http.RequestListener {
       res.end(
         JSON.stringify({
           status: 'ok',
+          botVersion: BOT_VERSION,
+          extensionVersion: EXTENSION_VERSION,
           uptime: process.uptime(),
           timestamp: new Date().toISOString(),
           guildsCount: client.guilds?.cache?.size ?? 0,

@@ -18,6 +18,7 @@ import Database from 'better-sqlite3';
 import { makeResult, BuildContainerResult } from '../../utils/container.utils.js';
 import { COLORS } from '../../config/container.variables.js';
 import { requireGuild } from '../../utils/df-guards.js';
+import { BOT_VERSION, EXTENSION_VERSION } from '../../config/version.js';
 import { getExtensionZipPath } from './extension.utils.js';
 import { isIgnorableInteractionError } from '../../utils/discord-error.utils.js';
 
@@ -65,6 +66,7 @@ export function buildHelpContainer(tab: HelpTab): BuildContainerResult {
       '- `/config welcome / leave / booster ...`: Cấu hình thông báo Chào mừng, Tạm biệt, Booster (`setchannel`, `toggle`, `status`, `test`).',
       '- `/config roles set / view`: Cấu hình phân quyền quản trị bot (Bot Admin, Moderator, Member).',
       '',
+      `> 🤖 **Bot KLB v${BOT_VERSION}** • 🧩 **DF Toolbox v${EXTENSION_VERSION}**`,
       '> 💬 **Hỗ trợ & Thắc mắc:** Vui lòng liên hệ Discord: `crushpon` hoặc tham gia server [KLB Community](https://discord.gg/vz6w6c3Xe3) để đặt câu hỏi.',
     ].join('\n');
 

@@ -19,6 +19,59 @@ export async function packageExtension(): Promise<string> {
     throw new Error(`Thư mục nguồn extension không tồn tại: ${sourceDir}`);
   }
 
+  // Tự động đồng bộ version từ manifest.json sang HTML templates và TS constants
+  const manifestPath = path.join(sourceDir, 'manifest.json');
+  let extVersion = '1.0.0';
+  if (fs.existsSync(manifestPath)) {
+    try {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      extVersion = manifest.version || '1.0.0';
+
+      // Đồng bộ popup.html
+      const popupHtmlPath = path.join(sourceDir, 'popup', 'popup.html');
+      if (fs.existsSync(popupHtmlPath)) {
+        let content = fs.readFileSync(popupHtmlPath, 'utf8');
+        content = content.replace(
+          /(<span class="header-subtitle">Delta Force Utility Suite · v)[\d.]+(<\/span>)/g,
+          `$1${extVersion}$2`,
+        );
+        content = content.replace(/(<span>DF Toolbox v)[\d.]+( — Bot KLB<\/span>)/g, `$1${extVersion}$2`);
+        fs.writeFileSync(popupHtmlPath, content, 'utf8');
+      }
+
+      // Đồng bộ welcome.html
+      const welcomeHtmlPath = path.join(sourceDir, 'welcome', 'welcome.html');
+      if (fs.existsSync(welcomeHtmlPath)) {
+        let content = fs.readFileSync(welcomeHtmlPath, 'utf8');
+        content = content.replace(
+          /(<div class="hero-badge">.+? · v)[\d.]+(<\/div>)/g,
+          `$1${extVersion}$2`,
+        );
+        content = content.replace(
+          /(<span class="header-subtitle">Delta Force Utility Suite · v)[\d.]+(<\/span>)/g,
+          `$1${extVersion}$2`,
+        );
+        fs.writeFileSync(welcomeHtmlPath, content, 'utf8');
+      }
+
+      // Đồng bộ version.ts
+      const pkgPath = path.resolve(rootDir, 'package.json');
+      let botVersion = '1.0.0';
+      if (fs.existsSync(pkgPath)) {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+        botVersion = pkg.version || '1.0.0';
+      }
+      const versionTsPath = path.resolve(rootDir, 'src', 'config', 'version.ts');
+      fs.writeFileSync(
+        versionTsPath,
+        `/**\n * Single Source of Truth cho Version của Bot KLB và Extension DF Toolbox.\n * Được tự động đồng bộ bởi scripts/bump-version.ts và scripts/package-extension.ts.\n */\nexport const BOT_VERSION = '${botVersion}';\nexport const EXTENSION_VERSION = '${extVersion}';\n`,
+        'utf8',
+      );
+    } catch (err) {
+      console.warn('Cảnh báo khi đồng bộ version:', err);
+    }
+  }
+
   // Đảm bảo thư mục đích tồn tại
   fs.mkdirSync(targetDir, { recursive: true });
 

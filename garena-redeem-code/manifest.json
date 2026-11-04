@@ -1,9 +1,12 @@
 {
   "manifest_version": 3,
   "name": "DF Toolbox",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Delta Force HQ credential bridge + Garena redeem codes + Auth State Engine",
-  "permissions": ["storage", "activeTab"],
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
   "host_permissions": [
     "https://redeem.df.garena.sg/*",
     "https://*.playerinfinite.com/*",
@@ -24,12 +27,18 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://redeem.df.garena.sg/*"],
-      "js": ["content/content.js"],
+      "matches": [
+        "https://redeem.df.garena.sg/*"
+      ],
+      "js": [
+        "content/content.js"
+      ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://www.playdeltaforce.com/*"],
+      "matches": [
+        "https://www.playdeltaforce.com/*"
+      ],
       "js": [
         "content/link-page-capture.js",
         "content/link-content.js"
@@ -37,23 +46,39 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://www.playdeltaforce.com/*"],
-      "js": ["content/auth-investigator-content.js"],
+      "matches": [
+        "https://www.playdeltaforce.com/*"
+      ],
+      "js": [
+        "content/auth-investigator-content.js"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["https://sso.garena.com/*"],
-      "js": ["content/auth-investigator-content.js"],
+      "matches": [
+        "https://sso.garena.com/*"
+      ],
+      "js": [
+        "content/auth-investigator-content.js"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["https://auth.garena.com/*"],
-      "js": ["content/auth-investigator-content.js"],
+      "matches": [
+        "https://auth.garena.com/*"
+      ],
+      "js": [
+        "content/auth-investigator-content.js"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["https://common-web.intlgame.com/*"],
-      "js": ["content/auth-investigator-content.js"],
+      "matches": [
+        "https://common-web.intlgame.com/*"
+      ],
+      "js": [
+        "content/auth-investigator-content.js"
+      ],
       "run_at": "document_start"
     }
   ],
@@ -64,8 +89,13 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["content/dashboard.css", "content/page-capture.js"],
-      "matches": ["https://redeem.df.garena.sg/*"]
+      "resources": [
+        "content/dashboard.css",
+        "content/page-capture.js"
+      ],
+      "matches": [
+        "https://redeem.df.garena.sg/*"
+      ]
     },
     {
       "resources": [
@@ -75,19 +105,39 @@
         "content/auth-investigator.js",
         "content/auth-state-engine.js"
       ],
-      "matches": ["https://www.playdeltaforce.com/*"]
+      "matches": [
+        "https://www.playdeltaforce.com/*"
+      ]
     },
     {
-      "resources": ["content/auth-utils.js", "content/auth-investigator.js", "content/auth-state-engine.js"],
-      "matches": ["https://sso.garena.com/*"]
+      "resources": [
+        "content/auth-utils.js",
+        "content/auth-investigator.js",
+        "content/auth-state-engine.js"
+      ],
+      "matches": [
+        "https://sso.garena.com/*"
+      ]
     },
     {
-      "resources": ["content/auth-utils.js", "content/auth-investigator.js", "content/auth-state-engine.js"],
-      "matches": ["https://auth.garena.com/*"]
+      "resources": [
+        "content/auth-utils.js",
+        "content/auth-investigator.js",
+        "content/auth-state-engine.js"
+      ],
+      "matches": [
+        "https://auth.garena.com/*"
+      ]
     },
     {
-      "resources": ["content/auth-utils.js", "content/auth-investigator.js", "content/auth-state-engine.js"],
-      "matches": ["https://common-web.intlgame.com/*"]
+      "resources": [
+        "content/auth-utils.js",
+        "content/auth-investigator.js",
+        "content/auth-state-engine.js"
+      ],
+      "matches": [
+        "https://common-web.intlgame.com/*"
+      ]
     }
   ]
 }

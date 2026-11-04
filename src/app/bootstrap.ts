@@ -36,6 +36,7 @@ import {
 import { loadEvents } from '../infrastructure/discord/event-loader.js';
 import { startHttpServer } from '../infrastructure/http/http-server.js';
 import { createLogger } from '../utils/logger.js';
+import { BOT_VERSION, EXTENSION_VERSION } from '../config/version.js';
 import { startSessionCleanup } from '../features/container/index.js';
 import {
   initCryptoKey,
@@ -60,6 +61,9 @@ const logger = createLogger('Bootstrap');
  */
 export async function bootstrap(): Promise<Client> {
   logger.header('KL BOT — Starting up');
+  logger.info(
+    `System Build: Bot KLB v${BOT_VERSION} • DF Toolbox v${EXTENSION_VERSION} [${botConfig.env.toUpperCase()}]`,
+  );
 
   // Step 1: Initialize database
   logger.info('Initializing database...');

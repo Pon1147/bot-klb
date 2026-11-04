@@ -34,6 +34,7 @@ src/
 4. **Không Monkey-Patching**: Không tự tiện gán thêm thuộc tính tùy tiện vào `client` nếu chưa có declaration merging trong `src/types/`.
 5. **Giữ kỷ luật Testing**: Sau mỗi thay đổi code, chạy `npm run check` và `npm test` để đảm bảo 0 regression.
 6. **Chú thích Tiếng Việt**: Code mới hoặc code refactor phải có comment tiếng Việt rõ ràng.
+7. **Kỷ luật Quản lý Version (Version Discipline)**: Mọi bản cập nhật tính năng hoặc sửa lỗi cho Extension/Bot bắt buộc phải tăng version SemVer (`npm run version:bump` hoặc `npm run bump:ext`). Tuyệt đối không thay đổi logic hay UI mà giữ nguyên số version cũ.
 
 ---
 

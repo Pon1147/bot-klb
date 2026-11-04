@@ -1,6 +1,6 @@
 {
   "name": "discord-bot-klb",
-  "version": "0.1.0",
+  "version": "1.2.0",
   "description": "Discord Bot - Exclusive Server Bot",
   "main": "dist/index.js",
   "scripts": {
@@ -23,6 +23,10 @@
     "deploy:guild": "tsx scripts/deploy-commands.ts",
     "test:mongo": "tsx scripts/test-mongo.ts",
     "package:extension": "tsx scripts/package-extension.ts",
+    "version:bump": "tsx scripts/bump-version.ts",
+    "bump:ext": "tsx scripts/bump-version.ts patch ext",
+    "bump:bot": "tsx scripts/bump-version.ts patch bot",
+    "bump:minor": "tsx scripts/bump-version.ts minor all",
     "dump:server": "tsx scripts/dump-server.ts",
     "postinstall": "npx puppeteer browsers install chrome"
   },

@@ -17,6 +17,7 @@ import {
 import Database from 'better-sqlite3';
 import { buildInfoContainer } from '../../utils/container.utils.js';
 import { requireGuild } from '../../utils/df-guards.js';
+import { EXTENSION_VERSION } from '../../config/version.js';
 import { generateCode } from '../../services/df-claim-store.js';
 import { getActiveBinding } from '../../database/df-binding.db.js';
 import { getDfToken } from '../../database/df.token.db.js';
@@ -111,7 +112,7 @@ async function handleStart(
   if (files.length > 0) {
     await interaction.followUp({
       content:
-        '📦 **Tệp Cài Đặt Tiện Ích Mở Rộng (DF-Extension.zip):**\n' +
+        `📦 **Tệp Cài Đặt Tiện Ích Mở Rộng (DF Toolbox v${EXTENSION_VERSION}):**\n` +
         '> 1. Tải tệp **`DF-Extension.zip`** đính kèm bên dưới về máy tính.\n' +
         '> 2. Nhấp chuột phải vào file đã tải -> Chọn **Extract All... (Giải nén)**.\n' +
         '> 3. Mở `chrome://extensions/` -> Bật **Developer mode** -> Chọn **Load unpacked** và chọn thư mục vừa giải nén.\n' +
