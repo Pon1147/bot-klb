@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chào mừng cài đặt DF Toolbox — Hướng Dẫn Sử Dụng</title>
+    <link rel="stylesheet" href="welcome.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header Banner -->
+      <header class="hero">
+        <div class="hero-badge">🎉 CÀI ĐẶT THÀNH CÔNG</div>
+        <h1 class="hero-title">Chào Mừng Bạn Đến Với <span>DF Toolbox</span></h1>
+        <p class="hero-desc">
+          Tiện ích hỗ trợ tự động hóa Delta Force: Cầu nối liên kết tài khoản Discord, tra cứu thị trường thời gian thực và tự động nhập giftcode Garena siêu tốc.
+        </p>
+      </header>
+
+      <!-- Navigation Tabs -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="link-guide">
+          <span class="tab-icon">🔗</span>
+          <span>1. Liên Kết Tài Khoản Bot</span>
+        </button>
+        <button class="tab-btn" data-tab="redeem-guide">
+          <span class="tab-icon">🎁</span>
+          <span>2. Tự Động Nhập Giftcode</span>
+        </button>
+        <button class="tab-btn" data-tab="commands-guide">
+          <span class="tab-icon">⚔️</span>
+          <span>3. Danh Sách Lệnh Hot</span>
+        </button>
+      </div>
+
+      <!-- Tab Content 1: Link Account -->
+      <section class="tab-content active" id="tab-link-guide">
+        <div class="guide-card">
+          <div class="step-list">
+            <!-- Step 1 -->
+            <div class="step-item">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <h3>Lấy mã liên kết trên Discord</h3>
+                <p>
+                  Mở Discord trong máy chủ có <strong>Bot Delta (Bot KLB)</strong>, gõ lệnh sau để bot gửi hướng dẫn và cấp mã liên kết riêng cho bạn:
+                </p>
+                <div class="code-box">
+                  <code>/df link start</code>
+                  <button class="copy-btn" data-copy="/df link start">Sao chép</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-item">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <h3>Đăng nhập trang sự kiện Delta Force HQ</h3>
+                <p>
+                  Truy cập trang web Delta Force HQ chính thức và tiến hành đăng nhập tài khoản Garena của bạn:
+                </p>
+                <a href="https://www.playdeltaforce.com/events/hq/vi/index.html" target="_blank" class="action-btn link-btn">
+                  🌐 Mở Delta Force HQ ↗
+                </a>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step-item">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <h3>Xác nhận liên kết tự động</h3>
+                <p>
+                  Sau khi đăng nhập xong, tiện ích <strong>DF Toolbox</strong> sẽ tự động nhận diện tài khoản và hiển thị thanh thông báo nhỏ ở góc dưới màn hình. Bạn chỉ cần nhập <strong>Mã Claim (6 số)</strong> nhận từ bot và bấm <strong>Xác nhận</strong>!
+                </p>
+                <div class="tip-box">
+                  💡 <em>Mẹo: Bạn cũng có thể mở icon DF Toolbox trên thanh tiện ích Chrome để dán mã Claim thủ công bất cứ lúc nào.</em>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="step-item">
+              <div class="step-num">4</div>
+              <div class="step-body">
+                <h3>Kiểm tra trạng thái & Trải nghiệm</h3>
+                <p>
+                  Quay lại Discord và gõ lệnh kiểm tra:
+                </p>
+                <div class="code-box">
+                  <code>/df link status</code>
+                  <button class="copy-btn" data-copy="/df link status">Sao chép</button>
+                </div>
+                <p class="success-note">
+                  ✅ Khi đã liên kết thành công, bạn sẽ xem được đầy đủ thống kê K/D, lịch sử trận đấu, sảnh đồ đỏ và bảng giá chợ Garena chính xác 100%!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab Content 2: Auto Redeem -->
+      <section class="tab-content" id="tab-redeem-guide">
+        <div class="guide-card">
+          <div class="step-list">
+            <!-- Step 1 -->
+            <div class="step-item">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <h3>Ghim tiện ích lên thanh trình duyệt</h3>
+                <p>
+                  Nhấp vào biểu tượng <strong>Mảnh ghép (Extensions)</strong> ở góc trên bên phải Chrome, tìm <strong>DF Toolbox</strong> và bấm biểu tượng chiếc <strong>Ghim (Pin)</strong> để tiện sử dụng.
+                </p>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-item">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <h3>Lấy mã code hằng ngày từ Bot</h3>
+                <p>
+                  Bot tự động cào và cập nhật mật khẩu, mã code két sắt map mỗi sáng. Hãy dùng lệnh:
+                </p>
+                <div class="code-box">
+                  <code>/df code show</code>
+                  <button class="copy-btn" data-copy="/df code show">Sao chép</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step-item">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <h3>Mở trang nhập code & Bấm tự động</h3>
+                <p>
+                  Truy cập trang đổi mã quà tặng chính thức của Garena:
+                </p>
+                <a href="https://redeem.df.garena.sg/" target="_blank" class="action-btn link-btn">
+                  🎁 Mở Trang Đổi Code Garena ↗
+                </a>
+                <p style="margin-top: 12px">
+                  Mở popup <strong>DF Toolbox</strong>, dán danh sách mã code vào ô văn bản và bấm <strong>Bắt đầu tự động nhập</strong>. Tiện ích sẽ xử lý từng mã và báo cáo trạng thái thành công/thất bại theo thời gian thực.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab Content 3: Hot Commands -->
+      <section class="tab-content" id="tab-commands-guide">
+        <div class="guide-card">
+          <div class="commands-grid">
+            <div class="cmd-item">
+              <div class="cmd-name">/df market [item]</div>
+              <div class="cmd-desc">Tra cứu bàn chế tác, chi phí, nguyên liệu và giá chợ thị trường realtime (tự động phân biệt Garena/Global).</div>
+            </div>
+            <div class="cmd-item">
+              <div class="cmd-name">/df stats</div>
+              <div class="cmd-desc">Xem thông số chiến đấu tổng quan: K/D, số giờ chơi, tỷ lệ rút quân an toàn & chuyển đổi mùa giải độc quyền.</div>
+            </div>
+            <div class="cmd-item">
+              <div class="cmd-name">/df history [limit]</div>
+              <div class="cmd-desc">Xem lịch sử các trận chiến gần nhất, chiến lợi phẩm loot mang ra & thông số K/D từng trận.</div>
+            </div>
+            <div class="cmd-item">
+              <div class="cmd-name">/df vault</div>
+              <div class="cmd-desc">Sảnh Triển Lãm Đồ Đỏ: Thống kê kho báu giá trị cao nhất, tổng tài sản Coin và bộ sưu tập đồ đỏ.</div>
+            </div>
+            <div class="cmd-item">
+              <div class="cmd-name">/df map</div>
+              <div class="cmd-desc">Mô phỏng bản đồ 3D tương tác: vị trí két sắt, điểm loot tài nguyên & lối thoát hiểm an toàn.</div>
+            </div>
+            <div class="cmd-item">
+              <div class="cmd-name">/df build [weapon]</div>
+              <div class="cmd-desc">Thư viện build súng chuẩn Meta Garena, phân loại Hazard/Havoc và copy mã Gunsmith 1-chạm.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <p>Phát triển bởi đội ngũ Bot KLB & Delta Force Community.</p>
+        <p class="footer-sub">Tiện ích tuân thủ chuẩn Chrome Manifest V3 · Cam kết bảo mật Zero-Knowledge về mật khẩu.</p>
+      </footer>
+    </div>
+
+    <script src="welcome.js"></script>
+  </body>
+</html>

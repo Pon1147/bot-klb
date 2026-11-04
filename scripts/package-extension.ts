@@ -94,6 +94,12 @@ export async function packageExtension(): Promise<string> {
       archive.directory(assetsDir, 'assets');
     }
 
+    // 6. Thư mục welcome (Onboarding Guide)
+    const welcomeDir = path.join(sourceDir, 'welcome');
+    if (fs.existsSync(welcomeDir)) {
+      archive.directory(welcomeDir, 'welcome');
+    }
+
     archive.finalize();
   });
 }

@@ -689,7 +689,13 @@ function computeStatsFromEvents(events) {
 }
 
 // ===== TAB SWITCHING =====
-document.querySelectorAll('.segment-btn').forEach((tab) => {
+document.getElementById('openWelcomeBtn')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  chrome.tabs.create({ url: 'welcome/welcome.html' });
+});
+
+document.querySelectorAll('.segment-btn[data-tab]').forEach((tab) => {
   tab.addEventListener('click', () => {
     // Remove active from all tabs
     document.querySelectorAll('.segment-btn').forEach((t) => t.classList.remove('active'));

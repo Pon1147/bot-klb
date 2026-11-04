@@ -27,9 +27,9 @@ chrome.runtime.onInstalled.addListener((details) => {
     }
   });
 
-  // First-run: mở popup onboarding nếu cần
+  // First-run: mở trang onboarding hướng dẫn liên kết & redeem code
   if (details.reason === 'install') {
-    chrome.tabs.create({ url: 'popup/popup.html' });
+    chrome.tabs.create({ url: 'welcome/welcome.html' });
   }
 });
 
