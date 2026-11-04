@@ -43,11 +43,35 @@
               <div class="step-body">
                 <h3>Lấy mã liên kết trên Discord</h3>
                 <p>
-                  Mở Discord trong máy chủ có <strong>Bot Delta (Bot KLB)</strong>, gõ lệnh sau để bot gửi hướng dẫn và cấp mã liên kết riêng cho bạn:
+                  Mở kênh Discord có <strong>Bot Delta (Bot KLB)</strong>, gõ lệnh dưới đây. Bot sẽ phản hồi riêng (chỉ bạn nhìn thấy) kèm mã Claim 6 số:
                 </p>
                 <div class="code-box">
                   <code>/df link start</code>
                   <button class="copy-btn" data-copy="/df link start">Sao chép</button>
+                </div>
+
+                <!-- Visual Mockup: Discord Message -->
+                <div class="mockup-frame discord-mockup">
+                  <div class="mockup-bar">
+                    <div class="mockup-dots"><i class="red"></i><i class="yellow"></i><i class="green"></i></div>
+                    <span>Discord — #bot-commands</span>
+                  </div>
+                  <div class="discord-inner">
+                    <div class="discord-avatar">🤖</div>
+                    <div class="discord-msg-body">
+                      <div class="discord-meta">
+                        <span class="bot-name">Bot Delta</span>
+                        <span class="badge-app">APP</span>
+                        <span class="msg-time">Hôm nay lúc 14:30</span>
+                      </div>
+                      <div class="discord-embed-card">
+                        <div class="embed-tag">🔐 Khởi tạo liên kết tài khoản Delta Force HQ</div>
+                        <div class="embed-body-text">Mã liên kết xác thực (hiệu lực 15 phút):</div>
+                        <div class="claim-pill">Mã Claim: <span>849 201</span></div>
+                        <div class="embed-hint">Hãy mở trang web Delta Force HQ và nhập mã trên để hoàn tất.</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -61,8 +85,22 @@
                   Truy cập trang web Delta Force HQ chính thức và tiến hành đăng nhập tài khoản Garena của bạn:
                 </p>
                 <a href="https://www.playdeltaforce.com/events/hq/vi/index.html" target="_blank" class="action-btn link-btn">
-                  🌐 Mở Delta Force HQ ↗
+                  🌐 Mở Delta Force HQ (Garena) ↗
                 </a>
+
+                <!-- Visual Mockup: Browser Bar -->
+                <div class="mockup-frame browser-mockup">
+                  <div class="mockup-bar">
+                    <div class="mockup-dots"><i></i><i></i><i></i></div>
+                    <div class="browser-address">🔒 https://www.playdeltaforce.com/events/hq/vi/index.html</div>
+                  </div>
+                  <div class="browser-preview">
+                    <div class="hq-header-sim">
+                      <div class="hq-logo">DELTA FORCE <span>HQ</span></div>
+                      <div class="hq-login-btn">👤 Đăng Nhập Garena ✓</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -70,10 +108,25 @@
             <div class="step-item">
               <div class="step-num">3</div>
               <div class="step-body">
-                <h3>Xác nhận liên kết tự động</h3>
+                <h3>Xác nhận liên kết trên thanh thông báo tiện ích</h3>
                 <p>
-                  Sau khi đăng nhập xong, tiện ích <strong>DF Toolbox</strong> sẽ tự động nhận diện tài khoản và hiển thị thanh thông báo nhỏ ở góc dưới màn hình. Bạn chỉ cần nhập <strong>Mã Claim (6 số)</strong> nhận từ bot và bấm <strong>Xác nhận</strong>!
+                  Sau khi đăng nhập xong, tiện ích <strong>DF Toolbox</strong> sẽ tự động nhận diện tài khoản và xuất hiện thanh thông báo nổi ở góc dưới. Bạn chỉ cần nhập <strong>Mã Claim (6 số)</strong> nhận từ Discord và bấm <strong>Xác nhận</strong>:
                 </p>
+
+                <!-- Visual Mockup: Extension Floating Bar -->
+                <div class="mockup-frame notification-mockup">
+                  <div class="floating-bar-sim">
+                    <div class="floating-left">
+                      <span class="ext-badge-pill">DF TOOLBOX</span>
+                      <span class="floating-text">Phát hiện tài khoản Garena đã đăng nhập!</span>
+                    </div>
+                    <div class="floating-right">
+                      <input type="text" class="floating-input-sim" value="849201" readonly />
+                      <button class="floating-btn-sim">Xác Nhận Liên Kết</button>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="tip-box">
                   💡 <em>Mẹo: Bạn cũng có thể mở icon DF Toolbox trên thanh tiện ích Chrome để dán mã Claim thủ công bất cứ lúc nào.</em>
                 </div>
@@ -143,8 +196,37 @@
                   🎁 Mở Trang Đổi Code Garena ↗
                 </a>
                 <p style="margin-top: 12px">
-                  Mở popup <strong>DF Toolbox</strong>, dán danh sách mã code vào ô văn bản và bấm <strong>Bắt đầu tự động nhập</strong>. Tiện ích sẽ xử lý từng mã và báo cáo trạng thái thành công/thất bại theo thời gian thực.
+                  Mở popup <strong>DF Toolbox</strong>, dán danh sách mã code vào ô văn bản và bấm <strong>Bắt đầu tự động nhập</strong>. Tiện ích sẽ xử lý từng mã và báo cáo trạng thái thành công/thất bại theo thời gian thực:
                 </p>
+
+                <!-- Visual Mockup: Redeem Popup -->
+                <div class="mockup-frame popup-mockup">
+                  <div class="mockup-bar">
+                    <div class="mockup-dots"><i class="red"></i><i class="yellow"></i><i class="green"></i></div>
+                    <span>Tiện ích DF Toolbox — Auto Redeem</span>
+                  </div>
+                  <div class="popup-sim-body">
+                    <div class="popup-sim-header">
+                      <span class="popup-sim-title">⚙ Garena Redeem Engine</span>
+                      <span class="popup-sim-status">✓ Sẵn Sàng</span>
+                    </div>
+                    <div class="popup-sim-list">
+                      <div class="code-row-sim success">
+                        <span class="code-tag">✓ WELCOMEDFMY</span>
+                        <span class="status-msg">Đã nhận quà thành công</span>
+                      </div>
+                      <div class="code-row-sim success">
+                        <span class="code-tag">✓ ga_aurora</span>
+                        <span class="status-msg">Đã nhận quà thành công</span>
+                      </div>
+                      <div class="code-row-sim pending">
+                        <span class="code-tag">⏳ DFPSS1301026</span>
+                        <span class="status-msg">Đang tự động xử lý...</span>
+                      </div>
+                    </div>
+                    <div class="popup-sim-btn">▶ Bắt Đầu Tự Động Nhập (3/3)</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
