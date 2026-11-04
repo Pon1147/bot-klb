@@ -770,9 +770,25 @@
   }
 
   function clickRedeem(button) {
+    if (!button) return;
+    const href = button.getAttribute('href');
+    const isJsUrl = href && href.toLowerCase().startsWith('javascript:');
+
+    // Nếu button là thẻ <a> có href="javascript:...", gỡ tạm href trước khi dispatch
+    // để tránh browser cố chạy JavaScript navigation vi phạm Extension CSP
+    if (isJsUrl) {
+      button.removeAttribute('href');
+    }
+
     button.dispatchEvent(
       new MouseEvent('click', { bubbles: true, cancelable: true, view: window }),
     );
+
+    if (isJsUrl) {
+      setTimeout(() => {
+        button.setAttribute('href', href);
+      }, 0);
+    }
   }
 
   function initRedeemController() {
