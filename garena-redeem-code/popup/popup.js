@@ -13,6 +13,10 @@ const {
 
 // ===== CONSTANTS =====
 const DEFAULT_CODES = [
+  'DFTHKOL55',
+  'DFTHKOL88',
+  'SRTHAYDACDF',
+  'DFVNA4T8Z6P3',
   'WELCOMEDFMY',
   'DFPSS1301026',
   'ga_zenith',
@@ -542,11 +546,19 @@ btnSave.addEventListener('click', async () => {
   renderRedeemSummary();
 
   btnSave.textContent = '✅ Đã lưu!';
-  btnSave.style.background = '#22c55e';
+  btnSave.style.background = '#10b981';
   setTimeout(() => {
-    btnSave.textContent = '💾 Lưu codes';
+    btnSave.textContent = 'Save Codes';
     btnSave.style.background = '';
   }, 1500);
+});
+
+// Shortcut: Ctrl+S / Cmd+S để lưu nhanh codes trong textarea
+codesInput.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+    e.preventDefault();
+    btnSave.click();
+  }
 });
 
 // ===== RESET TO DEFAULT (KHÔNG auto-save) =====
@@ -601,10 +613,10 @@ function computeStatsFromEvents(events = []) {
   const tokenEvents = authEvents.filter((e) => {
     return Boolean(
       (e.auth && (e.auth.hasAccessToken || e.auth.hasRefreshToken)) ||
-        e.hasAccessToken ||
-        e.hasRefreshToken ||
-        e.token ||
-        e.auth?.token,
+      e.hasAccessToken ||
+      e.hasRefreshToken ||
+      e.token ||
+      e.auth?.token,
     );
   });
 
@@ -881,10 +893,12 @@ function updateAuthStateBanner(state) {
 
   const rawState = (state && state.state) || 'UNKNOWN';
   bannerEl.className = 'auth-state-banner';
-  const config =
-    (window.AUTH_STATE_CONFIG && window.AUTH_STATE_CONFIG[rawState]) ||
-    (typeof AUTH_STATE_CONFIG !== 'undefined' && AUTH_STATE_CONFIG[rawState]) ||
-    { icon: '⚪', label: 'Unknown', color: 'var(--text-muted)' };
+  const config = (window.AUTH_STATE_CONFIG && window.AUTH_STATE_CONFIG[rawState]) ||
+    (typeof AUTH_STATE_CONFIG !== 'undefined' && AUTH_STATE_CONFIG[rawState]) || {
+      icon: '⚪',
+      label: 'Unknown',
+      color: 'var(--text-muted)',
+    };
   bannerEl.classList.add('state-' + rawState.toLowerCase());
 
   if (iconEl) iconEl.textContent = config.icon || '⚪';

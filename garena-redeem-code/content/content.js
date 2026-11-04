@@ -333,7 +333,7 @@
       </div>
       <div class="grd-logs-header"><span class="grd-logs-title">Nhật ký</span><button class="grd-logs-clear">Xóa</button></div>
       <div class="grd-logs"></div>
-      <div class="grd-footer"><span>Pon1147 Redeem Tool</span><a href="https://discord.gg/vz6w6c3Xe3" target="_blank">Discord</a></div>
+      <div class="grd-footer"><span>DF Toolbox — Bot KLB</span><a href="https://discord.gg/vz6w6c3Xe3" target="_blank">Hỗ trợ Discord ↗</a></div>
     `;
 
     document.documentElement.appendChild(panel);

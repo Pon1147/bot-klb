@@ -52,62 +52,77 @@
           bottom: 20px;
           right: 20px;
           width: 320px;
-          background: #1a1a2e;
-          color: #e0e0e0;
-          border-radius: 8px;
+          background: #0b0e14;
+          color: #f1f5f9;
+          border: 1px solid rgba(0, 229, 153, 0.3);
+          border-radius: 10px;
           padding: 16px;
           z-index: 999999;
           font-family: 'Segoe UI', system-ui, sans-serif;
           font-size: 13px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 16px rgba(0, 229, 153, 0.15);
         }
         #df-toolbox-panel h3 {
           margin: 0 0 12px;
-          color: #00d4ff;
-          font-size: 15px;
+          color: #00e599;
+          font-size: 14px;
+          font-weight: 700;
+          letter-spacing: 0.3px;
         }
         #df-toolbox-panel .status {
           padding: 8px 12px;
-          border-radius: 4px;
+          border-radius: 6px;
           margin-bottom: 12px;
-          background: #16213e;
-          border: 1px solid #0f3460;
+          background: #10141d;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          color: #94a3b8;
           font-size: 12px;
         }
         #df-toolbox-panel input {
           width: 100%;
+          box-sizing: border-box;
           padding: 8px 10px;
-          border: 1px solid #0f3460;
-          border-radius: 4px;
-          background: #16213e;
-          color: #e0e0e0;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 6px;
+          background: #10141d;
+          color: #f1f5f9;
           font-size: 13px;
+          font-family: 'JetBrains Mono', Consolas, monospace;
           margin-bottom: 12px;
           outline: none;
+          transition: border-color 0.2s;
         }
         #df-toolbox-panel input:focus {
-          border-color: #00d4ff;
+          border-color: #00e599;
+          box-shadow: 0 0 8px rgba(0, 229, 153, 0.25);
         }
         #df-toolbox-panel button {
           width: 100%;
           padding: 10px;
           border: none;
-          border-radius: 4px;
-          background: #00d4ff;
-          color: #1a1a2e;
-          font-weight: 600;
+          border-radius: 6px;
+          background: #00e599;
+          color: #05080f;
+          font-weight: 700;
           font-size: 13px;
           cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 0 12px rgba(0, 229, 153, 0.25);
+        }
+        #df-toolbox-panel button:hover:not(:disabled) {
+          background: #00c784;
+          box-shadow: 0 0 16px rgba(0, 229, 153, 0.4);
         }
         #df-toolbox-panel button:disabled {
-          background: #555;
-          color: #888;
+          background: #1e293b;
+          color: #64748b;
+          box-shadow: none;
           cursor: not-allowed;
         }
         #df-toolbox-panel .hint {
           margin-top: 12px;
           font-size: 11px;
-          color: #666;
+          color: #64748b;
           line-height: 1.5;
         }
       </style>
