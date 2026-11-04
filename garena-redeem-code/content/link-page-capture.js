@@ -20,6 +20,12 @@
     return url.includes(DF_TOOLS_HOST) && url.includes(DF_TOOLS_PATH);
   }
 
+  /** Kiểm tra URL có phải Auth Login của Garena SDK */
+  function isAuthLoginUrl(url) {
+    if (!url) return false;
+    return url.includes('iegg.garena.com') && url.includes('/v2/auth/login');
+  }
+
   /** Extract credential candidate từ URL query params */
   function extractCredential(url) {
     try {
@@ -91,6 +97,27 @@
           if (credential) {
             postCredential(credential, getEndpoint(url));
           }
+        } else if (isAuthLoginUrl(url)) {
+          this.addEventListener('load', function () {
+            try {
+              const data = JSON.parse(this.responseText);
+              if (data && data.ret === 0 && data.openid && data.token) {
+                console.log('[DF Toolbox] Captured from XHR auth/login directly!');
+                postCredential(
+                  {
+                    openid: data.openid,
+                    token: data.token,
+                    ts: '0',
+                    s: '0',
+                    game_id: '30150',
+                  },
+                  'AuthLogin',
+                );
+              }
+            } catch {
+              /* ignore */
+            }
+          });
         }
         return origXhrSend.apply(this, args);
       };
@@ -108,9 +135,56 @@
             postCredential(credential, getEndpoint(url));
           }
         }
-        return originalFetch.apply(this, args);
+        const response = await originalFetch.apply(this, args);
+        if (isAuthLoginUrl(url)) {
+          try {
+            const clone = response.clone();
+            clone.json().then((data) => {
+              if (data && data.ret === 0 && data.openid && data.token) {
+                console.log('[DF Toolbox] Captured from Fetch auth/login directly!');
+                postCredential(
+                  {
+                    openid: data.openid,
+                    token: data.token,
+                    ts: '0',
+                    s: '0',
+                    game_id: '30150',
+                  },
+                  'AuthLogin',
+                );
+              }
+            }).catch(() => {});
+          } catch {
+            /* ignore */
+          }
+        }
+        return response;
       };
     }
+
+    // ===== Lắng nghe message event từ popup OAuth =====
+    window.addEventListener('message', (event) => {
+      try {
+        const d = event.data;
+        if (d && typeof d === 'object') {
+          if (d.openid && d.token) {
+            console.log('[DF Toolbox] Captured from window.message!');
+            postCredential(
+              {
+                openid: d.openid,
+                token: d.token,
+                ts: d.ts || '0',
+                s: d.s || '0',
+                game_id: '30150',
+              },
+              'WindowMessage',
+            );
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    });
 
     console.log('[DF Toolbox] Interceptors setup complete');
   }
