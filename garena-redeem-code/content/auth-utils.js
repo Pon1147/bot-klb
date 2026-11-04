@@ -346,9 +346,15 @@
   }
 
   // ===== Export =====
+  window.AUTH_STATE_CONFIG = AUTH_STATE_CONFIG;
+  window.NOTIF_CONFIG = NOTIF_CONFIG;
+  window.formatRemaining = formatRemaining;
+  window.formatLifetime = formatLifetime;
+  window.escapeHtml = escapeHtml;
+
   window.AuthUtils = {
-    AUTH_STATE_CONFIG: window.AUTH_STATE_CONFIG,
-    NOTIF_CONFIG: window.NOTIF_CONFIG,
+    AUTH_STATE_CONFIG,
+    NOTIF_CONFIG,
     formatRemaining,
     formatLifetime,
     getTimestamp,

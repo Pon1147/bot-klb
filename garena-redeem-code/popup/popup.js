@@ -5,6 +5,12 @@ if (!window.AuthUtils) {
     '<div style="padding:20px;color:red;">Lỗi: AuthUtils không khả dụng</div>';
 }
 
+const {
+  formatRemaining = (s) => (s ? `${Math.round(s)}s` : '—'),
+  formatLifetime = (s) => (s ? `${Math.round(s)}s` : '—'),
+  escapeHtml = (s) => (s == null ? '' : String(s)),
+} = window.AuthUtils || {};
+
 // ===== CONSTANTS =====
 const DEFAULT_CODES = [
   'WELCOMEDFMY',
@@ -295,7 +301,7 @@ const CODE_STATUSES = Object.freeze({
 function setCentralState(state) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.set({ centralState: state }, () => {
-      if (chrome.runtime.lastError) reject(chrome.runtime.lastError);
+      if (chrome.runtime?.lastError) reject(chrome.runtime.lastError);
       else resolve();
     });
   });
@@ -304,7 +310,7 @@ function setCentralState(state) {
 function saveCodes(codes) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.set({ redeem_codes: codes }, () => {
-      if (chrome.runtime.lastError) reject(chrome.runtime.lastError);
+      if (chrome.runtime?.lastError) reject(chrome.runtime.lastError);
       else resolve();
     });
   });
@@ -873,13 +879,17 @@ function updateAuthStateBanner(state) {
 
   if (!bannerEl) return;
 
+  const rawState = (state && state.state) || 'UNKNOWN';
   bannerEl.className = 'auth-state-banner';
-  const config = AUTH_STATE_CONFIG[state.state] || AUTH_STATE_CONFIG.UNKNOWN;
-  bannerEl.classList.add('state-' + state.state.toLowerCase());
+  const config =
+    (window.AUTH_STATE_CONFIG && window.AUTH_STATE_CONFIG[rawState]) ||
+    (typeof AUTH_STATE_CONFIG !== 'undefined' && AUTH_STATE_CONFIG[rawState]) ||
+    { icon: '⚪', label: 'Unknown', color: 'var(--text-muted)' };
+  bannerEl.classList.add('state-' + rawState.toLowerCase());
 
-  if (iconEl) iconEl.textContent = config.icon;
+  if (iconEl) iconEl.textContent = config.icon || '⚪';
   if (titleEl) {
-    titleEl.textContent = state.state;
+    titleEl.textContent = rawState;
     titleEl.style.color = config.color || 'var(--text-muted)';
   }
   if (subtitleEl) {
@@ -890,7 +900,7 @@ function updateAuthStateBanner(state) {
       remaining = formatRemaining(state.expiresIn);
     }
     subtitleEl.textContent =
-      state.state === 'ACTIVE'
+      rawState === 'ACTIVE'
         ? `Session ${state.sessionId ? '#' + state.sessionId.slice(-4) : '—'} · Expires in ${remaining}`
         : 'Theo dõi auth lifecycle';
   }
