@@ -13,8 +13,17 @@ const CRAFT_RECIPES_URL = 'https://www.playdeltaforce.com/basic_info/craft_recip
 /** Cache TTL — 1 hour */
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
+export interface DfItemInfo {
+  id: string;
+  name: string;
+  imageUrl?: string;
+  value?: number;
+  grade?: string;
+}
+
 interface CacheEntry {
   data: Record<string, string>;
+  items: Record<string, DfItemInfo>;
   loadedAt: number;
 }
 
@@ -24,25 +33,55 @@ interface RecipeImageEntry {
 }
 
 let recipeImageCache: RecipeImageEntry | null = null;
-
 let cache: CacheEntry | null = null;
 
-/** Extract key-value pairs from a JS file that defines a variable assignment like `var name = [{prop_id: "123", language: {vi: "Name"}}, ...]` */
-function parseCollectionsJs(text: string): Record<string, string> {
-  const result: Record<string, string> = {};
+/** Extract item info from collections_vi.js */
+export function parseCollectionsJs(text: string): {
+  names: Record<string, string>;
+  items: Record<string, DfItemInfo>;
+} {
+  const names: Record<string, string> = {};
+  const items: Record<string, DfItemInfo> = {};
 
-  // Match the basic_info_collection array items
-  const itemRegex = /{"prop_id":"(\d+)","language":{"vi":"([^"]*)"}}/g;
-  let match;
-  while ((match = itemRegex.exec(text)) !== null) {
-    const id = match[1];
-    const name = match[2].replace(/\\u[\dA-F]{4}/gi, (m) =>
-      String.fromCharCode(parseInt(m.slice(2), 16)),
-    );
-    result[id] = name;
+  try {
+    const jsonStr = text.replace(/^var\s+\w+\s*=\s*/, '').replace(/;\s*$/, '');
+    const data = JSON.parse(jsonStr);
+    if (Array.isArray(data)) {
+      for (const item of data) {
+        if (item.prop_id) {
+          const id = String(item.prop_id);
+          const rawName = item.language?.vi || item.name || '';
+          const name = rawName.replace(/\\u[\dA-F]{4}/gi, (m: string) =>
+            String.fromCharCode(parseInt(m.slice(2), 16)),
+          );
+          if (name) {
+            names[id] = name;
+            items[id] = {
+              id,
+              name,
+              imageUrl: item.image_url || undefined,
+              value: typeof item.value === 'number' ? item.value : Number(item.value) || undefined,
+              grade: item.grade ? String(item.grade) : undefined,
+            };
+          }
+        }
+      }
+    }
+  } catch {
+    // Fallback regex match
+    const itemRegex = /"prop_id":"(\d+)"[\s\S]*?"language":{"vi":"([^"]*)"}/g;
+    let match;
+    while ((match = itemRegex.exec(text)) !== null) {
+      const id = match[1];
+      const name = match[2].replace(/\\u[\dA-F]{4}/gi, (m) =>
+        String.fromCharCode(parseInt(m.slice(2), 16)),
+      );
+      names[id] = name;
+      items[id] = { id, name };
+    }
   }
 
-  return result;
+  return { names, items };
 }
 
 /** Extract item names from craft_recipes_vi.js */
@@ -61,9 +100,13 @@ function parseCraftRecipesJs(text: string): Record<string, string> {
   return result;
 }
 
-/** Fetch and parse workshop item names from the website */
-async function fetchItemNames(): Promise<Record<string, string>> {
+/** Fetch and parse workshop item names and metadata from the website */
+async function fetchItemNames(): Promise<{
+  names: Record<string, string>;
+  items: Record<string, DfItemInfo>;
+}> {
   const names: Record<string, string> = {};
+  const items: Record<string, DfItemInfo> = {};
 
   try {
     const [collectionsRes, recipesRes] = await Promise.all([
@@ -74,8 +117,9 @@ async function fetchItemNames(): Promise<Record<string, string>> {
     if (collectionsRes.ok) {
       const text = await collectionsRes.text();
       const collected = parseCollectionsJs(text);
-      Object.assign(names, collected);
-      logger.info(`Loaded ${Object.keys(collected).length} items from collections_vi.js`);
+      Object.assign(names, collected.names);
+      Object.assign(items, collected.items);
+      logger.info(`Loaded ${Object.keys(collected.names).length} items from collections_vi.js`);
     }
 
     if (recipesRes.ok) {
@@ -88,23 +132,30 @@ async function fetchItemNames(): Promise<Record<string, string>> {
     logger.warn(`Failed to fetch workshop data: ${(error as Error).message}`);
   }
 
-  return names;
+  return { names, items };
+}
+
+/** Ensure cache is fresh */
+async function ensureCache(): Promise<CacheEntry> {
+  const now = Date.now();
+  if (cache && now - cache.loadedAt < CACHE_TTL_MS) {
+    return cache;
+  }
+  const { names, items } = await fetchItemNames();
+  cache = { data: names, items, loadedAt: now };
+  return cache;
 }
 
 /** Get item name by ID — loads from website if cache is stale */
 export async function getWorkshopItemName(itemId: string): Promise<string> {
-  const now = Date.now();
+  const currentCache = await ensureCache();
+  return currentCache.data[itemId] || `Item ${itemId}`;
+}
 
-  // Return cached data if fresh
-  if (cache && now - cache.loadedAt < CACHE_TTL_MS) {
-    return cache.data[itemId] || `Item ${itemId}`;
-  }
-
-  // Load and cache
-  const names = await fetchItemNames();
-  cache = { data: names, loadedAt: now };
-
-  return names[itemId] || `Item ${itemId}`;
+/** Get detailed item info (name, image, value, grade) by ID */
+export async function getWorkshopItemInfo(itemId: string): Promise<DfItemInfo | null> {
+  const currentCache = await ensureCache();
+  return currentCache.items[itemId] || null;
 }
 
 /** Clear cache — useful for testing or forcing reload */
@@ -158,7 +209,7 @@ export async function getWorkshopItemImage(itemId: string): Promise<string> {
   const now = Date.now();
 
   if (recipeImageCache && now - recipeImageCache.loadedAt < CACHE_TTL_MS) {
-    const url = recipeImageCache.images[itemId] || '';
+    const url = recipeImageCache.images[itemId] || cache?.items?.[itemId]?.imageUrl || '';
     if (!url) {
       logger.debug(
         `No image for itemId=${itemId}, cache has ${Object.keys(recipeImageCache.images).length} entries`,
@@ -173,7 +224,7 @@ export async function getWorkshopItemImage(itemId: string): Promise<string> {
     `Item image cache refreshed: ${Object.keys(images).length} entries, itemId=${itemId} -> ${images[itemId] ? 'FOUND' : 'MISS'}`,
   );
 
-  return images[itemId] || '';
+  return images[itemId] || cache?.items?.[itemId]?.imageUrl || '';
 }
 
 /** Clear recipe image cache — useful for testing */

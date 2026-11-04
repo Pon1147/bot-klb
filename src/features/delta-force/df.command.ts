@@ -215,7 +215,8 @@ export const data = new SlashCommandBuilder()
       .addStringOption((opt) =>
         opt
           .setName('match_id')
-          .setDescription('Mã ID trận đấu cần tra cứu (để trống để lấy trận gần nhất)')
+          .setDescription('Chọn trận đấu gần đây (hoặc để trống xem trận mới nhất)')
+          .setAutocomplete(true)
           .setRequired(false),
       ),
   )

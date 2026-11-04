@@ -7,6 +7,11 @@ if (!window.AuthUtils) {
 
 // ===== CONSTANTS =====
 const DEFAULT_CODES = [
+  'ga_zenith',
+  'ga_aurora',
+  'ga_martelo',
+  'ga_giftfromtaj',
+  'ga_deltainto2027',
   'DFTURBRK41',
   'DFCHANCE66',
   'CRAZYPARTY1710',

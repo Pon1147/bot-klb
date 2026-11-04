@@ -1,5 +1,6 @@
 import {
   ActionRowBuilder,
+  AutocompleteInteraction,
   ButtonBuilder,
   ButtonInteraction,
   ButtonStyle,
@@ -9,6 +10,10 @@ import {
   ModalSubmitInteraction,
   StringSelectMenuInteraction,
 } from 'discord.js';
+import { getMatchList } from '../../services/deltaforce.api.js';
+import { MAP_NAMES } from '../../config/team-find.config.js';
+import { resolveUserDfToken } from '../../utils/df-token.utils.js';
+import type { DfMatchEntry } from '../../types/deltaforce.types.js';
 import { createLogger } from '../../utils/logger.js';
 import { botConfig } from '../../config/bot.config.js';
 import { getSettingsService } from '../../services/settings.service.js';
@@ -317,6 +322,67 @@ async function handleChatInputCommand(
  * Centralized interaction routing.
  * Classifies interaction type and delegates to the appropriate handler.
  */
+
+/**
+ * Handle slash command autocomplete interactions (e.g. /df match match_id).
+ */
+async function handleAutocomplete(
+  client: Client,
+  interaction: AutocompleteInteraction,
+): Promise<void> {
+  const commandName = interaction.commandName;
+  const subcommand = interaction.options.getSubcommand(false);
+
+  if (commandName === 'df' && subcommand === 'match') {
+    const focused = interaction.options.getFocused(true);
+    if (focused.name === 'match_id') {
+      try {
+        const apiToken = resolveUserDfToken(client.database, interaction.user.id);
+        if (!apiToken) {
+          await interaction.respond([]);
+          return;
+        }
+
+        const matchesRes = await getMatchList(apiToken, { limit: 10 }).catch(() => null);
+        const list = matchesRes?.list || [];
+        const query = focused.value.toLowerCase().trim();
+
+        const choices = list.map((m: DfMatchEntry) => {
+          const win = m.result === 1;
+          const tag = win ? '🏆 [WIN]' : '💀 [DEFEAT]';
+          const map = MAP_NAMES[Number(m.map_id)] ?? `Map #${m.map_id}`;
+          const time = m.match_time
+            ? new Date(Number(m.match_time) * 1000).toLocaleString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : '';
+          const name = `${tag} ${map} (${time})`.slice(0, 100);
+          return { name, value: String(m.room_id) };
+        });
+
+        const filtered = query
+          ? choices.filter(
+              (c: { name: string; value: string }) =>
+                c.name.toLowerCase().includes(query) || c.value.includes(query),
+            )
+          : choices;
+
+        await interaction.respond(filtered.slice(0, 25));
+        return;
+      } catch (err) {
+        logger.debug('Autocomplete failed: ' + (err as Error).message);
+        await interaction.respond([]).catch(() => {});
+        return;
+      }
+    }
+  }
+
+  await interaction.respond([]).catch(() => {});
+}
+
 export async function routeInteraction(
   client: Client,
   interaction:
@@ -326,6 +392,12 @@ export async function routeInteraction(
     | ModalSubmitInteraction,
 ): Promise<void> {
   try {
+    // ── 0. Autocomplete Interactions ──
+    if (typeof interaction.isAutocomplete === 'function' && interaction.isAutocomplete()) {
+      await handleAutocomplete(client, interaction);
+      return;
+    }
+
     // ── 1. Button Interactions ──
     if (interaction.isButton()) {
       await handleButton(interaction);
@@ -359,6 +431,8 @@ export async function routeInteraction(
       error: error instanceof Error ? error.message : String(error),
     });
 
-    await sendInteractionErrorFallback(interaction);
+    if (typeof interaction.isAutocomplete !== 'function' || !interaction.isAutocomplete()) {
+      await sendInteractionErrorFallback(interaction);
+    }
   }
 }
