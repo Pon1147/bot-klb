@@ -563,7 +563,7 @@ function extractUniqueValues(events, key) {
 }
 
 // ===== Compute stats from events (client-side) =====
-function computeStatsFromEvents(events) {
+function computeStatsFromEvents(events = []) {
   // Handle both normalized events (from auth-investigator-content.js)
   // and raw events (from auth-investigator.js MAIN world)
   const authEvents = events.filter((e) => {
@@ -675,7 +675,7 @@ function computeStatsFromEvents(events) {
     responseEvents: responseEvents.length,
     channelInfoResponses: responseEvents.filter((e) => e.auth?.hasChannelInfo || e.hasChannelInfo)
       .length,
-    hasAccessToken: tokenEvents.length > 0,
+    hasAccessToken: events.some((e) => e.auth?.hasAccessToken || e.hasAccessToken),
     hasRefreshToken: events.some((e) => e.auth?.hasRefreshToken || e.hasRefreshToken),
     hasGarenaOpenId: events.some((e) => e.auth?.hasGarenaSnsOpenid || e.hasGarenaSnsOpenid),
     hasDfToolsOpenId: events.some((e) => e.auth?.hasOpenId || e.hasDfToolsOpenid),
