@@ -59,11 +59,15 @@ temp/
 /*.zip
 
 # =========================
-# AI config
+# AI config & agent artifacts
 # =========================
 .github/copilot-instructions.md
 .memories
 .claude
+.agents/
+AGENTS.md
+LAZY-SENIOR-DEV-REPORT.md
+docs/superpowers/
 
 # =========================
 # Backlog
@@ -95,6 +99,7 @@ diagrams.md
 # =========================
 script.js
 codes-output.txt
+git-backup-clean.sh
 
 # =========================
 # Husky generated files
