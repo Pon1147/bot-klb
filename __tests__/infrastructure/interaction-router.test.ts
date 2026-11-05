@@ -862,20 +862,27 @@ describe('interaction-router — Bot Owner RBAC Bypass', () => {
   });
 
   it('Bot Owner được phép thực thi lệnh quản trị mà không cần role admin trong server', async () => {
-    const interaction = createMockInteraction({
-      commandName: 'df',
-      options: {
-        getSubcommandGroup: jest.fn(() => 'autopost'),
-        getSubcommand: jest.fn(() => 'status'),
-      },
-      user: { id: botConfig.botOwnerId },
-      member: { roles: { cache: new Map() } },
-    });
+    const ownerId = botConfig.botOwnerId || 'test-bot-owner-id';
+    const originalOwnerId = botConfig.botOwnerId;
+    (botConfig as any).botOwnerId = ownerId;
+    try {
+      const interaction = createMockInteraction({
+        commandName: 'df',
+        options: {
+          getSubcommandGroup: jest.fn(() => 'autopost'),
+          getSubcommand: jest.fn(() => 'status'),
+        },
+        user: { id: ownerId },
+        member: { roles: { cache: new Map() } },
+      });
 
-    await routeInteraction(mockClient, interaction as any);
+      await routeInteraction(mockClient, interaction as any);
 
-    expect(mockExecute).toHaveBeenCalledTimes(1);
-    expect(interaction.reply).not.toHaveBeenCalled();
+      expect(mockExecute).toHaveBeenCalledTimes(1);
+      expect(interaction.reply).not.toHaveBeenCalled();
+    } finally {
+      (botConfig as any).botOwnerId = originalOwnerId;
+    }
   });
 
   it('Người dùng thông thường không có role sẽ bị từ chối truy cập RBAC', async () => {

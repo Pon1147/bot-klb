@@ -27,7 +27,7 @@ const TYPE_NAMES: Record<AutoPostContentType, string> = {
  * Kiểm tra xem người gọi lệnh có phải là Bot Owner không.
  */
 export function isBotOwner(userId: string): boolean {
-  return userId === botConfig.botOwnerId;
+  return Boolean(botConfig.botOwnerId && userId === botConfig.botOwnerId);
 }
 
 /**
