@@ -113,9 +113,17 @@ export function buildHelpContainer(tab: HelpTab): BuildContainerResult {
     '',
     '---',
     '',
+    '### 🎁 BƯỚC 3: Tự Động Đổi Hàng Loạt Giftcode Garena (277+ Mã)',
+    '1. **Mở trang đổi thưởng:** Truy cập [Cổng Đổi Code Garena Delta Force](https://redeem.df.garena.sg/).',
+    '2. **Bật tiện ích:** Mở popup tiện ích **DF Toolbox** trên thanh công cụ trình duyệt -> Chọn tab **🎁 Redeem Code**.',
+    '3. **Nhập & Quản lý mã:** Tiện ích đã nạp sẵn 277+ mã code mới nhất kèm phân trang thông minh, lọc trạng thái (`Đã nhận`, `Hỏng`, `Chưa test`). Bấm nút **"Bắt đầu"** trên bảng nổi để bot tự động cào quà toàn bộ!',
+    '',
+    '---',
+    '',
     '🎬 **Video Thao Tác Mẫu & Trợ Giúp:**',
     '> Bạn có thể xem clip hướng dẫn thao tác chi tiết được chia sẻ tại máy chủ hoặc bấm nút **"💬 Hỗ Trợ 1-1"** bên dưới để được hỗ trợ viên trực tiếp hỗ trợ.',
     '',
+    `> 🤖 **Bot KLB v${BOT_VERSION}** • 🧩 **DF Toolbox v${EXTENSION_VERSION}**`,
     '> 💬 **Hỗ trợ & Thắc mắc:** Vui lòng liên hệ Discord: `crushpon` hoặc tham gia server [KLB Community](https://discord.gg/vz6w6c3Xe3).',
   ].join('\n');
 

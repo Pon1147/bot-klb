@@ -12,6 +12,7 @@ import {
   TextChannel,
 } from 'discord.js';
 import { COLORS } from '../../config/container.variables.js';
+import { BOT_VERSION, EXTENSION_VERSION } from '../../config/version.js';
 import { makeResult, BuildContainerResult } from '../../utils/container.utils.js';
 import { createLogger } from '../../utils/logger.js';
 
@@ -59,10 +60,12 @@ export function buildGuildWelcomeContainer(guildName: string): BuildContainerRes
     '• `/df map`: Mô phỏng bản đồ 3D tương tác, soi két sắt và lối rút quân an toàn.',
     '• `/df stats`: Xem thống kê cá nhân (K/D, tỷ lệ rút quân, rank) & đổi mùa giải độc quyền.',
     '• `/team find`: Đăng tin tuyển hoặc tìm đồng đội squad leo rank.',
-    '• `/df help`: Trung tâm trợ giúp toàn diện & tải tiện ích liên kết tài khoản HQ.',
+    '• `/df link start`: Nhận mã claim & tải tiện ích **DF Toolbox** để liên kết tài khoản HQ và tự động nhận quà xưởng.',
+    '• `/df help`: Trung tâm trợ giúp toàn diện & tải tiện ích DF Toolbox (tự động đổi 277+ giftcode Garena).',
     '',
     '---',
     '',
+    `> 🤖 **Bot KLB v${BOT_VERSION}** • 🧩 **DF Toolbox v${EXTENSION_VERSION}**`,
     '> 💬 **Hỗ trợ & Thắc mắc:** Vui lòng liên hệ Discord: `crushpon` hoặc tham gia server [KLB Community](https://discord.gg/vz6w6c3Xe3) để được hỗ trợ.',
   ].join('\n');
 
