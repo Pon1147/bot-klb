@@ -62,7 +62,7 @@ const logger = createLogger('Bootstrap');
 export async function bootstrap(): Promise<Client> {
   logger.header('KL BOT — Starting up');
   logger.info(
-    `System Build: Bot KLB v${BOT_VERSION} • DF Toolbox v${EXTENSION_VERSION} [${botConfig.env.toUpperCase()}]`,
+    `System Build: Bot Delta v${BOT_VERSION} • DF Toolbox v${EXTENSION_VERSION} [${botConfig.env.toUpperCase()}]`,
   );
 
   // Step 1: Initialize database

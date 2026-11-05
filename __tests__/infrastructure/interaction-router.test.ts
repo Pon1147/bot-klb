@@ -1145,6 +1145,146 @@ describe('interaction-router — BUG-02 Interaction Acknowledgment & Error Fallb
     expect(modalInteraction.reply).not.toHaveBeenCalled();
   });
 
+  describe('routeInteraction — DF Help Routing, Isolation & RBAC', () => {
+    const mockClient: any = {
+      commands: new Map([
+        ['df', { execute: jest.fn().mockResolvedValue(undefined) }],
+      ]),
+      database: {},
+    };
+
+    it('Button click df_help:page:2:<caller> chuyển sang Trang 2 thành công', async () => {
+      const interaction: any = {
+        isButton: () => true,
+        isStringSelectMenu: () => false,
+        isModalSubmit: () => false,
+        isChatInputCommand: () => false,
+        customId: 'df_help:page:2:caller-1',
+        user: { id: 'caller-1' },
+        update: jest.fn().mockResolvedValue(undefined),
+        reply: jest.fn().mockResolvedValue(undefined),
+      };
+
+      await routeInteraction(mockClient, interaction);
+
+      expect(interaction.update).toHaveBeenCalledTimes(1);
+      expect(interaction.reply).not.toHaveBeenCalled();
+    });
+
+    it('User khác bấm nút df_help:page:2:<caller> bị từ chối bằng Ephemeral', async () => {
+      const interaction: any = {
+        isButton: () => true,
+        isStringSelectMenu: () => false,
+        isModalSubmit: () => false,
+        isChatInputCommand: () => false,
+        customId: 'df_help:page:2:caller-1',
+        user: { id: 'intruder-2' },
+        update: jest.fn().mockResolvedValue(undefined),
+        reply: jest.fn().mockResolvedValue(undefined),
+      };
+
+      await routeInteraction(mockClient, interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('không thể điều khiển'),
+          flags: MessageFlags.Ephemeral,
+        }),
+      );
+      expect(interaction.update).not.toHaveBeenCalled();
+    });
+
+    it('Select Menu df_help:select:<caller> chọn admin -> chuyển sang Trang 5', async () => {
+      const interaction: any = {
+        isButton: () => false,
+        isStringSelectMenu: () => true,
+        isModalSubmit: () => false,
+        isChatInputCommand: () => false,
+        customId: 'df_help:select:caller-1',
+        user: { id: 'caller-1' },
+        values: ['admin'],
+        update: jest.fn().mockResolvedValue(undefined),
+        reply: jest.fn().mockResolvedValue(undefined),
+      };
+
+      await routeInteraction(mockClient, interaction);
+
+      expect(interaction.update).toHaveBeenCalledTimes(1);
+      expect(interaction.reply).not.toHaveBeenCalled();
+    });
+
+    it('Nút tải tiện ích df_help:dl:<caller> gọi interaction.reply kèm file đính kèm', async () => {
+      const interaction: any = {
+        isButton: () => true,
+        isStringSelectMenu: () => false,
+        isModalSubmit: () => false,
+        isChatInputCommand: () => false,
+        customId: 'df_help:dl:caller-1',
+        user: { id: 'caller-1' },
+        reply: jest.fn().mockResolvedValue(undefined),
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+
+      await routeInteraction(mockClient, interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('DF-Extension.zip'),
+          flags: MessageFlags.Ephemeral,
+          files: expect.any(Array),
+        }),
+      );
+    });
+
+    it('Interaction hết hạn (code 10062) khi update -> bỏ qua an toàn không ném lỗi', async () => {
+      const interaction: any = {
+        isButton: () => true,
+        isStringSelectMenu: () => false,
+        isModalSubmit: () => false,
+        isChatInputCommand: () => false,
+        customId: 'df_help:page:2:caller-1',
+        user: { id: 'caller-1' },
+        update: jest.fn().mockRejectedValue({ code: 10062, message: 'Unknown interaction' }),
+        reply: jest.fn().mockResolvedValue(undefined),
+      };
+
+      await expect(routeInteraction(mockClient, interaction)).resolves.not.toThrow();
+    });
+
+    it('RBAC Test: Server mới chưa cấu hình role Member -> User bình thường chạy /df help vẫn được phép', async () => {
+      mockSettingsService.get.mockReturnValue({
+        rbac: {
+          ownerRoleId: null,
+          moderatorRoleId: null,
+          memberRoleId: null,
+        },
+      });
+
+      const executeHelpMock = jest.fn().mockResolvedValue(undefined);
+      const clientWithDfHelp: any = {
+        commands: new Map([
+          ['df', { execute: executeHelpMock }],
+        ]),
+        database: {},
+      };
+
+      const interaction = createMockInteraction({
+        commandName: 'df',
+        options: {
+          getSubcommandGroup: jest.fn(() => null),
+          getSubcommand: jest.fn(() => 'help'),
+        },
+        user: { id: 'regular-user' },
+        member: {
+          roles: { cache: new Map() },
+        },
+      });
+
+      await routeInteraction(clientWithDfHelp, interaction as any);
+
+      expect(executeHelpMock).toHaveBeenCalledTimes(1);
+    });
+  });
 
   // df_history_view_all đã được chuyển sang ButtonStyle.Link nên không còn trigger interaction router.
 });

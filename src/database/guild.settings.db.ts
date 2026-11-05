@@ -16,7 +16,7 @@ type DeepPartial<T> = {
 };
 
 /**
- * Khởi tạo bảng guild_settings (JSON-based).
+ * Khởi tạo bảng guild_settings (JSON-based) và bảng guild_welcome_audit.
  * Chỉ gọi 1 lần khi bootstrap bot.
  */
 export function initializeSettingsTable(database: Database.Database): void {
@@ -29,6 +29,82 @@ export function initializeSettingsTable(database: Database.Database): void {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  initializeGuildWelcomeAuditTable(database);
+}
+
+/**
+ * Khởi tạo bảng audit trạng thái gửi tin nhắn chào mừng server mới (At-Most-Once).
+ */
+export function initializeGuildWelcomeAuditTable(database: Database.Database): void {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS guild_welcome_audit (
+      guild_id TEXT PRIMARY KEY,
+      status TEXT NOT NULL CHECK(status IN ('pending', 'sent', 'failed')),
+      channel_id TEXT,
+      error_message TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+}
+
+export interface GuildWelcomeAuditRow {
+  guild_id: string;
+  status: 'pending' | 'sent' | 'failed';
+  channel_id: string | null;
+  error_message: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+/**
+ * Atomic Claim First: Thực thi INSERT OR IGNORE bản ghi pending.
+ * - Trả về true: claim thành công (changes === 1).
+ * - Trả về false: guild đã có bản ghi (changes === 0, bất kể trạng thái).
+ * - Throw exception: lỗi DB (caller phải bắt và fail-closed).
+ */
+export function claimGuildWelcome(database: Database.Database, guildId: string): boolean {
+  const now = Date.now();
+  const stmt = database.prepare(`
+    INSERT OR IGNORE INTO guild_welcome_audit (guild_id, status, created_at, updated_at)
+    VALUES (?, 'pending', ?, ?)
+  `);
+  const result = stmt.run(guildId, now, now);
+  return result.changes === 1;
+}
+
+/**
+ * Cập nhật kết quả gửi thông điệp chào mừng (sent hoặc failed).
+ */
+export function updateGuildWelcomeResult(
+  database: Database.Database,
+  guildId: string,
+  status: 'sent' | 'failed',
+  channelId?: string,
+  errorMessage?: string,
+): void {
+  const now = Date.now();
+  database
+    .prepare(
+      `
+      UPDATE guild_welcome_audit
+      SET status = ?, channel_id = ?, error_message = ?, updated_at = ?
+      WHERE guild_id = ?
+    `,
+    )
+    .run(status, channelId ?? null, errorMessage ?? null, now, guildId);
+}
+
+/**
+ * Lấy thông tin audit chào mừng của máy chủ (dùng cho test/kiểm tra).
+ */
+export function getGuildWelcomeAudit(
+  database: Database.Database,
+  guildId: string,
+): GuildWelcomeAuditRow | undefined {
+  return database.prepare('SELECT * FROM guild_welcome_audit WHERE guild_id = ?').get(guildId) as
+    GuildWelcomeAuditRow | undefined;
 }
 
 /**
