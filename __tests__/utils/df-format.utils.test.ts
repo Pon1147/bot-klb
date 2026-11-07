@@ -77,5 +77,23 @@ describe('df-format.utils', () => {
     it('hỗ trợ cả Date instance', () => {
       expect(formatVietnamDateTime(fixedDate)).toBe('17:40 06/11/2026');
     });
+
+    it('hỗ trợ timestamp dạng chuỗi giây từ API (tránh bug năm 1970)', () => {
+      const stringTimestampSec = String(fixedTimestampSec);
+      expect(formatVietnamDateTime(stringTimestampSec)).toBe('17:40 06/11/2026');
+      expect(formatVietnamDate(stringTimestampSec)).toBe('06/11/2026');
+      expect(formatVietnamTime(stringTimestampSec)).toBe('17:40');
+    });
+
+    it('hỗ trợ ISO date string', () => {
+      expect(formatVietnamDateTime('2026-11-06T10:40:00.000Z')).toBe('17:40 06/11/2026');
+    });
+
+    it('fallback an toàn khi dữ liệu không hợp lệ', () => {
+      expect(formatVietnamDateTime('')).toBe('Không xác định');
+      expect(formatVietnamDateTime('invalid')).toBe('Không xác định');
+      expect(formatVietnamDate('')).toBe('Không xác định');
+      expect(formatVietnamTime('')).toBe('');
+    });
   });
 });

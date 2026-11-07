@@ -7,17 +7,34 @@
 export const VIETNAM_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
 /**
+ * Chuyển đổi timestamp (number | string giây/ms, ISO string, Date) sang Date object hợp lệ.
+ */
+function toDate(timestamp: number | string | Date): Date | null {
+  if (!timestamp) return null;
+  if (timestamp instanceof Date) return isNaN(timestamp.getTime()) ? null : timestamp;
+  const num = Number(timestamp);
+  if (!isNaN(num)) {
+    if (num <= 0) return null;
+    const ms = num < 1e11 ? num * 1000 : num;
+    const d = new Date(ms);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof timestamp === 'string') {
+    const d = new Date(timestamp);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
+/**
  * Định dạng mốc thời gian đầy đủ theo múi giờ Việt Nam (mặc định: HH:mm DD/MM/YYYY).
  */
 export function formatVietnamDateTime(
   timestamp: number | string | Date,
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  if (!timestamp) return 'Không xác định';
-  const ms =
-    typeof timestamp === 'number' && timestamp < 1e11 ? timestamp * 1000 : Number(timestamp);
-  const date = timestamp instanceof Date ? timestamp : new Date(ms);
-  if (isNaN(date.getTime())) return 'Không xác định';
+  const date = toDate(timestamp);
+  if (!date) return 'Không xác định';
 
   return date.toLocaleString('vi-VN', {
     timeZone: VIETNAM_TIMEZONE,
@@ -38,11 +55,8 @@ export function formatVietnamDate(
   timestamp: number | string | Date,
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  if (!timestamp) return 'Không xác định';
-  const ms =
-    typeof timestamp === 'number' && timestamp < 1e11 ? timestamp * 1000 : Number(timestamp);
-  const date = timestamp instanceof Date ? timestamp : new Date(ms);
-  if (isNaN(date.getTime())) return 'Không xác định';
+  const date = toDate(timestamp);
+  if (!date) return 'Không xác định';
 
   return date.toLocaleDateString('vi-VN', {
     timeZone: VIETNAM_TIMEZONE,
@@ -60,11 +74,8 @@ export function formatVietnamTime(
   timestamp: number | string | Date,
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  if (!timestamp) return '';
-  const ms =
-    typeof timestamp === 'number' && timestamp < 1e11 ? timestamp * 1000 : Number(timestamp);
-  const date = timestamp instanceof Date ? timestamp : new Date(ms);
-  if (isNaN(date.getTime())) return '';
+  const date = toDate(timestamp);
+  if (!date) return '';
 
   return date.toLocaleTimeString('vi-VN', {
     timeZone: VIETNAM_TIMEZONE,
