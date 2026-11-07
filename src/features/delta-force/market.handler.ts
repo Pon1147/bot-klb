@@ -25,11 +25,7 @@ import {
 } from '../../services/workshop-data.service.js';
 import { resolveUserDfToken } from '../../utils/df-token.utils.js';
 import { buildErrorContainer, makeResult } from '../../utils/container.utils.js';
-
-function formatCoin(num: number | string): string {
-  const n = Number(num) || 0;
-  return n.toLocaleString('vi-VN');
-}
+import { formatCoin, formatVietnamDateTime } from '../../utils/df-format.utils.js';
 
 function formatCoinShort(num: number | string): string {
   const n = Number(num) || 0;
@@ -117,13 +113,7 @@ export async function execute(
     // Lấy thời điểm chốt giá gần nhất từ server game
     const lastPoint = (detail.price_fluctuation_list || []).slice(-1)[0];
     const lastUpdatedText = lastPoint?.hour_timestamp
-      ? new Date(Number(lastPoint.hour_timestamp) * 1000).toLocaleString('vi-VN', {
-          timeZone: 'Asia/Ho_Chi_Minh',
-          hour: '2-digit',
-          minute: '2-digit',
-          day: '2-digit',
-          month: '2-digit',
-        })
+      ? formatVietnamDateTime(lastPoint.hour_timestamp)
       : 'Gần nhất';
 
     // Danh sách nguyên liệu cần thiết
@@ -134,7 +124,7 @@ export async function execute(
         );
         const uPrice = Number(m.unit_price) || 0;
         const tPrice = Number(m.total_price) || 0;
-        return `• **${matName}** ×${m.material_count} ─ Đơn giá: \`${formatCoin(uPrice)}\` Coin _(Tổng: ${formatCoin(tPrice)})_`;
+        return `• **${matName}** ×${m.material_count} ─ Đơn giá: \`${formatCoin(uPrice, false)}\` Coin _(Tổng: ${formatCoin(tPrice, false)})_`;
       }),
     );
 
@@ -159,14 +149,14 @@ export async function execute(
       `-# ID: \`${detail.item_id}\`  ·  Thời gian sản xuất: \`${formatDuration(detail.total_duration)}\``,
       marketBadge,
       '',
-      `💰 **Tổng giá bán (cả mẻ):** \`${formatCoin(sellPrice)}\` Coin`,
-      `📊 **Biến động đơn giá 24h:** Đỉnh \`${formatCoin(maxPrice)}\`  ·  Đáy \`${formatCoin(minPrice)}\` Coin/món`,
-      `${profitIcon} **Lợi nhuận ròng:** \`${profitSign}${formatCoin(income)}\` Coin *(Thu nhập: \`~${formatCoin(hourly)}/giờ\`)*`,
+      `💰 **Tổng giá bán (cả mẻ):** \`${formatCoin(sellPrice, false)}\` Coin`,
+      `📊 **Biến động đơn giá 24h:** Đỉnh \`${formatCoin(maxPrice, false)}\`  ·  Đáy \`${formatCoin(minPrice, false)}\` Coin/món`,
+      `${profitIcon} **Lợi nhuận ròng:** \`${profitSign}${formatCoin(income, false)}\` Coin *(Thu nhập: \`~${formatCoin(hourly, false)}/giờ\`)*`,
       '',
       `### 🧱 Vật Liệu Sản Xuất Cần Dùng:`,
       materialsText,
       '',
-      `> ⚙️ **Chi phí sản xuất:** \`${formatCoin(cost)}\` Coin  ·  **Phí & Tiền cọc:** \`${formatCoin(fee + deposit)}\` Coin`,
+      `> ⚙️ **Chi phí sản xuất:** \`${formatCoin(cost, false)}\` Coin  ·  **Phí & Tiền cọc:** \`${formatCoin(fee + deposit, false)}\` Coin`,
       '',
       footerText,
     ].join('\n');

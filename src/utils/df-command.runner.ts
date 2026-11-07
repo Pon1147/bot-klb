@@ -6,6 +6,8 @@ import Database from 'better-sqlite3';
 import { getDfToken, touchDfToken } from '../database/df.token.db.js';
 import { getActiveBinding, touchLastOk } from '../database/df-binding.db.js';
 import { decryptCredential } from '../services/df-crypto.js';
+import { buildDfApiToken } from './df-token.utils.js';
+import type { DfApiToken } from '../types/deltaforce.types.js';
 import { requireGuild } from './df-guards.js';
 import { buildErrorContainer } from './container.utils.js';
 import { createLogger } from './logger.js';
@@ -55,13 +57,17 @@ export interface DfCommandContext {
  */
 export async function runDfCommand(
   ctx: DfCommandContext,
-  fn: (token: import('../database/df.token.db.js').DfTokenRow) => Promise<DfCommandResult>,
+  fn: (
+    token: DfApiToken,
+    rawToken?: import('../database/df.token.db.js').DfTokenRow,
+  ) => Promise<DfCommandResult>,
 ): Promise<boolean> {
   // Step 1: Guild guard
   if (await requireGuild(ctx.interaction)) return true;
 
   // Step 2: Binding validation (new encrypted binding first, fallback legacy)
-  let token: import('../database/df.token.db.js').DfTokenRow | undefined | null = null;
+  let apiToken: DfApiToken | null = null;
+  let rawToken: import('../database/df.token.db.js').DfTokenRow | null | undefined = null;
   let usingBinding = false;
 
   try {
@@ -76,9 +82,17 @@ export async function runDfCommand(
           binding.cred_tag,
           binding.discord_user_id,
           binding.openid,
+          binding.key_version,
         );
         const cred = JSON.parse(decrypted);
-        token = {
+        apiToken = {
+          openid: binding.openid,
+          token: cred.token,
+          ts: cred.ts || undefined,
+          s: cred.s || undefined,
+          u: cred.u || undefined,
+        };
+        rawToken = {
           discord_id: ctx.userId,
           openid: binding.openid,
           token: cred.token,
@@ -101,14 +115,20 @@ export async function runDfCommand(
       }
     } else {
       // No binding → check legacy token
-      token = getDfToken(ctx.database, ctx.userId);
+      rawToken = getDfToken(ctx.database, ctx.userId);
+      if (rawToken) {
+        apiToken = buildDfApiToken(rawToken);
+      }
     }
   } catch {
     // Table doesn't exist (test env) → fallback to legacy
-    token = getDfToken(ctx.database, ctx.userId);
+    rawToken = getDfToken(ctx.database, ctx.userId);
+    if (rawToken) {
+      apiToken = buildDfApiToken(rawToken);
+    }
   }
 
-  if (!token) {
+  if (!apiToken) {
     const err = buildErrorContainer(
       'Bạn chưa liên kết tài khoản. Dùng `/df link start` để bắt đầu.',
     );
@@ -120,8 +140,8 @@ export async function runDfCommand(
   await ctx.interaction.deferReply();
 
   try {
-    // Step 4: Execute command callback (passes full DfTokenRow)
-    const result = await fn(token);
+    // Step 4: Execute command callback (passes DfApiToken and optional rawToken)
+    const result = await fn(apiToken, rawToken ?? undefined);
     // discord.js editReply expects specific component/file types;
     // callbacks return readonly unknown[] from toComponentsV2()
     await ctx.interaction.editReply({

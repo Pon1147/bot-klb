@@ -5,7 +5,7 @@ import { getActiveBinding } from '../database/df-binding.db.js';
 import { decryptCredential } from '../services/df-crypto.js';
 import { getDfToken } from '../database/df.token.db.js';
 
-export function buildDfApiToken(row: DfTokenRow): DfApiToken {
+export function buildDfApiToken(row: DfTokenRow | DfApiToken): DfApiToken {
   return {
     openid: row.openid,
     token: row.token,

@@ -11,16 +11,16 @@ import { buildErrorContainer, toComponentsV2 } from '../../utils/container.utils
 import { COLORS } from '../../config/container.variables.js';
 import { getMatchList } from '../../services/deltaforce.api.js';
 import { DEFAULT_OPERATOR_AVATAR, resolveOperator } from '../../utils/df-operator.utils.js';
-import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { runDfCommand } from '../../utils/df-command.runner.js';
 import {
   EMOJI_WIN,
   EMOJI_DEFEAT,
   EMOJI_MONEY,
   EMOJI_KILL,
-  MAX_HISTORY_LIMIT,
   MAP_NAMES,
-} from '../../config/team-find.config.js';
+} from '../../config/deltaforce.config.js';
+import { MAX_HISTORY_LIMIT } from '../../config/team-find.config.js';
+import { formatVietnamDateTime, formatCoin } from '../../utils/df-format.utils.js';
 import { MAX_HISTORY_PAGE } from '../../config/app.constants.js';
 import type { DfMatchEntry } from '../../types/deltaforce.types.js';
 
@@ -30,17 +30,10 @@ function buildMatchItemSection(match: DfMatchEntry): Record<string, unknown> {
   const operator = resolveOperator(operatorId);
 
   const avatarUrl = operatorIcon || operator.avatarUrl;
-  const time = new Date(Number(match.match_time) * 1000).toLocaleString('vi-VN', {
-    timeZone: 'Asia/Ho_Chi_Minh',
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
+  const time = formatVietnamDateTime(match.match_time);
   const mapName = MAP_NAMES[Number(match.map_id)] ?? `Map ${match.map_id}`;
   const result = match.result === 1 ? `${EMOJI_WIN} Win` : `${EMOJI_DEFEAT} Defeat`;
-  const extract = Number(match.carry_out_value).toLocaleString('vi-VN');
+  const extract = formatCoin(match.carry_out_value, false);
 
   const content =
     `## **${operator.name}**\n` +
@@ -79,8 +72,7 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
-  await runDfCommand({ userId: interaction.user.id, database, interaction }, async (rawToken) => {
-    const apiToken = buildDfApiToken(rawToken);
+  await runDfCommand({ userId: interaction.user.id, database, interaction }, async (apiToken) => {
     const limit = Math.min(
       interaction.options.getInteger('limit') || MAX_HISTORY_LIMIT,
       MAX_HISTORY_PAGE,

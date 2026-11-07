@@ -4,7 +4,6 @@ import { ChatInputCommandInteraction, ComponentType, MessageFlags } from 'discor
 import Database from 'better-sqlite3';
 
 import { getWorkbenchList, getWorkshopRecommendations } from '../../services/deltaforce.api.js';
-import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { runDfCommand } from '../../utils/df-command.runner.js';
 import { makeResult } from '../../utils/container.utils.js';
 import { formatRemainingTime, formatHourlyIncome } from '../../config/workshop.config.js';
@@ -164,9 +163,7 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
-  await runDfCommand({ userId: interaction.user.id, database, interaction }, async (rawToken) => {
-    const apiToken = buildDfApiToken(rawToken);
-
+  await runDfCommand({ userId: interaction.user.id, database, interaction }, async (apiToken) => {
     // Gọi cả 2 API: sản xuất hiện tại + đề xuất
     const [workbenchData, recommendationData] = await Promise.allSettled([
       getWorkbenchList(apiToken),

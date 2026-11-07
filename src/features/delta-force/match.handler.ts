@@ -16,7 +16,7 @@ import {
 import Database from 'better-sqlite3';
 import { getMatchList, getMatchDetail } from '../../services/deltaforce.api.js';
 import { runDfCommand } from '../../utils/df-command.runner.js';
-import { buildDfApiToken, resolveUserDfToken } from '../../utils/df-token.utils.js';
+import { resolveUserDfToken } from '../../utils/df-token.utils.js';
 import { makeResult, buildErrorContainer } from '../../utils/container.utils.js';
 import { resolveOperator } from '../../utils/df-operator.utils.js';
 import {
@@ -25,26 +25,17 @@ import {
   EMOJI_MONEY,
   EMOJI_KILL,
   MAP_NAMES,
-} from '../../config/team-find.config.js';
+} from '../../config/deltaforce.config.js';
+import {
+  formatVietnamDateTime,
+  formatCoin,
+  formatMatchDuration,
+} from '../../utils/df-format.utils.js';
 import type { DfMatchEntry, DfMatchDetailResponse } from '../../types/deltaforce.types.js';
 
+export { formatMatchDuration } from '../../utils/df-format.utils.js';
+
 export const MATCH_SELECT_PREFIX = 'df_match_select';
-
-/**
- * Định dạng thời lượng trận đấu:
- * - Nếu < 60: API Delta Force trả về số phút (vd: 12 = 12 phút)
- * - Nếu >= 60: giá trị tính theo giây (vd: 720 = 12 phút, 1200 = 20 phút)
- */
-export function formatMatchDuration(rawDuration: number | string | undefined | null): string {
-  if (rawDuration === undefined || rawDuration === null) return 'N/A';
-  const val = Number(rawDuration);
-  if (isNaN(val) || val <= 0) return 'N/A';
-
-  const totalSecs = val < 60 ? val * 60 : val;
-  const mins = Math.floor(totalSecs / 60);
-  const secs = Math.round(totalSecs % 60);
-  return mins > 0 ? (secs > 0 ? `${mins} phút ${secs}s` : `${mins} phút`) : `${secs} giây`;
-}
 
 /**
  * Xây dựng Container V2 và ActionRow Select Menu cho một trận đấu cụ thể.
@@ -65,17 +56,7 @@ export function buildMatchContainerWithSelect(
   const operatorId = selfMember?.operator_id ?? detail.operator_id;
   const operator = resolveOperator(String(operatorId ?? ''));
 
-  const matchTime = detail.match_time
-    ? new Date(Number(detail.match_time) * 1000).toLocaleString('vi-VN', {
-        timeZone: 'Asia/Ho_Chi_Minh',
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      })
-    : 'Không xác định';
+  const matchTime = detail.match_time ? formatVietnamDateTime(detail.match_time) : 'Không xác định';
 
   // Thời lượng trận đấu: ưu tiên detail.match_duration, fallback survival_duration
   const rawDuration = detail.match_duration ?? selfMember?.survival_duration;
@@ -83,15 +64,11 @@ export function buildMatchContainerWithSelect(
 
   // Tiền loot mang ra
   const carryOutRaw = selfMember?.carry_out_value ?? detail.carry_out_value;
-  const carryOutStr =
-    carryOutRaw !== undefined ? Number(carryOutRaw).toLocaleString('vi-VN') + ' Coin' : '0 Coin';
+  const carryOutStr = formatCoin(carryOutRaw);
 
   // Thu nhập ròng
   const netIncomeRaw = detail.net_income ?? carryOutRaw;
-  const netIncomeStr =
-    netIncomeRaw !== undefined
-      ? Number(netIncomeRaw).toLocaleString('vi-VN') + ' Coin'
-      : carryOutStr;
+  const netIncomeStr = formatCoin(netIncomeRaw);
 
   // Số mạng hạ gục
   const killPvP = selfMember?.kill_operator ?? detail.kill_count ?? 0;
@@ -105,7 +82,7 @@ export function buildMatchContainerWithSelect(
       const op = resolveOperator(String(m.operator_id ?? ''));
       const name = m.nickname || 'Chiến binh';
       const tagSelf = m.is_self ? ' *(Bạn)*' : '';
-      const loot = Number(m.carry_out_value || 0).toLocaleString('vi-VN');
+      const loot = formatCoin(m.carry_out_value || 0, false);
       const botPart = m.kill_other ? ` (${m.kill_other} Bot)` : '';
       return `• **${name}** (${op.name})${tagSelf}  ·  ${EMOJI_MONEY} ${loot}  ·  ${EMOJI_KILL} ${m.kill_operator || 0} PvP${botPart}`;
     });
@@ -150,16 +127,7 @@ export function buildMatchContainerWithSelect(
       const win = m.result === 1;
       const tag = win ? '🏆 [WIN]' : '💀 [DEFEAT]';
       const map = MAP_NAMES[Number(m.map_id)] ?? `Map #${m.map_id}`;
-      const time = m.match_time
-        ? new Date(Number(m.match_time) * 1000).toLocaleString('vi-VN', {
-            timeZone: 'Asia/Ho_Chi_Minh',
-            day: '2-digit',
-            month: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-          })
-        : '';
+      const time = m.match_time ? formatVietnamDateTime(m.match_time) : '';
 
       return {
         label: `${tag} ${map} (${time})`.slice(0, 100),
@@ -187,8 +155,7 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
-  await runDfCommand({ userId: interaction.user.id, database, interaction }, async (rawToken) => {
-    const apiToken = buildDfApiToken(rawToken);
+  await runDfCommand({ userId: interaction.user.id, database, interaction }, async (apiToken) => {
     let roomId = interaction.options.getString('match_id')?.trim();
 
     // Luôn fetch 10 trận gần nhất để phục vụ cả việc chọn trận mặc định & dropdown list

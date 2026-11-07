@@ -11,8 +11,8 @@ import { toComponentsV2 } from '../../utils/container.utils.js';
 import { COLORS } from '../../config/container.variables.js';
 import { getOverviewData } from '../../services/deltaforce.api.js';
 import { resolveRankFromScore } from '../../utils/df-rank.utils.js';
-import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { runDfCommand } from '../../utils/df-command.runner.js';
+import { formatVietnamDate, formatCoin } from '../../utils/df-format.utils.js';
 import { buildSeasonOptions, getSeasonLabel } from '../../config/season.config.js';
 import type { DfMyDataResponse } from '../../types/deltaforce.types.js';
 
@@ -33,9 +33,7 @@ export function buildStatsContainer(
 
   // Chuyển đổi register_time (unix timestamp) sang ngày, fallback nếu không hợp lệ
   const regTimestamp = Number(data.player_info.register_time);
-  const regDate = Number.isNaN(regTimestamp)
-    ? 'Không rõ'
-    : new Date(regTimestamp * 1000).toLocaleDateString('vi-VN');
+  const regDate = Number.isNaN(regTimestamp) ? 'Không rõ' : formatVietnamDate(regTimestamp);
 
   const combat = data.summary_data.combat;
   const economy = data.summary_data.economy;
@@ -67,8 +65,8 @@ export function buildStatsContainer(
 
   const economyBlock = economy
     ? [
-        `- **Tổng reward**: ${Number(economy.total_reward).toLocaleString('vi-VN')}`,
-        `- **Extract value**: ${Number(economy.extract_value).toLocaleString('vi-VN')}`,
+        `- **Tổng reward**: ${formatCoin(economy.total_reward, false)}`,
+        `- **Extract value**: ${formatCoin(economy.extract_value, false)}`,
         `- **Profit/Loss**: ${Number(economy.profit_loss_ratio).toLocaleString('vi-VN')}`,
         `- **Mandel Brick**: ${economy.total_mandel_brick}`,
       ].join('\n')
@@ -88,7 +86,7 @@ export function buildStatsContainer(
         `- **Revive**: ${team.revive_teammate_count}`,
         `- **Rescue**: ${team.rescue_teammate_count}`,
         `- **Retreat rate**: ${team.retreat_rate}`,
-        `- **Team extract**: ${Number(team.teammate_extract_value).toLocaleString('vi-VN')}`,
+        `- **Team extract**: ${formatCoin(team.teammate_extract_value, false)}`,
       ].join('\n')
     : '- Chưa có dữ liệu';
 
@@ -147,8 +145,7 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
-  await runDfCommand({ userId: interaction.user.id, database, interaction }, async (tokenRow) => {
-    const apiToken = buildDfApiToken(tokenRow);
+  await runDfCommand({ userId: interaction.user.id, database, interaction }, async (apiToken) => {
     const data = await getOverviewData(apiToken);
     const seasonLabel = getSeasonLabel('overview');
 

@@ -11,8 +11,9 @@ import {
   StringSelectMenuInteraction,
 } from 'discord.js';
 import { getMatchList } from '../../services/deltaforce.api.js';
-import { MAP_NAMES } from '../../config/team-find.config.js';
+import { MAP_NAMES } from '../../config/deltaforce.config.js';
 import { resolveUserDfToken } from '../../utils/df-token.utils.js';
+import { formatVietnamDateTime } from '../../utils/df-format.utils.js';
 import type { DfMatchEntry } from '../../types/deltaforce.types.js';
 import { createLogger } from '../../utils/logger.js';
 import { botConfig } from '../../config/bot.config.js';
@@ -354,16 +355,7 @@ async function handleAutocomplete(
           const win = m.result === 1;
           const tag = win ? '🏆 [WIN]' : '💀 [DEFEAT]';
           const map = MAP_NAMES[Number(m.map_id)] ?? `Map #${m.map_id}`;
-          const time = m.match_time
-            ? new Date(Number(m.match_time) * 1000).toLocaleString('vi-VN', {
-                timeZone: 'Asia/Ho_Chi_Minh',
-                day: '2-digit',
-                month: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-              })
-            : '';
+          const time = m.match_time ? formatVietnamDateTime(m.match_time) : '';
           const name = `${tag} ${map} (${time})`.slice(0, 100);
           return { name, value: String(m.room_id) };
         });

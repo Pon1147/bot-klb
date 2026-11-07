@@ -15,9 +15,9 @@ import {
 import Database from 'better-sqlite3';
 import { getCollection } from '../../services/deltaforce.api.js';
 import { runDfCommand } from '../../utils/df-command.runner.js';
-import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { getWorkshopItemName, getWorkshopItemInfo } from '../../services/workshop-data.service.js';
 import { makeResult } from '../../utils/container.utils.js';
+import { formatCoin } from '../../utils/df-format.utils.js';
 
 const RANK_BADGES = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
 
@@ -35,8 +35,7 @@ export async function execute(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
-  await runDfCommand({ userId: interaction.user.id, database, interaction }, async (rawToken) => {
-    const apiToken = buildDfApiToken(rawToken);
+  await runDfCommand({ userId: interaction.user.id, database, interaction }, async (apiToken) => {
     const collectionData = await getCollection(apiToken);
 
     const items = collectionData.collection_list || [];
@@ -44,9 +43,7 @@ export async function execute(
     const totalCount =
       collectionData.dahong_total_count ?? items.reduce((sum, item) => sum + (item.count || 0), 0);
     const totalValueRaw = collectionData.dahong_total_value;
-    const totalValueStr = totalValueRaw
-      ? Number(totalValueRaw).toLocaleString('vi-VN') + ' Coin'
-      : 'Không xác định';
+    const totalValueStr = totalValueRaw ? formatCoin(totalValueRaw) : 'Không xác định';
 
     // Nạp chi tiết vật phẩm và sắp xếp theo đơn giá cao nhất (Vật phẩm giá trị nhất đứng đầu)
     const itemsWithInfo = await Promise.all(
