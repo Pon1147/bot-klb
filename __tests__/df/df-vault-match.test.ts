@@ -3,7 +3,11 @@
  */
 
 import { execute as executeVault } from '../../src/features/delta-force/vault.handler.js';
-import { execute as executeMatch, handleMatchSelect } from '../../src/features/delta-force/match.handler.js';
+import {
+  execute as executeMatch,
+  handleMatchSelect,
+  formatMatchDuration,
+} from '../../src/features/delta-force/match.handler.js';
 import * as deltaforceApi from '../../src/services/deltaforce.api.js';
 import * as workshopDataService from '../../src/services/workshop-data.service.js';
 import * as dfCommandRunner from '../../src/utils/df-command.runner.js';
@@ -164,6 +168,47 @@ describe('DF Vault & Match Handlers', () => {
       expect(jsonStr).toContain('Player1');
       expect(jsonStr).toContain('room-123');
       expect(jsonStr).toContain('df_match_select');
+      expect(jsonStr).toContain('20 phút');
+    });
+
+    it('formatMatchDuration hiển thị đúng định dạng phút và giây', () => {
+      // API Delta Force trả match_duration < 60 theo phút (vd: 12 = 12 phút)
+      expect(formatMatchDuration(12)).toBe('12 phút');
+      expect(formatMatchDuration('12')).toBe('12 phút');
+      expect(formatMatchDuration(1)).toBe('1 phút');
+
+      // Giá trị >= 60 tính theo giây (vd: 1200 = 20 phút)
+      expect(formatMatchDuration(1200)).toBe('20 phút');
+      expect(formatMatchDuration(754)).toBe('12 phút 34s');
+      expect(formatMatchDuration(65)).toBe('1 phút 5s');
+
+      // Không hợp lệ hoặc rỗng
+      expect(formatMatchDuration(0)).toBe('N/A');
+      expect(formatMatchDuration(-5)).toBe('N/A');
+      expect(formatMatchDuration(null)).toBe('N/A');
+      expect(formatMatchDuration(undefined)).toBe('N/A');
+    });
+
+    it('hiển thị đúng thời gian thi đấu theo timezone Việt Nam (Asia/Ho_Chi_Minh)', async () => {
+      mockInteraction.options.getString.mockReturnValue('room-utc7');
+
+      (deltaforceApi.getMatchList as jest.Mock).mockResolvedValue({ list: [] });
+      (deltaforceApi.getMatchDetail as jest.Mock).mockResolvedValue({
+        room_id: 'room-utc7',
+        map_id: 8803,
+        // 1793986800 tương đương 2026-11-06T17:40:00Z -> Giờ VN (UTC+7) phải là 00:40 07/11/2026
+        match_time: 1793986800,
+        match_duration: 12,
+        result: 1,
+        members: [{ nickname: 'Player1', is_self: true, carry_out_value: 1000, kill_operator: 1, kill_other: 0 }],
+      });
+
+      await executeMatch(mockInteraction, mockDatabase);
+
+      const replyArgs = mockInteraction.editReply.mock.calls[0][0];
+      const jsonStr = JSON.stringify(replyArgs.components);
+      expect(jsonStr).toContain('12 phút');
+      expect(jsonStr).toContain('00:40 07/11/2026');
     });
 
     it('tra cứu đúng mã trận khi có truyền match_id cụ thể', async () => {

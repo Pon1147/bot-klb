@@ -31,6 +31,22 @@ import type { DfMatchEntry, DfMatchDetailResponse } from '../../types/deltaforce
 export const MATCH_SELECT_PREFIX = 'df_match_select';
 
 /**
+ * Định dạng thời lượng trận đấu:
+ * - Nếu < 60: API Delta Force trả về số phút (vd: 12 = 12 phút)
+ * - Nếu >= 60: giá trị tính theo giây (vd: 720 = 12 phút, 1200 = 20 phút)
+ */
+export function formatMatchDuration(rawDuration: number | string | undefined | null): string {
+  if (rawDuration === undefined || rawDuration === null) return 'N/A';
+  const val = Number(rawDuration);
+  if (isNaN(val) || val <= 0) return 'N/A';
+
+  const totalSecs = val < 60 ? val * 60 : val;
+  const mins = Math.floor(totalSecs / 60);
+  const secs = Math.round(totalSecs % 60);
+  return mins > 0 ? (secs > 0 ? `${mins} phút ${secs}s` : `${mins} phút`) : `${secs} giây`;
+}
+
+/**
  * Xây dựng Container V2 và ActionRow Select Menu cho một trận đấu cụ thể.
  */
 export function buildMatchContainerWithSelect(
@@ -51,22 +67,19 @@ export function buildMatchContainerWithSelect(
 
   const matchTime = detail.match_time
     ? new Date(Number(detail.match_time) * 1000).toLocaleString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        hour12: false,
       })
     : 'Không xác định';
 
   // Thời lượng trận đấu: ưu tiên detail.match_duration, fallback survival_duration
-  const durationSec = detail.match_duration || selfMember?.survival_duration;
-  let durationStr = 'N/A';
-  if (durationSec && Number(durationSec) > 0) {
-    const mins = Math.floor(Number(durationSec) / 60);
-    const secs = Math.round(Number(durationSec) % 60);
-    durationStr = mins > 0 ? `${mins} phút ${secs}s` : `${secs} giây`;
-  }
+  const rawDuration = detail.match_duration ?? selfMember?.survival_duration;
+  const durationStr = formatMatchDuration(rawDuration);
 
   // Tiền loot mang ra
   const carryOutRaw = selfMember?.carry_out_value ?? detail.carry_out_value;
@@ -139,10 +152,12 @@ export function buildMatchContainerWithSelect(
       const map = MAP_NAMES[Number(m.map_id)] ?? `Map #${m.map_id}`;
       const time = m.match_time
         ? new Date(Number(m.match_time) * 1000).toLocaleString('vi-VN', {
+            timeZone: 'Asia/Ho_Chi_Minh',
             day: '2-digit',
             month: '2-digit',
             hour: '2-digit',
             minute: '2-digit',
+            hour12: false,
           })
         : '';
 

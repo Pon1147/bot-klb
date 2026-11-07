@@ -30,11 +30,13 @@ function buildMatchItemSection(match: DfMatchEntry): Record<string, unknown> {
   const operator = resolveOperator(operatorId);
 
   const avatarUrl = operatorIcon || operator.avatarUrl;
-  const time = new Date(Number(match.match_time) * 1000).toLocaleDateString('vi-VN', {
+  const time = new Date(Number(match.match_time) * 1000).toLocaleString('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
     day: '2-digit',
     month: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
   });
   const mapName = MAP_NAMES[Number(match.map_id)] ?? `Map ${match.map_id}`;
   const result = match.result === 1 ? `${EMOJI_WIN} Win` : `${EMOJI_DEFEAT} Defeat`;

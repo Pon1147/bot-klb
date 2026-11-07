@@ -356,10 +356,12 @@ async function handleAutocomplete(
           const map = MAP_NAMES[Number(m.map_id)] ?? `Map #${m.map_id}`;
           const time = m.match_time
             ? new Date(Number(m.match_time) * 1000).toLocaleString('vi-VN', {
+                timeZone: 'Asia/Ho_Chi_Minh',
                 day: '2-digit',
                 month: '2-digit',
                 hour: '2-digit',
                 minute: '2-digit',
+                hour12: false,
               })
             : '';
           const name = `${tag} ${map} (${time})`.slice(0, 100);
