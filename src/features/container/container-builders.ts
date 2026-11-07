@@ -196,8 +196,10 @@ export function buildLivePreviewContainer(
     } as GuildMember,
     guild: {
       name: 'Preview Server',
-      memberCount: 0,
-    } as Guild,
+      memberCount: 120,
+      premiumSubscriptionCount: 14,
+      premiumTier: 2,
+    } as unknown as Guild,
   };
 
   return buildContainer(draft, mockContext);

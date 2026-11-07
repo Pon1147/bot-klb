@@ -18,6 +18,8 @@ function createMockTemplateContext(overrides: Partial<TemplateContext> = {}): Te
     guild: {
       name: 'Test Guild',
       memberCount: 42,
+      premiumSubscriptionCount: 15,
+      premiumTier: 2,
     } as unknown as TemplateContext['guild'],
     ...overrides,
   };
@@ -117,10 +119,59 @@ describe('Template Utils', () => {
         expect(result).toBe('Server: Test Guild');
       });
 
-      it('should resolve {memberCount} variable', () => {
+      it('should resolve {memberCount} and {member_count} variable', () => {
         const context = createMockTemplateContext();
-        const result = resolveTemplate('Số member: {memberCount}', context);
-        expect(result).toBe('Số member: 42');
+        expect(resolveTemplate('Số member: {memberCount}', context)).toBe('Số member: 42');
+        expect(resolveTemplate('Số member: {member_count}', context)).toBe('Số member: 42');
+      });
+
+      it('should resolve {server} alias for {guild}', () => {
+        const context = createMockTemplateContext();
+        expect(resolveTemplate('Server: {server}', context)).toBe('Server: Test Guild');
+      });
+
+      it('should resolve boost variables: {boostCount}, {boost_count}, {boostLevel}, {boost_level}', () => {
+        const context = createMockTemplateContext();
+        expect(resolveTemplate('Boosts: {boostCount} - Level: {boostLevel}', context)).toBe('Boosts: 15 - Level: 2');
+        expect(resolveTemplate('Boosts: {boost_count} - Level: {boost_level}', context)).toBe('Boosts: 15 - Level: 2');
+      });
+
+      it('should fallback boost variables to 0 when undefined on guild', () => {
+        const context = createMockTemplateContext({
+          guild: { name: 'No Boost', memberCount: 10 } as unknown as TemplateContext['guild'],
+        });
+        expect(resolveTemplate('{boost_count} - {boost_level}', context)).toBe('0 - 0');
+      });
+
+      it('should resolve timestamp variables: {timestamp}, {timestamp_r}, {date}', () => {
+        const context = createMockTemplateContext();
+        const res = resolveTemplate('Lúc: {timestamp} ({timestamp_r}) vào ngày {date}', context);
+        expect(res).toMatch(/Lúc: <t:\d+:f> \(<t:\d+:R>\) vào ngày \d+/);
+      });
+
+      it('should resolve user leave message template with {member_count} and {timestamp}', () => {
+        const context = createMockTemplateContext();
+        const template =
+          'Một thành viên vừa kết thúc hành trình tại cộng đồng chúng ta.\n' +
+          '👥 Thành viên hiện tại: {member_count}\n' +
+          '🕒 Thời gian rời server: {timestamp}\n' +
+          'Cảm ơn bạn đã từng đồng hành cùng Crown Zero.';
+        const result = resolveTemplate(template, context);
+        expect(result).toContain('👥 Thành viên hiện tại: 42');
+        expect(result).toMatch(/🕒 Thời gian rời server: <t:\d+:f>/);
+        expect(result).not.toContain('{member_count}');
+        expect(result).not.toContain('{timestamp}');
+      });
+
+      it('should resolve snake_case aliases for member and dates', () => {
+        const context = createMockTemplateContext();
+        const res = resolveTemplate(
+          '{member_name} ({member_tag}) tạo lúc {account_creation_date}, tuổi: {account_age}, join: {server_joining_date}',
+          context,
+        );
+        expect(res).toContain('TestUser (TestUser#1234)');
+        expect(res).not.toContain('{member_name}');
+        expect(res).not.toContain('{account_creation_date}');
       });
 
       it('should leave unknown variables unchanged', () => {
