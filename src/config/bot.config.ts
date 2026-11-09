@@ -77,8 +77,8 @@ export function resolveCommandScope(env: AppEnvironment = currentEnv): 'global' 
     const scope = process.env.COMMAND_SCOPE.toLowerCase();
     if (scope === 'global' || scope === 'guild') return scope;
   }
-  if (process.env.DEV_GUILD_ID) return 'guild';
   if (env === 'product') return 'global';
+  if (process.env.DEV_GUILD_ID) return 'guild';
   return 'guild';
 }
 

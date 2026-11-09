@@ -21,6 +21,29 @@ export const SUPPORTED_BANKS: Record<string, string> = {
   MSB: 'MSB (Hàng Hải)',
   SHB: 'SHB (Sài Gòn - Hà Nội)',
   LPB: 'LPBank (Lộc Phát)',
+  KLB: 'KienlongBank (Kiên Long)',
+};
+
+/**
+ * Mã BIN 6 chữ số chuẩn của các ngân hàng phục vụ API VietQR.
+ */
+export const BANK_BINS: Record<string, string> = {
+  MB: '970422',
+  VCB: '970436',
+  TCB: '970407',
+  ACB: '970416',
+  VPB: '970432',
+  TPB: '970423',
+  ICB: '970415',
+  BIDV: '970418',
+  VIB: '970441',
+  STB: '970403',
+  HDB: '970437',
+  OCB: '970448',
+  MSB: '970426',
+  SHB: '970443',
+  LPB: '970449',
+  KLB: '970452',
 };
 
 export interface VietQrImageOptions {
@@ -47,13 +70,51 @@ export function buildVietQrImageUrl(options: VietQrImageOptions): string {
 
 /**
  * Tải buffer ảnh PNG của mã VietQR từ API.
- * VietQR CDN trả về file SVG nhúng PNG dạng base64, hàm này bóc tách để lấy binary PNG chuẩn.
+ * Ưu tiên gọi POST https://api.vietqr.io/v2/generate (hỗ trợ đầy đủ tài khoản ảo PayOS 17 số)
+ * và fallback sang GET img.vietqr.io.
  */
 export async function fetchVietQrImageBuffer(options: VietQrImageOptions): Promise<Buffer | null> {
+  const rawBank = options.bankId.trim().toUpperCase();
+  const acqId = /^\d{6}$/.test(rawBank) ? rawBank : BANK_BINS[rawBank];
+
+  // 1. Ưu tiên endpoint chính thức POST /v2/generate (tránh lỗi blank matrix của CDN GET đối với tài khoản định danh)
+  if (acqId) {
+    try {
+      const res = await fetch('https://api.vietqr.io/v2/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'BotKLB-Discord/1.6',
+        },
+        body: JSON.stringify({
+          acqId,
+          accountNo: options.accountNo.trim(),
+          accountName: options.accountName.trim(),
+          amount: options.amount,
+          addInfo: options.addInfo.trim(),
+          format: 'text',
+          template: options.template || 'compact2',
+        }),
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (res.ok) {
+        const json = (await res.json()) as { code: string; data?: { qrDataURL?: string } };
+        if (json.code === '00' && json.data?.qrDataURL) {
+          const base64Data = json.data.qrDataURL.replace(/^data:image\/png;base64,/, '');
+          return Buffer.from(base64Data, 'base64');
+        }
+      }
+    } catch {
+      // Fallback sang GET CDN
+    }
+  }
+
+  // 2. Fallback sang CDN GET img.vietqr.io
   const url = buildVietQrImageUrl(options);
   try {
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'BotKLB-Discord/1.4' },
+      headers: { 'User-Agent': 'BotKLB-Discord/1.6' },
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return null;

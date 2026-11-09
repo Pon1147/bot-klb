@@ -127,7 +127,7 @@ export async function execute(
   // Tải ảnh QR nếu có bin và account number
   if (paymentData.bin && paymentData.accountNumber) {
     try {
-      const qrBuffer = await fetchVietQrImageBuffer({
+      let qrBuffer = await fetchVietQrImageBuffer({
         bankId: paymentData.bin,
         accountNo: paymentData.accountNumber,
         accountName: paymentData.accountName,
@@ -135,6 +135,19 @@ export async function execute(
         addInfo: paymentData.description,
         template: 'compact2',
       });
+
+      // Fallback: Nếu VietQR không tải được, sinh ảnh QR trực tiếp từ chuỗi EMVCo của PayOS
+      if (!qrBuffer && paymentData.qrCode) {
+        const qrRes = await fetch(
+          `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(paymentData.qrCode)}`,
+          { signal: AbortSignal.timeout(4000) },
+        ).catch(() => null);
+        if (qrRes && qrRes.ok) {
+          const arrayBuf = await qrRes.arrayBuffer();
+          qrBuffer = Buffer.from(arrayBuf);
+        }
+      }
+
       if (qrBuffer) {
         files.push(new AttachmentBuilder(qrBuffer, { name: 'donate_qr.png' }));
         embed.setImage('attachment://donate_qr.png');
