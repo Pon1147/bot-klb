@@ -103,6 +103,11 @@ export interface VietQrSettings {
   accountName: string | null; // Tên chủ tài khoản
   prefix: string; // Cú pháp tiền tố chuyển khoản (mặc định: 'NAP')
   template: 'compact' | 'compact2' | 'qr_only' | 'print';
+  // ─── Tùy biến Workflow theo từng Guild ───
+  staffRoleId?: string | null; // Role nhân viên/thợ được bấm nút Confirm/Cancel (ngoài Admin)
+  feedbackChannelId?: string | null; // Kênh nhận tin nhắn review 5 sao
+  enableRating?: boolean; // Bật/Tắt hiện 5 nút sao sau khi thanh toán thành công (mặc định: true)
+  thanksMessage?: string | null; // Lời cảm ơn tùy chỉnh của từng Guild sau khi hoàn tất đơn
 }
 
 /**

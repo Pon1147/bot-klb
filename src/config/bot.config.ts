@@ -152,4 +152,9 @@ export const botConfig = {
   botPublicApiUrl: resolvePublicApiUrl(currentEnv),
   // DeltaForceTools Weapon Loadouts API Token
   weaponLoadoutsToken: process.env.WEAPON_LOADOUTS_TOKEN || '',
+  // PayOS Integration for Bot Donations / Buy Me a Coffee
+  payosClientId: process.env.PAYOS_CLIENT_ID || '',
+  payosApiKey: process.env.PAYOS_API_KEY || '',
+  payosChecksumKey: process.env.PAYOS_CHECKSUM_KEY || '',
+  payosWebhookUrl: process.env.PAYOS_WEBHOOK_URL || '',
 };

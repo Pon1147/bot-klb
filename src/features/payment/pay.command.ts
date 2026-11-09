@@ -1,6 +1,7 @@
 import {
   AttachmentBuilder,
   ChatInputCommandInteraction,
+  EmbedBuilder,
   SlashCommandBuilder,
   SlashCommandSubcommandBuilder,
 } from 'discord.js';
@@ -9,10 +10,12 @@ import { getSettingsService, isQrServerEnabled } from '../../services/settings.s
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { buildVietQrContainer, fetchVietQrImageBuffer } from '../../utils/vietqr.utils.js';
 import { sendReply } from '../../utils/reply.utils.js';
+import { createPayment, getUserPayments, getUserRank, getTopBuyers } from './payment.service.js';
+import { buildPaymentActionRow } from './payment-flow.js';
 
 export const data = new SlashCommandBuilder()
   .setName('pay')
-  .setDescription('Tạo yêu cầu thanh toán chuyển khoản VietQR cho khách hàng.')
+  .setDescription('Hệ thống hóa đơn thanh toán VietQR và lịch sử giao dịch.')
   .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
     sub
       .setName('create')
@@ -34,10 +37,26 @@ export const data = new SlashCommandBuilder()
       .addStringOption((opt) =>
         opt
           .setName('memo')
-          .setDescription('Tên dịch vụ hoặc ghi chú đơn hàng (ví dụ: Book 2h, Mua role VIP)')
+          .setDescription('Tên dịch vụ hoặc ghi chú đơn hàng (ví dụ: Mua code, Thuê buff, v.v.)')
           .setMaxLength(100)
           .setRequired(false),
       ),
+  )
+  .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+    sub
+      .setName('history')
+      .setDescription('Xem lịch sử giao dịch thanh toán thành công và thứ hạng cá nhân.')
+      .addUserOption((opt) =>
+        opt
+          .setName('target')
+          .setDescription('Xem lịch sử của thành viên khác (mặc định là chính bạn)')
+          .setRequired(false),
+      ),
+  )
+  .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+    sub
+      .setName('top')
+      .setDescription('Xem bảng xếp hạng Top khách hàng chi tiêu nhiều nhất máy chủ.'),
   );
 
 /** Sinh chuỗi ký tự ngẫu nhiên ngắn để đảm bảo mã giao dịch là duy nhất */
@@ -45,34 +64,16 @@ function generateTxSalt(): string {
   return Math.random().toString(36).substring(2, 6).toUpperCase();
 }
 
-export async function execute(
+/**
+ * Xử lý lệnh /pay create
+ */
+async function handlePayCreate(
   interaction: ChatInputCommandInteraction,
-  _db?: Database.Database,
+  database?: Database.Database,
 ): Promise<void> {
-  const guildId = interaction.guildId;
-  const guild = interaction.guild;
+  const guildId = interaction.guildId!;
+  const guild = interaction.guild!;
 
-  // 1. Guards kiểm tra môi trường & quyền: Báo lỗi riêng tư (Ephemeral) cho người gõ lệnh
-  if (!guildId || !guild) {
-    await sendReply(interaction, {
-      components: buildErrorContainer(
-        'Lệnh này chỉ có thể sử dụng bên trong máy chủ Discord.',
-      ).toJSON(),
-    });
-    return;
-  }
-
-  // Guard bảo mật cấp máy chủ: Máy chủ phải được Bot Owner mở tính năng QR trước đó
-  if (!isQrServerEnabled(guildId)) {
-    await sendReply(interaction, {
-      components: buildErrorContainer(
-        '🔒 Máy chủ này chưa kích hoạt gói tính năng QR Thanh toán tự động.\nVui lòng liên hệ Quản trị viên máy chủ hoặc Chủ sở hữu Bot (Bot Owner) để đăng ký.',
-      ).toJSON(),
-    });
-    return;
-  }
-
-  // Guard cấu hình ngân hàng: Máy chủ phải có thông tin tài khoản VietQR hợp lệ
   const settingsService = getSettingsService();
   const settings = settingsService.get(guildId);
   const vietqr = settings.vietqr;
@@ -86,23 +87,40 @@ export async function execute(
     return;
   }
 
-  // 2. Lấy tham số lệnh
+  const db = database || interaction.client?.database;
+  if (!db) {
+    await sendReply(interaction, {
+      components: buildErrorContainer('⚠️ Không thể kết nối cơ sở dữ liệu.').toJSON(),
+    });
+    return;
+  }
+
   const amount = interaction.options.getInteger('amount', true);
   const customer = interaction.options.getUser('customer');
-  const memo = interaction.options.getString('memo')?.trim() || null;
+  const memo = interaction.options.getString('memo')?.trim() || 'Thanh toán dịch vụ';
 
-  // 3. Phản hồi ban đầu công khai (deferReply) để chuẩn bị hóa đơn gửi vào kênh cho khách xem
   await interaction.deferReply();
 
-  // 4. Sinh mã chuyển khoản chuẩn hóa:
-  // Nếu có khách hàng được chỉ định, dùng đuôi ID khách để nhận diện đúng người chuyển tiền
   const targetUser = customer || interaction.user;
   const userShortId = targetUser.id.slice(-6);
   const salt = generateTxSalt();
   const prefix = vietqr.prefix ? vietqr.prefix.trim().toUpperCase() : 'NAP';
   const transferCode = `${prefix} ${userShortId} ${salt}`;
+  const txId = `TX${Date.now().toString(36).toUpperCase()}${salt}`;
 
-  // 5. Tải buffer ảnh PNG VietQR chuẩn (trích xuất từ API) để đính kèm trực tiếp vào message
+  // Lưu giao dịch vào SQLite database
+  createPayment(db, {
+    id: txId,
+    guild_id: guildId,
+    buyer_id: targetUser.id,
+    seller_id: interaction.user.id,
+    amount,
+    description: memo,
+    status: 'pending',
+    created_at: Date.now(),
+  });
+
+  // Tải buffer ảnh PNG VietQR chuẩn
   const qrBuffer = await fetchVietQrImageBuffer({
     bankId: vietqr.bankId,
     accountNo: vietqr.accountNo,
@@ -133,14 +151,158 @@ export async function execute(
     attachmentName,
   });
 
-  // 6. Gửi hóa đơn công khai vào kênh cho khách hàng quét mã
+  const actionRow = buildPaymentActionRow(txId, targetUser.id);
+
   const tagNotification = customer
-    ? `💳 **Yêu cầu thanh toán** gửi tới <@${customer.id}> từ <@${interaction.user.id}>:`
-    : undefined;
+    ? `💳 **Yêu cầu thanh toán [${txId}]** gửi tới <@${customer.id}> từ <@${interaction.user.id}>:`
+    : `💳 **Yêu cầu thanh toán [${txId}]**:`;
 
   await interaction.editReply({
     content: tagNotification,
-    components: container.toJSON() as any,
+    components: [...container.toJSON(), actionRow.toJSON() as any],
     files,
   });
+}
+
+/**
+ * Xử lý lệnh /pay history
+ */
+async function handlePayHistory(
+  interaction: ChatInputCommandInteraction,
+  database?: Database.Database,
+): Promise<void> {
+  const guildId = interaction.guildId!;
+  const target = interaction.options.getUser('target') || interaction.user;
+
+  const db = database || interaction.client?.database;
+  if (!db) {
+    await sendReply(interaction, {
+      components: buildErrorContainer('⚠️ Không thể kết nối cơ sở dữ liệu.').toJSON(),
+    });
+    return;
+  }
+
+  const payments = getUserPayments(db, guildId, target.id, 'confirmed');
+  const userRankInfo = getUserRank(db, guildId, target.id);
+
+  const totalSpent = payments.reduce((acc, p) => acc + p.amount, 0);
+  const totalTx = payments.length;
+
+  const embed = new EmbedBuilder()
+    .setTitle(`📜 Lịch sử thanh toán: ${target.displayName || target.username}`)
+    .setColor(0x3498db)
+    .setThumbnail(target.displayAvatarURL())
+    .addFields(
+      {
+        name: 'Tổng chi tiêu',
+        value: `**${totalSpent.toLocaleString('vi-VN')} VNĐ**`,
+        inline: true,
+      },
+      {
+        name: 'Đơn thành công',
+        value: `**${totalTx}** đơn`,
+        inline: true,
+      },
+      {
+        name: 'Thứ hạng máy chủ',
+        value: userRankInfo ? `Top **#${userRankInfo.rank}**` : 'Chưa xếp hạng',
+        inline: true,
+      },
+    )
+    .setTimestamp();
+
+  if (payments.length === 0) {
+    embed.setDescription('Chưa có giao dịch thanh toán thành công nào được ghi nhận.');
+  } else {
+    const recent = payments.slice(0, 5);
+    const listStr = recent
+      .map(
+        (p, idx) =>
+          `**${idx + 1}.** \`${p.id}\` — **${p.amount.toLocaleString('vi-VN')} đ** (${p.description}) — <t:${Math.floor(p.created_at / 1000)}:d>`,
+      )
+      .join('\n');
+
+    embed.setDescription(`### 5 Giao dịch gần nhất:\n${listStr}`);
+  }
+
+  await interaction.reply({ embeds: [embed] });
+}
+
+/**
+ * Xử lý lệnh /pay top
+ */
+async function handlePayTop(
+  interaction: ChatInputCommandInteraction,
+  database?: Database.Database,
+): Promise<void> {
+  const guildId = interaction.guildId!;
+
+  const db = database || interaction.client?.database;
+  if (!db) {
+    await sendReply(interaction, {
+      components: buildErrorContainer('⚠️ Không thể kết nối cơ sở dữ liệu.').toJSON(),
+    });
+    return;
+  }
+
+  const topBuyers = getTopBuyers(db, guildId, 10);
+
+  const embed = new EmbedBuilder()
+    .setTitle(`🏆 Bảng Xếp Hạng Chi Tiêu Máy Chủ`)
+    .setColor(0xf1c40f)
+    .setDescription(
+      topBuyers.length === 0
+        ? 'Chưa có dữ liệu thanh toán thành công trong máy chủ này.'
+        : topBuyers
+            .map((b, idx) => {
+              const medals = ['🥇', '🥈', '🥉'];
+              const prefix = idx < 3 ? medals[idx] : `**#${idx + 1}**`;
+              return `${prefix} <@${b.buyerId}>: **${b.totalAmount.toLocaleString('vi-VN')} VNĐ** (${b.txCount} đơn)`;
+            })
+            .join('\n\n'),
+    )
+    .setFooter({ text: interaction.guild?.name || 'Máy chủ' })
+    .setTimestamp();
+
+  await interaction.reply({ embeds: [embed] });
+}
+
+export async function execute(
+  interaction: ChatInputCommandInteraction,
+  db?: Database.Database,
+): Promise<void> {
+  const guildId = interaction.guildId;
+  const guild = interaction.guild;
+
+  // 1. Guards kiểm tra môi trường: Báo lỗi nếu ngoài máy chủ Discord
+  if (!guildId || !guild) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        'Lệnh này chỉ có thể sử dụng bên trong máy chủ Discord.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  // Guard bảo mật cấp máy chủ: Máy chủ phải được Bot Owner mở tính năng QR trước đó
+  if (!isQrServerEnabled(guildId)) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '🔒 Máy chủ này chưa kích hoạt gói tính năng QR Thanh toán tự động.\nVui lòng liên hệ Quản trị viên máy chủ hoặc Chủ sở hữu Bot (Bot Owner) để đăng ký.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  const subcommand =
+    typeof interaction.options?.getSubcommand === 'function'
+      ? interaction.options.getSubcommand()
+      : 'create';
+  if (subcommand === 'create') {
+    await handlePayCreate(interaction, db);
+  } else if (subcommand === 'history') {
+    await handlePayHistory(interaction, db);
+  } else if (subcommand === 'top') {
+    await handlePayTop(interaction, db);
+  }
 }

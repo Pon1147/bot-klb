@@ -10,6 +10,7 @@ import {
 } from '../config/permissions.js';
 import { initializeDatabase } from '../database/welcome.database.js';
 import { initializeSettingsTable } from '../database/guild.settings.db.js';
+import { initializePaymentTables } from '../database/payment.db.js';
 import { initializeDfTokensTable } from '../database/df.token.db.js';
 import {
   initializeClaimSessionsTable,
@@ -74,7 +75,8 @@ export async function bootstrap(): Promise<Client> {
   // Step 2: Initialize guild_settings table
   logger.info('Initializing guild settings table...');
   initializeSettingsTable(database);
-  logger.info('Guild settings table ready');
+  initializePaymentTables(database);
+  logger.info('Guild settings & payment tables ready');
 
   // Step 2b: Initialize DeltaForce tokens table (legacy, keep for migration)
   logger.info('Initializing DeltaForce tokens table...');

@@ -528,8 +528,8 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
   // ─── 7. PHASE 4: Command Path Policy Mapping ──────────────────────
   describe('PHASE 4 — Command Path Policy Mapping', () => {
-    it('COMMAND_PATH_POLICIES chứa đúng 50 canonical command paths', () => {
-      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(50);
+    it('COMMAND_PATH_POLICIES chứa đúng 54 canonical command paths', () => {
+      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(54);
     });
 
     it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds, config.bot.announce, config.bot.setannouncechannel, config.qr-server.* và df.autopost.*', () => {
@@ -568,6 +568,7 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(resolveCommandPolicy('config.container.reset')).toBe(Policy.MANAGE_CONFIG);
 
       expect(resolveCommandPolicy('config.vietqr.set')).toBe(Policy.MANAGE_CONFIG);
+      expect(resolveCommandPolicy('config.vietqr.workflow')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.vietqr.status')).toBe(Policy.MANAGE_CONFIG);
     });
 
@@ -601,8 +602,11 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(resolveCommandPolicy('team.find')).toBe(Policy.TEAM_ACCESS);
     });
 
-    it('PAY_ACCESS policy mapping cho pay.create', () => {
+    it('PAY_ACCESS policy mapping cho pay.create, pay.history, pay.top và donate', () => {
       expect(resolveCommandPolicy('pay.create')).toBe(Policy.PAY_ACCESS);
+      expect(resolveCommandPolicy('pay.history')).toBe(Policy.PAY_ACCESS);
+      expect(resolveCommandPolicy('pay.top')).toBe(Policy.PAY_ACCESS);
+      expect(resolveCommandPolicy('donate')).toBe(Policy.PAY_ACCESS);
     });
 
     it('trả về null đối với commandPath không xác định hoặc legacy commands', () => {

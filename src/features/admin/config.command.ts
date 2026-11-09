@@ -343,6 +343,36 @@ function buildVietQrGroup(
     )
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
+        .setName('workflow')
+        .setDescription('Cấu hình quy trình duyệt bill, nhận feedback 5 sao và lời cảm ơn.')
+        .addRoleOption((opt) =>
+          opt
+            .setName('staff_role')
+            .setDescription('Role nhân viên/thợ được quyền duyệt/hủy hóa đơn (ngoài Admin)')
+            .setRequired(false),
+        )
+        .addChannelOption((opt) =>
+          opt
+            .setName('feedback_channel')
+            .setDescription('Kênh nhận thông báo review đánh giá 5 sao từ khách')
+            .setRequired(false),
+        )
+        .addBooleanOption((opt) =>
+          opt
+            .setName('enable_rating')
+            .setDescription('Bật hoặc tắt nút bấm đánh giá 1-5 sao sau khi thanh toán')
+            .setRequired(false),
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName('thanks_message')
+            .setDescription('Lời cảm ơn tùy chỉnh của máy chủ sau khi duyệt đơn')
+            .setMaxLength(250)
+            .setRequired(false),
+        ),
+    )
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
         .setName('status')
         .setDescription('Xem thông tin tài khoản nhận tiền hiện tại của máy chủ.'),
     );
@@ -551,6 +581,8 @@ export async function execute(
     case 'vietqr': {
       if (subcommand === 'set') {
         await handleVietQrSet(interaction, db);
+      } else if (subcommand === 'workflow') {
+        await handleVietQrWorkflow(interaction, db);
       } else if (subcommand === 'status') {
         await handleVietQrStatus(interaction, db);
       }
@@ -1020,6 +1052,71 @@ export async function handleQrServerStatus(
 
 // ─── VietQR Subcommand Handlers (Admin with Premium Guild Check) ───
 
+/** Subcommand `vietqr workflow` — Cấu hình quy trình duyệt bill, kênh feedback và đánh giá 5 sao */
+export async function handleVietQrWorkflow(
+  interaction: ChatInputCommandInteraction,
+  _db?: Database.Database,
+): Promise<void> {
+  const guildId = interaction.guildId;
+  if (!guildId) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        'Lệnh này chỉ có thể sử dụng trong máy chủ Discord.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  // Guard: Server phải được Bot Owner mở tính năng QR trước đó
+  if (!isQrServerEnabled(guildId)) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '🔒 Tính năng QR Thanh toán tự động chưa được mở cho máy chủ này.\nVui lòng liên hệ Chủ sở hữu Bot (Bot Owner) để đăng ký kích hoạt gói QR Premium.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  const staffRole = interaction.options.getRole('staff_role');
+  const feedbackChannel = interaction.options.getChannel('feedback_channel');
+  const enableRating = interaction.options.getBoolean('enable_rating');
+  const thanksMessage = interaction.options.getString('thanks_message');
+
+  const settingsService = getSettingsService();
+  const currentSettings = settingsService.get(guildId);
+  const currentVietQr = currentSettings.vietqr || {
+    enabled: true,
+    bankId: null,
+    accountNo: null,
+    accountName: null,
+    prefix: 'NAP',
+    template: 'compact2' as const,
+  };
+
+  const updatedVietQr = {
+    ...currentVietQr,
+    ...(staffRole ? { staffRoleId: staffRole.id } : {}),
+    ...(feedbackChannel ? { feedbackChannelId: feedbackChannel.id } : {}),
+    ...(enableRating !== null ? { enableRating } : {}),
+    ...(thanksMessage ? { thanksMessage } : {}),
+  };
+
+  settingsService.update(guildId, { vietqr: updatedVietQr });
+
+  const container = buildInfoContainer(
+    `### ⚙️ Quy Trình Workflow VietQR Đã Được Cập Nhật\n\n` +
+      `• **Role nhân viên (Staff)**: ${updatedVietQr.staffRoleId ? `<@&${updatedVietQr.staffRoleId}>` : '*Chưa thiết lập (Chỉ Admin)*'}\n` +
+      `• **Kênh nhận Feedback**: ${updatedVietQr.feedbackChannelId ? `<#${updatedVietQr.feedbackChannelId}>` : '*Chưa thiết lập*'}\n` +
+      `• **Đánh giá 1-5 sao**: ${updatedVietQr.enableRating !== false ? '🟢 Bật (Hiện nút sao)' : '🔴 Tắt'}\n` +
+      `• **Lời cảm ơn**: *"${updatedVietQr.thanksMessage ?? 'Mặc định'}"*\n\n` +
+      `> *Mọi nhân viên có role trên sẽ được phép bấm nút Confirm/Cancel để duyệt đơn hàng cho khách.*`,
+  );
+
+  await sendReply(interaction, {
+    components: container.toJSON(),
+  });
+}
+
 /** Subcommand `vietqr set` — Cài đặt thông tin tài khoản ngân hàng nhận tiền */
 export async function handleVietQrSet(
   interaction: ChatInputCommandInteraction,
@@ -1126,7 +1223,12 @@ export async function handleVietQrStatus(
       `• **Số tài khoản**: \`${vietqr.accountNo}\`\n` +
       `• **Chủ tài khoản**: **${vietqr.accountName ?? 'Chưa đặt'}**\n` +
       `• **Tiền tố nội dung**: \`${vietqr.prefix ?? 'NAP'}\`\n` +
-      `• **Trạng thái**: ${vietqr.enabled ? '🟢 Đang hoạt động' : '🔴 Tạm dừng'}`,
+      `• **Trạng thái**: ${vietqr.enabled ? '🟢 Đang hoạt động' : '🔴 Tạm dừng'}\n\n` +
+      `**⚙️ Workflow & Quy trình:**\n` +
+      `• **Role nhân viên (Staff)**: ${vietqr.staffRoleId ? `<@&${vietqr.staffRoleId}>` : '*Chưa thiết lập (Chỉ Admin)*'}\n` +
+      `• **Kênh nhận Feedback**: ${vietqr.feedbackChannelId ? `<#${vietqr.feedbackChannelId}>` : '*Chưa thiết lập*'}\n` +
+      `• **Đánh giá 1-5 sao**: ${vietqr.enableRating !== false ? '🟢 Bật' : '🔴 Tắt'}\n` +
+      `• **Lời cảm ơn**: *"${vietqr.thanksMessage ?? 'Mặc định'}"*`,
   );
 
   await sendReply(interaction, {

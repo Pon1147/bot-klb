@@ -745,12 +745,12 @@ describe('/config command — Execute Dispatch', () => {
     });
 
     describe('group: vietqr', () => {
-      it('SlashCommandBuilder nên có nhóm vietqr với subcommands set và status', () => {
+      it('SlashCommandBuilder nên có nhóm vietqr với subcommands set, workflow và status', () => {
         const cmdJson = data.toJSON();
         const qrGroup = cmdJson.options?.find((opt: any) => opt.name === 'vietqr') as any;
         expect(qrGroup).toBeDefined();
         const subNames = qrGroup.options?.map((opt: any) => opt.name);
-        expect(subNames).toEqual(['set', 'status']);
+        expect(subNames).toEqual(['set', 'workflow', 'status']);
       });
 
       it('vietqr set: từ chối khi server chưa được Bot Owner mở tính năng QR', async () => {
@@ -841,6 +841,51 @@ describe('/config command — Execute Dispatch', () => {
         const jsonStr = JSON.stringify(replyPayload);
         expect(jsonStr).toContain('Cấu Hình VietQR Máy Chủ');
         expect(jsonStr).toContain('MBBank (Quân Đội)');
+      });
+
+      it('vietqr workflow: cấu hình workflow nhân viên và feedback thành công', async () => {
+        mockIsQrServerEnabled.mockReturnValueOnce(true);
+        mockSettingsService.get.mockReturnValueOnce({
+          vietqr: {
+            enabled: true,
+            bankId: 'MB',
+            accountNo: '0987654321',
+            accountName: 'NGUYEN VAN A',
+            prefix: 'NAP',
+            template: 'compact2',
+          },
+        });
+
+        const interaction = createMockInteraction({
+          guildId: 'guild-authorized',
+          options: {
+            getSubcommandGroup: jest.fn().mockReturnValue('vietqr'),
+            getSubcommand: jest.fn().mockReturnValue('workflow'),
+            getRole: jest.fn().mockReturnValue({ id: 'staff-role-999' }),
+            getChannel: jest.fn().mockReturnValue({ id: 'feedback-ch-888' }),
+            getBoolean: jest.fn().mockReturnValue(true),
+            getString: jest.fn().mockReturnValue('Cảm ơn bạn yêu quý!'),
+          },
+        });
+
+        await execute(interaction);
+
+        expect(mockSettingsService.update).toHaveBeenCalledWith(
+          'guild-authorized',
+          expect.objectContaining({
+            vietqr: expect.objectContaining({
+              staffRoleId: 'staff-role-999',
+              feedbackChannelId: 'feedback-ch-888',
+              enableRating: true,
+              thanksMessage: 'Cảm ơn bạn yêu quý!',
+            }),
+          }),
+        );
+
+        const replyPayload = interaction.reply.mock.calls[0][0];
+        const jsonStr = JSON.stringify(replyPayload);
+        expect(jsonStr).toContain('Quy Trình Workflow VietQR Đã Được Cập Nhật');
+        expect(jsonStr).toContain('staff-role-999');
       });
     });
   });

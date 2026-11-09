@@ -81,6 +81,10 @@ export const defaultGuildSettings: GuildSettings = {
     accountName: null,
     prefix: 'NAP',
     template: 'compact2',
+    staffRoleId: null,
+    feedbackChannelId: null,
+    enableRating: true,
+    thanksMessage: null,
   },
 };
 

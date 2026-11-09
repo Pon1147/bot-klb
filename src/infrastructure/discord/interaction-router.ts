@@ -35,6 +35,16 @@ import {
 } from '../../features/delta-force/index.js';
 import { handleMarketAutocomplete } from '../../features/delta-force/market.handler.js';
 import { handleHelpSelect } from '../../features/delta-force/help.handler.js';
+import {
+  isPaymentButton,
+  isPaymentModal,
+  isFeedbackRateButton,
+  isFeedbackModal,
+  handlePaymentButton,
+  handlePaymentModal,
+  handleFeedbackRateButton,
+  handleFeedbackModal,
+} from '../../features/payment/payment-flow.js';
 import { hasPolicy, resolveCommandPolicy } from '../../config/permissions.js';
 import { getCommandPath } from '../../utils/command-path.utils.js';
 import { TTLStore, ExpiryEntry } from '../../utils/ttl-store.js';
@@ -145,6 +155,18 @@ async function handleButton(interaction: ButtonInteraction): Promise<void> {
 
   // DF Help tab switch buttons
   if ((await handleHelpButton(interaction)).handled) return;
+
+  // Payment VietQR Confirm / Cancel buttons
+  if (isPaymentButton(interaction.customId)) {
+    await handlePaymentButton(interaction);
+    return;
+  }
+
+  // Payment Feedback Rating buttons (1-5 ⭐)
+  if (isFeedbackRateButton(interaction.customId)) {
+    await handleFeedbackRateButton(interaction);
+    return;
+  }
 }
 
 /**
@@ -175,6 +197,18 @@ async function handleStringSelectMenu(
 async function handleModalSubmit(interaction: ModalSubmitInteraction): Promise<void> {
   if (interaction.customId.startsWith(ContainerModalPrefix)) {
     await handleContainerEditorModalSubmit(interaction);
+    return;
+  }
+
+  // Payment Confirm / Cancel modal
+  if (isPaymentModal(interaction.customId)) {
+    await handlePaymentModal(interaction);
+    return;
+  }
+
+  // Payment Feedback modal
+  if (isFeedbackModal(interaction.customId)) {
+    await handleFeedbackModal(interaction);
     return;
   }
 }

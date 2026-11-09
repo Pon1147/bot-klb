@@ -14,6 +14,11 @@ import { Client } from 'discord.js';
 import { botConfig } from '../../config/bot.config.js';
 import { BOT_VERSION, EXTENSION_VERSION } from '../../config/version.js';
 import { handleClaim } from '../../services/df-claim-handler.js';
+import { verifyPayosWebhook, PayosWebhookPayload } from '../../services/payos.service.js';
+import {
+  getDonationByOrderCode,
+  updateDonationStatus,
+} from '../../features/payment/payment.service.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('HttpServer');
@@ -250,6 +255,99 @@ export function createRequestHandler(client: Client): http.RequestListener {
             error: error instanceof Error ? error.message : 'Invalid request',
           }),
         );
+      }
+      return;
+    }
+
+    // ─── Trang Cảm ơn khi Browser được chuyển hướng từ PayOS (returnUrl) ──
+    if (
+      req.method === 'GET' &&
+      (pathname === '/webhook/payment' || pathname === '/webhook/payos')
+    ) {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(`<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thanh Toán Thành Công</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0f172a; color: #f8fafc; text-align: center; }
+    .card { background: #1e293b; padding: 2.5rem; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 420px; }
+    h2 { color: #38bdf8; margin-top: 0; }
+    p { color: #94a3b8; line-height: 1.6; }
+    a { display: inline-block; margin-top: 1.5rem; background: #3b82f6; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>☕ Cảm Ơn Bạn Đã Ủng Hộ!</h2>
+    <p>Giao dịch qua PayOS của bạn đã hoàn tất và được ghi nhận.<br>Bạn có thể đóng tab này để quay lại Discord.</p>
+    <a href="https://discord.com/app">Quay lại Discord</a>
+  </div>
+</body>
+</html>`);
+      return;
+    }
+
+    // ─── Webhook Thanh toán / Donate từ PayOS ────────────────────────
+    if (
+      req.method === 'POST' &&
+      (pathname === '/webhook/payment' || pathname === '/webhook/payos')
+    ) {
+      try {
+        const body = (await readJsonBody(req)) as Record<string, unknown>;
+
+        // 1. PayOS Webhook URL Verification handshake (khi người dùng bấm 'Xác nhận Webhook' trên Dashboard PayOS)
+        if (body && typeof body.webhookUrl === 'string') {
+          logger.info(`[PayOS] Nhận handshake xác nhận webhookUrl: ${body.webhookUrl}`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, message: 'Webhook URL verified successfully' }));
+          return;
+        }
+
+        // 2. Xác thực Webhook thanh toán chính thức
+        const payload = body as unknown as PayosWebhookPayload;
+        if (!payload || !payload.data || !payload.signature) {
+          logger.warn('[PayOS] Webhook payload không đúng định dạng (thiếu data hoặc signature)');
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'Malformed webhook payload' }));
+          return;
+        }
+
+        const isValid = verifyPayosWebhook(payload);
+        if (!isValid) {
+          logger.warn('[PayOS] Chữ ký Webhook không hợp lệ! (Invalid signature)');
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'Invalid signature' }));
+          return;
+        }
+
+        const webhookData = payload.data;
+        const orderCode = Number(webhookData.orderCode);
+
+        logger.info(
+          `[PayOS] Nhận thông báo thanh toán hợp lệ: Mã #${orderCode}, Số tiền: ${webhookData.amount} đ`,
+        );
+
+        if (client.database && Number.isInteger(orderCode)) {
+          const donation = getDonationByOrderCode(client.database, orderCode);
+          if (donation) {
+            updateDonationStatus(client.database, orderCode, 'paid');
+            logger.info(
+              `[PayOS] Đã xác nhận quyên góp thành công cho user: ${donation.user_tag} (${donation.user_id}) - ${donation.amount} VNĐ`,
+            );
+          }
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, code: '00', desc: 'success' }));
+      } catch (error) {
+        logger.error('Lỗi khi xử lý PayOS webhook:', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Internal server error' }));
       }
       return;
     }
