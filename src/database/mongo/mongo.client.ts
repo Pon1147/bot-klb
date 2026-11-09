@@ -39,7 +39,11 @@ export async function connectMongo(uri?: string, dbName?: string): Promise<Db | 
 
     // Ping kiem tra ket noi
     await db.command({ ping: 1 });
-    logger.info(`✓ Ket noi MongoDB thanh cong den database: "${db.databaseName}"`);
+    if (process.env.ENVIRONMENT === 'product') {
+      logger.info('✓ Ket noi MongoDB thanh cong.');
+    } else {
+      logger.info(`✓ Ket noi MongoDB thanh cong den database: "${db.databaseName}"`);
+    }
 
     return db;
   } catch (error) {
