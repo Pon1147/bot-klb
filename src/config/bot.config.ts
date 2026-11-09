@@ -34,7 +34,13 @@ export function isDevGuild(guildId?: string | null): boolean {
  * Hỗ trợ các giá trị: 'dev' | 'stage' | 'product' (mặc định: 'dev').
  */
 export function resolveEnvironment(envValue?: string): AppEnvironment {
-  const raw = (envValue || process.env.ENVIRONMENT || process.env.NODE_ENV || 'dev')
+  const raw = (
+    envValue ||
+    process.env.ENVIRONMENT ||
+    process.env.ENVIROMENT ||
+    process.env.NODE_ENV ||
+    'dev'
+  )
     .toLowerCase()
     .trim();
   if (raw === 'product' || raw === 'production' || raw === 'prod') {
