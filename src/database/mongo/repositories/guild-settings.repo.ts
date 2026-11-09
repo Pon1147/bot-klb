@@ -80,3 +80,20 @@ export async function loadAllGuildSettingsFromMongo(): Promise<Map<string, Guild
 
   return map;
 }
+
+/**
+ * Xoa settings cua 1 guild khoi MongoDB khi bot roi guild.
+ */
+export async function deleteGuildSettingsFromMongo(guildId: string): Promise<void> {
+  if (!isMongoConnected()) return;
+  const db = getMongoDb();
+  if (!db) return;
+
+  try {
+    await db
+      .collection<GuildSettingsDocument>(MONGO_COLLECTIONS.GUILD_SETTINGS)
+      .deleteOne({ _id: guildId });
+  } catch (error) {
+    logger.error(`Loi khi xoa guild settings cho guild ${guildId} khoi MongoDB:`, { error });
+  }
+}

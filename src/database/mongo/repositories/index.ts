@@ -2,6 +2,7 @@ export {
   getGuildSettingsFromMongo,
   saveGuildSettingsToMongo,
   loadAllGuildSettingsFromMongo,
+  deleteGuildSettingsFromMongo,
 } from './guild-settings.repo.js';
 
 export {

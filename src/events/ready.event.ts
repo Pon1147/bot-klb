@@ -1,8 +1,41 @@
 import { Client, Events } from 'discord.js';
 import { createLogger } from '../utils/logger.js';
 import { botConfig } from '../config/bot.config.js';
+import { getSettingsService } from '../services/settings.service.js';
 
 const logger = createLogger('Ready');
+
+/**
+ * Dọn dẹp các guild mồ côi (guilds trong database nhưng bot không còn tham gia).
+ */
+export function pruneOrphanGuilds(client: Client): number {
+  if (!client.database || !client.guilds?.cache) return 0;
+  const activeGuildIds = new Set(client.guilds.cache.keys());
+  if (activeGuildIds.size === 0) return 0;
+
+  try {
+    const rows = client.database
+      .prepare('SELECT DISTINCT guild_id FROM guild_settings')
+      .all() as Array<{ guild_id: string }>;
+
+    const orphans = rows.filter((r) => !activeGuildIds.has(r.guild_id)).map((r) => r.guild_id);
+    if (orphans.length === 0) return 0;
+
+    const settingsService = getSettingsService();
+    for (const orphanId of orphans) {
+      settingsService.delete(orphanId);
+    }
+    logger.info(
+      `✓ [Cleanup] Đã dọn dẹp ${orphans.length} máy chủ mồ côi (bot không còn tham gia) khỏi database.`,
+    );
+    return orphans.length;
+  } catch (err) {
+    logger.warn('Không thể dọn dẹp guild mồ côi lúc khởi động:', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return 0;
+  }
+}
 
 /**
  * Handle event ClientReady (`ready`):
@@ -49,6 +82,12 @@ export async function execute(client: Client): Promise<void> {
       `✓ [Isolation] ${productCount} Product server(s) safely isolated and ignored in this Dev session.`,
     );
   }
+
+  // Tự động dọn dẹp các guild mồ côi không còn kết nối với bot
+  if (process.env.NODE_ENV !== 'test') {
+    pruneOrphanGuilds(client);
+  }
+
   logger.divider();
 }
 

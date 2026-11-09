@@ -6,7 +6,8 @@
  */
 
 import { Client, Collection, Events } from 'discord.js';
-import { execute, default as readyEvent } from '../../src/events/ready.event.js';
+import { execute, pruneOrphanGuilds, default as readyEvent } from '../../src/events/ready.event.js';
+import * as settingsModule from '../../src/services/settings.service.js';
 
 describe('events/ready.event', () => {
   it('should export correct event name and once=true', () => {
@@ -50,5 +51,48 @@ describe('events/ready.event', () => {
     } as unknown as Client;
 
     await expect(execute(mockClient)).resolves.not.toThrow();
+  });
+
+  describe('pruneOrphanGuilds', () => {
+    it('phải xóa các guild có trong database nhưng không còn trong client.guilds.cache', () => {
+      const mockDelete = jest.fn();
+      jest.spyOn(settingsModule, 'getSettingsService').mockReturnValue({
+        delete: mockDelete,
+      } as any);
+
+      const mockGuilds = new Collection<string, any>();
+      mockGuilds.set('guild-active', { id: 'guild-active' });
+
+      const mockDatabase = {
+        prepare: jest.fn().mockReturnValue({
+          all: jest.fn().mockReturnValue([
+            { guild_id: 'guild-active' },
+            { guild_id: 'guild-orphan-1' },
+            { guild_id: 'guild-orphan-2' },
+          ]),
+        }),
+      };
+
+      const mockClient = {
+        guilds: { cache: mockGuilds },
+        database: mockDatabase,
+      } as any;
+
+      const pruned = pruneOrphanGuilds(mockClient);
+
+      expect(pruned).toBe(2);
+      expect(mockDelete).toHaveBeenCalledWith('guild-orphan-1');
+      expect(mockDelete).toHaveBeenCalledWith('guild-orphan-2');
+      expect(mockDelete).not.toHaveBeenCalledWith('guild-active');
+    });
+
+    it('không làm gì nếu client.guilds.cache rỗng', () => {
+      const mockClient = {
+        guilds: { cache: new Collection() },
+        database: {},
+      } as any;
+
+      expect(pruneOrphanGuilds(mockClient)).toBe(0);
+    });
   });
 });

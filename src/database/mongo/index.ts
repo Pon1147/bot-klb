@@ -20,6 +20,7 @@ export {
   getGuildSettingsFromMongo,
   saveGuildSettingsToMongo,
   loadAllGuildSettingsFromMongo,
+  deleteGuildSettingsFromMongo,
   getAccountBindingFromMongo,
   getAccountBindingByOpenidFromMongo,
   upsertAccountBindingToMongo,

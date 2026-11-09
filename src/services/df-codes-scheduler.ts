@@ -167,10 +167,18 @@ export function startDfCodesScheduler(client: Client, database: Database.Databas
     .prepare('SELECT DISTINCT guild_id FROM guild_settings ORDER BY guild_id ASC')
     .all() as Array<{ guild_id: string }>;
 
-  logger.info(`[init] Found ${guildIds.length} guild(s) in database`);
+  const activeCount = client.guilds?.cache ? client.guilds.cache.size : guildIds.length;
+  logger.info(
+    `[init] Found ${guildIds.length} guild(s) in database (${activeCount} active in client)`,
+  );
 
   let scheduledCount = 0;
   for (const { guild_id } of guildIds) {
+    // Bỏ qua guild bot không còn tham gia (tránh lỗi fetch channel và dư thừa cron)
+    if (client.guilds?.cache && !client.guilds.cache.has(guild_id)) {
+      continue;
+    }
+
     // Khi chạy ở môi trường DEV (local VSCode), chỉ lên lịch gửi codes cho server DEV, không chạm vào server Product
     if (botConfig.isDev && process.env.NODE_ENV !== 'test' && guild_id !== botConfig.devGuildId) {
       continue;

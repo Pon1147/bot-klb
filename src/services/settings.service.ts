@@ -15,9 +15,13 @@ import {
 import {
   saveGuildSettingsToMongo,
   loadAllGuildSettingsFromMongo,
+  deleteGuildSettingsFromMongo,
   isMongoConnected,
 } from '../database/mongo/index.js';
 import { buildContainer, BuildContainerResult } from '../utils/container.utils.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('SettingsService');
 
 /**
  * DeepPartial - làm optional tất cả cấp độ nested.
@@ -144,6 +148,25 @@ export class SettingsService {
    */
   invalidate(guildId: string): void {
     this.cache.delete(guildId);
+  }
+
+  /**
+   * Xóa cấu hình của guild khỏi cache bộ nhớ, SQLite và MongoDB (dùng khi bot rời guild).
+   */
+  delete(guildId: string): void {
+    this.cache.delete(guildId);
+    try {
+      this.database.prepare('DELETE FROM guild_settings WHERE guild_id = ?').run(guildId);
+    } catch (err) {
+      logger.error(`[SettingsService] Lỗi khi xóa guild settings trong SQLite (${guildId}):`, {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+    deleteGuildSettingsFromMongo(guildId).catch((err: unknown) => {
+      logger.error(`[SettingsService] Lỗi khi xóa guild settings trong Mongo (${guildId}):`, {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
   }
 
   /**
