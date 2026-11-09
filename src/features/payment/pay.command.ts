@@ -2,12 +2,12 @@ import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,
   SlashCommandSubcommandBuilder,
-  MessageFlags,
 } from 'discord.js';
 import Database from 'better-sqlite3';
 import { getSettingsService, isQrServerEnabled } from '../../services/settings.service.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { buildVietQrContainer } from '../../utils/vietqr.utils.js';
+import { sendReply } from '../../utils/reply.utils.js';
 
 export const data = new SlashCommandBuilder()
   .setName('pay')
@@ -46,22 +46,20 @@ export async function execute(
   const guild = interaction.guild;
 
   if (!guildId || !guild) {
-    await interaction.reply({
+    await sendReply(interaction, {
       components: buildErrorContainer(
         'Lệnh này chỉ có thể sử dụng bên trong máy chủ Discord.',
       ).toJSON(),
-      flags: MessageFlags.Ephemeral,
     });
     return;
   }
 
   // 1. Guard bảo mật cấp máy chủ: Máy chủ phải được Bot Owner mở tính năng QR trước đó
   if (!isQrServerEnabled(guildId)) {
-    await interaction.reply({
+    await sendReply(interaction, {
       components: buildErrorContainer(
         '🔒 Máy chủ này chưa kích hoạt gói tính năng QR Thanh toán tự động.\nVui lòng liên hệ Quản trị viên máy chủ hoặc Chủ sở hữu Bot (Bot Owner) để đăng ký.',
       ).toJSON(),
-      flags: MessageFlags.Ephemeral,
     });
     return;
   }
@@ -72,11 +70,10 @@ export async function execute(
   const vietqr = settings.vietqr;
 
   if (!vietqr || !vietqr.enabled || !vietqr.bankId || !vietqr.accountNo || !vietqr.accountName) {
-    await interaction.reply({
+    await sendReply(interaction, {
       components: buildErrorContainer(
         '⚠️ Máy chủ chưa thiết lập thông tin tài khoản ngân hàng nhận tiền.\nQuản trị viên vui lòng chạy lệnh `/config vietqr set` để hoàn tất cấu hình trước.',
       ).toJSON(),
-      flags: MessageFlags.Ephemeral,
     });
     return;
   }
@@ -102,8 +99,7 @@ export async function execute(
     requestedBy: interaction.user.id,
   });
 
-  await interaction.reply({
+  await sendReply(interaction, {
     components: container.toJSON(),
-    flags: MessageFlags.Ephemeral,
   });
 }

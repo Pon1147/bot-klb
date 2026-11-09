@@ -1,8 +1,11 @@
 /// <reference types="jest" />
+import { MessageFlags } from 'discord.js';
 import { data, execute } from '../../src/features/payment/pay.command.js';
 import * as settingsModule from '../../src/services/settings.service.js';
 
 describe('pay.command', () => {
+  const expectedFlags = MessageFlags.Ephemeral | MessageFlags.IsComponentsV2;
+
   it('cấu trúc command builder phải đúng root name và subcommand create', () => {
     expect(data.name).toBe('pay');
     const json = data.toJSON();
@@ -24,7 +27,7 @@ describe('pay.command', () => {
 
     expect(mockReply).toHaveBeenCalledWith(
       expect.objectContaining({
-        flags: 64, // Ephemeral
+        flags: expectedFlags,
       }),
     );
   });
@@ -43,7 +46,7 @@ describe('pay.command', () => {
 
     expect(mockReply).toHaveBeenCalledWith(
       expect.objectContaining({
-        flags: 64,
+        flags: expectedFlags,
       }),
     );
   });
@@ -67,7 +70,7 @@ describe('pay.command', () => {
 
     expect(mockReply).toHaveBeenCalledWith(
       expect.objectContaining({
-        flags: 64,
+        flags: expectedFlags,
       }),
     );
   });
@@ -103,7 +106,7 @@ describe('pay.command', () => {
 
     expect(mockReply).toHaveBeenCalledWith(
       expect.objectContaining({
-        flags: 64,
+        flags: expectedFlags,
         components: expect.arrayContaining([
           expect.objectContaining({
             components: expect.arrayContaining([
