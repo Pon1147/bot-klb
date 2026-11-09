@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 /**
  * Unit tests cho help.handler.ts (/df help) và extension.utils.ts.
- * Kiểm tra 5 trang trợ giúp, Select Menu 5 options, Action Row 5 buttons,
+ * Kiểm tra 6 trang trợ giúp, Select Menu 6 options, Action Row 5 buttons,
  * User Isolation Guard, và cơ chế tải extension ZIP.
  */
 
@@ -84,19 +84,31 @@ describe('DF Help Handler & Extension Utils', () => {
       expect(text.content).toContain('/df unlink');
     });
 
-    it('Trang 5: Chứa Quản trị máy chủ & Cấu hình tự động', () => {
+    it('Trang 5: Chứa Thanh toán & Quyên góp VietQR', () => {
       const container = buildHelpPageContainer(5);
+      const root = container.toJSON()[0] as any;
+      const text = root.components.find((c: any) => c.type === ComponentType.TextDisplay);
+      expect(text.content).toContain('Thanh Toán VietQR & Quyên Góp (Donate)');
+      expect(text.content).toContain('/pay create');
+      expect(text.content).toContain('/pay history');
+      expect(text.content).toContain('/pay top');
+      expect(text.content).toContain('/donate');
+    });
+
+    it('Trang 6: Chứa Quản trị máy chủ & Cấu hình tự động & VietQR workflow', () => {
+      const container = buildHelpPageContainer(6);
       const root = container.toJSON()[0] as any;
       const text = root.components.find((c: any) => c.type === ComponentType.TextDisplay);
       expect(text.content).toContain('Quản Trị Máy Chủ & Điều Hành Bot');
       expect(text.content).toContain('/config roles set');
+      expect(text.content).toContain('/config vietqr');
       expect(text.content).toContain('/df code setchannel');
       expect(text.content).toContain('/df autopost');
       expect(text.content).toContain('/config welcome');
       expect(text.content).toContain('/config bot setannouncechannel');
     });
 
-    it('Clamp an toàn: page < 1 ra trang 1, page > 5 ra trang 5', () => {
+    it('Clamp an toàn: page < 1 ra trang 1, page > 6 ra trang 6', () => {
       const cUnder = buildHelpPageContainer(0);
       const cOver = buildHelpPageContainer(99);
       expect((cUnder.toJSON()[0] as any).components[0].content).toContain('Trung Tâm Trợ Giúp');
@@ -105,7 +117,7 @@ describe('DF Help Handler & Extension Utils', () => {
   });
 
   describe('buildHelpSelectRow', () => {
-    it('tạo Select Menu với đủ 5 options và customId gắn callerUserId', () => {
+    it('tạo Select Menu với đủ 6 options và customId gắn callerUserId', () => {
       const row = buildHelpSelectRow(2, 'user-123');
       const json = row.toJSON() as any;
 
@@ -119,6 +131,7 @@ describe('DF Help Handler & Extension Utils', () => {
         'stats',
         'tactics',
         'link',
+        'payment',
         'admin',
       ]);
 
@@ -132,7 +145,7 @@ describe('DF Help Handler & Extension Utils', () => {
   });
 
   describe('buildHelpButtonsRow', () => {
-    it('Trang 1: Nút Trước bị disable, Nút Sau enabled, Nút Indicator hiển thị Trang 1/5', () => {
+    it('Trang 1: Nút Trước bị disable, Nút Sau enabled, Nút Indicator hiển thị Trang 1/6', () => {
       const row = buildHelpButtonsRow(1, 'user-123');
       const json = row.toJSON() as any;
 
@@ -143,7 +156,7 @@ describe('DF Help Handler & Extension Utils', () => {
       expect(prevBtn.custom_id).toBe('df_help:page:0:user-123');
 
       expect(indicatorBtn.disabled).toBe(true);
-      expect(indicatorBtn.label).toBe('Trang 1/5');
+      expect(indicatorBtn.label).toBe('Trang 1/6');
 
       expect(nextBtn.disabled).toBe(false);
       expect(nextBtn.custom_id).toBe('df_help:page:2:user-123');
@@ -152,13 +165,14 @@ describe('DF Help Handler & Extension Utils', () => {
       expect(supportBtn.url).toContain('discord.gg');
     });
 
-    it('Trang 5: Nút Trước enabled, Nút Sau bị disable', () => {
-      const row = buildHelpButtonsRow(5, 'user-123');
+    it('Trang 6: Nút Trước enabled, Nút Sau bị disable', () => {
+      const row = buildHelpButtonsRow(6, 'user-123');
       const json = row.toJSON() as any;
 
-      const [prevBtn, , nextBtn] = json.components;
+      const [prevBtn, indicatorBtn, nextBtn] = json.components;
       expect(prevBtn.disabled).toBe(false);
-      expect(prevBtn.custom_id).toBe('df_help:page:4:user-123');
+      expect(prevBtn.custom_id).toBe('df_help:page:5:user-123');
+      expect(indicatorBtn.label).toBe('Trang 6/6');
       expect(nextBtn.disabled).toBe(true);
     });
   });

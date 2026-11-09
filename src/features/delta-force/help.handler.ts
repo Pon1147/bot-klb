@@ -24,7 +24,7 @@ import { BOT_VERSION, EXTENSION_VERSION } from '../../config/version.js';
 import { getExtensionZipPath } from './extension.utils.js';
 import { isIgnorableInteractionError } from '../../utils/discord-error.utils.js';
 
-export const TOTAL_HELP_PAGES = 5;
+export const TOTAL_HELP_PAGES = 6;
 
 export const HELP_OPTIONS = [
   {
@@ -52,10 +52,16 @@ export const HELP_OPTIONS = [
     page: 4,
   },
   {
-    label: '5. Quản trị máy chủ',
-    value: 'admin',
-    description: 'Cấu hình RBAC, tự động đăng bài và thông báo server',
+    label: '5. Thanh toán & Quyên góp',
+    value: 'payment',
+    description: 'Tạo mã QR thanh toán VietQR, nạp tiền và ủng hộ bot',
     page: 5,
+  },
+  {
+    label: '6. Quản trị máy chủ',
+    value: 'admin',
+    description: 'Cấu hình RBAC, VietQR workflow, tự động đăng bài & thông báo',
+    page: 6,
   },
 ] as const;
 
@@ -64,11 +70,12 @@ export const VALUE_TO_PAGE_MAP: Record<string, number> = {
   stats: 2,
   tactics: 3,
   link: 4,
-  admin: 5,
+  payment: 5,
+  admin: 6,
 };
 
 /**
- * Xây dựng nội dung Container V2 cho từng trang trợ giúp (1 - 5).
+ * Xây dựng nội dung Container V2 cho từng trang trợ giúp (1 - 6).
  */
 export function buildHelpPageContainer(page: number): BuildContainerResult {
   const safePage = Math.min(Math.max(page, 1), TOTAL_HELP_PAGES);
@@ -150,12 +157,42 @@ export function buildHelpPageContainer(page: number): BuildContainerResult {
       break;
 
     case 5:
+      content = [
+        '# Thanh Toán VietQR & Quyên Góp (Donate)',
+        '',
+        '• **Tạo mã thanh toán VietQR:**',
+        '> `/pay create amount:<số tiền> [description:<nội dung>]`',
+        '> Tạo mã QR ngân hàng động kèm thông tin chuyển khoản.',
+        '> Hỗ trợ nút xác nhận, hủy giao dịch & chấm điểm dịch vụ (1–5 ⭐).',
+        '',
+        '• **Lịch sử giao dịch cá nhân:**',
+        '> `/pay history [limit:<1-20>]`',
+        '> Tra cứu danh sách các giao dịch đã tạo và trạng thái thanh toán.',
+        '',
+        '• **Bảng xếp hạng giao dịch:**',
+        '> `/pay top [limit:<1-20>]`',
+        '> Vinh danh các thành viên có tổng giá trị giao dịch cao nhất server.',
+        '',
+        '• **Ủng hộ nhà phát triển (Donate / Buy me a coffee):**',
+        '> `/donate amount:<số tiền> [description:<lời nhắn>]`',
+        '> Cổng thanh toán tự động qua PayOS (liên kết thanh toán an toàn).',
+        '',
+        footer,
+      ].join('\n');
+      break;
+
+    case 6:
     default:
       content = [
         '# Quản Trị Máy Chủ & Điều Hành Bot',
         '',
         '• **Phân quyền Quản trị (RBAC):**',
         '> `/config roles set role_type:<Admin|Mod|Member> role:<@Role>` • `/config roles view`',
+        '',
+        '• **Cấu hình VietQR & Quy trình thanh toán (Workflow):**',
+        '> `/config vietqr set bank_id:<Ngân hàng> account_no:<Số TK> account_name:<Tên chủ TK>`',
+        '> `/config vietqr workflow mode:<manual_verify | notify_only | public_log>`',
+        '> `/config vietqr status`',
         '',
         '• **Kênh mật mã két sắt tự động (Khuyên dùng):**',
         '> `/df code setchannel channel:<#Kênh>` • `/df code status`',
