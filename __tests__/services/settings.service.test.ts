@@ -3,9 +3,13 @@
  * Verify CRUD operations, cache behavior, và build container methods.
  */
 import Database from 'better-sqlite3';
-import { SettingsService } from '../../src/services/settings.service.js';
+import {
+  SettingsService,
+  setSettingsService,
+  getSettingsService,
+  isQrServerEnabled,
+} from '../../src/services/settings.service.js';
 import { GuildSettings, TemplateContext } from '../../src/types/settings.types.js';
-import { setSettingsService, getSettingsService } from '../../src/services/settings.service.js';
 
 // Mock Discord.js objects
 const mockMember = {
@@ -315,6 +319,28 @@ describe('SettingsService', () => {
       const instance = getSettingsService();
 
       expect(instance).toBe(service);
+    });
+  });
+
+  describe('isQrEnabled & isQrServerEnabled', () => {
+    it('mặc định trả về false cho server chưa được cấp quyền', () => {
+      setSettingsService(service);
+      expect(service.isQrEnabled('guild-new')).toBe(false);
+      expect(isQrServerEnabled('guild-new')).toBe(false);
+    });
+
+    it('trả về true sau khi được Bot Owner toggle enabled: true', () => {
+      setSettingsService(service);
+      service.update('guild-vip', {
+        qrServer: {
+          enabled: true,
+          updatedAt: Date.now(),
+          updatedBy: 'owner-id',
+        },
+      });
+
+      expect(service.isQrEnabled('guild-vip')).toBe(true);
+      expect(isQrServerEnabled('guild-vip')).toBe(true);
     });
   });
 });

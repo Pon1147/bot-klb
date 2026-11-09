@@ -69,6 +69,11 @@ export const defaultGuildSettings: GuildSettings = {
   botAnnounce: {
     channelId: null,
   },
+  qrServer: {
+    enabled: false,
+    updatedAt: null,
+    updatedBy: null,
+  },
 };
 
 /**

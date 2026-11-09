@@ -184,6 +184,13 @@ export class SettingsService {
   ): BuildContainerResult {
     return buildContainer(containerSettings, context, options);
   }
+
+  /**
+   * Kiểm tra tính năng QR trả phí có được kích hoạt cho máy chủ này không.
+   */
+  isQrEnabled(guildId: string): boolean {
+    return this.get(guildId).qrServer?.enabled ?? false;
+  }
 }
 
 /**
@@ -200,4 +207,15 @@ export function getSettingsService(): SettingsService {
 
 export function setSettingsService(instance: SettingsService): void {
   _instance = instance;
+}
+
+/**
+ * Helper kiểm tra nhanh trạng thái cấp quyền tính năng QR của một máy chủ.
+ */
+export function isQrServerEnabled(guildId: string): boolean {
+  try {
+    return getSettingsService().isQrEnabled(guildId);
+  } catch {
+    return false;
+  }
 }

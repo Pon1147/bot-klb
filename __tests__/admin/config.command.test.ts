@@ -89,9 +89,17 @@ describe('/config command — Structure & Builder', () => {
     expect(json.default_member_permissions).toBeUndefined();
   });
 
-  it('phải có đúng 6 SubcommandGroups: roles, welcome, leave, booster, container, bot', () => {
+  it('phải có đúng 7 SubcommandGroups: roles, welcome, leave, booster, container, bot, qr-server', () => {
     const groupNames = json.options?.map((opt: any) => opt.name);
-    expect(groupNames).toEqual(['roles', 'welcome', 'leave', 'booster', 'container', 'bot']);
+    expect(groupNames).toEqual([
+      'roles',
+      'welcome',
+      'leave',
+      'booster',
+      'container',
+      'bot',
+      'qr-server',
+    ]);
     json.options?.forEach((opt: any) => {
       expect(opt.type).toBe(2); // 2 = SUB_COMMAND_GROUP
     });
@@ -564,6 +572,171 @@ describe('/config command — Execute Dispatch', () => {
         expect(jsonStr).toContain('BẢN CẬP NHẬT TÍNH NĂNG MỚI — BOT DELTA');
         expect(jsonStr).toContain('Bot Delta vừa được cập nhật');
         expect(jsonStr).not.toContain('BOT KLB');
+      });
+    });
+  });
+
+  describe('group: qr-server', () => {
+    it('SlashCommandBuilder nên có nhóm qr-server với subcommands toggle và status', () => {
+      const json = data.toJSON();
+      const qrGroup = json.options?.find((opt: any) => opt.name === 'qr-server') as any;
+      expect(qrGroup).toBeDefined();
+
+      const toggleSub = qrGroup.options?.find((opt: any) => opt.name === 'toggle');
+      expect(toggleSub).toBeDefined();
+      expect(toggleSub.options?.some((o: any) => o.name === 'enabled')).toBe(true);
+      expect(toggleSub.options?.some((o: any) => o.name === 'server_id')).toBe(true);
+
+      const statusSub = qrGroup.options?.find((opt: any) => opt.name === 'status');
+      expect(statusSub).toBeDefined();
+    });
+
+    describe('subcommand: toggle', () => {
+      it('nên từ chối khi người dùng không phải Bot Owner', async () => {
+        const interaction = createMockInteraction({
+          user: { id: 'imposter-user-id' },
+          options: {
+            getSubcommandGroup: jest.fn().mockReturnValue('qr-server'),
+            getSubcommand: jest.fn().mockReturnValue('toggle'),
+            getBoolean: jest.fn().mockReturnValue(true),
+            getString: jest.fn().mockReturnValue(null),
+          },
+        });
+
+        await execute(interaction);
+
+        expect(mockSettingsService.update).not.toHaveBeenCalled();
+        expect(interaction.reply).toHaveBeenCalledWith(
+          expect.objectContaining({
+            flags: expect.anything(),
+          }),
+        );
+        const replyPayload = interaction.reply.mock.calls[0][0];
+        const jsonStr = JSON.stringify(replyPayload);
+        expect(jsonStr).toContain('Chỉ duy nhất Chủ sở hữu Bot (Bot Owner)');
+      });
+
+      it('nên bật tính năng QR thành công khi gọi bởi Bot Owner (server hiện tại)', async () => {
+        const interaction = createMockInteraction({
+          guildId: 'guild-abc',
+          user: { id: '418779992290492416' }, // Bot Owner ID trong mock botConfig
+          options: {
+            getSubcommandGroup: jest.fn().mockReturnValue('qr-server'),
+            getSubcommand: jest.fn().mockReturnValue('toggle'),
+            getBoolean: jest.fn().mockReturnValue(true),
+            getString: jest.fn().mockReturnValue(null),
+          },
+          client: {
+            guilds: {
+              cache: new Map([['guild-abc', { id: 'guild-abc', name: 'Server Test QR' }]]),
+            },
+          },
+        });
+
+        await execute(interaction);
+
+        expect(mockSettingsService.update).toHaveBeenCalledWith(
+          'guild-abc',
+          expect.objectContaining({
+            qrServer: expect.objectContaining({
+              enabled: true,
+              updatedBy: '418779992290492416',
+            }),
+          }),
+        );
+
+        const replyPayload = interaction.reply.mock.calls[0][0];
+        const jsonStr = JSON.stringify(replyPayload);
+        expect(jsonStr).toContain('ĐÃ KÍCH HOẠT (OPEN)');
+        expect(jsonStr).toContain('Server Test QR');
+      });
+
+      it('nên bật/tắt cho server khác qua option server_id', async () => {
+        const interaction = createMockInteraction({
+          guildId: 'guild-current',
+          user: { id: '418779992290492416' },
+          options: {
+            getSubcommandGroup: jest.fn().mockReturnValue('qr-server'),
+            getSubcommand: jest.fn().mockReturnValue('toggle'),
+            getBoolean: jest.fn().mockReturnValue(false),
+            getString: jest.fn().mockImplementation((name: string) => {
+              if (name === 'server_id') return 'guild-remote-999';
+              return null;
+            }),
+          },
+          client: {
+            guilds: {
+              cache: new Map([['guild-remote-999', { id: 'guild-remote-999', name: 'Server VIP Từ Xa' }]]),
+            },
+          },
+        });
+
+        await execute(interaction);
+
+        expect(mockSettingsService.update).toHaveBeenCalledWith(
+          'guild-remote-999',
+          expect.objectContaining({
+            qrServer: expect.objectContaining({
+              enabled: false,
+            }),
+          }),
+        );
+
+        const replyPayload = interaction.reply.mock.calls[0][0];
+        const jsonStr = JSON.stringify(replyPayload);
+        expect(jsonStr).toContain('ĐÃ KHÓA (DISABLED)');
+        expect(jsonStr).toContain('Server VIP Từ Xa');
+      });
+    });
+
+    describe('subcommand: status', () => {
+      it('nên từ chối khi không phải Bot Owner', async () => {
+        const interaction = createMockInteraction({
+          user: { id: 'random-user' },
+          options: {
+            getSubcommandGroup: jest.fn().mockReturnValue('qr-server'),
+            getSubcommand: jest.fn().mockReturnValue('status'),
+            getString: jest.fn().mockReturnValue(null),
+          },
+        });
+
+        await execute(interaction);
+
+        const replyPayload = interaction.reply.mock.calls[0][0];
+        const jsonStr = JSON.stringify(replyPayload);
+        expect(jsonStr).toContain('Chỉ duy nhất Chủ sở hữu Bot (Bot Owner)');
+      });
+
+      it('nên hiển thị trạng thái chính xác khi gọi bởi Bot Owner', async () => {
+        mockSettingsService.get.mockReturnValueOnce({
+          qrServer: {
+            enabled: true,
+            updatedAt: 1710000000000,
+            updatedBy: '418779992290492416',
+          },
+        });
+
+        const interaction = createMockInteraction({
+          guildId: 'guild-abc',
+          user: { id: '418779992290492416' },
+          options: {
+            getSubcommandGroup: jest.fn().mockReturnValue('qr-server'),
+            getSubcommand: jest.fn().mockReturnValue('status'),
+            getString: jest.fn().mockReturnValue(null),
+          },
+          client: {
+            guilds: {
+              cache: new Map([['guild-abc', { id: 'guild-abc', name: 'Server Test QR' }]]),
+            },
+          },
+        });
+
+        await execute(interaction);
+
+        const replyPayload = interaction.reply.mock.calls[0][0];
+        const jsonStr = JSON.stringify(replyPayload);
+        expect(jsonStr).toContain('Trạng Thái Cấp Phép QR Server');
+        expect(jsonStr).toContain('ĐÃ KÍCH HOẠT (OPEN)');
       });
     });
   });

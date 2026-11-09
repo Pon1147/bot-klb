@@ -266,6 +266,40 @@ function buildBotGroup(
 
 // ─── Slash Command Builder ────────────────────────────────────────
 
+/** Nhóm qr-server: quản lý cấp phép tính năng QR trả phí theo máy chủ (chỉ dành cho Bot Owner) */
+function buildQrServerGroup(
+  group: SlashCommandSubcommandGroupBuilder,
+): SlashCommandSubcommandGroupBuilder {
+  return group
+    .setName('qr-server')
+    .setDescription('Quản lý cấp quyền tính năng QR trả phí cho máy chủ (chỉ dành cho Bot Owner).')
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
+        .setName('toggle')
+        .setDescription('Bật hoặc tắt tính năng QR tự động cho máy chủ.')
+        .addBooleanOption((opt) =>
+          opt.setName('enabled').setDescription('Bật (true) hoặc Tắt (false)').setRequired(true),
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName('server_id')
+            .setDescription('ID máy chủ Discord (để trống sẽ áp dụng cho máy chủ hiện tại)')
+            .setRequired(false),
+        ),
+    )
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
+        .setName('status')
+        .setDescription('Xem trạng thái tính năng QR của máy chủ.')
+        .addStringOption((opt) =>
+          opt
+            .setName('server_id')
+            .setDescription('ID máy chủ Discord (để trống sẽ xem máy chủ hiện tại)')
+            .setRequired(false),
+        ),
+    );
+}
+
 export const data = new SlashCommandBuilder()
   .setName('config')
   .setDescription('Quản lý cấu hình bot, roles, welcome, booster, và container.')
@@ -274,7 +308,8 @@ export const data = new SlashCommandBuilder()
   .addSubcommandGroup(buildLeaveGroup)
   .addSubcommandGroup(buildBoosterGroup)
   .addSubcommandGroup(buildContainerGroup)
-  .addSubcommandGroup(buildBotGroup);
+  .addSubcommandGroup(buildBotGroup)
+  .addSubcommandGroup(buildQrServerGroup);
 
 // ─── Roles Mapping ────────────────────────────────────────────────
 
@@ -451,6 +486,15 @@ export async function execute(
         await handleBotAnnounce(interaction);
       } else if (subcommand === 'setannouncechannel') {
         await handleBotSetAnnounceChannel(interaction, db);
+      }
+      break;
+    }
+
+    case 'qr-server': {
+      if (subcommand === 'toggle') {
+        await handleQrServerToggle(interaction, db);
+      } else if (subcommand === 'status') {
+        await handleQrServerStatus(interaction, db);
       }
       break;
     }
@@ -791,5 +835,121 @@ export async function handleBotAnnounce(interaction: ChatInputCommandInteraction
 
   await interaction.editReply({
     content: summaryContent,
+  });
+}
+
+// ─── QR Server Subcommand Handlers (Bot Owner Only) ────────────────
+
+/** Subcommand `qr-server toggle` — Bật hoặc tắt tính năng QR tự động cho máy chủ */
+export async function handleQrServerToggle(
+  interaction: ChatInputCommandInteraction,
+  _db?: Database.Database,
+): Promise<void> {
+  // Guard bảo mật tối cao: Chỉ duy nhất Bot Owner được phép quản lý cấp phép tính năng QR trả phí
+  if (interaction.user.id !== botConfig.botOwnerId) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '🔒 Bạn không có quyền sử dụng lệnh này. Chỉ duy nhất Chủ sở hữu Bot (Bot Owner) mới có quyền quản lý cấp phép tính năng QR cho máy chủ.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  const enabled = interaction.options.getBoolean('enabled', true);
+  const inputServerId = interaction.options.getString('server_id')?.trim();
+  const targetGuildId = inputServerId || interaction.guildId || interaction.guild?.id;
+
+  if (!targetGuildId) {
+    await sendReply(interaction, {
+      components: buildErrorContainer('Không xác định được ID máy chủ cần cấu hình.').toJSON(),
+    });
+    return;
+  }
+
+  const settingsService = getSettingsService();
+  const targetGuild = interaction.client.guilds.cache.get(targetGuildId);
+  const guildDisplayName = targetGuild ? targetGuild.name : `Máy chủ (${targetGuildId})`;
+
+  const now = Date.now();
+  settingsService.update(targetGuildId, {
+    qrServer: {
+      enabled,
+      updatedAt: now,
+      updatedBy: interaction.user.id,
+    },
+  });
+
+  logger.info(
+    `[QrServer] Bot Owner [${interaction.user.id}] đã ${enabled ? 'MỞ' : 'KHÓA'} tính năng QR cho máy chủ ${targetGuildId} (${guildDisplayName})`,
+  );
+
+  const statusBadge = enabled ? '🟢 ĐÃ KÍCH HOẠT (OPEN)' : '🔴 ĐÃ KHÓA (DISABLED)';
+  const statusDesc = enabled
+    ? 'Tính năng tạo mã QR tự động đã sẵn sàng hoạt động trên máy chủ này.'
+    : 'Tính năng tạo mã QR tự động đã bị khóa trên máy chủ này.';
+
+  const container = buildInfoContainer(
+    `### 🛡️ Quản Lý Cấp Phép QR Server (Premium Feature)\n\n` +
+      `• **Máy chủ**: **${guildDisplayName}** (\`${targetGuildId}\`)\n` +
+      `• **Trạng thái**: ${statusBadge}\n` +
+      `• **Thời gian cập nhật**: <t:${Math.floor(now / 1000)}:F> (<t:${Math.floor(now / 1000)}:R>)\n` +
+      `• **Người thực hiện**: <@${interaction.user.id}>\n\n` +
+      `> ℹ️ *${statusDesc}*`,
+  );
+
+  await sendReply(interaction, {
+    components: container.toJSON(),
+  });
+}
+
+/** Subcommand `qr-server status` — Kiểm tra trạng thái cấp phép QR của máy chủ */
+export async function handleQrServerStatus(
+  interaction: ChatInputCommandInteraction,
+  _db?: Database.Database,
+): Promise<void> {
+  // Guard bảo mật tối cao: Chỉ duy nhất Bot Owner được phép kiểm tra cấu hình QR
+  if (interaction.user.id !== botConfig.botOwnerId) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '🔒 Bạn không có quyền sử dụng lệnh này. Chỉ duy nhất Chủ sở hữu Bot (Bot Owner) mới có quyền kiểm tra cấu hình QR của máy chủ.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  const inputServerId = interaction.options.getString('server_id')?.trim();
+  const targetGuildId = inputServerId || interaction.guildId || interaction.guild?.id;
+
+  if (!targetGuildId) {
+    await sendReply(interaction, {
+      components: buildErrorContainer('Không xác định được ID máy chủ cần kiểm tra.').toJSON(),
+    });
+    return;
+  }
+
+  const settingsService = getSettingsService();
+  const currentSettings = settingsService.get(targetGuildId);
+  const qrConfig = currentSettings.qrServer;
+  const isEnabled = qrConfig?.enabled ?? false;
+
+  const targetGuild = interaction.client.guilds.cache.get(targetGuildId);
+  const guildDisplayName = targetGuild ? targetGuild.name : `Máy chủ (${targetGuildId})`;
+
+  const statusBadge = isEnabled ? '🟢 ĐÃ KÍCH HOẠT (OPEN)' : '🔴 ĐÃ KHÓA (DISABLED)';
+  const updatedTime = qrConfig?.updatedAt
+    ? `<t:${Math.floor(qrConfig.updatedAt / 1000)}:F> (<t:${Math.floor(qrConfig.updatedAt / 1000)}:R>)`
+    : '*Chưa từng cập nhật*';
+  const updatedByUser = qrConfig?.updatedBy ? `<@${qrConfig.updatedBy}>` : '*Hệ thống (mặc định)*';
+
+  const container = buildInfoContainer(
+    `### 🛡️ Trạng Thái Cấp Phép QR Server\n\n` +
+      `• **Máy chủ**: **${guildDisplayName}** (\`${targetGuildId}\`)\n` +
+      `• **Trạng thái**: ${statusBadge}\n` +
+      `• **Cập nhật lần cuối**: ${updatedTime}\n` +
+      `• **Người thực hiện**: ${updatedByUser}`,
+  );
+
+  await sendReply(interaction, {
+    components: container.toJSON(),
   });
 }
