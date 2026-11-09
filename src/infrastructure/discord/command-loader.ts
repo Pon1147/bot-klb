@@ -193,12 +193,73 @@ interface DiffResult {
 }
 
 /**
+ * Thêm tiền tố `(dev)` vào description của lệnh và toàn bộ subcommands/groups khi ở môi trường DEV.
+ * Giúp phân biệt trực quan giữa slash command môi trường DEV và PRODUCT trên giao diện Discord.
+ */
+export function formatCommandForEnvironment(
+  commandData: SlashCommandBuilder | APIApplicationCommand | Record<string, unknown>,
+  isDev: boolean = false,
+): Record<string, unknown> {
+  const raw =
+    commandData && typeof (commandData as { toJSON?: () => unknown }).toJSON === 'function'
+      ? ((commandData as { toJSON: () => unknown }).toJSON() as Record<string, unknown>)
+      : (JSON.parse(JSON.stringify(commandData)) as Record<string, unknown>);
+
+  if (!isDev) return raw;
+
+  const prefix = '(dev) ';
+  const addPrefix = (desc?: unknown): string => {
+    if (typeof desc !== 'string') return '';
+    if (desc.startsWith(prefix) || desc.startsWith('(dev)')) return desc;
+    return `${prefix}${desc}`.slice(0, 100);
+  };
+
+  const formatted: Record<string, unknown> = { ...raw };
+  if (formatted.description) {
+    formatted.description = addPrefix(formatted.description);
+  }
+
+  if (Array.isArray(formatted.options)) {
+    formatted.options = (formatted.options as Record<string, unknown>[]).map((opt) => {
+      const optClone: Record<string, unknown> = { ...opt };
+      if (optClone.description) {
+        optClone.description = addPrefix(optClone.description);
+      }
+      if (Array.isArray(optClone.options)) {
+        optClone.options = (optClone.options as Record<string, unknown>[]).map((subOpt) => {
+          const subOptClone: Record<string, unknown> = { ...subOpt };
+          if (subOptClone.description) {
+            subOptClone.description = addPrefix(subOptClone.description);
+          }
+          if (Array.isArray(subOptClone.options)) {
+            subOptClone.options = (subOptClone.options as Record<string, unknown>[]).map(
+              (deepOpt) => {
+                const deepClone: Record<string, unknown> = { ...deepOpt };
+                if (deepClone.description) {
+                  deepClone.description = addPrefix(deepClone.description);
+                }
+                return deepClone;
+              },
+            );
+          }
+          return subOptClone;
+        });
+      }
+      return optClone;
+    });
+  }
+
+  return formatted;
+}
+
+/**
  * So sánh local commands với Discord commands để tìm thay đổi.
  * Trả về danh sách commands cần add, update, unchanged, và orphan trên Discord.
  */
 function computeDiff(
   localCollection: Collection<string, CommandModule>,
   existingCommands: APIApplicationCommand[],
+  isDev: boolean = false,
 ): DiffResult {
   const result: DiffResult = {
     toAdd: [],
@@ -215,7 +276,8 @@ function computeDiff(
 
   // Kiểm tra từng local command
   for (const [name, command] of localCollection) {
-    const localFingerprint = commandFingerprint(command.data);
+    const formatted = formatCommandForEnvironment(command.data, isDev);
+    const localFingerprint = commandFingerprint(formatted);
     const existingFingerprint = existingMap.get(name);
 
     if (!existingFingerprint) {
@@ -284,11 +346,14 @@ export async function deployCommands(
     });
   }
 
+  const isDevDeployment = !isGlobal && botConfig.isDev && process.env.NODE_ENV !== 'test';
+
   // Bước 2: So sánh local vs Discord để tìm thay đổi
-  const diff = computeDiff(commandCollection, existingCommands);
+  const diff = computeDiff(commandCollection, existingCommands, isDevDeployment);
 
   logger.info('=== Phân tích thay đổi commands ===', {
     scope: isGlobal ? 'global' : 'guild',
+    isDevDeployment,
     newCommands: diff.toAdd.length,
     changedCommands: diff.toUpdate.length,
     unchangedCommands: diff.unchanged.length,
@@ -336,12 +401,8 @@ export async function deployCommands(
   // Discord API PUT thay thế TOÀN BỘ, nên phải gửi full list
   const localCommands = [];
   for (const [_name, command] of commandCollection) {
-    // data can be a SlashCommandBuilder (has toJSON) or a plain JSON object
-    const json =
-      'toJSON' in command.data && typeof command.data.toJSON === 'function'
-        ? command.data.toJSON()
-        : command.data;
-    localCommands.push(json);
+    const formatted = formatCommandForEnvironment(command.data, isDevDeployment);
+    localCommands.push(formatted);
   }
 
   // Bước 5: Deploy đến Discord

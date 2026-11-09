@@ -888,12 +888,15 @@ export async function handleQrServerToggle(
     ? 'Tính năng tạo mã QR tự động đã sẵn sàng hoạt động trên máy chủ này.'
     : 'Tính năng tạo mã QR tự động đã bị khóa trên máy chủ này.';
 
+  const envTag = botConfig.isDev ? '\n• **Môi trường**: 🛠️ `DEV (Local VSCode)`' : '';
+
   const container = buildInfoContainer(
     `### 🛡️ Quản Lý Cấp Phép QR Server (Premium Feature)\n\n` +
       `• **Máy chủ**: **${guildDisplayName}** (\`${targetGuildId}\`)\n` +
       `• **Trạng thái**: ${statusBadge}\n` +
       `• **Thời gian cập nhật**: <t:${Math.floor(now / 1000)}:F> (<t:${Math.floor(now / 1000)}:R>)\n` +
-      `• **Người thực hiện**: <@${interaction.user.id}>\n\n` +
+      `• **Người thực hiện**: <@${interaction.user.id}>` +
+      `${envTag}\n\n` +
       `> ℹ️ *${statusDesc}*`,
   );
 
@@ -941,12 +944,15 @@ export async function handleQrServerStatus(
     : '*Chưa từng cập nhật*';
   const updatedByUser = qrConfig?.updatedBy ? `<@${qrConfig.updatedBy}>` : '*Hệ thống (mặc định)*';
 
+  const envTag = botConfig.isDev ? '\n• **Môi trường**: 🛠️ `DEV (Local VSCode)`' : '';
+
   const container = buildInfoContainer(
     `### 🛡️ Trạng Thái Cấp Phép QR Server\n\n` +
       `• **Máy chủ**: **${guildDisplayName}** (\`${targetGuildId}\`)\n` +
       `• **Trạng thái**: ${statusBadge}\n` +
       `• **Cập nhật lần cuối**: ${updatedTime}\n` +
-      `• **Người thực hiện**: ${updatedByUser}`,
+      `• **Người thực hiện**: ${updatedByUser}` +
+      `${envTag}`,
   );
 
   await sendReply(interaction, {

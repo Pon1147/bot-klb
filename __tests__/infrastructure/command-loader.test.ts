@@ -1,6 +1,10 @@
 /// <reference types="jest" />
 import { Collection } from 'discord.js';
-import { deployCommands, CommandModule } from '../../src/infrastructure/discord/command-loader.js';
+import {
+  deployCommands,
+  CommandModule,
+  formatCommandForEnvironment,
+} from '../../src/infrastructure/discord/command-loader.js';
 import { botConfig } from '../../src/config/bot.config.js';
 
 // Mock REST và Routes
@@ -167,6 +171,52 @@ describe('deployCommands (Hybrid Scope: Guild vs Global)', () => {
 
     expect(mockGet).toHaveBeenCalled();
     expect(mockPut).not.toHaveBeenCalled();
+  });
+
+  describe('formatCommandForEnvironment', () => {
+    const sampleCommand = {
+      name: 'config',
+      description: 'Quản lý bot',
+      options: [
+        {
+          type: 2,
+          name: 'qr-server',
+          description: 'Quản lý tính năng QR',
+          options: [
+            {
+              type: 1,
+              name: 'status',
+              description: 'Xem trạng thái QR',
+            },
+          ],
+        },
+      ],
+    };
+
+    it('không thay đổi description khi isDev = false', () => {
+      const res = formatCommandForEnvironment(sampleCommand, false);
+      expect(res.description).toBe('Quản lý bot');
+      const opt = (res.options as any[])[0];
+      expect(opt.description).toBe('Quản lý tính năng QR');
+      expect(opt.options[0].description).toBe('Xem trạng thái QR');
+    });
+
+    it('thêm tiền tố (dev) vào description và các subcommands khi isDev = true', () => {
+      const res = formatCommandForEnvironment(sampleCommand, true);
+      expect(res.description).toBe('(dev) Quản lý bot');
+      const opt = (res.options as any[])[0];
+      expect(opt.description).toBe('(dev) Quản lý tính năng QR');
+      expect(opt.options[0].description).toBe('(dev) Xem trạng thái QR');
+    });
+
+    it('không bị duplicate tiền tố (dev) nếu đã có sẵn', () => {
+      const alreadyTagged = {
+        name: 'test',
+        description: '(dev) Lệnh test',
+      };
+      const res = formatCommandForEnvironment(alreadyTagged, true);
+      expect(res.description).toBe('(dev) Lệnh test');
+    });
   });
 });
 

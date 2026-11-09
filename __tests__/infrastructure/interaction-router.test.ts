@@ -1342,6 +1342,37 @@ describe('interaction-router — BUG-02 Interaction Acknowledgment & Error Fallb
       // Bot xử lý lệnh trên server DEV
       expect(executeMock).toHaveBeenCalledTimes(1);
     });
+
+    it('khi bot chạy ở môi trường PRODUCT (Railway): bỏ qua interaction từ Dev Server (1475517632848592918)', async () => {
+      process.env.NODE_ENV = 'production';
+      (botConfig as any).isProduct = true;
+      (botConfig as any).isDev = false;
+
+      const executeMock = jest.fn().mockResolvedValue(undefined);
+      const mockClient: any = {
+        commands: new Map([['df', { execute: executeMock }]]),
+        database: {},
+      };
+
+      // Server DEV gửi tương tác đến bot Product
+      const devInteraction = createMockInteraction({
+        guildId: botConfig.devGuildId,
+        commandName: 'df',
+        options: {
+          getSubcommandGroup: jest.fn(() => null),
+          getSubcommand: jest.fn(() => 'help'),
+        },
+      });
+
+      await routeInteraction(mockClient, devInteraction as any);
+
+      // Bot Product hoàn toàn im lặng, không xử lý lệnh của server DEV
+      expect(executeMock).not.toHaveBeenCalled();
+
+      // Reset
+      (botConfig as any).isProduct = false;
+      (botConfig as any).isDev = true;
+    });
   });
 
   // df_history_view_all đã được chuyển sang ButtonStyle.Link nên không còn trigger interaction router.
