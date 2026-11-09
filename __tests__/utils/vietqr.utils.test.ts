@@ -46,7 +46,9 @@ describe('vietqr.utils', () => {
         transferCode: 'NAP 123456 ABCD',
         memo: 'Mua VIP 1 Thang',
         serverName: 'Delta Force VN',
-        requestedBy: 'user-123',
+        creatorId: 'user-123',
+        customerId: 'user-456',
+        attachmentName: 'vietqr.png',
       });
 
       expect(result.components).toBeDefined();
@@ -61,11 +63,13 @@ describe('vietqr.utils', () => {
       expect(textDisplay.content).toContain('50.000 đ');
       expect(textDisplay.content).toContain('NAP 123456 ABCD');
       expect(textDisplay.content).toContain('Mua VIP 1 Thang');
+      expect(textDisplay.content).toContain('<@user-123>');
+      expect(textDisplay.content).toContain('<@user-456>');
 
       const mediaGallery = container.components.find(
         (c: any) => c.type === ComponentType.MediaGallery,
       );
-      expect(mediaGallery.items[0].media.url).toContain('MB-0987654321-compact2.png');
+      expect(mediaGallery.items[0].media.url).toBe('attachment://vietqr.png');
     });
   });
 

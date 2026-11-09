@@ -1,4 +1,5 @@
 import {
+  AttachmentBuilder,
   ChatInputCommandInteraction,
   SlashCommandBuilder,
   SlashCommandSubcommandBuilder,
@@ -6,16 +7,16 @@ import {
 import Database from 'better-sqlite3';
 import { getSettingsService, isQrServerEnabled } from '../../services/settings.service.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
-import { buildVietQrContainer } from '../../utils/vietqr.utils.js';
+import { buildVietQrContainer, fetchVietQrImageBuffer } from '../../utils/vietqr.utils.js';
 import { sendReply } from '../../utils/reply.utils.js';
 
 export const data = new SlashCommandBuilder()
   .setName('pay')
-  .setDescription('Tạo mã QR chuyển khoản thanh toán hoặc nạp tiền qua VietQR.')
+  .setDescription('Tạo yêu cầu thanh toán chuyển khoản VietQR cho khách hàng.')
   .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
     sub
       .setName('create')
-      .setDescription('Tạo mã QR VietQR chuyển khoản với số tiền và nội dung xác định.')
+      .setDescription('Tạo hóa đơn thanh toán VietQR cho khách hàng trong kênh.')
       .addIntegerOption((opt) =>
         opt
           .setName('amount')
@@ -24,10 +25,16 @@ export const data = new SlashCommandBuilder()
           .setMaxValue(500_000_000)
           .setRequired(true),
       )
+      .addUserOption((opt) =>
+        opt
+          .setName('customer')
+          .setDescription('Khách hàng / Thành viên cần thanh toán (tag người nhận)')
+          .setRequired(false),
+      )
       .addStringOption((opt) =>
         opt
           .setName('memo')
-          .setDescription('Ghi chú hoặc tên gói dịch vụ/role muốn mua')
+          .setDescription('Tên dịch vụ hoặc ghi chú đơn hàng (ví dụ: Book 2h, Mua role VIP)')
           .setMaxLength(100)
           .setRequired(false),
       ),
@@ -45,6 +52,7 @@ export async function execute(
   const guildId = interaction.guildId;
   const guild = interaction.guild;
 
+  // 1. Guards kiểm tra môi trường & quyền: Báo lỗi riêng tư (Ephemeral) cho người gõ lệnh
   if (!guildId || !guild) {
     await sendReply(interaction, {
       components: buildErrorContainer(
@@ -54,7 +62,7 @@ export async function execute(
     return;
   }
 
-  // 1. Guard bảo mật cấp máy chủ: Máy chủ phải được Bot Owner mở tính năng QR trước đó
+  // Guard bảo mật cấp máy chủ: Máy chủ phải được Bot Owner mở tính năng QR trước đó
   if (!isQrServerEnabled(guildId)) {
     await sendReply(interaction, {
       components: buildErrorContainer(
@@ -64,7 +72,7 @@ export async function execute(
     return;
   }
 
-  // 2. Guard cấu hình ngân hàng: Máy chủ phải có thông tin tài khoản VietQR hợp lệ
+  // Guard cấu hình ngân hàng: Máy chủ phải có thông tin tài khoản VietQR hợp lệ
   const settingsService = getSettingsService();
   const settings = settingsService.get(guildId);
   const vietqr = settings.vietqr;
@@ -78,15 +86,39 @@ export async function execute(
     return;
   }
 
+  // 2. Lấy tham số lệnh
   const amount = interaction.options.getInteger('amount', true);
+  const customer = interaction.options.getUser('customer');
   const memo = interaction.options.getString('memo')?.trim() || null;
 
-  // 3. Sinh mã chuyển khoản chuẩn hóa: <PREFIX> <USER_SHORT_ID> <SALT>
-  // Ví dụ: NAP 848592 7B4C
-  const userShortId = interaction.user.id.slice(-6);
+  // 3. Phản hồi ban đầu công khai (deferReply) để chuẩn bị hóa đơn gửi vào kênh cho khách xem
+  await interaction.deferReply();
+
+  // 4. Sinh mã chuyển khoản chuẩn hóa:
+  // Nếu có khách hàng được chỉ định, dùng đuôi ID khách để nhận diện đúng người chuyển tiền
+  const targetUser = customer || interaction.user;
+  const userShortId = targetUser.id.slice(-6);
   const salt = generateTxSalt();
   const prefix = vietqr.prefix ? vietqr.prefix.trim().toUpperCase() : 'NAP';
   const transferCode = `${prefix} ${userShortId} ${salt}`;
+
+  // 5. Tải buffer ảnh PNG VietQR chuẩn (trích xuất từ API) để đính kèm trực tiếp vào message
+  const qrBuffer = await fetchVietQrImageBuffer({
+    bankId: vietqr.bankId,
+    accountNo: vietqr.accountNo,
+    accountName: vietqr.accountName,
+    amount,
+    addInfo: transferCode,
+    template: vietqr.template || 'compact2',
+  });
+
+  const files: AttachmentBuilder[] = [];
+  let attachmentName: string | null = null;
+
+  if (qrBuffer) {
+    attachmentName = 'vietqr.png';
+    files.push(new AttachmentBuilder(qrBuffer, { name: attachmentName }));
+  }
 
   const container = buildVietQrContainer({
     bankId: vietqr.bankId,
@@ -96,10 +128,19 @@ export async function execute(
     transferCode,
     memo,
     serverName: guild.name,
-    requestedBy: interaction.user.id,
+    creatorId: interaction.user.id,
+    customerId: customer ? customer.id : null,
+    attachmentName,
   });
 
-  await sendReply(interaction, {
-    components: container.toJSON(),
+  // 6. Gửi hóa đơn công khai vào kênh cho khách hàng quét mã
+  const tagNotification = customer
+    ? `💳 **Yêu cầu thanh toán** gửi tới <@${customer.id}> từ <@${interaction.user.id}>:`
+    : undefined;
+
+  await interaction.editReply({
+    content: tagNotification,
+    components: container.toJSON() as any,
+    files,
   });
 }

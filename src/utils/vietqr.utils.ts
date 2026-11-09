@@ -45,6 +45,34 @@ export function buildVietQrImageUrl(options: VietQrImageOptions): string {
   return `https://img.vietqr.io/image/${cleanBank}-${cleanAcc}-${template}.png?amount=${amount}&addInfo=${cleanInfo}&accountName=${cleanName}`;
 }
 
+/**
+ * Tải buffer ảnh PNG của mã VietQR từ API.
+ * VietQR CDN trả về file SVG nhúng PNG dạng base64, hàm này bóc tách để lấy binary PNG chuẩn.
+ */
+export async function fetchVietQrImageBuffer(options: VietQrImageOptions): Promise<Buffer | null> {
+  const url = buildVietQrImageUrl(options);
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'BotKLB-Discord/1.4' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('image/png') || contentType.includes('image/jpeg')) {
+      const arrayBuf = await res.arrayBuffer();
+      return Buffer.from(arrayBuf);
+    }
+    const text = await res.text();
+    const match = text.match(/data:image\/png;base64,([^"']+)/);
+    if (match && match[1]) {
+      return Buffer.from(match[1], 'base64');
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export interface VietQrContainerOptions {
   bankId: string;
   accountNo: string;
@@ -53,43 +81,62 @@ export interface VietQrContainerOptions {
   transferCode: string;
   memo?: string | null;
   serverName: string;
-  requestedBy: string;
+  creatorId: string;
+  customerId?: string | null;
+  attachmentName?: string | null;
 }
 
 /**
- * Tạo Container V2 hiển thị mã thanh toán VietQR kèm đầy đủ thông tin giao dịch.
+ * Tạo Container V2 hiển thị hóa đơn thanh toán VietQR kèm đầy đủ thông tin giao dịch.
  */
 export function buildVietQrContainer(options: VietQrContainerOptions): BuildContainerResult {
-  const { bankId, accountNo, accountName, amount, transferCode, memo, serverName, requestedBy } =
-    options;
-
-  const bankDisplayName = SUPPORTED_BANKS[bankId.toUpperCase()] ?? bankId.toUpperCase();
-  const formattedAmount = `${amount.toLocaleString('vi-VN')} đ`;
-  const qrUrl = buildVietQrImageUrl({
+  const {
     bankId,
     accountNo,
     accountName,
     amount,
-    addInfo: transferCode,
-    template: 'compact2',
-  });
+    transferCode,
+    memo,
+    serverName,
+    creatorId,
+    customerId,
+    attachmentName,
+  } = options;
 
-  const memoLine = memo ? `\n• **Ghi chú**: \`${memo}\`` : '';
+  const bankDisplayName = SUPPORTED_BANKS[bankId.toUpperCase()] ?? bankId.toUpperCase();
+  const formattedAmount = `${amount.toLocaleString('vi-VN')} đ`;
+  const mediaUrl = attachmentName
+    ? `attachment://${attachmentName}`
+    : buildVietQrImageUrl({
+        bankId,
+        accountNo,
+        accountName,
+        amount,
+        addInfo: transferCode,
+        template: 'compact2',
+      });
+
+  const customerLine = customerId
+    ? `• **Khách hàng**: <@${customerId}>`
+    : `• **Khách hàng**: *Bất kỳ thành viên nào*`;
+
+  const memoLine = memo ? `\n• **Dịch vụ / Ghi chú**: \`${memo}\`` : '';
 
   const content = [
-    `### 💳 Thanh Toán / Chuyển Khoản Qua VietQR`,
+    `### 💳 Hóa Đơn Thanh Toán / Chuyển Khoản VietQR`,
     '',
     `• **Máy chủ**: **${serverName}**`,
-    `• **Người tạo yêu cầu**: <@${requestedBy}>`,
+    `• **Người tạo đơn**: <@${creatorId}>`,
+    customerLine,
     `• **Ngân hàng**: **${bankDisplayName}** (\`${bankId.toUpperCase()}\`)`,
     `• **Số tài khoản**: \`${accountNo}\``,
     `• **Chủ tài khoản**: **${accountName.toUpperCase()}**`,
-    `• **Số tiền thanh toán**: 💵 **${formattedAmount}**`,
+    `• **Số tiền cần thanh toán**: 💵 **${formattedAmount}**`,
     `• **Nội dung chuyển khoản**: \`${transferCode}\`${memoLine}`,
     '',
-    `> ⚠️ **LƯU Ý QUAN TRỌNG**:`,
-    `> 1. Quét mã QR bên dưới bằng ứng dụng Ngân hàng bất kỳ (MB, Vietcombank, Techcombank, MoMo...).`,
-    `> 2. Giữ **nguyên vẹn nội dung chuyển khoản** \`${transferCode}\` để hệ thống tự động xác nhận giao dịch.`,
+    `> ⚠️ **HƯỚNG DẪN THANH TOÁN**:`,
+    `> 1. Mở ứng dụng Ngân hàng (MB, Vietcombank, Techcombank, MoMo...) và **Quét mã QR** bên dưới.`,
+    `> 2. Giữ **chính xác nội dung chuyển khoản** \`${transferCode}\` để hệ thống tự động ghi nhận giao dịch.`,
   ].join('\n');
 
   return makeResult(
@@ -103,7 +150,7 @@ export function buildVietQrContainer(options: VietQrContainerOptions): BuildCont
             type: ComponentType.MediaGallery,
             items: [
               {
-                media: { url: qrUrl },
+                media: { url: mediaUrl },
                 description: `Mã VietQR thanh toán ${formattedAmount}`,
               },
             ],

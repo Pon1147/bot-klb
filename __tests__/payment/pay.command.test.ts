@@ -12,6 +12,7 @@ describe('pay.command', () => {
     const createSub = json.options?.find((opt: any) => opt.name === 'create') as any;
     expect(createSub).toBeDefined();
     expect(createSub.options?.find((opt: any) => opt.name === 'amount')).toBeDefined();
+    expect(createSub.options?.find((opt: any) => opt.name === 'customer')).toBeDefined();
     expect(createSub.options?.find((opt: any) => opt.name === 'memo')).toBeDefined();
   });
 
@@ -90,23 +91,27 @@ describe('pay.command', () => {
       }),
     } as any);
 
-    const mockReply = jest.fn();
+    const mockDeferReply = jest.fn();
+    const mockEditReply = jest.fn();
     const interaction: any = {
       guildId: 'guild-authorized',
       guild: { name: 'VIP Server' },
       user: { id: '1475517632848592918' },
       options: {
         getInteger: jest.fn().mockReturnValue(100000),
+        getUser: jest.fn().mockReturnValue({ id: '998877665544332211' }),
         getString: jest.fn().mockReturnValue('Mua goi Premium'),
       },
-      reply: mockReply,
+      deferReply: mockDeferReply,
+      editReply: mockEditReply,
     };
 
     await execute(interaction);
 
-    expect(mockReply).toHaveBeenCalledWith(
+    expect(mockDeferReply).toHaveBeenCalled();
+    expect(mockEditReply).toHaveBeenCalledWith(
       expect.objectContaining({
-        flags: expectedFlags,
+        content: expect.stringContaining('<@998877665544332211>'),
         components: expect.arrayContaining([
           expect.objectContaining({
             components: expect.arrayContaining([
