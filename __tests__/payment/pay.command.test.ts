@@ -151,11 +151,13 @@ describe('pay.command', () => {
 
     expect(mockReply).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: expect.stringContaining('<@998877665544332211>'),
         flags: MessageFlags.IsComponentsV2,
         components: expect.arrayContaining([
           expect.objectContaining({
             components: expect.arrayContaining([
+              expect.objectContaining({
+                content: expect.stringContaining('<@998877665544332211>'),
+              }),
               expect.objectContaining({
                 content: expect.stringContaining('100.000 đ'),
               }),

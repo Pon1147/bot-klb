@@ -145,6 +145,7 @@ export interface VietQrContainerOptions {
   creatorId: string;
   customerId?: string | null;
   attachmentName?: string | null;
+  txId?: string | null;
 }
 
 /**
@@ -162,6 +163,7 @@ export function buildVietQrContainer(options: VietQrContainerOptions): BuildCont
     creatorId,
     customerId,
     attachmentName,
+    txId,
   } = options;
 
   const bankDisplayName = SUPPORTED_BANKS[bankId.toUpperCase()] ?? bankId.toUpperCase();
@@ -183,8 +185,16 @@ export function buildVietQrContainer(options: VietQrContainerOptions): BuildCont
 
   const memoLine = memo ? `\n• **Dịch vụ / Ghi chú**: \`${memo}\`` : '';
 
+  const invoiceTitle = txId
+    ? `### 💳 Hóa Đơn Thanh Toán VietQR [${txId}]`
+    : `### 💳 Hóa Đơn Thanh Toán / Chuyển Khoản VietQR`;
+
+  const targetNotification = customerId
+    ? `> 🔔 **Yêu cầu thanh toán** gửi tới <@${customerId}> từ <@${creatorId}>\n\n`
+    : '';
+
   const content = [
-    `### 💳 Hóa Đơn Thanh Toán / Chuyển Khoản VietQR`,
+    `${targetNotification}${invoiceTitle}`,
     '',
     `• **Máy chủ**: **${serverName}**`,
     `• **Người tạo đơn**: <@${creatorId}>`,

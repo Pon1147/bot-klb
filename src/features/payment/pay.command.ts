@@ -148,16 +148,12 @@ async function handlePayCreate(
     creatorId: interaction.user.id,
     customerId: customer ? customer.id : null,
     attachmentName,
+    txId,
   });
 
   const actionRow = buildPaymentActionRow(txId, targetUser.id);
 
-  const tagNotification = customer
-    ? `💳 **Yêu cầu thanh toán [${txId}]** gửi tới <@${customer.id}> từ <@${interaction.user.id}>:`
-    : `💳 **Yêu cầu thanh toán [${txId}]**:`;
-
   await interaction.reply({
-    content: tagNotification,
     components: [...container.toJSON(), actionRow.toJSON() as any],
     files,
     flags: MessageFlags.IsComponentsV2,
