@@ -243,16 +243,22 @@ function buildBotGroup(
       sub
         .setName('announce')
         .setDescription('Phát thông báo cập nhật tới toàn bộ máy chủ (chỉ dành cho Bot Owner).')
-        .addBooleanOption((opt) =>
+        .addStringOption((opt) =>
           opt
-            .setName('preview')
-            .setDescription('Chỉ xem trước giao diện thông báo, chưa phát thật (mặc định: false)')
+            .setName('title')
+            .setDescription('Tiêu đề thông báo tùy chỉnh (tùy chọn)')
             .setRequired(false),
         )
         .addStringOption((opt) =>
           opt
             .setName('message')
-            .setDescription('Lời nhắn thêm từ nhà phát triển (tùy chọn)')
+            .setDescription('Nội dung thông báo cần phát sóng (tùy chọn nếu muốn gửi changelog)')
+            .setRequired(false),
+        )
+        .addBooleanOption((opt) =>
+          opt
+            .setName('preview')
+            .setDescription('Chỉ xem trước giao diện thông báo, chưa phát thật (mặc định: false)')
             .setRequired(false),
         ),
     );
@@ -503,41 +509,78 @@ async function handleBotSetAnnounceChannel(
   });
 }
 
-/** Xây dựng container thông báo cập nhật tính năng mới */
-export function buildAnnouncementContainer(customNote?: string | null, isPreview?: boolean) {
+export interface AnnouncementOptions {
+  title?: string | null;
+  message?: string | null;
+  isPreview?: boolean;
+}
+
+/** Xây dựng container thông báo phát sóng toàn hệ thống */
+export function buildAnnouncementContainer(
+  optionsOrNote?: string | null | AnnouncementOptions,
+  isPreviewArg?: boolean,
+) {
+  let title: string | null | undefined;
+  let message: string | null | undefined;
+  let isPreview = isPreviewArg ?? false;
+
+  if (typeof optionsOrNote === 'object' && optionsOrNote !== null) {
+    title = optionsOrNote.title;
+    message = optionsOrNote.message;
+    if (optionsOrNote.isPreview !== undefined) {
+      isPreview = optionsOrNote.isPreview;
+    }
+  } else {
+    message = optionsOrNote;
+  }
+
   const previewBanner = isPreview
     ? '> 👁️ **CHẾ ĐỘ XEM TRƯỚC (PREVIEW)**\n> *Giao diện thông báo mẫu sẽ gửi tới các máy chủ. Chạy lệnh với `preview: false` để phát thật.*\n\n'
     : '';
 
-  const defaultChangelog = [
-    '# 🚀 BẢN CẬP NHẬT TÍNH NĂNG MỚI — BOT KLB & DELTA FORCE',
-    '',
-    'Chào các Chỉ Huy và Quản trị viên máy chủ! Bot KLB vừa được nâng cấp các tính năng tác chiến và tiện ích tự động mới nhất:',
-    '',
-    '### 1. 🗺️ Trình Mô Phỏng Bản Đồ 3D Tương Tác (`/df map`)',
-    '• Trải nghiệm mô phỏng di chuyển góc nhìn 3D (FPS / Top-down) trực quan trên mọi thiết bị.',
-    '• Soi vị trí két sắt, hòm Safe Box, tài nguyên giá trị cao và các lối rút quân an toàn.',
-    '',
-    '### 2. 🔫 Thư Viện Build Súng Chuẩn Meta Garena (`/df build` / `/df gun`)',
-    '• Tra cứu cấu hình phụ kiện tối ưu cho từng loại vũ khí theo meta chiến đấu hiện tại.',
-    '• Sao chép mã Gunsmith code chỉ với 1-click để nhập thẳng vào game.',
-    '',
-    '### 3. 🤖 Hệ Thống Cẩm Nang Tự Động & Live Board Thông Minh (`/df autopost`)',
-    '• Định kỳ phát sóng cẩm nang Bản đồ 3D và Build súng meta tới các kênh cộng đồng.',
-    '• **Cơ chế Live Board sạch sẽ:** Tự động dọn dẹp tin nhắn cũ trước khi đăng bài mới, giữ kênh luôn ngăn nắp và không làm trôi tin nhắn chia sẻ của thành viên.',
-    '',
-    '### 4. ⚙️ Phân Luồng Kênh Quản Trị Tùy Biến',
-    '• `/df code setchannel`: Thiết lập kênh nhận mật mã hòm đồ két sắt hàng ngày (08:00 sáng).',
-    '• `/config bot setannouncechannel`: Thiết lập kênh nhận thông báo cập nhật của bot.',
-    '• `/df help`: Xem toàn bộ danh sách lệnh và hướng dẫn cài đặt tiện ích đồng bộ tài khoản.',
-    '',
-    customNote ? `💬 **Lời nhắn từ Nhà phát triển:**\n${customNote}\n\n` : '',
-    '> 💡 *Admin server có thể dùng lệnh `/config bot setannouncechannel` để chọn kênh nhận tin cập nhật chính thức từ bot.*',
-  ]
-    .filter(Boolean)
-    .join('\n');
+  const footerText =
+    '> 💡 *Admin server có thể dùng lệnh `/config bot setannouncechannel` để chọn kênh nhận tin cập nhật chính thức từ bot.*';
 
-  const content = `${previewBanner}${defaultChangelog}`;
+  let bodyContent = '';
+
+  if (message && message.trim().length > 0) {
+    // Trường hợp 1: Có nội dung tùy biến từ Developer -> Phát chính xác nội dung này, không chèn changelog cũ
+    const headerTitle = title?.trim()
+      ? `# ${title.trim()}`
+      : '# 📢 THÔNG BÁO TỪ BAN QUẢN TRỊ BOT DELTA';
+    bodyContent = [headerTitle, '', message.trim(), '', footerText].join('\n');
+  } else {
+    // Trường hợp 2: Không truyền message -> Phát thông báo giới thiệu/cập nhật tính năng Bot Delta
+    const headerTitle = title?.trim()
+      ? `# ${title.trim()}`
+      : '# 🚀 BẢN CẬP NHẬT TÍNH NĂNG MỚI — BOT DELTA';
+    bodyContent = [
+      headerTitle,
+      '',
+      'Chào các Chỉ Huy và Quản trị viên máy chủ! Bot Delta vừa được cập nhật hệ thống với các tính năng tác chiến và tiện ích tự động:',
+      '',
+      '### 1. 🗺️ Trình Mô Phỏng Bản Đồ 3D Tương Tác (`/df map`)',
+      '• Trải nghiệm mô phỏng di chuyển góc nhìn 3D (FPS / Top-down) trực quan trên mọi thiết bị.',
+      '• Soi vị trí két sắt, hòm Safe Box, tài nguyên giá trị cao và các lối rút quân an toàn.',
+      '',
+      '### 2. 🔫 Thư Viện Build Súng Chuẩn Meta Garena (`/df build` / `/df gun`)',
+      '• Tra cứu cấu hình phụ kiện tối ưu cho từng loại vũ khí theo meta chiến đấu hiện tại.',
+      '• Sao chép mã Gunsmith code chỉ với 1-click để nhập thẳng vào game.',
+      '',
+      '### 3. 🤖 Hệ Thống Cẩm Nang Tự Động & Live Board Thông Minh (`/df autopost`)',
+      '• Định kỳ phát sóng cẩm nang Bản đồ 3D và Build súng meta tới các kênh cộng đồng.',
+      '• Tự động dọn dẹp tin nhắn cũ trước khi đăng bài mới, giữ kênh luôn ngăn nắp.',
+      '',
+      '### 4. ⚙️ Phân Luồng Kênh Quản Trị & Tra Cứu',
+      '• `/df code setchannel`: Thiết lập kênh nhận mật mã hòm đồ két sắt hàng ngày (08:00 sáng).',
+      '• `/config bot setannouncechannel`: Thiết lập kênh nhận thông báo cập nhật của bot.',
+      '• `/df help`: Xem toàn bộ danh sách lệnh và hướng dẫn cài đặt tiện ích đồng bộ tài khoản.',
+      '',
+      footerText,
+    ].join('\n');
+  }
+
+  const content = `${previewBanner}${bodyContent}`;
 
   return makeResult(
     [
@@ -645,10 +688,16 @@ export async function handleBotAnnounce(interaction: ChatInputCommandInteraction
   }
 
   const preview = interaction.options.getBoolean('preview') ?? false;
+  const customTitle = interaction.options.getString('title');
   const customMessage = interaction.options.getString('message');
 
+  const container = buildAnnouncementContainer({
+    title: customTitle,
+    message: customMessage,
+    isPreview: preview,
+  });
+
   if (preview) {
-    const container = buildAnnouncementContainer(customMessage, true);
     await sendReply(interaction, {
       components: container.toJSON(),
     });
@@ -657,7 +706,6 @@ export async function handleBotAnnounce(interaction: ChatInputCommandInteraction
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const container = buildAnnouncementContainer(customMessage, false);
   const guildList = Array.from(interaction.client.guilds.cache.values());
   const totalGuildCount = interaction.client.guilds.cache.size;
   const settingsService = getSettingsService();

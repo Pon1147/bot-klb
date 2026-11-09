@@ -4,7 +4,7 @@
  * Verify builders, toJSON structure, options, và execute dispatch.
  */
 
-import { data, execute } from '../../src/features/admin/config.command.js';
+import { data, execute, buildAnnouncementContainer } from '../../src/features/admin/config.command.js';
 import { executeSectionCommand } from '../../src/utils/section-config.handlers.js';
 import { startInteractiveEdit } from '../../src/features/container/container-edit.handler.js';
 import { handleContainerReset } from '../../src/features/container/container-reset.handler.js';
@@ -531,6 +531,40 @@ describe('/config command — Execute Dispatch', () => {
           content: expect.stringContaining('<#chan-1> (#thông-báo)'),
         }),
       );
+    });
+
+    describe('buildAnnouncementContainer', () => {
+      it('khi có message tùy biến, bot CHỈ phát nội dung tùy biến và KHÔNG chèn changelog cũ', () => {
+        const customMsg = 'Gửi các admin server, vui lòng cấp quyền gửi tin nhắn daily cho bot nhé!';
+        const result = buildAnnouncementContainer({ message: customMsg });
+        const jsonStr = JSON.stringify(result);
+
+        expect(jsonStr).toContain(customMsg);
+        expect(jsonStr).toContain('📢 THÔNG BÁO TỪ BAN QUẢN TRỊ BOT DELTA');
+        // Không chứa changelog cũ
+        expect(jsonStr).not.toContain('Trình Mô Phỏng Bản Đồ 3D Tương Tác');
+        expect(jsonStr).not.toContain('Thư Viện Build Súng Chuẩn Meta Garena');
+      });
+
+      it('hỗ trợ tiêu đề tùy biến qua title option', () => {
+        const result = buildAnnouncementContainer({
+          title: '⚠️ BẢO TRÌ HỆ THỐNG KHẨN CẤP',
+          message: 'Hệ thống bảo trì 30 phút.',
+        });
+        const jsonStr = JSON.stringify(result);
+
+        expect(jsonStr).toContain('# ⚠️ BẢO TRÌ HỆ THỐNG KHẨN CẤP');
+        expect(jsonStr).toContain('Hệ thống bảo trì 30 phút.');
+      });
+
+      it('khi không truyền message, bot phát changelog giới thiệu chuẩn của Bot Delta', () => {
+        const result = buildAnnouncementContainer();
+        const jsonStr = JSON.stringify(result);
+
+        expect(jsonStr).toContain('BẢN CẬP NHẬT TÍNH NĂNG MỚI — BOT DELTA');
+        expect(jsonStr).toContain('Bot Delta vừa được cập nhật');
+        expect(jsonStr).not.toContain('BOT KLB');
+      });
     });
   });
 });

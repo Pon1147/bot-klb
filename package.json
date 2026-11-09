@@ -1,6 +1,6 @@
 {
   "name": "discord-bot-klb",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "Discord Bot - Exclusive Server Bot",
   "main": "dist/index.js",
   "scripts": {
