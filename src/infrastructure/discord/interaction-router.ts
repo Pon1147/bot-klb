@@ -11,7 +11,7 @@ import {
   StringSelectMenuInteraction,
 } from 'discord.js';
 import { getMatchList } from '../../services/deltaforce.api.js';
-import { MAP_NAMES } from '../../config/deltaforce.config.js';
+import { resolveMapName } from '../../services/df-metadata.service.js';
 import { resolveUserDfToken } from '../../utils/df-token.utils.js';
 import { formatVietnamDateTime } from '../../utils/df-format.utils.js';
 import type { DfMatchEntry } from '../../types/deltaforce.types.js';
@@ -354,7 +354,7 @@ async function handleAutocomplete(
         const choices = list.map((m: DfMatchEntry) => {
           const win = m.result === 1;
           const tag = win ? '🏆 [WIN]' : '💀 [DEFEAT]';
-          const map = MAP_NAMES[Number(m.map_id)] ?? `Map #${m.map_id}`;
+          const map = resolveMapName(m.map_id);
           const time = m.match_time ? formatVietnamDateTime(m.match_time) : '';
           const name = `${tag} ${map} (${time})`.slice(0, 100);
           return { name, value: String(m.room_id) };

@@ -19,12 +19,12 @@ import { runDfCommand } from '../../utils/df-command.runner.js';
 import { resolveUserDfToken } from '../../utils/df-token.utils.js';
 import { makeResult, buildErrorContainer } from '../../utils/container.utils.js';
 import { resolveOperator } from '../../utils/df-operator.utils.js';
+import { resolveMapName } from '../../services/df-metadata.service.js';
 import {
   EMOJI_WIN,
   EMOJI_DEFEAT,
   EMOJI_MONEY,
   EMOJI_KILL,
-  MAP_NAMES,
 } from '../../config/deltaforce.config.js';
 import {
   formatVietnamDateTime,
@@ -49,7 +49,7 @@ export function buildMatchContainerWithSelect(
   const isWin = detail.result === 1;
   const resultEmoji = isWin ? EMOJI_WIN : EMOJI_DEFEAT;
   const resultText = isWin ? 'RÚT QUÂN THÀNH CÔNG (WIN)' : 'TỬ TRẬN (DEFEAT)';
-  const mapName = MAP_NAMES[Number(detail.map_id)] ?? `Bản đồ #${detail.map_id}`;
+  const mapName = resolveMapName(detail.map_id);
 
   // Trích xuất thành tích của chính người chơi từ mảng members
   const selfMember = detail.members?.find((m) => m.is_self);
@@ -126,7 +126,7 @@ export function buildMatchContainerWithSelect(
     const options = recentMatches.slice(0, 10).map((m) => {
       const win = m.result === 1;
       const tag = win ? '🏆 [WIN]' : '💀 [DEFEAT]';
-      const map = MAP_NAMES[Number(m.map_id)] ?? `Map #${m.map_id}`;
+      const map = resolveMapName(m.map_id);
       const time = m.match_time ? formatVietnamDateTime(m.match_time) : '';
 
       return {

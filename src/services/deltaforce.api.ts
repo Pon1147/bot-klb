@@ -21,9 +21,8 @@ import {
   DF_ORIGIN,
   DF_REFERER,
   API_TIMEOUT_MS,
-  SEASONS_MY_DATA,
-  SEASON_LATEST,
 } from '../config/deltaforce.config.js';
+import { getAllSeasonIds, getLatestSeasonNo } from './df-metadata.service.js';
 import { createLogger } from '../utils/logger.js';
 import { maskString } from '../utils/string.utils.js';
 
@@ -281,7 +280,7 @@ export async function getMyData(token: DfApiToken): Promise<DfMyDataResponse> {
     lang_type: LANG_TYPE,
     needLogin: true,
     report_type: 1,
-    seasonno: SEASONS_MY_DATA,
+    seasonno: getAllSeasonIds(),
   };
 
   const resData = await postSafe<DfMyDataResponse>(instance, '/GetMyData', body);
@@ -366,7 +365,7 @@ export async function getMatchList(
     lang_type: LANG_TYPE,
     needLogin: true,
     report_type: 1,
-    seasonno: [SEASON_LATEST],
+    seasonno: [getLatestSeasonNo()],
     ...(options?.offset !== undefined ? { offset: options.offset } : {}),
     ...(options?.limit !== undefined ? { limit: options.limit } : {}),
   };

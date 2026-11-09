@@ -17,8 +17,8 @@ import {
   EMOJI_DEFEAT,
   EMOJI_MONEY,
   EMOJI_KILL,
-  MAP_NAMES,
 } from '../../config/deltaforce.config.js';
+import { resolveMapName } from '../../services/df-metadata.service.js';
 import { MAX_HISTORY_LIMIT } from '../../config/team-find.config.js';
 import { formatVietnamDateTime, formatCoin } from '../../utils/df-format.utils.js';
 import { MAX_HISTORY_PAGE } from '../../config/app.constants.js';
@@ -31,7 +31,7 @@ function buildMatchItemSection(match: DfMatchEntry): Record<string, unknown> {
 
   const avatarUrl = operatorIcon || operator.avatarUrl;
   const time = formatVietnamDateTime(match.match_time);
-  const mapName = MAP_NAMES[Number(match.map_id)] ?? `Map ${match.map_id}`;
+  const mapName = resolveMapName(match.map_id);
   const result = match.result === 1 ? `${EMOJI_WIN} Win` : `${EMOJI_DEFEAT} Defeat`;
   const extract = formatCoin(match.carry_out_value, false);
 

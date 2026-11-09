@@ -13,6 +13,8 @@ const {
 
 // ===== CONSTANTS =====
 const DEFAULT_CODES = [
+  'DFVN2Q9C7X4N',
+  'dJ8qArxYTQDbjzVc2WQw',
   'DFPSS1301026',
   'ga_aurora',
   'ga_deltainto2027',

@@ -28,6 +28,7 @@ import {
   syncAutoPostFromMongoToSqlite,
 } from '../database/mongo/index.js';
 import { SettingsService, setSettingsService } from '../services/settings.service.js';
+import { refreshDfMetadata } from '../services/df-metadata.service.js';
 import {
   CommandModule,
   deployCommands,
@@ -163,6 +164,15 @@ export async function bootstrap(): Promise<Client> {
     logger.info(
       `RBAC default permissions loaded: ${Object.keys(DEFAULT_PERMISSIONS.commands).length} command(s)`,
     );
+  }
+
+  // Step 3c: Preload Delta Force dynamic metadata (Operators, Seasons, Maps)
+  logger.info('Preloading Delta Force metadata from CDN...');
+  try {
+    await refreshDfMetadata();
+    logger.info('Delta Force metadata ready');
+  } catch (err) {
+    logger.warn('Failed to preload Delta Force metadata: ' + (err as Error).message);
   }
 
   // Step 4: Create Discord client
