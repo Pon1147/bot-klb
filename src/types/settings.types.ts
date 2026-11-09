@@ -94,6 +94,18 @@ export interface QrServerSettings {
 }
 
 /**
+ * Cấu hình thanh toán VietQR cho từng máy chủ.
+ */
+export interface VietQrSettings {
+  enabled: boolean;
+  bankId: string | null; // Mã ngân hàng (VD: 'MB', 'VCB', 'TCB'...)
+  accountNo: string | null; // Số tài khoản ngân hàng
+  accountName: string | null; // Tên chủ tài khoản
+  prefix: string; // Cú pháp tiền tố chuyển khoản (mặc định: 'NAP')
+  template: 'compact' | 'compact2' | 'qr_only' | 'print';
+}
+
+/**
  * Toàn bộ settings của 1 guild.
  * Thêm feature mới chỉ cần add key vào interface này + default.
  */
@@ -105,6 +117,7 @@ export interface GuildSettings {
   rbac: RbacRoleSettings;
   botAnnounce: BotAnnounceSettings;
   qrServer?: QrServerSettings;
+  vietqr?: VietQrSettings;
 }
 
 /**

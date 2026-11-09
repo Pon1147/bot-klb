@@ -21,9 +21,12 @@ const mockSettingsService = {
   }),
 };
 
+const mockIsQrServerEnabled = jest.fn().mockReturnValue(true);
+
 jest.mock('../../src/services/settings.service.js', () => ({
   getSettingsService: jest.fn(() => mockSettingsService),
   SettingsService: jest.fn().mockImplementation(() => mockSettingsService),
+  isQrServerEnabled: (...args: any[]) => mockIsQrServerEnabled(...args),
 }));
 
 jest.mock('../../src/utils/section-config.handlers.js', () => {
@@ -89,7 +92,7 @@ describe('/config command — Structure & Builder', () => {
     expect(json.default_member_permissions).toBeUndefined();
   });
 
-  it('phải có đúng 7 SubcommandGroups: roles, welcome, leave, booster, container, bot, qr-server', () => {
+  it('phải có đúng 8 SubcommandGroups: roles, welcome, leave, booster, container, bot, qr-server, vietqr', () => {
     const groupNames = json.options?.map((opt: any) => opt.name);
     expect(groupNames).toEqual([
       'roles',
@@ -99,6 +102,7 @@ describe('/config command — Structure & Builder', () => {
       'container',
       'bot',
       'qr-server',
+      'vietqr',
     ]);
     json.options?.forEach((opt: any) => {
       expect(opt.type).toBe(2); // 2 = SUB_COMMAND_GROUP
@@ -737,6 +741,106 @@ describe('/config command — Execute Dispatch', () => {
         const jsonStr = JSON.stringify(replyPayload);
         expect(jsonStr).toContain('Trạng Thái Cấp Phép QR Server');
         expect(jsonStr).toContain('ĐÃ KÍCH HOẠT (OPEN)');
+      });
+    });
+
+    describe('group: vietqr', () => {
+      it('SlashCommandBuilder nên có nhóm vietqr với subcommands set và status', () => {
+        const cmdJson = data.toJSON();
+        const qrGroup = cmdJson.options?.find((opt: any) => opt.name === 'vietqr') as any;
+        expect(qrGroup).toBeDefined();
+        const subNames = qrGroup.options?.map((opt: any) => opt.name);
+        expect(subNames).toEqual(['set', 'status']);
+      });
+
+      it('vietqr set: từ chối khi server chưa được Bot Owner mở tính năng QR', async () => {
+        mockIsQrServerEnabled.mockReturnValueOnce(false);
+
+        const interaction = createMockInteraction({
+          guildId: 'guild-unauthorized',
+          options: {
+            getSubcommandGroup: jest.fn().mockReturnValue('vietqr'),
+            getSubcommand: jest.fn().mockReturnValue('set'),
+            getString: jest.fn((key: string) => {
+              if (key === 'bank') return 'MB';
+              if (key === 'account_no') return '123456';
+              if (key === 'account_name') return 'NGUYEN VAN A';
+              return null;
+            }),
+          },
+        });
+
+        await execute(interaction);
+
+        const replyPayload = interaction.reply.mock.calls[0][0];
+        const jsonStr = JSON.stringify(replyPayload);
+        expect(jsonStr).toContain('Tính năng QR Thanh toán tự động chưa được mở');
+      });
+
+      it('vietqr set: cập nhật thông tin ngân hàng thành công khi server đã mở QR', async () => {
+        mockIsQrServerEnabled.mockReturnValueOnce(true);
+
+        const interaction = createMockInteraction({
+          guildId: 'guild-authorized',
+          options: {
+            getSubcommandGroup: jest.fn().mockReturnValue('vietqr'),
+            getSubcommand: jest.fn().mockReturnValue('set'),
+            getString: jest.fn((key: string) => {
+              if (key === 'bank') return 'MB';
+              if (key === 'account_no') return '0987654321';
+              if (key === 'account_name') return 'NGUYEN VAN A';
+              if (key === 'prefix') return 'NAP';
+              return null;
+            }),
+          },
+        });
+
+        await execute(interaction);
+
+        expect(mockSettingsService.update).toHaveBeenCalledWith('guild-authorized', {
+          vietqr: {
+            enabled: true,
+            bankId: 'MB',
+            accountNo: '0987654321',
+            accountName: 'NGUYEN VAN A',
+            prefix: 'NAP',
+            template: 'compact2',
+          },
+        });
+
+        const replyPayload = interaction.reply.mock.calls[0][0];
+        const jsonStr = JSON.stringify(replyPayload);
+        expect(jsonStr).toContain('Cấu Hình VietQR Thanh Toán Đã Được Cập Nhật');
+        expect(jsonStr).toContain('MBBank (Quân Đội)');
+      });
+
+      it('vietqr status: xem trạng thái cấu hình hiện tại', async () => {
+        mockIsQrServerEnabled.mockReturnValueOnce(true);
+        mockSettingsService.get.mockReturnValueOnce({
+          vietqr: {
+            enabled: true,
+            bankId: 'MB',
+            accountNo: '0987654321',
+            accountName: 'NGUYEN VAN A',
+            prefix: 'NAP',
+            template: 'compact2',
+          },
+        });
+
+        const interaction = createMockInteraction({
+          guildId: 'guild-authorized',
+          options: {
+            getSubcommandGroup: jest.fn().mockReturnValue('vietqr'),
+            getSubcommand: jest.fn().mockReturnValue('status'),
+          },
+        });
+
+        await execute(interaction);
+
+        const replyPayload = interaction.reply.mock.calls[0][0];
+        const jsonStr = JSON.stringify(replyPayload);
+        expect(jsonStr).toContain('Cấu Hình VietQR Máy Chủ');
+        expect(jsonStr).toContain('MBBank (Quân Đội)');
       });
     });
   });

@@ -29,7 +29,12 @@ import {
   TextChannel,
 } from 'discord.js';
 import Database from 'better-sqlite3';
-import { getSettingsService, SettingsService } from '../../services/settings.service.js';
+import {
+  getSettingsService,
+  SettingsService,
+  isQrServerEnabled,
+} from '../../services/settings.service.js';
+import { SUPPORTED_BANKS } from '../../utils/vietqr.utils.js';
 import { botConfig } from '../../config/bot.config.js';
 import {
   buildErrorContainer,
@@ -300,6 +305,49 @@ function buildQrServerGroup(
     );
 }
 
+/** Nhóm vietqr: cấu hình tài khoản ngân hàng nhận tiền chuyển khoản (yêu cầu server được mở QR) */
+function buildVietQrGroup(
+  group: SlashCommandSubcommandGroupBuilder,
+): SlashCommandSubcommandGroupBuilder {
+  return group
+    .setName('vietqr')
+    .setDescription('Cấu hình tài khoản ngân hàng nhận tiền chuyển khoản VietQR.')
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
+        .setName('set')
+        .setDescription('Cài đặt thông tin tài khoản ngân hàng nhận tiền.')
+        .addStringOption((opt) =>
+          opt
+            .setName('bank')
+            .setDescription('Mã ngân hàng (ví dụ: MB, VCB, TCB, ACB, VPB, TPB, BIDV...)')
+            .setRequired(true),
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName('account_no')
+            .setDescription('Số tài khoản ngân hàng nhận tiền')
+            .setRequired(true),
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName('account_name')
+            .setDescription('Tên chủ tài khoản (viết hoa không dấu, ví dụ: NGUYEN VAN A)')
+            .setRequired(true),
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName('prefix')
+            .setDescription('Cú pháp tiền tố nội dung chuyển khoản (mặc định: NAP)')
+            .setRequired(false),
+        ),
+    )
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
+        .setName('status')
+        .setDescription('Xem thông tin tài khoản nhận tiền hiện tại của máy chủ.'),
+    );
+}
+
 export const data = new SlashCommandBuilder()
   .setName('config')
   .setDescription('Quản lý cấu hình bot, roles, welcome, booster, và container.')
@@ -309,7 +357,8 @@ export const data = new SlashCommandBuilder()
   .addSubcommandGroup(buildBoosterGroup)
   .addSubcommandGroup(buildContainerGroup)
   .addSubcommandGroup(buildBotGroup)
-  .addSubcommandGroup(buildQrServerGroup);
+  .addSubcommandGroup(buildQrServerGroup)
+  .addSubcommandGroup(buildVietQrGroup);
 
 // ─── Roles Mapping ────────────────────────────────────────────────
 
@@ -495,6 +544,15 @@ export async function execute(
         await handleQrServerToggle(interaction, db);
       } else if (subcommand === 'status') {
         await handleQrServerStatus(interaction, db);
+      }
+      break;
+    }
+
+    case 'vietqr': {
+      if (subcommand === 'set') {
+        await handleVietQrSet(interaction, db);
+      } else if (subcommand === 'status') {
+        await handleVietQrStatus(interaction, db);
       }
       break;
     }
@@ -953,6 +1011,122 @@ export async function handleQrServerStatus(
       `• **Cập nhật lần cuối**: ${updatedTime}\n` +
       `• **Người thực hiện**: ${updatedByUser}` +
       `${envTag}`,
+  );
+
+  await sendReply(interaction, {
+    components: container.toJSON(),
+  });
+}
+
+// ─── VietQR Subcommand Handlers (Admin with Premium Guild Check) ───
+
+/** Subcommand `vietqr set` — Cài đặt thông tin tài khoản ngân hàng nhận tiền */
+export async function handleVietQrSet(
+  interaction: ChatInputCommandInteraction,
+  _db?: Database.Database,
+): Promise<void> {
+  const guildId = interaction.guildId;
+  if (!guildId) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        'Lệnh này chỉ có thể sử dụng trong máy chủ Discord.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  // Guard: Server phải được Bot Owner mở tính năng QR trước đó
+  if (!isQrServerEnabled(guildId)) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '🔒 Tính năng QR Thanh toán tự động chưa được mở cho máy chủ này.\nVui lòng liên hệ Chủ sở hữu Bot (Bot Owner) để đăng ký kích hoạt gói QR Premium.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  const bank = interaction.options.getString('bank', true).trim().toUpperCase();
+  const accountNo = interaction.options.getString('account_no', true).trim();
+  const accountName = interaction.options.getString('account_name', true).trim().toUpperCase();
+  const prefix = interaction.options.getString('prefix')?.trim().toUpperCase() || 'NAP';
+
+  const settingsService = getSettingsService();
+  settingsService.update(guildId, {
+    vietqr: {
+      enabled: true,
+      bankId: bank,
+      accountNo,
+      accountName,
+      prefix,
+      template: 'compact2',
+    },
+  });
+
+  const bankDisplayName = SUPPORTED_BANKS[bank] ?? bank;
+  const container = buildInfoContainer(
+    `### 💳 Cấu Hình VietQR Thanh Toán Đã Được Cập Nhật\n\n` +
+      `• **Ngân hàng**: **${bankDisplayName}** (\`${bank}\`)\n` +
+      `• **Số tài khoản**: \`${accountNo}\`\n` +
+      `• **Chủ tài khoản**: **${accountName}**\n` +
+      `• **Tiền tố nội dung**: \`${prefix}\`\n` +
+      `• **Trạng thái**: 🟢 Sẵn sàng nhận chuyển khoản\n\n` +
+      `> ℹ️ *Thành viên máy chủ hiện có thể sử dụng lệnh \`/pay create\` để tạo mã QR thanh toán tự động.*`,
+  );
+
+  await sendReply(interaction, {
+    components: container.toJSON(),
+  });
+}
+
+/** Subcommand `vietqr status` — Xem cấu hình tài khoản ngân hàng hiện tại của máy chủ */
+export async function handleVietQrStatus(
+  interaction: ChatInputCommandInteraction,
+  _db?: Database.Database,
+): Promise<void> {
+  const guildId = interaction.guildId;
+  if (!guildId) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        'Lệnh này chỉ có thể sử dụng trong máy chủ Discord.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  // Guard: Server phải được Bot Owner mở tính năng QR trước đó
+  if (!isQrServerEnabled(guildId)) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '🔒 Tính năng QR Thanh toán tự động chưa được mở cho máy chủ này.\nVui lòng liên hệ Chủ sở hữu Bot (Bot Owner) để đăng ký kích hoạt gói QR Premium.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  const settingsService = getSettingsService();
+  const settings = settingsService.get(guildId);
+  const vietqr = settings.vietqr;
+
+  if (!vietqr || !vietqr.bankId || !vietqr.accountNo) {
+    await sendReply(interaction, {
+      components: buildInfoContainer(
+        `### 💳 Cấu Hình VietQR Máy Chủ\n\n` +
+          `• **Trạng thái**: ⚠️ Chưa thiết lập tài khoản nhận tiền\n\n` +
+          `> *Quản trị viên vui lòng sử dụng lệnh \`/config vietqr set\` để cài đặt thông tin số tài khoản.*`,
+      ).toJSON(),
+    });
+    return;
+  }
+
+  const bankDisplayName =
+    SUPPORTED_BANKS[vietqr.bankId.toUpperCase()] ?? vietqr.bankId.toUpperCase();
+  const container = buildInfoContainer(
+    `### 💳 Cấu Hình VietQR Máy Chủ\n\n` +
+      `• **Ngân hàng**: **${bankDisplayName}** (\`${vietqr.bankId.toUpperCase()}\`)\n` +
+      `• **Số tài khoản**: \`${vietqr.accountNo}\`\n` +
+      `• **Chủ tài khoản**: **${vietqr.accountName ?? 'Chưa đặt'}**\n` +
+      `• **Tiền tố nội dung**: \`${vietqr.prefix ?? 'NAP'}\`\n` +
+      `• **Trạng thái**: ${vietqr.enabled ? '🟢 Đang hoạt động' : '🔴 Tạm dừng'}`,
   );
 
   await sendReply(interaction, {

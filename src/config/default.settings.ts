@@ -74,6 +74,14 @@ export const defaultGuildSettings: GuildSettings = {
     updatedAt: null,
     updatedBy: null,
   },
+  vietqr: {
+    enabled: true,
+    bankId: null,
+    accountNo: null,
+    accountName: null,
+    prefix: 'NAP',
+    template: 'compact2',
+  },
 };
 
 /**

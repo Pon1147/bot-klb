@@ -169,7 +169,7 @@ export type AuthorityLevel =
  * - TEAM_ACCESS: Quyền tìm đồng đội (Mặc định Everyone, hoặc Member role nếu cấu hình)
  */
 export type Policy =
-  'MANAGE_RBAC' | 'MANAGE_CONFIG' | 'MANAGE_DF_CODE' | 'DF_ACCESS' | 'TEAM_ACCESS';
+  'MANAGE_RBAC' | 'MANAGE_CONFIG' | 'MANAGE_DF_CODE' | 'DF_ACCESS' | 'TEAM_ACCESS' | 'PAY_ACCESS';
 
 export const Policy = {
   MANAGE_RBAC: 'MANAGE_RBAC',
@@ -177,6 +177,7 @@ export const Policy = {
   MANAGE_DF_CODE: 'MANAGE_DF_CODE',
   DF_ACCESS: 'DF_ACCESS',
   TEAM_ACCESS: 'TEAM_ACCESS',
+  PAY_ACCESS: 'PAY_ACCESS',
 } as const;
 
 // ─── Command Path → Policy Mapping (PHASE 4) ──────────────────────
@@ -189,6 +190,8 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'config.bot.setannouncechannel': Policy.MANAGE_RBAC,
   'config.qr-server.toggle': Policy.MANAGE_RBAC,
   'config.qr-server.status': Policy.MANAGE_RBAC,
+  'config.vietqr.set': Policy.MANAGE_CONFIG,
+  'config.vietqr.status': Policy.MANAGE_CONFIG,
 
   'config.welcome.setchannel': Policy.MANAGE_CONFIG,
   'config.welcome.setrole': Policy.MANAGE_CONFIG,
@@ -238,6 +241,7 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'df.autopost.run': Policy.MANAGE_RBAC,
 
   'team.find': Policy.TEAM_ACCESS,
+  'pay.create': Policy.PAY_ACCESS,
 };
 
 /**
@@ -351,8 +355,9 @@ export function resolvePolicy(policy: Policy, options: ResolvePolicyOptions): Re
     }
 
     case 'DF_ACCESS':
-    case 'TEAM_ACCESS': {
-      // Moderator cũng có toàn quyền truy cập game
+    case 'TEAM_ACCESS':
+    case 'PAY_ACCESS': {
+      // Moderator cũng có toàn quyền truy cập game / tính năng
       if (hasModerator) {
         return { allowed: true, matchedAuthority: 'MODERATOR' };
       }
