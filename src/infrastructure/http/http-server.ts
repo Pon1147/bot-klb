@@ -330,7 +330,11 @@ export function createRequestHandler(client: Client): http.RequestListener {
           `[PayOS] Nhận thông báo thanh toán hợp lệ: Mã #${orderCode}, Số tiền: ${webhookData.amount} đ`,
         );
 
-        if (client.database && Number.isInteger(orderCode)) {
+        if (
+          client.database &&
+          Number.isInteger(orderCode) &&
+          (payload.code === '00' || webhookData.code === '00')
+        ) {
           const donation = getDonationByOrderCode(client.database, orderCode);
           if (donation) {
             updateDonationStatus(client.database, orderCode, 'paid');

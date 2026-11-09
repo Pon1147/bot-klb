@@ -153,8 +153,14 @@ export const botConfig = {
   // DeltaForceTools Weapon Loadouts API Token
   weaponLoadoutsToken: process.env.WEAPON_LOADOUTS_TOKEN || '',
   // PayOS Integration for Bot Donations / Buy Me a Coffee
-  payosClientId: process.env.PAYOS_CLIENT_ID || '',
-  payosApiKey: process.env.PAYOS_API_KEY || '',
-  payosChecksumKey: process.env.PAYOS_CHECKSUM_KEY || '',
-  payosWebhookUrl: process.env.PAYOS_WEBHOOK_URL || '',
+  payosClientId:
+    process.env.PAYOS_CLIENT_ID || (process.env.NODE_ENV === 'test' ? 'test-payos-client-id' : ''),
+  payosApiKey:
+    process.env.PAYOS_API_KEY || (process.env.NODE_ENV === 'test' ? 'test-payos-api-key' : ''),
+  payosChecksumKey:
+    process.env.PAYOS_CHECKSUM_KEY ||
+    (process.env.NODE_ENV === 'test' ? 'test-payos-checksum-key-123456789' : ''),
+  payosWebhookUrl:
+    process.env.PAYOS_WEBHOOK_URL ||
+    (process.env.NODE_ENV === 'test' ? 'http://localhost:8080/webhook/payment' : ''),
 };

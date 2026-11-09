@@ -16,6 +16,9 @@ describe('HttpServer PayOS Webhook', () => {
   let baseUrl: string;
 
   beforeAll((done) => {
+    if (!botConfig.payosChecksumKey) {
+      botConfig.payosChecksumKey = 'test-payos-checksum-key-123456789';
+    }
     db = new Database(':memory:');
     initializePaymentTables(db);
 
@@ -132,5 +135,44 @@ describe('HttpServer PayOS Webhook', () => {
     const json = (await res.json()) as any;
     expect(json.success).toBe(false);
     expect(json.error).toBe('Invalid signature');
+  });
+
+  it('không cập nhật trạng thái paid nếu payload.code khác 00', async () => {
+    const orderCode = 998878;
+    createDonation(db, {
+      order_code: orderCode,
+      user_id: 'donor_user_2',
+      user_tag: 'Donor2#9999',
+      guild_id: 'guild_1',
+      amount: 20000,
+      message: 'Failed test',
+      status: 'pending',
+      created_at: Date.now(),
+    });
+
+    const data = {
+      orderCode,
+      amount: 20000,
+      description: 'Failed pay',
+      code: '01',
+      desc: 'failed',
+    };
+
+    const signature = generatePayosSignature(data, botConfig.payosChecksumKey);
+
+    const res = await fetch(`${baseUrl}/webhook/payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: '01',
+        desc: 'failed',
+        data,
+        signature,
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const updated = getDonationByOrderCode(db, orderCode);
+    expect(updated?.status).toBe('pending');
   });
 });
