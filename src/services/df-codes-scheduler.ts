@@ -4,6 +4,7 @@ import type Database from 'better-sqlite3';
 import { fetchDailyCodes } from './deltaforce.scraper.js';
 import { buildCodesContainer, hasAnyCodes } from '../features/delta-force/code.renderer.js';
 import { getSettingsService } from './settings.service.js';
+import { botConfig } from '../config/bot.config.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('DfCodesScheduler');
@@ -170,6 +171,11 @@ export function startDfCodesScheduler(client: Client, database: Database.Databas
 
   let scheduledCount = 0;
   for (const { guild_id } of guildIds) {
+    // Khi chạy ở môi trường DEV (local VSCode), chỉ lên lịch gửi codes cho server DEV, không chạm vào server Product
+    if (botConfig.isDev && process.env.NODE_ENV !== 'test' && guild_id !== botConfig.devGuildId) {
+      continue;
+    }
+
     const settings = settingsService.get(guild_id);
     const dfCodes = settings.dfCodes;
 

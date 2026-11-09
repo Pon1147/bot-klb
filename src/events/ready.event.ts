@@ -34,7 +34,13 @@ export async function execute(client: Client): Promise<void> {
     logger.info(`Connected to ${guilds.size} guild(s):`);
     let index = 1;
     for (const [, guild] of guilds) {
-      logger.info(`  ${index++}. "${guild.name}" (ID: ${guild.id}) — ${guild.memberCount} members`);
+      const tag =
+        guild.id === botConfig.devGuildId
+          ? '[ACTIVE DEV SERVER]'
+          : '[PRODUCT SERVER (Ignored in Dev)]';
+      logger.info(
+        `  ${index++}. "${guild.name}" (ID: ${guild.id}) — ${guild.memberCount} members ${tag}`,
+      );
     }
   }
   logger.divider();

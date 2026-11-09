@@ -18,6 +18,17 @@ function requireEnvVariable(variableName: string, fallback?: string): string {
 
 export type AppEnvironment = 'dev' | 'stage' | 'product';
 
+/** ID máy chủ Discord chuyên biệt dành riêng cho môi trường DEV thử nghiệm */
+export const DEV_GUILD_ID = '1475517632848592918';
+
+/**
+ * Kiểm tra xem một guildId có phải là máy chủ DEV thử nghiệm hay không.
+ */
+export function isDevGuild(guildId?: string | null): boolean {
+  if (!guildId) return false;
+  return guildId === (process.env.DEV_GUILD_ID || DEV_GUILD_ID);
+}
+
 /**
  * Phân giải môi trường hoạt động từ biến ENVIRONMENT hoặc NODE_ENV.
  * Hỗ trợ các giá trị: 'dev' | 'stage' | 'product' (mặc định: 'dev').
@@ -114,6 +125,7 @@ export const botConfig = {
   token: requireEnvVariable('BOT_TOKEN', 'test-bot-token'),
   clientId: requireEnvVariable('CLIENT_ID', '000000000000000000'),
   guildId: requireEnvVariable('GUILD_ID', '000000000000000000'),
+  devGuildId: process.env.DEV_GUILD_ID || DEV_GUILD_ID,
   welcomeChannelId: process.env.WELCOME_CHANNEL_ID || null,
   welcomeRoleId: process.env.WELCOME_ROLE_ID || null,
   dfCodesChannelId: process.env.DF_CODES_CHANNEL_ID || null,

@@ -18,6 +18,7 @@ import {
   getAutoPostLastMessage,
   saveAutoPostLastMessage,
 } from '../database/df-autopost.db.js';
+import { botConfig } from '../config/bot.config.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('DfAutoPostScheduler');
@@ -106,7 +107,12 @@ export async function broadcastAutoPost(
 
   try {
     const delayMs = options.delayMs ?? 1000;
-    const guilds = Array.from(client.guilds.cache.values());
+    const allGuilds = Array.from(client.guilds.cache.values());
+    // Khi chạy ở môi trường DEV (local VSCode), chỉ phát sóng tới Server DEV thử nghiệm, không gửi vào các server Product
+    const guilds =
+      botConfig.isDev && process.env.NODE_ENV !== 'test'
+        ? allGuilds.filter((g) => g.id === botConfig.devGuildId)
+        : allGuilds;
     const settingsService = getSettingsService();
 
     logger.info(`[Broadcast][type=${type}] Bắt đầu phát sóng tới ${guilds.length} máy chủ...`);
