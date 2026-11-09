@@ -528,16 +528,18 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
   // ─── 7. PHASE 4: Command Path Policy Mapping ──────────────────────
   describe('PHASE 4 — Command Path Policy Mapping', () => {
-    it('COMMAND_PATH_POLICIES chứa đúng 45 canonical command paths', () => {
-      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(45);
+    it('COMMAND_PATH_POLICIES chứa đúng 47 canonical command paths', () => {
+      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(47);
     });
 
-    it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds, config.bot.announce, config.bot.setannouncechannel và df.autopost.*', () => {
+    it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds, config.bot.announce, config.bot.setannouncechannel, config.qr-server.* và df.autopost.*', () => {
       expect(resolveCommandPolicy('config.roles.set')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.roles.view')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.bot.guilds')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.bot.announce')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.bot.setannouncechannel')).toBe(Policy.MANAGE_RBAC);
+      expect(resolveCommandPolicy('config.qr-server.toggle')).toBe(Policy.MANAGE_RBAC);
+      expect(resolveCommandPolicy('config.qr-server.status')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('df.autopost.set')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('df.autopost.toggle')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('df.autopost.status')).toBe(Policy.MANAGE_RBAC);
