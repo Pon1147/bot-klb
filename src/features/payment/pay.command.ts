@@ -2,6 +2,7 @@ import {
   AttachmentBuilder,
   ChatInputCommandInteraction,
   EmbedBuilder,
+  MessageFlags,
   SlashCommandBuilder,
   SlashCommandSubcommandBuilder,
 } from 'discord.js';
@@ -99,8 +100,6 @@ async function handlePayCreate(
   const customer = interaction.options.getUser('customer');
   const memo = interaction.options.getString('memo')?.trim() || 'Thanh toán dịch vụ';
 
-  await interaction.deferReply();
-
   const targetUser = customer || interaction.user;
   const userShortId = targetUser.id.slice(-6);
   const salt = generateTxSalt();
@@ -157,10 +156,11 @@ async function handlePayCreate(
     ? `💳 **Yêu cầu thanh toán [${txId}]** gửi tới <@${customer.id}> từ <@${interaction.user.id}>:`
     : `💳 **Yêu cầu thanh toán [${txId}]**:`;
 
-  await interaction.editReply({
+  await interaction.reply({
     content: tagNotification,
     components: [...container.toJSON(), actionRow.toJSON() as any],
     files,
+    flags: MessageFlags.IsComponentsV2,
   });
 }
 

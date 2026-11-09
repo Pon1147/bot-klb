@@ -132,8 +132,7 @@ describe('pay.command', () => {
       }),
     } as any);
 
-    const mockDeferReply = jest.fn();
-    const mockEditReply = jest.fn();
+    const mockReply = jest.fn();
     const interaction: any = {
       guildId: 'guild-authorized',
       guild: { name: 'VIP Server' },
@@ -145,16 +144,15 @@ describe('pay.command', () => {
         getUser: jest.fn().mockReturnValue({ id: '998877665544332211' }),
         getString: jest.fn().mockReturnValue('Mua goi Premium'),
       },
-      deferReply: mockDeferReply,
-      editReply: mockEditReply,
+      reply: mockReply,
     };
 
     await execute(interaction, db);
 
-    expect(mockDeferReply).toHaveBeenCalled();
-    expect(mockEditReply).toHaveBeenCalledWith(
+    expect(mockReply).toHaveBeenCalledWith(
       expect.objectContaining({
         content: expect.stringContaining('<@998877665544332211>'),
+        flags: MessageFlags.IsComponentsV2,
         components: expect.arrayContaining([
           expect.objectContaining({
             components: expect.arrayContaining([
