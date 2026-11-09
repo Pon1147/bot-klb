@@ -31,17 +31,23 @@ export async function execute(client: Client): Promise<void> {
   if (isProd) {
     logger.info(`Connected to ${guilds.size} guild(s)`);
   } else {
-    logger.info(`Connected to ${guilds.size} guild(s):`);
-    let index = 1;
-    for (const [, guild] of guilds) {
-      const tag =
-        guild.id === botConfig.devGuildId
-          ? '[ACTIVE DEV SERVER]'
-          : '[PRODUCT SERVER (Ignored in Dev)]';
+    const devGuild = guilds.get(botConfig.devGuildId);
+    const productCount = Array.from(guilds.values()).filter(
+      (g) => g.id !== botConfig.devGuildId,
+    ).length;
+
+    if (devGuild) {
       logger.info(
-        `  ${index++}. "${guild.name}" (ID: ${guild.id}) — ${guild.memberCount} members ${tag}`,
+        `✓ [Dev Context] Active Dev Server: "${devGuild.name}" (${devGuild.id}) — ${devGuild.memberCount} members`,
+      );
+    } else {
+      logger.warn(
+        `⚠ [Dev Context] Dev Server (ID: ${botConfig.devGuildId}) not found in client guild cache!`,
       );
     }
+    logger.info(
+      `✓ [Isolation] ${productCount} Product server(s) safely isolated and ignored in this Dev session.`,
+    );
   }
   logger.divider();
 }

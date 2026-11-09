@@ -75,12 +75,12 @@ function scheduleGuildTask(
   const cronExpr = timeToCron(scheduleTime);
 
   const isProd = process.env.ENVIRONMENT === 'product';
-  const scheduleLog = `[guild=${guildId}] Scheduling cron job | expr="${cronExpr}" | time=${scheduleTime} | tz=${SCHEDULER_TIMEZONE}`;
+  const scheduleLog = `[guild=${guildId}] Scheduling cron job at ${scheduleTime} (${cronExpr})`;
 
   if (isProd) {
     logger.debug(`${scheduleLog} | channel=${channelId}`);
   } else {
-    logger.info(`${scheduleLog} | channel=${channelId}`);
+    logger.info(scheduleLog);
   }
 
   const task = cron.schedule(
