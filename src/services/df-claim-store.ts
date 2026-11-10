@@ -50,20 +50,22 @@ async function runDbCleanup(): Promise<number> {
   if (!claimDb || ('open' in claimDb && !claimDb.open)) return 0;
   if (cleanupInProgress) return cleanupInProgress;
 
-  cleanupInProgress = (async () => {
+  let currentCleanup: Promise<number> | null = null;
+  currentCleanup = (async () => {
+    await Promise.resolve();
     try {
-      if (claimDb && (!('open' in claimDb) || claimDb.open)) {
-        return cleanupExpiredClaimSessions(claimDb, 7);
-      }
-      return 0;
+      return cleanupExpiredClaimSessions(claimDb, 7);
     } catch {
       return 0;
     } finally {
-      cleanupInProgress = null;
+      if (cleanupInProgress === currentCleanup) {
+        cleanupInProgress = null;
+      }
     }
   })();
 
-  return cleanupInProgress;
+  cleanupInProgress = currentCleanup;
+  return currentCleanup;
 }
 
 /**
@@ -173,21 +175,19 @@ export async function stopCleanup(): Promise<void> {
     dbCleanupInterval = null;
   }
   if (cleanupInProgress) {
-    try {
-      await cleanupInProgress;
-    } catch {
-      // Bỏ qua trong quá trình shutdown
-    }
+    await cleanupInProgress;
+    cleanupInProgress = null;
   }
 }
 
 /**
  * Dọn sạch toàn bộ store (dùng cho test).
  */
-export function resetStore(): void {
-  void stopCleanup();
+export async function resetStore(): Promise<void> {
   store.clear();
   claimDb = null;
+  cleanupInProgress = null;
+  await stopCleanup();
 }
 
 export { cleanupExpiredClaimSessions } from '../database/df-claim.db.js';

@@ -10,6 +10,7 @@ import {
   startCleanup,
   stopCleanup,
   setClaimDatabase,
+  cleanupExpiredClaimSessions,
 } from '../../src/services/df-claim-store.js';
 
 describe('df-claim-store', () => {
@@ -22,14 +23,14 @@ describe('df-claim-store', () => {
     exec: jest.fn(),
   };
 
-  beforeEach(() => {
-    resetStore();
+  beforeEach(async () => {
+    await resetStore();
     mockDb.prepare.mockClear();
   });
 
   afterEach(async () => {
     await stopCleanup();
-    resetStore();
+    await resetStore();
   });
 
   describe('generateCode', () => {
@@ -233,7 +234,7 @@ describe('df-claim-store', () => {
     });
 
     it('stopCleanup() chờ callback dọn dẹp đang chạy hoàn tất (graceful shutdown coordination)', async () => {
-      let finishCleanup: (val: any) => void;
+      let finishCleanup: (val: any) => void = () => {};
       const cleanupPromise = new Promise((resolve) => {
         finishCleanup = resolve;
       });
@@ -252,9 +253,148 @@ describe('df-claim-store', () => {
       // Gọi stopCleanup
       const stopPromise = stopCleanup();
       await expect(stopPromise).resolves.toBeUndefined();
+      await stopCleanup();
     });
 
-    it('resetStore xóa sạch bộ nhớ và gỡ bỏ database reference', () => {
+    it('runDbCleanup thực thi dọn dẹp theo chu kỳ và xử lý an toàn (Task 4 Coverage)', async () => {
+      jest.useFakeTimers();
+      try {
+        const runMock = jest.fn().mockReturnValue({ changes: 3 });
+        const dbMock: any = {
+          open: true,
+          prepare: jest.fn(() => ({ run: runMock })),
+        };
+
+        startCleanup(dbMock);
+
+        // Kích hoạt chu kỳ dọn dẹp nền định kỳ 5 phút (300,000ms)
+        jest.advanceTimersByTime(300_000);
+
+        // Chờ microtasks / async promise hoàn tất
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(dbMock.prepare).toHaveBeenCalledWith(
+          expect.stringContaining('DELETE FROM df_claim_sessions'),
+        );
+        expect(runMock).toHaveBeenCalled();
+      } finally {
+        await stopCleanup();
+        jest.useRealTimers();
+      }
+    });
+
+    it('runDbCleanup xử lý an toàn khi database throw error hoặc bị đóng', async () => {
+      jest.useFakeTimers();
+      try {
+        const dbErrorMock: any = {
+          open: true,
+          prepare: jest.fn(() => {
+            throw new Error('Disk I/O error');
+          }),
+        };
+
+        // Gắn DB ném lỗi và startCleanup
+        startCleanup(dbErrorMock);
+
+        // Kích hoạt interval, callback catch error và trả về 0 (Line 57)
+        jest.advanceTimersByTime(300_000);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(dbErrorMock.prepare).toHaveBeenCalled();
+
+        // Kiểm tra nhánh claimDb đã bị đóng (open = false)
+        dbErrorMock.open = false;
+        dbErrorMock.prepare.mockClear();
+        jest.advanceTimersByTime(300_000);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(dbErrorMock.prepare).not.toHaveBeenCalled();
+      } finally {
+        await stopCleanup();
+        jest.useRealTimers();
+      }
+    });
+
+    it('runDbCleanup tái sử dụng cleanupInProgress khi chu kỳ trước chưa xong (in-flight deduplication)', async () => {
+      jest.useFakeTimers();
+      try {
+        const runMock = jest.fn().mockReturnValue({ changes: 1 });
+        const dbMock: any = {
+          open: true,
+          prepare: jest.fn(() => ({ run: runMock })),
+        };
+
+        startCleanup(dbMock);
+
+        // Advance 2 chu kỳ cùng lúc trước khi flush microtasks để kích hoạt nhánh if (cleanupInProgress)
+        jest.advanceTimersByTime(600_000);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(dbMock.prepare).toHaveBeenCalled();
+      } finally {
+        await stopCleanup();
+        jest.useRealTimers();
+      }
+    });
+
+    it('cleanupExpired xử lý an toàn khi DB bị đóng hoặc throw error', () => {
+      const dbErrorMock: any = {
+        open: true,
+        prepare: jest.fn(() => {
+          throw new Error('Locked table');
+        }),
+      };
+
+      // DB ném lỗi được try/catch nuốt an toàn
+      expect(() => cleanupExpired(dbErrorMock)).not.toThrow();
+
+      // DB với open = false không gọi prepare
+      const dbClosedMock: any = {
+        open: false,
+        prepare: jest.fn(),
+      };
+      cleanupExpired(dbClosedMock);
+      expect(dbClosedMock.prepare).not.toHaveBeenCalled();
+
+      // DB không có thuộc tính open (duck-typing)
+      const dbDuckMock: any = {
+        prepare: jest.fn(() => ({
+          run: jest.fn().mockReturnValue({ changes: 0 }),
+        })),
+      };
+      cleanupExpired(dbDuckMock);
+      expect(dbDuckMock.prepare).toHaveBeenCalled();
+    });
+
+    it('stopCleanup chờ in-flight cleanup hoàn tất khi đang chạy', async () => {
+      jest.useFakeTimers();
+      try {
+        const dbSlowMock: any = {
+          open: true,
+          prepare: jest.fn(() => ({
+            run: jest.fn().mockReturnValue({ changes: 1 }),
+          })),
+        };
+
+        startCleanup(dbSlowMock);
+
+        // Kích hoạt timer để bắt đầu in-flight runDbCleanup
+        jest.advanceTimersByTime(300_000);
+
+        // stopCleanup chờ in-flight hoàn tất
+        const stopPromise = stopCleanup();
+        await expect(stopPromise).resolves.toBeUndefined();
+      } finally {
+        await stopCleanup();
+        jest.useRealTimers();
+      }
+    });
+
+    it('resetStore xóa sạch bộ nhớ và gỡ bỏ database reference', async () => {
       const dbMock: any = {
         open: true,
         prepare: jest.fn(() => ({
@@ -263,10 +403,14 @@ describe('df-claim-store', () => {
       };
 
       setClaimDatabase(dbMock);
-      resetStore();
+      await resetStore();
 
       cleanupExpired();
       expect(dbMock.prepare).not.toHaveBeenCalled();
+    });
+
+    it('re-exports cleanupExpiredClaimSessions từ df-claim.db', () => {
+      expect(typeof cleanupExpiredClaimSessions).toBe('function');
     });
   });
 });

@@ -6,13 +6,13 @@
 import Database from 'better-sqlite3';
 import { StringSelectMenuInteraction } from 'discord.js';
 import { getSeasonData, getOverviewData } from '../../services/deltaforce.api.js';
-import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { DF_STATS_SELECT_ID, buildSeasonSelectMenu, buildStatsContainer } from './stats.handler.js';
 import { getSeasonLabel } from '../../config/season.config.js';
 import { createLogger } from '../../utils/logger.js';
 import { getActiveBinding } from '../../database/df-binding.db.js';
 import { decryptCredential } from '../../services/df-crypto.js';
 import { getDfToken } from '../../database/df.token.db.js';
+import { buildDfApiToken } from '../../utils/df-token.utils.js';
 import { sendReply } from '../../utils/reply.utils.js';
 import { hasPolicy, Policy } from '../../config/permissions.js';
 import { getSettingsService } from '../../services/settings.service.js';
@@ -88,37 +88,50 @@ export async function handleDfStatsSelect(
 
   const targetUserId = ownerUserId ?? interaction.user.id;
 
-  // Lấy token từ binding hoặc legacy token
-  let token: ReturnType<typeof getDfToken> | null = null;
-  try {
-    const binding = getActiveBinding(database, targetUserId);
-    if (binding) {
+  // Lấy token từ binding hoặc legacy token (hỗ trợ key rotation qua key_version)
+  let apiToken: ReturnType<typeof buildDfApiToken> | null = null;
+  const binding = getActiveBinding(database, targetUserId);
+
+  if (binding) {
+    try {
       const decrypted = decryptCredential(
         binding.cred_nonce,
         binding.cred_ciphertext,
         binding.cred_tag,
         binding.discord_user_id,
         binding.openid,
+        binding.key_version,
       );
       const cred = JSON.parse(decrypted);
-      token = {
-        discord_id: targetUserId,
+      apiToken = {
         openid: binding.openid,
         token: cred.token,
-        ts: cred.ts || null,
-        s: cred.s || null,
-        u: cred.u || null,
-        linked_at: binding.captured_at || new Date().toISOString(),
-        last_used_at: null,
+        ts: cred.ts || undefined,
+        s: cred.s || undefined,
+        u: cred.u || undefined,
       };
-    } else {
-      token = getDfToken(database, targetUserId) ?? null;
+    } catch (decryptError: unknown) {
+      // Binding tồn tại nhưng giải mã thất bại (sai key, hỏng auth tag, corrupt payload)
+      // Tuyệt đối không fallback âm thầm sang token legacy cũ chưa mã hóa để tránh stale token leak
+      logger.error(
+        `[DfStatsSelect] Giải mã binding thất bại cho user ${targetUserId}: ${(decryptError as Error).message}`,
+      );
+      await sendReply(interaction, {
+        content:
+          'Binding tài khoản bị lỗi hoặc khóa không hợp lệ. Vui lòng unlink và liên kết lại bằng `/df link start`.',
+        flags: 64,
+      });
+      return { handled: true };
     }
-  } catch {
-    token = getDfToken(database, targetUserId) ?? null;
+  } else {
+    // Không có binding mới -> fallback token legacy
+    const legacyToken = getDfToken(database, targetUserId);
+    if (legacyToken) {
+      apiToken = buildDfApiToken(legacyToken);
+    }
   }
 
-  if (!token) {
+  if (!apiToken) {
     await sendReply(interaction, {
       content: 'Chưa liên kết tài khoản. Dùng `/df link start`.',
       flags: 64,
@@ -140,8 +153,6 @@ export async function handleDfStatsSelect(
   }
 
   try {
-    const apiToken = buildDfApiToken(token);
-
     // Kiểm tra cache trước khi gọi API
     const cached = statsCache.get(targetUserId + ':' + selectedSeason);
     if (cached) {
