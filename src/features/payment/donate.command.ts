@@ -35,6 +35,26 @@ export const data = new SlashCommandBuilder()
       .setRequired(false),
   );
 
+let lastOrderTimestamp = 0;
+let orderSequence = 0;
+
+/**
+ * Sinh mã orderCode số nguyên dương duy nhất cho PayOS.
+ * Kết hợp timestamp mili-giây (13 chữ số) và số thứ tự tuần tự (3 chữ số: 000-999).
+ * Đảm bảo 100% không trùng lặp khi có nhiều yêu cầu donate đồng thời trong cùng 1 mili-giây.
+ * Giá trị sinh ra luôn nhỏ hơn Number.MAX_SAFE_INTEGER (9,007,199,254,740,991).
+ */
+export function generatePayosOrderCode(): number {
+  const now = Date.now();
+  if (now === lastOrderTimestamp) {
+    orderSequence = (orderSequence + 1) % 1000;
+  } else {
+    lastOrderTimestamp = now;
+    orderSequence = Math.floor(Math.random() * 10);
+  }
+  return now * 1000 + orderSequence;
+}
+
 export async function execute(
   interaction: ChatInputCommandInteraction,
   database?: Database.Database,
@@ -53,8 +73,8 @@ export async function execute(
 
   await interaction.deferReply();
 
-  // Tạo orderCode là số nguyên dương duy nhất (timestamp mili-giây)
-  const orderCode = Date.now();
+  // Tạo orderCode duy nhất đảm bảo không xung đột concurrency
+  const orderCode = generatePayosOrderCode();
   const userName = interaction.user.globalName || interaction.user.username || 'Friend';
   // PayOS mô tả tối đa 25 ký tự không dấu
   const description = sanitizePayosDescription(`Donate ${userName}`);

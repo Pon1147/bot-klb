@@ -1,7 +1,21 @@
-import { data, execute } from '../../src/features/payment/donate.command.js';
+import { data, execute, generatePayosOrderCode } from '../../src/features/payment/donate.command.js';
 import * as payosService from '../../src/services/payos.service.js';
 
 describe('donate.command', () => {
+  describe('generatePayosOrderCode Uniqueness', () => {
+    it('đảm bảo các orderCode sinh ra liên tiếp trong cùng 1 mili-giây không bao giờ bị trùng lặp', () => {
+      const generated = new Set<number>();
+      for (let i = 0; i < 100; i++) {
+        const code = generatePayosOrderCode();
+        expect(Number.isSafeInteger(code)).toBe(true);
+        expect(code).toBeGreaterThan(0);
+        expect(code).toBeLessThanOrEqual(Number.MAX_SAFE_INTEGER);
+        expect(generated.has(code)).toBe(false);
+        generated.add(code);
+      }
+      expect(generated.size).toBe(100);
+    });
+  });
   it('cấu trúc command builder phải đúng root name donate và options', () => {
     expect(data.name).toBe('donate');
     const json = data.toJSON();
