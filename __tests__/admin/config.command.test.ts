@@ -55,7 +55,7 @@ jest.mock('../../src/config/bot.config.js', () => {
     ...actual,
     botConfig: {
       ...actual.botConfig,
-      botOwnerId: '418779992290492416',
+      botOwnerId: '000000000000000001',
     },
   };
 });
@@ -483,7 +483,7 @@ describe('/config command — Execute Dispatch', () => {
 
     it('cho phép xem trước (preview: true) nếu là Bot Owner', async () => {
       const interaction = createMockInteraction({
-        user: { id: '418779992290492416' },
+        user: { id: '000000000000000001' },
         options: {
           getSubcommandGroup: jest.fn().mockReturnValue('bot'),
           getSubcommand: jest.fn().mockReturnValue('announce'),
@@ -525,7 +525,7 @@ describe('/config command — Execute Dispatch', () => {
       });
 
       const interaction = createMockInteraction({
-        user: { id: '418779992290492416' },
+        user: { id: '000000000000000001' },
         options: {
           getSubcommandGroup: jest.fn().mockReturnValue('bot'),
           getSubcommand: jest.fn().mockReturnValue('announce'),
@@ -629,7 +629,7 @@ describe('/config command — Execute Dispatch', () => {
       it('nên bật tính năng QR thành công khi gọi bởi Bot Owner (server hiện tại)', async () => {
         const interaction = createMockInteraction({
           guildId: 'guild-abc',
-          user: { id: '418779992290492416' }, // Bot Owner ID trong mock botConfig
+          user: { id: '000000000000000001' }, // Bot Owner ID trong mock botConfig
           options: {
             getSubcommandGroup: jest.fn().mockReturnValue('qr-server'),
             getSubcommand: jest.fn().mockReturnValue('toggle'),
@@ -650,7 +650,7 @@ describe('/config command — Execute Dispatch', () => {
           expect.objectContaining({
             qrServer: expect.objectContaining({
               enabled: true,
-              updatedBy: '418779992290492416',
+              updatedBy: '000000000000000001',
             }),
           }),
         );
@@ -664,7 +664,7 @@ describe('/config command — Execute Dispatch', () => {
       it('nên bật/tắt cho server khác qua option server_id', async () => {
         const interaction = createMockInteraction({
           guildId: 'guild-current',
-          user: { id: '418779992290492416' },
+          user: { id: '000000000000000001' },
           options: {
             getSubcommandGroup: jest.fn().mockReturnValue('qr-server'),
             getSubcommand: jest.fn().mockReturnValue('toggle'),
@@ -724,13 +724,13 @@ describe('/config command — Execute Dispatch', () => {
           qrServer: {
             enabled: true,
             updatedAt: 1710000000000,
-            updatedBy: '418779992290492416',
+            updatedBy: '000000000000000001',
           },
         });
 
         const interaction = createMockInteraction({
           guildId: 'guild-abc',
-          user: { id: '418779992290492416' },
+          user: { id: '000000000000000001' },
           options: {
             getSubcommandGroup: jest.fn().mockReturnValue('qr-server'),
             getSubcommand: jest.fn().mockReturnValue('status'),
@@ -856,7 +856,7 @@ describe('/config command — Execute Dispatch', () => {
         const interaction = createMockInteraction({
           guildId: 'guild-other',
           guild: { id: 'guild-other', ownerId: 'other-owner-456' },
-          user: { id: '418779992290492416' }, // Bot Owner ID
+          user: { id: '000000000000000001' }, // Bot Owner ID
           options: {
             getSubcommandGroup: jest.fn().mockReturnValue('vietqr'),
             getSubcommand: jest.fn().mockReturnValue('set'),
@@ -883,7 +883,7 @@ describe('/config command — Execute Dispatch', () => {
         const calls = warnSpy.mock.calls.map((c) => String(c[0]));
         const authLog = calls.find((c) => c.includes('authorized_emergency_override'));
         expect(authLog).toBeDefined();
-        expect(authLog).toContain('"actorId":"418779992290492416"');
+        expect(authLog).toContain('"actorId":"000000000000000001"');
         expect(authLog).toContain('"guildId":"guild-other"');
         expect(authLog).toContain('"action":"vietqr.set"');
         expect(authLog).not.toContain('111222333'); // Không leak số tài khoản
@@ -891,7 +891,7 @@ describe('/config command — Execute Dispatch', () => {
         // 2. Audit log cập nhật cấu hình thành công (success)
         const successLog = calls.find((c) => c.includes('"result":"success"'));
         expect(successLog).toBeDefined();
-        expect(successLog).toContain('"actorId":"418779992290492416"');
+        expect(successLog).toContain('"actorId":"000000000000000001"');
         expect(successLog).toContain('"guildId":"guild-other"');
         expect(successLog).toContain('"action":"vietqr.set"');
         expect(successLog).not.toContain('111222333'); // Không leak số tài khoản
@@ -909,7 +909,7 @@ describe('/config command — Execute Dispatch', () => {
         const interaction = createMockInteraction({
           guildId: 'guild-other',
           guild: { id: 'guild-other', ownerId: 'other-owner-456' },
-          user: { id: '418779992290492416' }, // Bot Owner ID
+          user: { id: '000000000000000001' }, // Bot Owner ID
           options: {
             getSubcommandGroup: jest.fn().mockReturnValue('vietqr'),
             getSubcommand: jest.fn().mockReturnValue('set'),
@@ -927,7 +927,7 @@ describe('/config command — Execute Dispatch', () => {
         const calls = errorSpy.mock.calls.map((c) => String(c[0]));
         const failedLog = calls.find((c) => c.includes('"result":"failed"'));
         expect(failedLog).toBeDefined();
-        expect(failedLog).toContain('"actorId":"418779992290492416"');
+        expect(failedLog).toContain('"actorId":"000000000000000001"');
         expect(failedLog).toContain('"guildId":"guild-other"');
         expect(failedLog).toContain('"action":"vietqr.set"');
         expect(failedLog).not.toContain('111222333'); // Không leak số tài khoản
