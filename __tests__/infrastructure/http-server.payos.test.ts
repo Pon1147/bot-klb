@@ -15,6 +15,8 @@ describe('HttpServer PayOS Webhook', () => {
   let port: number;
   let baseUrl: string;
 
+  let mockUsersSend: jest.Mock;
+
   beforeAll((done) => {
     if (!botConfig.payosChecksumKey) {
       botConfig.payosChecksumKey = 'test-payos-checksum-key-123456789';
@@ -22,9 +24,11 @@ describe('HttpServer PayOS Webhook', () => {
     db = new Database(':memory:');
     initializePaymentTables(db);
 
+    mockUsersSend = jest.fn().mockResolvedValue({});
     const mockClient: any = {
       database: db,
       guilds: { cache: new Map() },
+      users: { send: mockUsersSend },
     };
 
     server = http.createServer(createRequestHandler(mockClient));
@@ -114,6 +118,20 @@ describe('HttpServer PayOS Webhook', () => {
     const updatedDonation = getDonationByOrderCode(db, orderCode);
     expect(updatedDonation?.status).toBe('paid');
     expect(updatedDonation?.paid_at).toBeGreaterThan(0);
+
+    // Kiểm tra đã gửi tin nhắn cảm ơn qua DM cho donor
+    expect(mockUsersSend).toHaveBeenCalledWith(
+      'donor_user_1',
+      expect.objectContaining({
+        embeds: expect.arrayContaining([
+          expect.objectContaining({
+            data: expect.objectContaining({
+              title: expect.stringContaining('Cảm Ơn'),
+            }),
+          }),
+        ]),
+      }),
+    );
   });
 
   it('từ chối khi chữ ký webhook không hợp lệ (Invalid signature)', async () => {
