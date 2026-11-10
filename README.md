@@ -1,12 +1,12 @@
 # Delta Bot (`bot-klb`) — Discord Bot
 
-[![Version](https://img.shields.io/badge/version-1.2.1-informational.svg)](#)
+[![Version](https://img.shields.io/badge/version-1.7.0-informational.svg)](#)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D22.12.0-brightgreen.svg)](https://nodejs.org/)
 [![Discord.js](https://img.shields.io/badge/discord.js-v14-blue.svg)](https://discord.js.org/)
 [![Architecture](https://img.shields.io/badge/architecture-vertical--slice-orange.svg)](#kiến-trúc-dự-án)
 [![TypeScript](https://img.shields.io/badge/typescript-5.x-blue.svg)](https://www.typescriptlang.org/)
 
-Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và quản trị máy chủ Discord, tích hợp **Discord Components V2**, cào mật khẩu hằng ngày tự động, dashboard thống kê đồ họa chất lượng cao, thư viện Gunsmith meta, bản đồ 3D tương tác, tiện ích **DF Toolbox Extension (v1.2.1)** tự động nhập giftcode Garena, và cơ chế liên kết tài khoản game bảo mật bằng AES-256-GCM.
+Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và quản trị máy chủ Discord, tích hợp **Discord Components V2**, **Hỗ trợ Song ngữ Tự động (i18n: Tiếng Việt ⟷ English)**, cào mật khẩu hằng ngày tự động, dashboard thống kê đồ họa chất lượng cao, thư viện Gunsmith meta, bản đồ 3D tương tác, tiện ích **DF Toolbox Extension (v1.4.0)** tự động nhập giftcode Garena, thanh toán hóa đơn VietQR động & cổng quyên góp PayOS, cùng cơ chế liên kết tài khoản game bảo mật bằng AES-256-GCM.
 
 ---
 
@@ -24,15 +24,15 @@ Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và
 * **Khuyến nghị Chế tạo Xưởng (`/df workshop`)**: Gợi ý các công thức sản xuất tối ưu tại Xưởng Căn Cứ Ngầm.
 * **Mật khẩu 6 Bản đồ Hằng ngày (`/df code`)**:
   * Tự động cào dữ liệu từ Delta Force HQ với bộ đệm **Cache 30 phút** và **In-flight Promise Deduplication** chống nghẽn CPU.
-  * Tự động gửi mật khẩu định kỳ theo lịch cron cấu hình riêng cho từng server.
+  * Tự động gửi mật khẩu định kỳ theo lịch cron cấu hình riêng cho từng server (`/df code setchannel`, `/df code settime`).
 * **Auto-Post Toàn Hệ Thống (`/df autopost`)**: Bot Owner quản lý chu kỳ tự động phát sóng bản đồ 3D và build súng meta định kỳ tới toàn bộ các guild.
 * **Liên kết Tài khoản An toàn (`/df link`)**:
   * Hỗ trợ xác thực qua tiện ích Chrome Extension (**DF Toolbox**) bằng cơ chế Webhook handoff.
   * Mã hóa token người dùng bằng **AES-256-GCM** trước khi lưu vào cơ sở dữ liệu.
   * Người dùng có thể hủy liên kết và xóa dữ liệu bất kỳ lúc nào qua `/df unlink`.
-* **Trợ Giúp & Tải Tiện Ích (`/df help`)**: Bảng cẩm nang hướng dẫn sử dụng và nút tải nhanh tiện ích mở rộng **DF Toolbox Extension** trực tiếp từ bot.
+* **Trung Tâm Trợ Giúp Đa Ngữ (`/df help`)**: Bảng cẩm nang 6 trang tích hợp điều hướng Components V2, tự động thích ứng ngôn ngữ client (`vi` hoặc `en`), kèm nút tải tiện ích mở rộng **DF Toolbox Extension**.
 
-### 2. Tiện Ích Trình Duyệt: DF Toolbox Extension (v1.2.1)
+### 2. Tiện Ích Trình Duyệt: DF Toolbox Extension (v1.4.0)
 * **Auto Redeem Giftcode Garena**: Tự động hóa quá trình nhập danh sách hàng trăm mã giftcode Delta Force trên trang đổi quà Garena CDK, tự bypass CSP và nhận diện kết quả tự động.
 * **Floating Dashboard trực quan**: Gắn bảng điều khiển trực tiếp trên giao diện web đổi quà, hiển thị tiến độ, nhật ký, số mã thành công/thất bại theo thời gian thực.
 * **Auth State Engine & Cloud Relay**: Tự động trích xuất và đồng bộ session/token game an toàn với máy chủ bot qua webhook một chạm.
@@ -41,47 +41,64 @@ Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và
 ### 3. Tìm Đội Chơi Game (`/team`)
 * **Hệ thống LFG (`/team find`)**: Giao diện chọn bản đồ, chế độ chơi và mic tương tác qua Discord Components V2, tự động quản lý slot và điều phối kênh voice.
 
-### 4. Quản trị Server Tập trung (`/config`)
+### 4. Hệ Thống Thanh Toán & Quyên Góp (`/pay` & `/donate`)
+* **Hóa đơn VietQR Động (`/pay create`)**: Tạo mã QR thanh toán chuẩn VietQR (NAPAS 247) tự động điền số tiền và nội dung, hỗ trợ nút xác nhận/hủy và chấm điểm dịch vụ (1–5 ⭐).
+* **Lịch sử & BXH Chi tiêu (`/pay history` & `/pay top`)**: Tra cứu lịch sử thanh toán cá nhân và vinh danh Top người ủng hộ server.
+* **Quyên góp Duy trì Bot (`/donate`)**: Tạo link thanh toán PayOS ủng hộ chi phí vận hành máy chủ bot một cách minh bạch.
+
+### 5. Quản trị Server Tập trung (`/config`)
 * **RBAC per-guild (`/config roles`)**: Thiết lập phân quyền chi tiết cho Bot Admin, Moderator và Member theo từng server.
-* **Hệ thống Chào mừng (`/config welcome`)**: Tự động gửi thông điệp chào đón và cấp role khi thành viên mới tham gia (hỗ trợ lệnh `test` kiểm tra hiển thị).
+* **Cấu hình VietQR & Workflow (`/config vietqr`)**: Thiết lập số tài khoản ngân hàng nhận tiền, role nhân viên duyệt đơn, và kênh gửi đánh giá dịch vụ.
+* **Mở Tính Năng QR Server (`/config qr-server`)**: Bot Owner cấp phép mở tính năng tạo hóa đơn VietQR cho từng máy chủ.
+* **Hệ thống Chào mừng (`/config welcome`)**: Tự động gửi thông điệp chào đón và cấp role khi thành viên mới tham gia.
 * **Hệ thống Tạm biệt (`/config leave`)**: Tự động thông báo khi thành viên rời máy chủ.
 * **Cảm ơn Server Booster (`/config booster`)**: Tự động ghi nhận và trao role ưu đãi cho người ủng hộ server.
 * **Quản lý Discord Components V2 (`/config container`)**: Trình chỉnh sửa cấu hình giao diện linh hoạt.
+* **Thông Báo Toàn Hệ Thống (`/config bot`)**: Phát sóng tin tức, changelog phiên bản tới toàn bộ các guild.
 
 ---
 
 ## 📋 Danh mục Lệnh Slash Commands
 
-| Nhóm lệnh | Lệnh con | Quyền hạn | Mô tả |
+> 📖 **Tra cứu đầy đủ 55 lệnh**: Xem chi tiết tại [**Ground Truth Command Catalog (`docs/COMMANDS_CATALOG.md`)**](docs/COMMANDS_CATALOG.md) — tài liệu duy nhất được sinh tự động và bảo vệ bởi CI Drift Guard.
+
+| Nhóm lệnh | Lệnh con | Quyền hạn | Mô tả (Song ngữ) |
 | :--- | :--- | :--- | :--- |
-| **/df** | `stats` | Thành viên | Xem thống kê tài khoản theo mùa giải |
-| | `daily` | Thành viên | Xem báo cáo trận đấu trong ngày |
-| | `history [limit]` | Thành viên | Xem lịch sử 1–20 trận gần nhất |
-| | `match [match_id]` | Thành viên | Xem chi tiết kết quả & phân tích trận đấu |
-| | `vault` | Thành viên | Sảnh Triển Lãm Đồ Đỏ: Xem kho báu vật phẩm giá trị cao |
+| **/df** | `stats` | Thành viên | Xem thẻ căn cước chiến binh & thống kê mùa giải |
+| | `daily` | Thành viên | Báo cáo chiến đấu tổng hợp trong ngày |
+| | `history [limit]` | Thành viên | Lịch sử 1–20 trận gần nhất (kết quả, operator, map) |
+| | `match [match_id]` | Thành viên | Chi tiết kết quả & phân tích thông số trận đấu |
+| | `vault` | Thành viên | Sảnh Triển Lãm Đồ Đỏ: Xem bộ sưu tập kho báu |
 | | `market [item]` | Thành viên | Tra cứu giá thị trường và bàn chế tác realtime |
-| | `map` | Thành viên | Mô phỏng bản đồ 3D tương tác và cẩm nang học map |
-| | `build` / `gun [weapon] [mode]` | Thành viên | Thư viện build súng và mã Gunsmith meta (Garena) |
-| | `workshop` | Thành viên | Xem khuyến nghị sản xuất tại Xưởng Căn Cứ |
-| | `code show [page]` | Thành viên | Xem mật khẩu 6 bản đồ ngày hôm nay (hỗ trợ phân trang) |
-| | `code status` | Thành viên | Xem kênh và lịch cấu hình gửi mật khẩu hằng ngày |
-| | `code setchannel <channel>` | Quản trị viên | Đặt channel tự động gửi mật khẩu mỗi ngày |
-| | `code settime <time>` | Quản trị viên | Đặt giờ gửi mật khẩu hằng ngày (định dạng HH:mm) |
-| | `code setadminchannel <channel>`| Quản trị viên | Đặt channel nhận cảnh báo khi bot cào mật khẩu gặp sự cố |
-| | `link start` | Thành viên | Bắt đầu quy trình liên kết tài khoản Delta Force |
-| | `link status` | Thành viên | Kiểm tra trạng thái liên kết tài khoản hiện tại |
-| | `unlink` | Thành viên | Hủy liên kết và xóa dữ liệu tài khoản game khỏi hệ thống |
-| | `help` | Thành viên | Xem hướng dẫn sử dụng và tải tiện ích DF Toolbox Extension |
-| | `autopost set <type> <hours>` | Bot Owner | Cấu hình chu kỳ phát sóng tự động bản đồ / súng meta |
-| | `autopost toggle <type> <bool>`| Bot Owner | Bật hoặc tắt tự động phát sóng nội dung |
+| | `map` | Thành viên | Cẩm nang bản đồ chiến thuật & link 3D tương tác |
+| | `build` / `gun [weapon] [mode]` | Thành viên | Thư viện mã súng Gunsmith meta Garena |
+| | `workshop` | Thành viên | Khuyến nghị công thức chế tác Xưởng Căn Cứ Ngầm |
+| | `code show [page]` | Thành viên | Mật mã két sắt 6 bản đồ hôm nay (cập nhật tự động) |
+| | `code status` | Thành viên | Kiểm tra trạng thái đồng bộ mật mã hôm nay |
+| | `code setchannel <channel>` | Quản trị viên | Đặt kênh tự động gửi mật mã mỗi sáng |
+| | `code settime <time>` | Quản trị viên | Đặt giờ gửi mật mã hằng ngày (định dạng HH:mm) |
+| | `code setadminchannel <channel>`| Quản trị viên | Kênh nhận cảnh báo khi bot cào mật mã gặp sự cố |
+| | `link start` | Thành viên | Tạo mã claim liên kết tài khoản & tải DF Toolbox |
+| | `link status` | Thành viên | Kiểm tra trạng thái liên kết Delta Force HQ |
+| | `unlink` | Thành viên | Hủy liên kết tài khoản game khỏi Discord ID |
+| | `help` | Thành viên | Trung tâm trợ giúp đa ngữ & hướng dẫn sử dụng |
+| | `autopost set <type> <hours>` | Bot Owner | Cấu hình chu kỳ phát sóng tự động map / gun meta |
+| | `autopost toggle <type> <bool>`| Bot Owner | Bật / tắt tự động phát sóng nội dung |
 | | `autopost status` | Bot Owner | Xem trạng thái cấu hình Auto-Post toàn hệ thống |
-| | `autopost run <type>` | Bot Owner | Bắn thử nghiệm ngay lập tức 1 đợt phát sóng tới các server |
-| **/team** | `find` | Thành viên | Mở giao diện tạo bài tìm đồng đội (LFG) |
+| | `autopost run <type>` | Bot Owner | Bắn thử nghiệm ngay lập tức 1 đợt phát sóng |
+| **/team** | `find` | Thành viên | Tìm đồng đội chơi theo bản đồ, chế độ & voice |
+| **/pay** | `create <amount> [customer] [memo]` | Thành viên | Tạo hóa đơn thanh toán VietQR động trong kênh |
+| | `history [target]` | Thành viên | Lịch sử giao dịch thanh toán cá nhân |
+| | `top` | Thành viên | Bảng xếp hạng Top khách hàng chi tiêu server |
+| **/donate** | `<amount> [message]` | Thành viên | Quyên góp ủng hộ vận hành bot qua cổng PayOS |
 | **/config** | `roles set` / `view` | Server Owner / Admin | Cấu hình role Bot Admin / Moderator / Member |
-| | `welcome setchannel` / `setrole` / `toggle` / `status` / `test` | Quản trị viên | Cấu hình kênh, role, bật tắt và test thông điệp chào mừng |
-| | `leave setchannel` / `toggle` / `status` / `test` | Quản trị viên | Cấu hình kênh, bật tắt và test thông báo tạm biệt thành viên |
-| | `booster setchannel` / `setrole` / `toggle` / `status` / `test` | Quản trị viên | Cấu hình kênh, role, bật tắt và test thông điệp tri ân booster |
-| | `container edit` / `reset` | Quản trị viên | Tùy chỉnh layout Discord Components V2 tương tác |
+| | `vietqr set` / `workflow` / `status` | Quản trị viên | Cấu hình tài khoản VietQR và quy trình duyệt đơn |
+| | `qr-server toggle` / `status` | Bot Owner | Cấp quyền sử dụng tính năng tạo QR cho server |
+| | `welcome ...` | Quản trị viên | Cấu hình kênh, role, bật tắt thông điệp chào mừng |
+| | `leave ...` | Quản trị viên | Cấu hình thông báo khi thành viên rời máy chủ |
+| | `booster ...` | Quản trị viên | Cấu hình quà tặng & tri ân server booster |
+| | `container edit` / `reset` | Quản trị viên | Tùy chỉnh layout Discord Components V2 |
+| | `bot guilds` / `announce` / `setannouncechannel` | Bot Owner | Quản trị bot toàn hệ thống & phát thông báo |
 
 ---
 
@@ -93,17 +110,24 @@ Repository được thiết kế theo ranh giới mô-đun độc lập nhằm g
 src/
 ├── app/                  # Application Layer: Orchestration & Startup sequence (bootstrap.ts)
 ├── infrastructure/       # Discord Infrastructure: Command loader, Event loader, Router
+│   ├── i18n/             # Locale resolver (vi ⟷ en-US) & translation service
+│   └── registry/         # Runtime command parser & SSOT registry
 ├── features/             # Feature Slices (Tự chứa commands, handlers, services riêng)
-│   ├── welcome/          # Hệ thống chào đón thành viên
+│   ├── delta-force/      # Nghiệp vụ game Delta Force (Stats, Daily, Code, LFG, Link)
+│   ├── payment/          # Hệ thống thanh toán VietQR & cổng Donate PayOS
+│   ├── welcome/          # Hệ thống chào đón thành viên mới
 │   ├── booster/          # Hệ thống cảm ơn server booster
 │   ├── container/        # Trình soạn thảo Discord Components V2
-│   ├── delta-force/      # Nghiệp vụ game Delta Force (Stats, Daily, Code, LFG, Link)
 │   └── admin/            # Quản trị server và phân quyền RBAC
+├── locales/              # Từ điển song ngữ SSOT (vi.ts, en.ts)
 ├── database/             # SQLite connection (better-sqlite3) & MongoDB repositories
 ├── services/             # Shared background services (Scraper, Crypto, Scheduler)
 ├── utils/                # Pure utilities, logging, container builders
 └── types/                # Type declarations & Discord client augmentation
 ```
+
+* **Module Resolution**: `node16` (mọi relative import bắt buộc có đuôi `.js`).
+* **Bảo mật**: Mọi token và thông tin nhạy cảm được mã hóa qua AES-256-GCM. Không bao giờ lưu chat log công khai của người dùng.
 
 * **Module Resolution**: `node16` (mọi relative import bắt buộc có đuôi `.js`).
 * **Bảo mật**: Mọi token và thông tin nhạy cảm được mã hóa qua AES-256-GCM. Không bao giờ lưu chat log công khai của người dùng.

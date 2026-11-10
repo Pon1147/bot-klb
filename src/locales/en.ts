@@ -33,7 +33,7 @@ export const EN_LOCALE = {
       1: {
         heading: '# Help Center — Bot Delta',
         intro:
-          '**Bot Delta** is a dedicated Discord assistant for **Delta Force (Garena Server)** players.',
+          '**Bot Delta** is a dedicated Discord assistant for **Delta Force (Garena Server)** players.\n🌐 **Bilingual Support**: Seamlessly adapts to your Discord client language (Vietnamese ⟷ English).',
         step_title: '### 3 Quick Steps to Get Started:',
         step_1:
           '1. **`/df link start`**: Get your link token & install the **DF Toolbox** extension.',

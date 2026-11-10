@@ -33,7 +33,7 @@ export const VI_LOCALE = {
       1: {
         heading: '# Trung Tâm Trợ Giúp — Bot Delta',
         intro:
-          '**Bot Delta** là trợ lý Discord chuyên biệt cho game thủ **Delta Force (Server Garena)**.',
+          '**Bot Delta** là trợ lý Discord chuyên biệt cho game thủ **Delta Force (Server Garena)**.\n🌐 **Song ngữ tự động**: Hỗ trợ Tiếng Việt & English thích ứng theo ngôn ngữ client Discord.',
         step_title: '### 3 Bước khởi đầu cho tân binh:',
         step_1:
           '1. **`/df link start`**: Nhận mã định danh & cài đặt tiện ích mở rộng **DF Toolbox**.',
