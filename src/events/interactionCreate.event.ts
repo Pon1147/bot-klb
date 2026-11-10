@@ -24,6 +24,9 @@ export async function execute(
     await routeInteraction(client, interaction);
   } catch (error) {
     if (isIgnorableInteractionError(error)) {
+      logger.warn(
+        `[REQ:${interaction.id}] Bỏ qua lỗi tương tác hết hạn (10062/40060): ${error instanceof Error ? error.message : String(error)}`,
+      );
       return;
     }
     logger.error('Lỗi chưa xử lý khi xử lý sự kiện interactionCreate:', {

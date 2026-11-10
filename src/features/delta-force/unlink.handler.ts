@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import Database from 'better-sqlite3';
 import { buildSuccessContainer, buildErrorContainer } from '../../utils/container.utils.js';
 import { requireGuild, requireDfBinding } from '../../utils/df-guards.js';
@@ -14,6 +14,11 @@ export async function execute(
 
   // Kiểm tra user đã link chưa (binding active hoặc legacy token)
   if (await requireDfBinding(interaction, database)) return;
+
+  // Defer ephemeral ngay để chống timeout 3s khi MongoDB có độ trễ mạng
+  if (typeof interaction.deferReply === 'function') {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  }
 
   // Revoke binding: Persistent Store (MongoDB) trước -> SQLite cache
   const revokeResult = await revokeBindingAsync(database, interaction.user.id);

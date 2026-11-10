@@ -153,6 +153,7 @@ export async function createPayosPaymentLink(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(10_000),
     });
 
     const result = (await response.json()) as {

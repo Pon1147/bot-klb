@@ -1310,6 +1310,11 @@ export async function handleVietQrPreview(
   const testAmount = interaction.options.getInteger('amount') || 10_000;
   const testTransferCode = `${vietqr.prefix || 'NAP'} TEST ${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
+  // Defer reply ngay lập tức để tránh timeout 3 giây của Discord khi fetch ảnh VietQR
+  if (typeof interaction.deferReply === 'function') {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  }
+
   const qrBuffer = await fetchVietQrImageBuffer({
     bankId: vietqr.bankId,
     accountNo: vietqr.accountNo,
@@ -1340,11 +1345,21 @@ export async function handleVietQrPreview(
     txId: 'TEST-CONFIG',
   });
 
-  await interaction.reply({
-    content:
-      '> 🧪 **CHẾ ĐỘ XEM TRƯỚC (PREVIEW)**: Hãy dùng app ngân hàng quét thử mã bên dưới để kiểm tra tên chủ tài khoản và số tài khoản nhận tiền.',
-    components: container.toJSON(),
-    files,
-    flags: MessageFlags.IsComponentsV2,
-  });
+  const replyContent =
+    '> 🧪 **CHẾ ĐỘ XEM TRƯỚC (PREVIEW)**: Hãy dùng app ngân hàng quét thử mã bên dưới để kiểm tra tên chủ tài khoản và số tài khoản nhận tiền.';
+
+  if (interaction.deferred && typeof interaction.editReply === 'function') {
+    await interaction.editReply({
+      content: replyContent,
+      components: container.toJSON(),
+      files,
+    });
+  } else {
+    await interaction.reply({
+      content: replyContent,
+      components: container.toJSON(),
+      files,
+      flags: MessageFlags.IsComponentsV2,
+    });
+  }
 }

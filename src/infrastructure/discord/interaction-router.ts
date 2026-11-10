@@ -256,23 +256,28 @@ async function handleChatInputCommand(
   client: Client,
   interaction: ChatInputCommandInteraction,
 ): Promise<void> {
+  const startMs = Date.now();
+  const transitLatency = Math.max(0, startMs - interaction.createdTimestamp);
+  const commandPath = getCommandPath(interaction);
+  const commandName = interaction.commandName;
+
   const commands = client.commands;
   if (!commands) {
-    logger.warn('Commands collection not found on client.');
+    logger.warn(`[REQ:${interaction.id}] Commands collection not found on client.`);
+    await sendInteractionErrorFallback(interaction, 'Hệ thống lệnh chưa sẵn sàng.');
     return;
   }
 
-  const commandPath = getCommandPath(interaction);
-  const commandName = interaction.commandName;
   const commandModule = commands.get(commandName);
 
   if (!commandModule) {
-    logger.warn(`Command not found: ${commandName} (path: ${commandPath})`);
+    logger.warn(`[REQ:${interaction.id}] Command not found: ${commandName} (path: ${commandPath})`);
+    await sendInteractionErrorFallback(interaction, 'Lệnh này hiện không khả dụng.');
     return;
   }
 
   logger.info(
-    `Dispatching command /${commandPath} (user=${interaction.user.id}, guild=${interaction.guildId ?? 'DM'})`,
+    `[REQ:${interaction.id}] START /${commandPath} (transit: ${transitLatency}ms, user=${interaction.user.id}, guild=${interaction.guildId ?? 'DM'})`,
   );
 
   // ── Authorization Guard ──
@@ -345,12 +350,19 @@ async function handleChatInputCommand(
 
   try {
     await commandModule.execute(interaction, database);
+    logger.debug(`[REQ:${interaction.id}] DONE /${commandPath} trong ${Date.now() - startMs}ms`);
   } catch (error) {
+    const elapsed = Date.now() - startMs;
     if (isIgnorableInteractionError(error)) {
+      logger.warn(
+        `[REQ:${interaction.id}] Interaction expired / acknowledged (10062) sau ${elapsed}ms tại /${commandPath}: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return;
     }
     const errMessage = error instanceof Error ? error.message : String(error);
-    logger.error(`Error executing command ${commandPath}: ${errMessage}`);
+    logger.error(
+      `[REQ:${interaction.id}] Error executing command ${commandPath} sau ${elapsed}ms: ${errMessage}`,
+    );
 
     await sendInteractionErrorFallback(interaction, 'Đã xảy ra lỗi khi thực thi lệnh này.');
   }
@@ -442,6 +454,9 @@ export async function routeInteraction(
       const isDev = interaction.guildId === botConfig.devGuildId;
       const isOwnerDm = !interaction.guildId && interaction.user.id === botConfig.botOwnerId;
       if (!isDev && !isOwnerDm) {
+        logger.debug(
+          `[REQ:${interaction.id}] Bỏ qua tương tác từ guild ${interaction.guildId} do bot đang chạy ở chế độ DEV (isDev=true).`,
+        );
         return;
       }
     }
@@ -450,6 +465,9 @@ export async function routeInteraction(
     //    Bot BỎ QUA hoàn toàn Server DEV (1475517632848592918) để nhường quyền xử lý độc quyền cho phiên local VSCode!
     if (botConfig.isProduct && process.env.NODE_ENV !== 'test') {
       if (interaction.guildId === botConfig.devGuildId) {
+        logger.debug(
+          `[REQ:${interaction.id}] Bỏ qua tương tác từ Server DEV ${interaction.guildId} ở môi trường PRODUCT.`,
+        );
         return;
       }
     }
@@ -485,6 +503,9 @@ export async function routeInteraction(
     }
   } catch (error) {
     if (isIgnorableInteractionError(error)) {
+      logger.warn(
+        `[REQ:${interaction.id}] Ignorable interaction error (10062/40060) tại routeInteraction: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return;
     }
     logger.error('Lỗi khi điều phối interaction:', {
