@@ -3,7 +3,7 @@
  * Unit tests cho team-find.handlers.ts — xử lý button và tương thích ngược cho nút join voice.
  */
 
-import { handleTeamFindButton } from '../../src/features/delta-force/team-find.handlers.js';
+import { handleTeamFindButton } from '../../src/features/team-find/team-find.handlers.js';
 import { VOICE_CHANNEL_FULL_MESSAGE } from '../../src/config/app.constants.js';
 import { GuildMember, MessageFlags } from 'discord.js';
 

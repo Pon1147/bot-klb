@@ -4,10 +4,10 @@
  * Verify builders, toJSON structure, và execute dispatch.
  */
 
-import { data, execute } from '../../src/features/delta-force/team.command.js';
-import { execute as executeTeamFind } from '../../src/features/delta-force/team-find.handler.js';
+import { data, execute } from '../../src/features/team-find/team.command.js';
+import { execute as executeTeamFind } from '../../src/features/team-find/team-find.handler.js';
 
-jest.mock('../../src/features/delta-force/team-find.handler.js', () => ({
+jest.mock('../../src/features/team-find/team-find.handler.js', () => ({
   execute: jest.fn().mockResolvedValue(undefined),
 }));
 

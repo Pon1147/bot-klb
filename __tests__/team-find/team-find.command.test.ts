@@ -26,7 +26,7 @@ jest.mock('../../src/utils/df-voice.utils.js', () => ({
   checkVoiceForTeamFind: jest.fn(),
 }));
 
-jest.mock('../../src/features/delta-force/team-find.menu.js', () => ({
+jest.mock('../../src/features/team-find/team-find.menu.js', () => ({
   buildSelectMenuMessage: jest.fn().mockReturnValue({
     content: 'Select menu content',
     components: [],
@@ -44,10 +44,10 @@ jest.mock('../../src/services/team-find-session.js', () => ({
   createSession: jest.fn(),
 }));
 
-import { execute } from '../../src/features/delta-force/team-find.handler.js';
+import { execute } from '../../src/features/team-find/team-find.handler.js';
 import { requireGuild } from '../../src/utils/df-guards.js';
 import { checkVoiceForTeamFind } from '../../src/utils/df-voice.utils.js';
-import { buildSelectMenuMessage } from '../../src/features/delta-force/team-find.menu.js';
+import { buildSelectMenuMessage } from '../../src/features/team-find/team-find.menu.js';
 import { createSession } from '../../src/services/team-find-session.js';
 
 describe('team-find.command — execute', () => {

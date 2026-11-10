@@ -28,6 +28,8 @@ import {
   TeamFindIds,
   handleTeamFindButton,
   handleTeamFindSelect,
+} from '../../features/team-find/index.js';
+import {
   handleDfStatsSelect,
   handleHelpButton,
   handleMatchSelect,

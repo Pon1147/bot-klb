@@ -6,7 +6,6 @@
 
 // Commands
 export * as dfCommand from './df.command.js';
-export * as teamCommand from './team.command.js';
 
 // Handlers
 export * as codeHandler from './code.handler.js';
@@ -14,7 +13,6 @@ export * as dailyHandler from './daily.handler.js';
 export * as historyHandler from './history.handler.js';
 export * as linkHandler from './link.handler.js';
 export * as statsHandler from './stats.handler.js';
-export * as teamFindHandler from './team-find.handler.js';
 export * as unlinkHandler from './unlink.handler.js';
 export * as workshopHandler from './workshop.handler.js';
 export * as helpHandler from './help.handler.js';
@@ -27,15 +25,13 @@ export * as marketHandler from './market.handler.js';
 export * as weaponLoadoutsService from './weapon-loadouts.service.js';
 
 // Interaction handlers & IDs
-export * from './team-find-ids.js';
-export * from './team-find.handlers.js';
-export * from './team-find.interaction.js';
-export * from './team-find.embed.js';
-export * from './team-find.menu.js';
 export * from './stats-select.handler.js';
 export { handleMatchSelect, MATCH_SELECT_PREFIX } from './match.handler.js';
 export { handleHelpButton } from './help.handler.js';
 export { getExtensionZipPath } from './extension.utils.js';
+
+// Re-export BM-05 Team Find cho tương thích ngược
+export * from '../team-find/index.js';
 
 // Services, Schedulers & Crypto
 export * from '../../services/df-codes-scheduler.js';

@@ -71,7 +71,7 @@ jest.mock('../../src/utils/container.utils.js', () => ({
   })),
 }));
 
-import { buildTeamFindEmbed } from '../../src/features/delta-force/team-find.embed.js';
+import { buildTeamFindEmbed } from '../../src/features/team-find/team-find.embed.js';
 import { DIFFICULTY_CONFIG, MAP_DISPLAY } from '../../src/config/team-find.config.js';
 
 describe('team-find.embed — buildTeamFindEmbed', () => {
