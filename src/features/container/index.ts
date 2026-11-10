@@ -8,3 +8,4 @@ export * from './container-builders.js';
 export * from './container-routers.js';
 export * from './container-edit.handler.js';
 export * from './container-reset.handler.js';
+export * from './container.subcommand.js';
