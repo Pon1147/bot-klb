@@ -119,7 +119,7 @@ async function handlePayCreate(
   const txId = `TX${Date.now().toString(36).toUpperCase()}${salt}`;
   const expiresAt = Date.now() + 60 * 60 * 1000; // Hết hạn sau 60 phút
 
-  // Lưu giao dịch vào SQLite database
+  // Lưu giao dịch vào SQLite database (snapshot thông tin thụ hưởng)
   createPayment(db, {
     id: txId,
     guild_id: guildId,
@@ -130,6 +130,9 @@ async function handlePayCreate(
     status: 'pending',
     created_at: Date.now(),
     expires_at: expiresAt,
+    bank_id: vietqr.bankId,
+    account_no: vietqr.accountNo,
+    account_name: vietqr.accountName,
   });
 
   // Tải buffer ảnh PNG VietQR chuẩn (kèm cơ chế fallback dự phòng)

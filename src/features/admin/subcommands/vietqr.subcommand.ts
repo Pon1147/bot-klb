@@ -20,6 +20,8 @@ import {
 } from '../../../utils/vietqr.utils.js';
 import { buildErrorContainer, buildInfoContainer } from '../../../utils/container.utils.js';
 import { sendReply } from '../../../utils/reply.utils.js';
+import { botConfig } from '../../../config/bot.config.js';
+import { extractMemberRoleIds } from '../../../config/permissions.js';
 
 export function buildVietQrGroup(
   group: SlashCommandSubcommandGroupBuilder,
@@ -191,6 +193,25 @@ export async function handleVietQrSet(
     return;
   }
 
+  // Kiểm tra quyền: Chỉ Guild Owner, Bot Owner, hoặc Bot Admin mới được đổi STK ngân hàng của máy chủ
+  const isGuildOwner = interaction.guild?.ownerId === interaction.user.id;
+  const isBotOwner = Boolean(botConfig.botOwnerId && interaction.user.id === botConfig.botOwnerId);
+  const settingsService = getSettingsService();
+  const currentSettings = settingsService.get(guildId);
+  const userRoles = extractMemberRoleIds(interaction.member);
+  const isBotAdmin = Boolean(
+    currentSettings.rbac?.botAdminRoleId && userRoles.includes(currentSettings.rbac.botAdminRoleId),
+  );
+
+  if (!isGuildOwner && !isBotOwner && !isBotAdmin) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '🔒 Bạn không có quyền thay đổi thông tin ngân hàng của máy chủ.\nChỉ Chủ sở hữu máy chủ (Server Owner) hoặc Bot Admin mới có quyền thiết lập tài khoản nhận tiền.',
+      ).toJSON(),
+    });
+    return;
+  }
+
   const rawBank = interaction.options.getString('bank', true).trim().toUpperCase();
   const normalized = normalizeBankCode(rawBank);
   if (!normalized) {
@@ -208,10 +229,12 @@ export async function handleVietQrSet(
   const accountName = interaction.options.getString('account_name', true).trim().toUpperCase();
   const prefix = interaction.options.getString('prefix')?.trim().toUpperCase() || 'NAP';
 
-  const settingsService = getSettingsService();
+  const currentVietQr = currentSettings.vietqr;
   settingsService.update(guildId, {
     vietqr: {
+      ...currentVietQr,
       enabled: true,
+      mode: currentVietQr?.mode || 'server_wallet',
       bankId: bank,
       accountNo,
       accountName,
@@ -276,12 +299,18 @@ export async function handleVietQrStatus(
 
   const bankDisplayName =
     SUPPORTED_BANKS[vietqr.bankId.toUpperCase()] ?? vietqr.bankId.toUpperCase();
+  const modeLabel =
+    vietqr.mode === 'multi_seller'
+      ? '👥 Multi-Seller (Ví thợ riêng lẻ)'
+      : '🏢 Quỹ máy chủ tập trung (Server Wallet)';
+
   const container = buildInfoContainer(
     `### 💳 Cấu Hình VietQR Máy Chủ\n\n` +
       `• **Ngân hàng**: **${bankDisplayName}** (\`${vietqr.bankId.toUpperCase()}\`)\n` +
       `• **Số tài khoản**: \`${vietqr.accountNo}\`\n` +
       `• **Chủ tài khoản**: **${vietqr.accountName ?? 'Chưa đặt'}**\n` +
       `• **Tiền tố nội dung**: \`${vietqr.prefix ?? 'NAP'}\`\n` +
+      `• **Mô hình**: ${modeLabel}\n` +
       `• **Trạng thái**: ${vietqr.enabled ? '🟢 Đang hoạt động' : '🔴 Tạm dừng'}\n\n` +
       `**⚙️ Workflow & Quy trình:**\n` +
       `• **Role nhân viên (Staff)**: ${vietqr.staffRoleId ? `<@&${vietqr.staffRoleId}>` : '*Chưa thiết lập (Chỉ Admin)*'}\n` +
@@ -336,7 +365,7 @@ export async function handleVietQrPreview(
   const testTransferCode = `${vietqr.prefix || 'NAP'} TEST ${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
   if (typeof interaction.deferReply === 'function') {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2 });
   }
 
   const qrBuffer = await fetchVietQrImageBuffer({

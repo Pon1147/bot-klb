@@ -205,10 +205,16 @@ describe('VietQR Payment Remediation Tests', () => {
         status: 'pending',
         created_at: now,
         expires_at: expiresAt,
+        bank_id: 'VCB',
+        account_no: '0461000644931',
+        account_name: 'LE PHAM DANG KHOA',
       });
 
       const tx = getPaymentById(db, 'TX_EXP_TEST');
       expect(tx?.expires_at).toBe(expiresAt);
+      expect((tx as any)?.bank_id).toBe('VCB');
+      expect((tx as any)?.account_no).toBe('0461000644931');
+      expect((tx as any)?.account_name).toBe('LE PHAM DANG KHOA');
     });
   });
 
@@ -249,6 +255,9 @@ describe('VietQR Payment Remediation Tests', () => {
 
       const columns = db.prepare('PRAGMA table_info(payments)').all() as Array<{ name: string }>;
       expect(columns.some((c) => c.name === 'expires_at')).toBe(true);
+      expect(columns.some((c) => c.name === 'bank_id')).toBe(true);
+      expect(columns.some((c) => c.name === 'account_no')).toBe(true);
+      expect(columns.some((c) => c.name === 'account_name')).toBe(true);
     });
   });
 });

@@ -19,7 +19,10 @@ export function initializePaymentTables(database: Database.Database): void {
       note TEXT,
       created_at INTEGER NOT NULL,
       expires_at INTEGER,
-      processed_at INTEGER
+      processed_at INTEGER,
+      bank_id TEXT,
+      account_no TEXT,
+      account_name TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_payments_guild_buyer ON payments(guild_id, buyer_id, status);
     CREATE INDEX IF NOT EXISTS idx_payments_guild_status ON payments(guild_id, status);
@@ -50,9 +53,18 @@ export function initializePaymentTables(database: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_donations_status ON donations(status);
   `);
 
-  // Migration idempotent: Bổ sung cột expires_at cho bảng payments nếu chưa có
+  // Migration idempotent: Bổ sung các cột mới cho bảng payments nếu chưa có
   const columns = database.prepare('PRAGMA table_info(payments)').all() as Array<{ name: string }>;
   if (!columns.some((c) => c.name === 'expires_at')) {
     database.exec('ALTER TABLE payments ADD COLUMN expires_at INTEGER');
+  }
+  if (!columns.some((c) => c.name === 'bank_id')) {
+    database.exec('ALTER TABLE payments ADD COLUMN bank_id TEXT');
+  }
+  if (!columns.some((c) => c.name === 'account_no')) {
+    database.exec('ALTER TABLE payments ADD COLUMN account_no TEXT');
+  }
+  if (!columns.some((c) => c.name === 'account_name')) {
+    database.exec('ALTER TABLE payments ADD COLUMN account_name TEXT');
   }
 }

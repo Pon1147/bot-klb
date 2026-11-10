@@ -58,9 +58,10 @@ jest.mock('../../src/config/bot.config.js', () => {
 
 function createMockInteraction(overrides: Record<string, unknown> = {}): any {
   const base: Record<string, unknown> = {
-    guild: { id: 'guild-123' },
+    guild: { id: 'guild-123', name: 'Test Guild', ownerId: 'user-123' },
     guildId: 'guild-123',
     user: { id: 'user-123' },
+    member: { roles: ['role-admin'] },
     channel: { id: 'channel-123' },
     replied: false,
     deferred: false,
@@ -800,6 +801,7 @@ describe('/config command — Execute Dispatch', () => {
         expect(mockSettingsService.update).toHaveBeenCalledWith('guild-authorized', {
           vietqr: {
             enabled: true,
+            mode: 'server_wallet',
             bankId: 'MB',
             accountNo: '0987654321',
             accountName: 'NGUYEN VAN A',
@@ -812,6 +814,33 @@ describe('/config command — Execute Dispatch', () => {
         const jsonStr = JSON.stringify(replyPayload);
         expect(jsonStr).toContain('Cấu Hình VietQR Thanh Toán Đã Được Cập Nhật');
         expect(jsonStr).toContain('MBBank (Quân Đội)');
+      });
+
+      it('vietqr set: từ chối khi user không phải Guild Owner, Bot Owner, hoặc Bot Admin', async () => {
+        mockIsQrServerEnabled.mockReturnValueOnce(true);
+
+        const interaction = createMockInteraction({
+          guildId: 'guild-authorized',
+          guild: { id: 'guild-authorized', ownerId: 'other-owner-999' },
+          user: { id: 'regular-mod-123' },
+          member: { roles: ['role-mod'] },
+          options: {
+            getSubcommandGroup: jest.fn().mockReturnValue('vietqr'),
+            getSubcommand: jest.fn().mockReturnValue('set'),
+            getString: jest.fn((key: string) => {
+              if (key === 'bank') return 'MB';
+              if (key === 'account_no') return '0987654321';
+              if (key === 'account_name') return 'NGUYEN VAN A';
+              return null;
+            }),
+          },
+        });
+
+        await execute(interaction);
+
+        const replyPayload = interaction.reply.mock.calls[0][0];
+        const jsonStr = JSON.stringify(replyPayload);
+        expect(jsonStr).toContain('Bạn không có quyền thay đổi thông tin ngân hàng');
       });
 
       it('vietqr status: xem trạng thái cấu hình hiện tại', async () => {

@@ -567,7 +567,7 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(resolveCommandPolicy('config.container.edit')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.container.reset')).toBe(Policy.MANAGE_CONFIG);
 
-      expect(resolveCommandPolicy('config.vietqr.set')).toBe(Policy.MANAGE_CONFIG);
+      expect(resolveCommandPolicy('config.vietqr.set')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.vietqr.workflow')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.vietqr.status')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.vietqr.preview')).toBe(Policy.MANAGE_CONFIG);

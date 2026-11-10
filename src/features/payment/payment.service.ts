@@ -15,6 +15,9 @@ export interface PaymentRecord {
   created_at: number;
   expires_at?: number | null;
   processed_at?: number | null;
+  bank_id?: string | null;
+  account_no?: string | null;
+  account_name?: string | null;
 }
 
 export interface PaymentFeedbackRecord {
@@ -55,8 +58,9 @@ export function createPayment(database: Database.Database, payment: PaymentRecor
       `
       INSERT INTO payments (
         id, guild_id, buyer_id, seller_id, amount,
-        description, status, note, created_at, expires_at, processed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        description, status, note, created_at, expires_at, processed_at,
+        bank_id, account_no, account_name
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     )
     .run(
@@ -71,6 +75,9 @@ export function createPayment(database: Database.Database, payment: PaymentRecor
       payment.created_at,
       payment.expires_at || null,
       payment.processed_at || null,
+      payment.bank_id || null,
+      payment.account_no || null,
+      payment.account_name || null,
     );
 }
 
