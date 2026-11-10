@@ -25,18 +25,20 @@ export async function sendReply(
   ephemeral: boolean = true,
 ): Promise<void> {
   const isReplied = interaction.replied || interaction.deferred;
+  const hasComponents = 'components' in payload && payload.components;
+  const extraFlags = hasComponents ? MessageFlags.IsComponentsV2 : 0;
+  const baseFlags = (payload.flags as number) || 0;
 
-  // editReply không nhận flags từ container — kế thừa flags từ deferReply
+  // Khi đã defer/reply, editReply vẫn cần cờ IsComponentsV2 nếu gửi Components V2
   if (isReplied) {
-    const { flags: _ignore, ...editPayload } = payload;
-    await interaction.editReply(editPayload as Parameters<typeof interaction.editReply>[0]);
+    await interaction.editReply({
+      ...payload,
+      flags: baseFlags | extraFlags,
+    } as Parameters<typeof interaction.editReply>[0]);
     return;
   }
 
   // reply() cần flags hợp nhất: flags từ container | Ephemeral (nếu bật) (+ IsComponentsV2 nếu có components)
-  const baseFlags = (payload.flags as number) || 0;
-  const hasComponents = 'components' in payload && payload.components;
-  const extraFlags = hasComponents ? MessageFlags.IsComponentsV2 : 0;
   const ephemFlag = ephemeral ? MessageFlags.Ephemeral : 0;
 
   await interaction.reply({

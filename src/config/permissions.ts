@@ -193,6 +193,7 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'config.vietqr.set': Policy.MANAGE_CONFIG,
   'config.vietqr.workflow': Policy.MANAGE_CONFIG,
   'config.vietqr.status': Policy.MANAGE_CONFIG,
+  'config.vietqr.preview': Policy.MANAGE_CONFIG,
 
   'config.welcome.setchannel': Policy.MANAGE_CONFIG,
   'config.welcome.setrole': Policy.MANAGE_CONFIG,

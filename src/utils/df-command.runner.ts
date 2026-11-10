@@ -29,6 +29,19 @@ function isTokenExpiredError(error: Error): boolean {
   );
 }
 
+/**
+ * Detect lỗi tài khoản Garena chưa từng tạo nhân vật trong game Delta Force (ret = 1105 / code=300004)
+ */
+function isNoGameCharacterError(error: Error): boolean {
+  const msg = error.message.toLowerCase();
+  return (
+    msg.includes('transfer gopenid to uid failed') ||
+    msg.includes('ret = 1105') ||
+    msg.includes('ret=1105') ||
+    msg.includes("doesn't have this account")
+  );
+}
+
 /** Result returned by DF command callbacks */
 export interface DfCommandResult {
   /** Components — use toComponentsV2() from container.utils */
@@ -161,6 +174,17 @@ export async function runDfCommand(
       logger.info(`Token hết hạn/invalid cho user ${ctx.userId} — chỉ warn, không tự xóa binding.`);
       const err = buildErrorContainer(
         'Token hiện đã hết hạn. Vui lòng sử dụng `/df link start` để liên kết lại.',
+      );
+      await ctx.interaction.editReply({
+        components: err.toJSON(),
+        flags: err.flags,
+      });
+      return true;
+    }
+    if (isNoGameCharacterError(error as Error)) {
+      logger.info(`Tài khoản chưa có nhân vật trong game cho user ${ctx.userId}`);
+      const err = buildErrorContainer(
+        'Tài khoản Garena của bạn chưa có nhân vật trong game Delta Force (Server Garena).\n\n💡 **Cách khắc phục:**\nVui lòng đăng nhập vào game Delta Force trên PC hoặc Mobile, hoàn tất đặt tên và tạo nhân vật trước khi dùng bot tra cứu.',
       );
       await ctx.interaction.editReply({
         components: err.toJSON(),

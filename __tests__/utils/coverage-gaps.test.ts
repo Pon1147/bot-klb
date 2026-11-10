@@ -81,4 +81,30 @@ describe('df.token.db — migration columns', () => {
 
     db.close();
   });
+
+  it('sendReply() giữ nguyên MessageFlags.IsComponentsV2 khi tương tác đã deferred', async () => {
+    const { MessageFlags } = require('discord.js');
+    const { sendReply } = require('../../src/utils/reply.utils.js');
+
+    const mockEditReply = jest.fn().mockResolvedValue(undefined);
+    const mockInteraction = {
+      deferred: true,
+      replied: false,
+      editReply: mockEditReply,
+    };
+
+    const containerPayload = {
+      components: [{ type: 17, components: [] }],
+      flags: MessageFlags.IsComponentsV2,
+    };
+
+    await sendReply(mockInteraction as any, containerPayload);
+
+    expect(mockEditReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        flags: MessageFlags.IsComponentsV2,
+        components: expect.any(Array),
+      }),
+    );
+  });
 });
