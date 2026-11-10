@@ -23,6 +23,14 @@ describe('CI Drift Guard — Bi-directional Command & Localization Parity', () =
   const requiredUserPaths = runtimePaths.filter((path) => !isAdminCommand(path));
 
   describe('1. Builder -> i18n Dictionary Parity', () => {
+    it('phân vùng lệnh admin và user từ builder là phân hoạch hoàn chỉnh (tổng phân vùng = tổng builder paths)', () => {
+      const adminPaths = runtimePaths.filter(isAdminCommand);
+      expect(adminPaths.length + requiredUserPaths.length).toBe(runtimePaths.length);
+      expect(runtimePaths.length).toBe(55);
+      expect(adminPaths.length).toBe(34); // 27 config.* + 4 df.autopost.* + 3 df.code.set*
+      expect(requiredUserPaths.length).toBe(21);
+    });
+
     it('mọi user command bắt buộc phải có đầy đủ mô tả và ví dụ trong vi.ts', () => {
       const missingInVi: string[] = [];
       for (const path of requiredUserPaths) {

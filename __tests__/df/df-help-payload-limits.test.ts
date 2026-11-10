@@ -6,6 +6,8 @@ import {
 } from '../../src/features/delta-force/help.handler.js';
 import { ComponentType } from 'discord.js';
 
+// Nguồn: Discord API specs cho TextDisplay component (tối đa 4,096 ký tự tương đương Embed Description / Modal Text).
+// Ngưỡng 3,500 ký tự được chọn làm safe ceiling có đệm ~500 ký tự để đảm bảo an toàn tuyệt đối khi render trên mọi client.
 describe('Discord Component V2 Payload & Total Character Limit Guard', () => {
   const locales = ['vi', 'en'] as const;
 
