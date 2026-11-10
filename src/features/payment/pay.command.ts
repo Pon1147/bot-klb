@@ -132,11 +132,6 @@ async function handlePayCreate(
     expires_at: expiresAt,
   });
 
-  // Defer reply ngay lập tức để tránh vượt quá deadline 3 giây của Discord khi fetch ảnh VietQR
-  if (typeof interaction.deferReply === 'function') {
-    await interaction.deferReply();
-  }
-
   // Tải buffer ảnh PNG VietQR chuẩn (kèm cơ chế fallback dự phòng)
   const qrBuffer = await fetchVietQrImageBuffer({
     bankId: vietqr.bankId,
@@ -175,18 +170,11 @@ async function handlePayCreate(
 
   const actionRow = buildPaymentActionRow(txId, buyerId);
 
-  if (interaction.deferred && typeof interaction.editReply === 'function') {
-    await interaction.editReply({
-      components: [...container.toJSON(), actionRow.toJSON() as any],
-      files,
-    });
-  } else {
-    await interaction.reply({
-      components: [...container.toJSON(), actionRow.toJSON() as any],
-      files,
-      flags: MessageFlags.IsComponentsV2,
-    });
-  }
+  await interaction.reply({
+    components: [...container.toJSON(), actionRow.toJSON() as any],
+    files,
+    flags: MessageFlags.IsComponentsV2,
+  });
 }
 
 /**

@@ -18,13 +18,13 @@ Tài liệu này mô tả kiến trúc, quy trình nghiệp vụ và kế hoạc
 
 Root command: **`/seller`** (hoặc bí danh phù hợp với cộng đồng)
 
-| Subcommand | Mục đích | Phân quyền |
-| :--- | :--- | :--- |
-| `/seller pay <buyer> <amount> <description> [seller]` | Tạo đơn kéo & hiển thị mã VietQR động | Thợ Kéo hoặc Bot Admin / Moderator |
-| `/seller qr [user]` | Dashboard cấu hình tài khoản ngân hàng VietQR cho thợ kéo | Cá nhân thợ kéo hoặc Admin |
-| `/seller history [user] [status]` | Xem lịch sử giao dịch của thợ kéo hoặc khách hàng | Thợ Kéo / Admin |
-| `/seller top` | Bảng xếp hạng thợ kéo uy tín & doanh thu cao trong server | Mọi thành viên (Public) |
-| `/seller config setrole <role>` | Cấu hình role định danh "Thợ Kéo" của server | Bot Admin / Guild Owner |
+| Subcommand                                            | Mục đích                                                  | Phân quyền                         |
+| :---------------------------------------------------- | :-------------------------------------------------------- | :--------------------------------- |
+| `/seller pay <buyer> <amount> <description> [seller]` | Tạo đơn kéo & hiển thị mã VietQR động                     | Thợ Kéo hoặc Bot Admin / Moderator |
+| `/seller qr [user]`                                   | Dashboard cấu hình tài khoản ngân hàng VietQR cho thợ kéo | Cá nhân thợ kéo hoặc Admin         |
+| `/seller history [user] [status]`                     | Xem lịch sử giao dịch của thợ kéo hoặc khách hàng         | Thợ Kéo / Admin                    |
+| `/seller top`                                         | Bảng xếp hạng thợ kéo uy tín & doanh thu cao trong server | Mọi thành viên (Public)            |
+| `/seller config setrole <role>`                       | Cấu hình role định danh "Thợ Kéo" của server              | Bot Admin / Guild Owner            |
 
 ---
 
@@ -55,45 +55,49 @@ src/features/seller/
 ## 4. Thiết Kế Cơ Sở Dữ Liệu (SQLite Database Schema)
 
 ### 4.1. Bảng `seller_profiles` (Thông tin ngân hàng của Thợ Kéo)
-* `user_id` (TEXT PRIMARY KEY): Discord User ID của thợ kéo.
-* `guild_id` (TEXT): Máy chủ đăng ký.
-* `bank_code` (TEXT): Mã BIN ngân hàng VietQR (vd: `970422` - MBBank, `970436` - Vietcombank).
-* `bank_name` (TEXT): Tên rút gọn của ngân hàng.
-* `account_number` (TEXT): Số tài khoản ngân hàng.
-* `account_name` (TEXT): Tên chủ tài khoản (in hoa không dấu).
-* `is_active` (INTEGER DEFAULT 1): Trạng thái hoạt động.
-* `created_at` (INTEGER): Timestamp tạo.
-* `updated_at` (INTEGER): Timestamp cập nhật.
+
+- `user_id` (TEXT PRIMARY KEY): Discord User ID của thợ kéo.
+- `guild_id` (TEXT): Máy chủ đăng ký.
+- `bank_code` (TEXT): Mã BIN ngân hàng VietQR (vd: `970422` - MBBank, `970436` - Vietcombank).
+- `bank_name` (TEXT): Tên rút gọn của ngân hàng.
+- `account_number` (TEXT): Số tài khoản ngân hàng.
+- `account_name` (TEXT): Tên chủ tài khoản (in hoa không dấu).
+- `is_active` (INTEGER DEFAULT 1): Trạng thái hoạt động.
+- `created_at` (INTEGER): Timestamp tạo.
+- `updated_at` (INTEGER): Timestamp cập nhật.
 
 ### 4.2. Bảng `seller_transactions` (Lịch sử giao dịch kéo)
-* `tx_id` (TEXT PRIMARY KEY): Mã đơn (vd: `TXA1B2C3D4`).
-* `guild_id` (TEXT): ID máy chủ thực hiện giao dịch.
-* `channel_id` (TEXT): Kênh chat / Ticket tạo giao dịch.
-* `message_id` (TEXT): ID tin nhắn chứa bảng QR.
-* `buyer_id` (TEXT): Discord ID khách hàng.
-* `seller_id` (TEXT): Discord ID thợ kéo.
-* `amount` (INTEGER): Số tiền giao dịch (VNĐ).
-* `description` (TEXT): Mô tả dịch vụ kéo.
-* `status` (TEXT): `pending` | `confirmed` | `cancelled`.
-* `note` (TEXT): Ghi chú xác nhận hoặc lý do hủy.
-* `processed_by` (TEXT): ID người bấm xác nhận / hủy.
-* `created_at` (INTEGER): Thời gian tạo đơn.
-* `processed_at` (INTEGER): Thời gian xác nhận / hủy.
+
+- `tx_id` (TEXT PRIMARY KEY): Mã đơn (vd: `TXA1B2C3D4`).
+- `guild_id` (TEXT): ID máy chủ thực hiện giao dịch.
+- `channel_id` (TEXT): Kênh chat / Ticket tạo giao dịch.
+- `message_id` (TEXT): ID tin nhắn chứa bảng QR.
+- `buyer_id` (TEXT): Discord ID khách hàng.
+- `seller_id` (TEXT): Discord ID thợ kéo.
+- `amount` (INTEGER): Số tiền giao dịch (VNĐ).
+- `description` (TEXT): Mô tả dịch vụ kéo.
+- `status` (TEXT): `pending` | `confirmed` | `cancelled`.
+- `note` (TEXT): Ghi chú xác nhận hoặc lý do hủy.
+- `processed_by` (TEXT): ID người bấm xác nhận / hủy.
+- `created_at` (INTEGER): Thời gian tạo đơn.
+- `processed_at` (INTEGER): Thời gian xác nhận / hủy.
 
 ### 4.3. Bảng `seller_reviews` (Đánh giá thợ kéo)
-* `id` (INTEGER PRIMARY KEY AUTOINCREMENT).
-* `tx_id` (TEXT UNIQUE): Khóa ngoại liên kết đơn giao dịch.
-* `seller_id` (TEXT): Thợ kéo được đánh giá.
-* `buyer_id` (TEXT): Khách hàng đánh giá.
-* `rating` (INTEGER): Số sao từ 1 đến 5.
-* `comment` (TEXT): Lời nhận xét chi tiết.
-* `created_at` (INTEGER): Thời gian gửi đánh giá.
+
+- `id` (INTEGER PRIMARY KEY AUTOINCREMENT).
+- `tx_id` (TEXT UNIQUE): Khóa ngoại liên kết đơn giao dịch.
+- `seller_id` (TEXT): Thợ kéo được đánh giá.
+- `buyer_id` (TEXT): Khách hàng đánh giá.
+- `rating` (INTEGER): Số sao từ 1 đến 5.
+- `comment` (TEXT): Lời nhận xét chi tiết.
+- `created_at` (INTEGER): Thời gian gửi đánh giá.
 
 ---
 
 ## 5. Luồng Nghiệp Vụ Chính (Core User Flows)
 
 ### 🔄 Luồng 1: Thiết Lập QR Ngân Hàng (`/seller qr`)
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -114,6 +118,7 @@ sequenceDiagram
 ```
 
 ### 💳 Luồng 2: Tạo Đơn & Thanh Toán (`/seller pay`)
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -149,4 +154,3 @@ sequenceDiagram
 - [x] **Bước 5 (Action Router & Interactivity)**: Xử lý nút bấm Confirm/Cancel, select menu ngân hàng, và modal feedback.
 - [x] **Bước 6 (RBAC & Permissions)**: Đăng ký policy cho `/seller` vào `permissions.ts`.
 - [x] **Bước 7 (Testing & QA)**: Viết unit tests cho database, service và command handler. Chạy `npm run check` và `npm test` đạt 100%.
-
