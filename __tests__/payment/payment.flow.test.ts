@@ -1,3 +1,4 @@
+import { MessageFlags } from 'discord.js';
 import Database from 'better-sqlite3';
 import {
   buildPaymentActionRow,
@@ -216,7 +217,97 @@ describe('payment.flow', () => {
       expect(tx?.status).toBe('confirmed');
       expect(tx?.note).toBe('Đã check banking Vietcombank');
       expect(mockSourceMsgEdit).toHaveBeenCalled();
+
+      // Kiểm tra tuân thủ Discord Components V2: không chứa legacy content và embeds
+      const editCallArg = mockSourceMsgEdit.mock.calls[0][0];
+      expect(editCallArg.content).toBeUndefined();
+      expect(editCallArg.embeds).toBeUndefined();
+      expect(editCallArg.flags).toBe(MessageFlags.IsComponentsV2);
+      expect(editCallArg.components).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 17, // ComponentType.Container
+          }),
+        ]),
+      );
+
       expect(mockChannelSend).toHaveBeenCalled(); // Rating buttons sent
+    });
+
+    it('handlePaymentModal khi Cancel cũng cập nhật qua Components V2 không có legacy fields', async () => {
+      createPayment(db, {
+        id: 'TX_FLOW_CANCEL',
+        guild_id: 'guild-1',
+        buyer_id: '112233445566778899',
+        seller_id: 'seller-1',
+        amount: 200000,
+        description: 'Đơn bị hủy',
+        status: 'pending',
+        created_at: Date.now(),
+      });
+
+      const mockShowModal = jest.fn();
+      const btnInteraction: any = {
+        customId: 'pay_cancel_TX_FLOW_CANCEL_112233445566778899',
+        guildId: 'guild-1',
+        guild: { ownerId: 'user-admin' },
+        user: { id: 'user-admin' },
+        member: { permissions: { has: () => true }, roles: { cache: new Map() } },
+        channelId: 'channel-1',
+        message: { id: 'msg-1' },
+        client: { database: db },
+        showModal: mockShowModal,
+      };
+      await handlePaymentButton(btnInteraction, db);
+
+      const modalArg = mockShowModal.mock.calls[0][0];
+      const sessionId = modalArg.data.custom_id.replace('pay_modal_cancel_', '');
+
+      const mockSourceMsgEdit = jest.fn();
+      const mockDeferReply = jest.fn();
+      const mockEditReply = jest.fn();
+
+      const modalInteraction: any = {
+        customId: `pay_modal_cancel_${sessionId}`,
+        user: { id: 'user-admin' },
+        fields: {
+          getTextInputValue: jest.fn().mockReturnValue('Khách đổi ý không mua nữa'),
+        },
+        deferReply: mockDeferReply,
+        editReply: mockEditReply,
+        client: {
+          database: db,
+          channels: {
+            fetch: jest.fn().mockResolvedValue({
+              isTextBased: () => true,
+              send: jest.fn(),
+              messages: {
+                fetch: jest.fn().mockResolvedValue({
+                  edit: mockSourceMsgEdit,
+                }),
+              },
+            }),
+          },
+        },
+      };
+
+      await handlePaymentModal(modalInteraction, db);
+
+      const tx = getPaymentById(db, 'TX_FLOW_CANCEL');
+      expect(tx?.status).toBe('cancelled');
+      expect(tx?.note).toBe('Khách đổi ý không mua nữa');
+
+      const editCallArg = mockSourceMsgEdit.mock.calls[0][0];
+      expect(editCallArg.content).toBeUndefined();
+      expect(editCallArg.embeds).toBeUndefined();
+      expect(editCallArg.flags).toBe(MessageFlags.IsComponentsV2);
+      expect(editCallArg.components).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 17, // ComponentType.Container
+          }),
+        ]),
+      );
     });
 
     it('handleFeedbackRateButton từ chối đánh giá trùng lặp trực tiếp từ database', async () => {

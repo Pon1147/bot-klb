@@ -17,6 +17,7 @@ import { getSettingsService } from '../../services/settings.service.js';
 import { extractMemberRoleIds } from '../../config/permissions.js';
 import { createLogger } from '../../utils/logger.js';
 import { getPaymentById, updatePaymentStatus, saveFeedback } from './payment.service.js';
+import { buildPaymentResultContainer } from '../../utils/vietqr.utils.js';
 
 const logger = createLogger('PaymentFlow');
 
@@ -350,40 +351,26 @@ export async function handlePaymentModal(
           .fetch(session.sourceMessageId)
           .catch(() => null);
         if (sourceMessage) {
-          const embed = new EmbedBuilder()
-            .setTitle(isConfirm ? '✅ Thanh toán đã xác nhận' : '❌ Hóa đơn đã bị hủy')
-            .setColor(isConfirm ? 0x2ecc71 : 0xe74c3c)
-            .addFields(
-              { name: 'Mã đơn (TX)', value: `\`${tx.id}\``, inline: true },
-              {
-                name: 'Số tiền',
-                value: `**${tx.amount.toLocaleString('vi-VN')} VNĐ**`,
-                inline: true,
-              },
-              { name: 'Khách hàng', value: `<@${tx.buyer_id}>`, inline: true },
-              { name: 'Mô tả', value: tx.description, inline: false },
-              {
-                name: isConfirm ? 'Người xác nhận' : 'Người hủy',
-                value: `<@${interaction.user.id}>`,
-                inline: true,
-              },
-              {
-                name: isConfirm ? 'Ghi chú' : 'Lý do hủy',
-                value: reason || (isConfirm ? 'Không có' : 'Không rõ lý do'),
-                inline: true,
-              },
-            )
-            .setTimestamp();
+          // Xây dựng Container V2 hiển thị kết quả duyệt hoặc hủy (chuẩn Components V2 không dùng legacy content hay embeds)
+          const resultContainer = buildPaymentResultContainer({
+            isConfirm,
+            txId: tx.id,
+            amount: tx.amount,
+            buyerId: tx.buyer_id,
+            description: tx.description,
+            operatorId: interaction.user.id,
+            reason,
+          });
 
           await sourceMessage.edit({
-            content: isConfirm
-              ? `🎉 <@${tx.buyer_id}> Hóa đơn thanh toán của bạn đã được xác nhận!`
-              : `⚠️ <@${tx.buyer_id}> Hóa đơn đã bị hủy: ${reason || 'Không rõ lý do'}`,
-            embeds: [embed],
             components: isConfirm
-              ? []
-              : [buildPaymentActionRow(tx.id, tx.buyer_id, { disabled: true }).toJSON() as any],
+              ? resultContainer.toJSON()
+              : [
+                  ...resultContainer.toJSON(),
+                  buildPaymentActionRow(tx.id, tx.buyer_id, { disabled: true }).toJSON() as any,
+                ],
             files: [],
+            flags: MessageFlags.IsComponentsV2,
           });
 
           // Nếu là xác nhận thành công và bật đánh giá:

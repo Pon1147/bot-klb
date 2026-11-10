@@ -233,3 +233,73 @@ export function buildVietQrContainer(options: VietQrContainerOptions): BuildCont
     [],
   );
 }
+
+/**
+ * Tùy chọn để tạo Container V2 hiển thị kết quả duyệt hoặc hủy hóa đơn.
+ */
+export interface PaymentResultContainerOptions {
+  /** True nếu là duyệt thanh toán thành công, False nếu là hủy hóa đơn */
+  isConfirm: boolean;
+  /** Mã đơn thanh toán (TX...) */
+  txId: string;
+  /** Số tiền của hóa đơn (VNĐ) */
+  amount: number;
+  /** ID Discord của khách hàng */
+  buyerId: string;
+  /** Mô tả / dịch vụ của hóa đơn */
+  description: string;
+  /** ID Discord của nhân viên hoặc admin thực hiện thao tác */
+  operatorId: string;
+  /** Lý do hủy hoặc ghi chú khi duyệt */
+  reason?: string | null;
+}
+
+/**
+ * Tạo Container V2 hiển thị trạng thái hóa đơn sau khi Admin hoặc Staff duyệt hoặc hủy.
+ * Tuân thủ chuẩn Discord Components V2: không chứa trường legacy content hoặc embeds.
+ */
+export function buildPaymentResultContainer(
+  options: PaymentResultContainerOptions,
+): BuildContainerResult {
+  const { isConfirm, txId, amount, buyerId, description, operatorId, reason } = options;
+
+  const statusTitle = isConfirm
+    ? '### ✅ Hóa Đơn Thanh Toán Đã Xác Nhận'
+    : '### ❌ Hóa Đơn Thanh Toán Đã Bị Hủy';
+
+  const tagNotification = isConfirm
+    ? `🎉 <@${buyerId}> Hóa đơn thanh toán của bạn đã được xác nhận!`
+    : `⚠️ <@${buyerId}> Hóa đơn thanh toán đã bị hủy.`;
+
+  const formattedAmount = `${amount.toLocaleString('vi-VN')} đ`;
+  const noteLine = reason ? `\n• **Ghi chú**: \`${reason}\`` : '';
+
+  const textLines = [
+    statusTitle,
+    '',
+    `> ${tagNotification}`,
+    '',
+    `• **Mã đơn (TX)**: \`${txId}\``,
+    `• **Số tiền**: **${formattedAmount}**`,
+    `• **Khách hàng**: <@${buyerId}>`,
+    `• **Dịch vụ**: \`${description}\``,
+    `• **Người thực hiện**: <@${operatorId}>${noteLine}`,
+  ].join('\n');
+
+  return makeResult(
+    [
+      {
+        type: ComponentType.Container,
+        components: [
+          { type: ComponentType.TextDisplay, content: textLines },
+          {
+            type: ComponentType.Separator,
+            accentColor: isConfirm ? COLORS.SUCCESS : COLORS.ERROR,
+          },
+        ],
+      },
+    ],
+    MessageFlags.IsComponentsV2,
+    [],
+  );
+}
