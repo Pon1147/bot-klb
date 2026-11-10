@@ -6,6 +6,9 @@ import {
 } from '../../src/features/delta-force/help.handler.js';
 import { ComponentType } from 'discord.js';
 
+// Giới hạn: Discord Components V2 TextDisplay (Type 10) — tổng text mọi TextDisplay trong 1 message <= 4,000 ký tự.
+// Ref: https://discordjs.guide/message-components/v2-components.html
+// Ngưỡng test: 3,500 ký tự (đệm 500 so với trần). Thực tế: 1,120–1,760 ký tự/trang.
 describe('Discord Component V2 Payload & Total Character Limit Guard', () => {
   const locales = ['vi', 'en'] as const;
 
