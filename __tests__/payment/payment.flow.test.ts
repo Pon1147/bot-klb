@@ -211,6 +211,7 @@ describe('payment.flow', () => {
 
       const modalInteraction: any = {
         customId: `pay_modal_confirm_${sessionId}`,
+        guildId: 'guild-1',
         user: { id: 'user-admin' },
         fields: {
           getTextInputValue: jest.fn().mockReturnValue('Đã check banking Vietcombank'),
@@ -296,6 +297,7 @@ describe('payment.flow', () => {
 
       const modalInteraction: any = {
         customId: `pay_modal_cancel_${sessionId}`,
+        guildId: 'guild-1',
         user: { id: 'user-admin' },
         fields: {
           getTextInputValue: jest.fn().mockReturnValue('Khách đổi ý không mua nữa'),
@@ -335,6 +337,159 @@ describe('payment.flow', () => {
           }),
         ]),
       );
+    });
+
+    describe('Modal Guild Isolation Guard (Fail-Closed)', () => {
+      it('chấp nhận khi modal gửi từ cùng guild (Same-guild modal: accepted)', async () => {
+        createPayment(db, {
+          id: 'TX_MODAL_SAME',
+          guild_id: 'guild-1',
+          buyer_id: 'buyer-same',
+          seller_id: 'seller-1',
+          amount: 50000,
+          description: 'Same guild test',
+          status: 'pending',
+          created_at: Date.now(),
+        });
+
+        const mockShowModal = jest.fn();
+        const btnInteraction: any = {
+          customId: 'pay_confirm_TX_MODAL_SAME_buyer-same',
+          guildId: 'guild-1',
+          guild: { ownerId: 'user-admin' },
+          user: { id: 'user-admin' },
+          member: { permissions: { has: () => true }, roles: { cache: new Map() } },
+          channelId: 'channel-1',
+          message: { id: 'msg-1' },
+          client: { database: db },
+          showModal: mockShowModal,
+        };
+        await handlePaymentButton(btnInteraction, db);
+
+        const modalArg = mockShowModal.mock.calls[0][0];
+        const sessionId = modalArg.data.custom_id.replace('pay_modal_confirm_', '');
+
+        const mockDeferReply = jest.fn();
+        const mockEditReply = jest.fn();
+        const modalInteraction: any = {
+          customId: `pay_modal_confirm_${sessionId}`,
+          guildId: 'guild-1',
+          user: { id: 'user-admin' },
+          fields: { getTextInputValue: jest.fn().mockReturnValue('OK') },
+          deferReply: mockDeferReply,
+          editReply: mockEditReply,
+          client: { database: db, channels: { fetch: jest.fn().mockResolvedValue(null) } },
+        };
+
+        await handlePaymentModal(modalInteraction, db);
+
+        expect(mockEditReply).toHaveBeenCalledWith(
+          expect.objectContaining({ content: expect.stringContaining('Đã xác nhận thành công') }),
+        );
+        expect(getPaymentById(db, 'TX_MODAL_SAME')?.status).toBe('confirmed');
+      });
+
+      it('từ chối khi modal gửi từ guild khác (Cross-guild modal: rejected)', async () => {
+        createPayment(db, {
+          id: 'TX_MODAL_CROSS',
+          guild_id: 'guild-A',
+          buyer_id: 'buyer-cross',
+          seller_id: 'seller-1',
+          amount: 50000,
+          description: 'Cross guild test',
+          status: 'pending',
+          created_at: Date.now(),
+        });
+
+        const mockShowModal = jest.fn();
+        const btnInteraction: any = {
+          customId: 'pay_confirm_TX_MODAL_CROSS_buyer-cross',
+          guildId: 'guild-A',
+          guild: { ownerId: 'user-admin' },
+          user: { id: 'user-admin' },
+          member: { permissions: { has: () => true }, roles: { cache: new Map() } },
+          channelId: 'channel-1',
+          message: { id: 'msg-1' },
+          client: { database: db },
+          showModal: mockShowModal,
+        };
+        await handlePaymentButton(btnInteraction, db);
+
+        const modalArg = mockShowModal.mock.calls[0][0];
+        const sessionId = modalArg.data.custom_id.replace('pay_modal_confirm_', '');
+
+        const mockDeferReply = jest.fn();
+        const mockEditReply = jest.fn();
+        const modalInteraction: any = {
+          customId: `pay_modal_confirm_${sessionId}`,
+          guildId: 'guild-B', // Guild khác với đơn hàng
+          user: { id: 'user-admin' },
+          fields: { getTextInputValue: jest.fn().mockReturnValue('Hack') },
+          deferReply: mockDeferReply,
+          editReply: mockEditReply,
+          client: { database: db },
+        };
+
+        await handlePaymentModal(modalInteraction, db);
+
+        expect(mockEditReply).toHaveBeenCalledWith(
+          expect.objectContaining({
+            content: expect.stringContaining('không thuộc máy chủ này'),
+          }),
+        );
+        expect(getPaymentById(db, 'TX_MODAL_CROSS')?.status).toBe('pending');
+      });
+
+      it('từ chối khi modal thiếu guild context (Missing guild context: rejected / fail-closed)', async () => {
+        createPayment(db, {
+          id: 'TX_MODAL_NOGUILD',
+          guild_id: 'guild-A',
+          buyer_id: 'buyer-noguild',
+          seller_id: 'seller-1',
+          amount: 50000,
+          description: 'Missing guild test',
+          status: 'pending',
+          created_at: Date.now(),
+        });
+
+        const mockShowModal = jest.fn();
+        const btnInteraction: any = {
+          customId: 'pay_confirm_TX_MODAL_NOGUILD_buyer-noguild',
+          guildId: 'guild-A',
+          guild: { ownerId: 'user-admin' },
+          user: { id: 'user-admin' },
+          member: { permissions: { has: () => true }, roles: { cache: new Map() } },
+          channelId: 'channel-1',
+          message: { id: 'msg-1' },
+          client: { database: db },
+          showModal: mockShowModal,
+        };
+        await handlePaymentButton(btnInteraction, db);
+
+        const modalArg = mockShowModal.mock.calls[0][0];
+        const sessionId = modalArg.data.custom_id.replace('pay_modal_confirm_', '');
+
+        const mockDeferReply = jest.fn();
+        const mockEditReply = jest.fn();
+        const modalInteraction: any = {
+          customId: `pay_modal_confirm_${sessionId}`,
+          guildId: null, // Thiếu context guild (ví dụ DM hoặc rỗng)
+          user: { id: 'user-admin' },
+          fields: { getTextInputValue: jest.fn().mockReturnValue('Hack') },
+          deferReply: mockDeferReply,
+          editReply: mockEditReply,
+          client: { database: db },
+        };
+
+        await handlePaymentModal(modalInteraction, db);
+
+        expect(mockEditReply).toHaveBeenCalledWith(
+          expect.objectContaining({
+            content: expect.stringContaining('không thuộc máy chủ này'),
+          }),
+        );
+        expect(getPaymentById(db, 'TX_MODAL_NOGUILD')?.status).toBe('pending');
+      });
     });
 
     it('handleFeedbackRateButton từ chối đánh giá trùng lặp trực tiếp từ database', async () => {

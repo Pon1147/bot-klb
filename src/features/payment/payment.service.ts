@@ -99,6 +99,7 @@ export function getPaymentById(
 export function updatePaymentStatus(
   database: Database.Database,
   txId: string,
+  guildId: string,
   status: PaymentStatus,
   note?: string | null,
   buyerId?: string,
@@ -109,10 +110,10 @@ export function updatePaymentStatus(
         `
         UPDATE payments
         SET status = ?, note = ?, processed_at = ?, buyer_id = ?
-        WHERE id = ? AND status = 'pending'
+        WHERE id = ? AND guild_id = ? AND status = 'pending'
       `,
       )
-      .run(status, note || null, Date.now(), buyerId, txId);
+      .run(status, note || null, Date.now(), buyerId, txId, guildId);
 
     return result.changes === 1;
   }
@@ -122,10 +123,10 @@ export function updatePaymentStatus(
       `
       UPDATE payments
       SET status = ?, note = ?, processed_at = ?
-      WHERE id = ? AND status = 'pending'
+      WHERE id = ? AND guild_id = ? AND status = 'pending'
     `,
     )
-    .run(status, note || null, Date.now(), txId);
+    .run(status, note || null, Date.now(), txId, guildId);
 
   return result.changes === 1;
 }
@@ -270,7 +271,7 @@ export function updateDonationStatus(
       `
       UPDATE donations
       SET status = ?, paid_at = ?
-      WHERE order_code = ?
+      WHERE order_code = ? AND status = 'pending'
     `,
     )
     .run(status, status === 'paid' ? Date.now() : null, orderCode);

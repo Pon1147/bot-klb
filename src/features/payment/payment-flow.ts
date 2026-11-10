@@ -241,9 +241,10 @@ export async function handlePaymentButton(
   }
 
   const tx = getPaymentById(db, txId);
-  if (!tx || tx.status !== 'pending') {
+  if (!tx || tx.guild_id !== guildId || tx.status !== 'pending') {
     await interaction.reply({
-      content: '⚠️ Hóa đơn này không còn ở trạng thái chờ xử lý.',
+      content:
+        '⚠️ Hóa đơn này không hợp lệ, không thuộc máy chủ này hoặc không còn ở trạng thái chờ xử lý.',
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -252,7 +253,7 @@ export async function handlePaymentButton(
   // Kiểm tra thời hạn hiệu lực của hóa đơn (Invoice Expiration)
   const now = Date.now();
   if (tx.expires_at && now > tx.expires_at) {
-    updatePaymentStatus(db, tx.id, 'cancelled', 'Hóa đơn đã hết hạn (Expired)');
+    updatePaymentStatus(db, tx.id, guildId, 'cancelled', 'Hóa đơn đã hết hạn (Expired)');
     await interaction.reply({
       content: '⚠️ Hóa đơn này đã hết hạn hiệu lực thanh toán.',
       flags: MessageFlags.Ephemeral,
@@ -335,11 +336,16 @@ export async function handlePaymentModal(
   }
 
   const tx = getPaymentById(db, session.txId);
-  if (!tx || tx.status !== 'pending') {
+  if (
+    !tx ||
+    !interaction.guildId ||
+    tx.guild_id !== interaction.guildId ||
+    tx.status !== 'pending'
+  ) {
     paymentSessions.delete(sessionId);
     await interaction.editReply({
       content:
-        '⚠️ Giao dịch này không còn ở trạng thái chờ xử lý (có thể đã được xử lý bởi người khác).',
+        '⚠️ Giao dịch này không hợp lệ, không thuộc máy chủ này hoặc không còn ở trạng thái chờ xử lý (có thể đã được xử lý bởi người khác).',
     });
     return;
   }
@@ -348,7 +354,7 @@ export async function handlePaymentModal(
   const now = Date.now();
   if (tx.expires_at && now > tx.expires_at) {
     paymentSessions.delete(sessionId);
-    updatePaymentStatus(db, tx.id, 'cancelled', 'Hóa đơn đã hết hạn (Expired)');
+    updatePaymentStatus(db, tx.id, tx.guild_id, 'cancelled', 'Hóa đơn đã hết hạn (Expired)');
     await interaction.editReply({
       content: '⚠️ Hóa đơn thanh toán này đã hết hạn hiệu lực.',
     });
@@ -358,8 +364,14 @@ export async function handlePaymentModal(
   const reason = interaction.fields.getTextInputValue('pay_reason')?.trim() || null;
   const isConfirm = action === 'confirm';
 
-  // Cập nhật Database
-  const updated = updatePaymentStatus(db, tx.id, isConfirm ? 'confirmed' : 'cancelled', reason);
+  // Cập nhật Database (Atomic conditional update scoped by guild_id)
+  const updated = updatePaymentStatus(
+    db,
+    tx.id,
+    tx.guild_id,
+    isConfirm ? 'confirmed' : 'cancelled',
+    reason,
+  );
 
   if (!updated) {
     await interaction.editReply({

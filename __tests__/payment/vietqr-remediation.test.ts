@@ -154,11 +154,11 @@ describe('VietQR Payment Remediation Tests', () => {
       });
 
       // Lần xác nhận đầu tiên thành công
-      const firstConfirm = updatePaymentStatus(db, 'TX_CONCURRENT', 'confirmed', 'Staff A duyệt');
+      const firstConfirm = updatePaymentStatus(db, 'TX_CONCURRENT', 'guild_1', 'confirmed', 'Staff A duyệt');
       expect(firstConfirm).toBe(true);
 
       // Lần xác nhận thứ hai (race condition) bắt buộc thất bại
-      const secondConfirm = updatePaymentStatus(db, 'TX_CONCURRENT', 'confirmed', 'Staff B duyệt');
+      const secondConfirm = updatePaymentStatus(db, 'TX_CONCURRENT', 'guild_1', 'confirmed', 'Staff B duyệt');
       expect(secondConfirm).toBe(false);
 
       // Kiểm tra DB chỉ ghi nhận 1 lần
@@ -180,10 +180,10 @@ describe('VietQR Payment Remediation Tests', () => {
       });
 
       // Confirm trước
-      expect(updatePaymentStatus(db, 'TX_RACE_CANCEL', 'confirmed')).toBe(true);
+      expect(updatePaymentStatus(db, 'TX_RACE_CANCEL', 'guild_1', 'confirmed')).toBe(true);
 
       // Thao tác Cancel sau đó bị chặn vì trạng thái không còn là pending
-      expect(updatePaymentStatus(db, 'TX_RACE_CANCEL', 'cancelled', 'Khách đòi hủy')).toBe(false);
+      expect(updatePaymentStatus(db, 'TX_RACE_CANCEL', 'guild_1', 'cancelled', 'Khách đòi hủy')).toBe(false);
 
       const tx = getPaymentById(db, 'TX_RACE_CANCEL');
       expect(tx?.status).toBe('confirmed');
@@ -258,6 +258,57 @@ describe('VietQR Payment Remediation Tests', () => {
       expect(columns.some((c) => c.name === 'bank_id')).toBe(true);
       expect(columns.some((c) => c.name === 'account_no')).toBe(true);
       expect(columns.some((c) => c.name === 'account_name')).toBe(true);
+    });
+  });
+
+  describe('7. Cross-Guild Payment Protection', () => {
+    it('chặn cập nhật đơn hàng nếu guild_id không khớp (Cross-Guild Scoping)', () => {
+      createPayment(db, {
+        id: 'TX_GUILD_A',
+        guild_id: 'guild_A',
+        buyer_id: 'buyer_1',
+        seller_id: 'seller_1',
+        amount: 50_000,
+        description: 'Guild A Order',
+        status: 'pending',
+        created_at: Date.now(),
+      });
+
+      // Thử cập nhật đơn của guild_A từ guild_B -> Bị từ chối
+      const crossUpdate = updatePaymentStatus(db, 'TX_GUILD_A', 'guild_B', 'confirmed', 'Hacker duyệt');
+      expect(crossUpdate).toBe(false);
+
+      // Đơn hàng tại guild_A vẫn giữ nguyên trạng thái pending
+      const tx = getPaymentById(db, 'TX_GUILD_A');
+      expect(tx?.status).toBe('pending');
+
+      // Cập nhật đúng guild_A -> Thành công
+      const validUpdate = updatePaymentStatus(db, 'TX_GUILD_A', 'guild_A', 'confirmed', 'Staff duyệt');
+      expect(validUpdate).toBe(true);
+      expect(getPaymentById(db, 'TX_GUILD_A')?.status).toBe('confirmed');
+    });
+  });
+
+  describe('8. Bank Snapshot Permanent Immobility', () => {
+    it('bảo toàn thông tin ngân hàng gốc của đơn hàng dù cấu hình ngân hàng guild thay đổi', () => {
+      createPayment(db, {
+        id: 'TX_SNAPSHOT_LOCK',
+        guild_id: 'guild_1',
+        buyer_id: 'buyer_1',
+        seller_id: 'seller_1',
+        amount: 100_000,
+        description: 'Order before bank change',
+        status: 'pending',
+        created_at: Date.now(),
+        bank_id: 'VCB',
+        account_no: '0461000644931',
+        account_name: 'LE PHAM DANG KHOA',
+      });
+
+      const tx = getPaymentById(db, 'TX_SNAPSHOT_LOCK');
+      expect((tx as any)?.bank_id).toBe('VCB');
+      expect((tx as any)?.account_no).toBe('0461000644931');
+      expect((tx as any)?.account_name).toBe('LE PHAM DANG KHOA');
     });
   });
 });

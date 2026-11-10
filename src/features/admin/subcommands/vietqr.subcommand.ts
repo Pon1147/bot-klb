@@ -21,7 +21,9 @@ import {
 import { buildErrorContainer, buildInfoContainer } from '../../../utils/container.utils.js';
 import { sendReply } from '../../../utils/reply.utils.js';
 import { botConfig } from '../../../config/bot.config.js';
-import { extractMemberRoleIds } from '../../../config/permissions.js';
+import { createLogger } from '../../../utils/logger.js';
+
+const logger = createLogger('VietQrSubcommand');
 
 export function buildVietQrGroup(
   group: SlashCommandSubcommandGroupBuilder,
@@ -193,23 +195,35 @@ export async function handleVietQrSet(
     return;
   }
 
-  // Kiểm tra quyền: Chỉ Guild Owner, Bot Owner, hoặc Bot Admin mới được đổi STK ngân hàng của máy chủ
+  // Kiểm tra quyền: Chỉ Guild Owner hoặc Bot Owner khẩn cấp mới được đổi STK ngân hàng của máy chủ
   const isGuildOwner = interaction.guild?.ownerId === interaction.user.id;
   const isBotOwner = Boolean(botConfig.botOwnerId && interaction.user.id === botConfig.botOwnerId);
-  const settingsService = getSettingsService();
-  const currentSettings = settingsService.get(guildId);
-  const userRoles = extractMemberRoleIds(interaction.member);
-  const isBotAdmin = Boolean(
-    currentSettings.rbac?.botAdminRoleId && userRoles.includes(currentSettings.rbac.botAdminRoleId),
-  );
 
-  if (!isGuildOwner && !isBotOwner && !isBotAdmin) {
+  if (!isGuildOwner && !isBotOwner) {
+    logger.warn('[Audit][Security] Từ chối truy cập cấu hình VietQR', {
+      actorId: interaction.user.id,
+      guildId,
+      action: 'vietqr.set',
+      timestamp: Date.now(),
+      result: 'denied_not_owner',
+    });
     await sendReply(interaction, {
       components: buildErrorContainer(
-        '🔒 Bạn không có quyền thay đổi thông tin ngân hàng của máy chủ.\nChỉ Chủ sở hữu máy chủ (Server Owner) hoặc Bot Admin mới có quyền thiết lập tài khoản nhận tiền.',
+        '🔒 Bạn không có quyền thay đổi thông tin ngân hàng của máy chủ.\nChỉ Chủ sở hữu máy chủ (Server Owner) mới có quyền thiết lập tài khoản nhận tiền.',
       ).toJSON(),
     });
     return;
+  }
+
+  // Audit trail cho trường hợp Bot Owner dùng quyền khẩn cấp trên server của người khác
+  if (isBotOwner && !isGuildOwner) {
+    logger.warn('[Audit][Security] Bot Owner sử dụng quyền khẩn cấp cấu hình VietQR', {
+      actorId: interaction.user.id,
+      guildId,
+      action: 'vietqr.set',
+      timestamp: Date.now(),
+      result: 'authorized_emergency_override',
+    });
   }
 
   const rawBank = interaction.options.getString('bank', true).trim().toUpperCase();
@@ -229,19 +243,44 @@ export async function handleVietQrSet(
   const accountName = interaction.options.getString('account_name', true).trim().toUpperCase();
   const prefix = interaction.options.getString('prefix')?.trim().toUpperCase() || 'NAP';
 
+  const settingsService = getSettingsService();
+  const currentSettings = settingsService.get(guildId);
   const currentVietQr = currentSettings.vietqr;
-  settingsService.update(guildId, {
-    vietqr: {
-      ...currentVietQr,
-      enabled: true,
-      mode: currentVietQr?.mode || 'server_wallet',
-      bankId: bank,
-      accountNo,
-      accountName,
-      prefix,
-      template: 'compact2',
-    },
-  });
+
+  try {
+    settingsService.update(guildId, {
+      vietqr: {
+        ...currentVietQr,
+        enabled: true,
+        bankId: bank,
+        accountNo,
+        accountName,
+        prefix,
+        template: 'compact2',
+      },
+    });
+
+    if (isBotOwner && !isGuildOwner) {
+      logger.warn('[Audit][Security] Bot Owner cập nhật cấu hình VietQR thành công', {
+        actorId: interaction.user.id,
+        guildId,
+        action: 'vietqr.set',
+        timestamp: Date.now(),
+        result: 'success',
+      });
+    }
+  } catch (err) {
+    if (isBotOwner && !isGuildOwner) {
+      logger.error('[Audit][Security] Bot Owner cập nhật cấu hình VietQR thất bại', {
+        actorId: interaction.user.id,
+        guildId,
+        action: 'vietqr.set',
+        timestamp: Date.now(),
+        result: 'failed',
+      });
+    }
+    throw err;
+  }
 
   const bankDisplayName = SUPPORTED_BANKS[bank] ?? bank;
   const container = buildInfoContainer(
@@ -299,10 +338,6 @@ export async function handleVietQrStatus(
 
   const bankDisplayName =
     SUPPORTED_BANKS[vietqr.bankId.toUpperCase()] ?? vietqr.bankId.toUpperCase();
-  const modeLabel =
-    vietqr.mode === 'multi_seller'
-      ? '👥 Multi-Seller (Ví thợ riêng lẻ)'
-      : '🏢 Quỹ máy chủ tập trung (Server Wallet)';
 
   const container = buildInfoContainer(
     `### 💳 Cấu Hình VietQR Máy Chủ\n\n` +
@@ -310,7 +345,6 @@ export async function handleVietQrStatus(
       `• **Số tài khoản**: \`${vietqr.accountNo}\`\n` +
       `• **Chủ tài khoản**: **${vietqr.accountName ?? 'Chưa đặt'}**\n` +
       `• **Tiền tố nội dung**: \`${vietqr.prefix ?? 'NAP'}\`\n` +
-      `• **Mô hình**: ${modeLabel}\n` +
       `• **Trạng thái**: ${vietqr.enabled ? '🟢 Đang hoạt động' : '🔴 Tạm dừng'}\n\n` +
       `**⚙️ Workflow & Quy trình:**\n` +
       `• **Role nhân viên (Staff)**: ${vietqr.staffRoleId ? `<@&${vietqr.staffRoleId}>` : '*Chưa thiết lập (Chỉ Admin)*'}\n` +

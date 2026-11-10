@@ -155,6 +155,37 @@ describe('HttpServer PayOS Webhook', () => {
     expect(json.error).toBe('Invalid signature');
   });
 
+  it('từ chối khi dữ liệu webhook bị giả mạo / thay đổi sau khi ký (Tampered Payload)', async () => {
+    const originalData = {
+      orderCode: 112244,
+      amount: 10000,
+      description: 'Original description',
+    };
+    const validSignature = generatePayosSignature(originalData, botConfig.payosChecksumKey);
+
+    // Dữ liệu bị kẻ tấn công thay đổi amount từ 10,000 lên 100,000 mà giữ signature cũ
+    const tamperedData = {
+      ...originalData,
+      amount: 100000,
+    };
+
+    const res = await fetch(`${baseUrl}/webhook/payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: '00',
+        desc: 'success',
+        data: tamperedData,
+        signature: validSignature,
+      }),
+    });
+
+    expect(res.status).toBe(400);
+    const json = (await res.json()) as any;
+    expect(json.success).toBe(false);
+    expect(json.error).toBe('Invalid signature');
+  });
+
   it('không cập nhật trạng thái paid nếu payload.code khác 00', async () => {
     const orderCode = 998878;
     createDonation(db, {
@@ -192,5 +223,88 @@ describe('HttpServer PayOS Webhook', () => {
     expect(res.status).toBe(200);
     const updated = getDonationByOrderCode(db, orderCode);
     expect(updated?.status).toBe('pending');
+  });
+
+  it('xử lý idempotent khi nhận webhook trùng lặp (Duplicate Webhook Delivery)', async () => {
+    const orderCode = 998879;
+    createDonation(db, {
+      order_code: orderCode,
+      user_id: 'donor_user_dup',
+      user_tag: 'DonorDup#9999',
+      guild_id: 'guild_1',
+      amount: 30000,
+      message: 'Idempotency test',
+      status: 'pending',
+      created_at: Date.now(),
+    });
+
+    const data = {
+      orderCode,
+      amount: 30000,
+      description: 'Idempotent donation',
+      code: '00',
+      desc: 'success',
+    };
+    const signature = generatePayosSignature(data, botConfig.payosChecksumKey);
+
+    mockUsersSend.mockClear();
+
+    // Delivery 1
+    const res1 = await fetch(`${baseUrl}/webhook/payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: '00', desc: 'success', data, signature }),
+    });
+    expect(res1.status).toBe(200);
+    expect(mockUsersSend).toHaveBeenCalledTimes(1);
+
+    // Delivery 2 (Duplicate replay)
+    const res2 = await fetch(`${baseUrl}/webhook/payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: '00', desc: 'success', data, signature }),
+    });
+    expect(res2.status).toBe(200);
+    // Vẫn chỉ gọi DM 1 lần, không gửi duplicate DM
+    expect(mockUsersSend).toHaveBeenCalledTimes(1);
+
+    const donation = getDonationByOrderCode(db, orderCode);
+    expect(donation?.status).toBe('paid');
+  });
+
+  it('bảo toàn trạng thái thanh toán nếu gửi DM Discord thất bại (DM Failure Isolation)', async () => {
+    const orderCode = 998880;
+    createDonation(db, {
+      order_code: orderCode,
+      user_id: 'donor_user_closed_dm',
+      user_tag: 'DonorClosedDM#9999',
+      guild_id: 'guild_1',
+      amount: 40000,
+      message: 'DM closed test',
+      status: 'pending',
+      created_at: Date.now(),
+    });
+
+    const data = {
+      orderCode,
+      amount: 40000,
+      description: 'DM fail donation',
+      code: '00',
+      desc: 'success',
+    };
+    const signature = generatePayosSignature(data, botConfig.payosChecksumKey);
+
+    mockUsersSend.mockRejectedValueOnce(new Error('Cannot send messages to this user'));
+
+    const res = await fetch(`${baseUrl}/webhook/payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: '00', desc: 'success', data, signature }),
+    });
+
+    expect(res.status).toBe(200);
+    // Trạng thái DB vẫn là paid dù gửi DM thất bại
+    const donation = getDonationByOrderCode(db, orderCode);
+    expect(donation?.status).toBe('paid');
   });
 });

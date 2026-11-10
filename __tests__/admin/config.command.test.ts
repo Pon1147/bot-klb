@@ -4,7 +4,11 @@
  * Verify builders, toJSON structure, options, và execute dispatch.
  */
 
-import { data, execute, buildAnnouncementContainer } from '../../src/features/admin/config.command.js';
+import {
+  data,
+  execute,
+  buildAnnouncementContainer,
+} from '../../src/features/admin/config.command.js';
 import { executeSectionCommand } from '../../src/utils/section-config.handlers.js';
 import { startInteractiveEdit } from '../../src/features/container/container-edit.handler.js';
 import { handleContainerReset } from '../../src/features/container/container-reset.handler.js';
@@ -548,7 +552,8 @@ describe('/config command — Execute Dispatch', () => {
 
     describe('buildAnnouncementContainer', () => {
       it('khi có message tùy biến, bot CHỈ phát nội dung tùy biến và KHÔNG chèn changelog cũ', () => {
-        const customMsg = 'Gửi các admin server, vui lòng cấp quyền gửi tin nhắn daily cho bot nhé!';
+        const customMsg =
+          'Gửi các admin server, vui lòng cấp quyền gửi tin nhắn daily cho bot nhé!';
         const result = buildAnnouncementContainer({ message: customMsg });
         const jsonStr = JSON.stringify(result);
 
@@ -671,7 +676,9 @@ describe('/config command — Execute Dispatch', () => {
           },
           client: {
             guilds: {
-              cache: new Map([['guild-remote-999', { id: 'guild-remote-999', name: 'Server VIP Từ Xa' }]]),
+              cache: new Map([
+                ['guild-remote-999', { id: 'guild-remote-999', name: 'Server VIP Từ Xa' }],
+              ]),
             },
           },
         });
@@ -801,7 +808,6 @@ describe('/config command — Execute Dispatch', () => {
         expect(mockSettingsService.update).toHaveBeenCalledWith('guild-authorized', {
           vietqr: {
             enabled: true,
-            mode: 'server_wallet',
             bankId: 'MB',
             accountNo: '0987654321',
             accountName: 'NGUYEN VAN A',
@@ -816,14 +822,14 @@ describe('/config command — Execute Dispatch', () => {
         expect(jsonStr).toContain('MBBank (Quân Đội)');
       });
 
-      it('vietqr set: từ chối khi user không phải Guild Owner, Bot Owner, hoặc Bot Admin', async () => {
+      it('vietqr set: từ chối khi user là Bot Admin hoặc Moderator nhưng không phải Guild Owner', async () => {
         mockIsQrServerEnabled.mockReturnValueOnce(true);
 
         const interaction = createMockInteraction({
           guildId: 'guild-authorized',
           guild: { id: 'guild-authorized', ownerId: 'other-owner-999' },
           user: { id: 'regular-mod-123' },
-          member: { roles: ['role-mod'] },
+          member: { roles: ['role-admin', 'role-mod'] },
           options: {
             getSubcommandGroup: jest.fn().mockReturnValue('vietqr'),
             getSubcommand: jest.fn().mockReturnValue('set'),
@@ -841,6 +847,92 @@ describe('/config command — Execute Dispatch', () => {
         const replyPayload = interaction.reply.mock.calls[0][0];
         const jsonStr = JSON.stringify(replyPayload);
         expect(jsonStr).toContain('Bạn không có quyền thay đổi thông tin ngân hàng');
+      });
+
+      it('vietqr set: cho phép Bot Owner dùng quyền khẩn cấp trên server người khác và ghi audit log cả cấp quyền lẫn cập nhật thành công', async () => {
+        mockIsQrServerEnabled.mockReturnValueOnce(true);
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+        const interaction = createMockInteraction({
+          guildId: 'guild-other',
+          guild: { id: 'guild-other', ownerId: 'other-owner-456' },
+          user: { id: '418779992290492416' }, // Bot Owner ID
+          options: {
+            getSubcommandGroup: jest.fn().mockReturnValue('vietqr'),
+            getSubcommand: jest.fn().mockReturnValue('set'),
+            getString: jest.fn((key: string) => {
+              if (key === 'bank') return 'VCB';
+              if (key === 'account_no') return '111222333';
+              if (key === 'account_name') return 'BOT OWNER OVERRIDE';
+              return null;
+            }),
+          },
+        });
+
+        await execute(interaction);
+
+        expect(mockSettingsService.update).toHaveBeenCalledWith('guild-other', {
+          vietqr: expect.objectContaining({
+            bankId: 'VCB',
+            accountNo: '111222333',
+            accountName: 'BOT OWNER OVERRIDE',
+          }),
+        });
+
+        // 1. Audit log cấp quyền khẩn cấp (authorized_emergency_override)
+        const calls = warnSpy.mock.calls.map((c) => String(c[0]));
+        const authLog = calls.find((c) => c.includes('authorized_emergency_override'));
+        expect(authLog).toBeDefined();
+        expect(authLog).toContain('"actorId":"418779992290492416"');
+        expect(authLog).toContain('"guildId":"guild-other"');
+        expect(authLog).toContain('"action":"vietqr.set"');
+        expect(authLog).not.toContain('111222333'); // Không leak số tài khoản
+
+        // 2. Audit log cập nhật cấu hình thành công (success)
+        const successLog = calls.find((c) => c.includes('"result":"success"'));
+        expect(successLog).toBeDefined();
+        expect(successLog).toContain('"actorId":"418779992290492416"');
+        expect(successLog).toContain('"guildId":"guild-other"');
+        expect(successLog).toContain('"action":"vietqr.set"');
+        expect(successLog).not.toContain('111222333'); // Không leak số tài khoản
+
+        warnSpy.mockRestore();
+      });
+
+      it('vietqr set: ghi audit log result: failed khi lưu cấu hình thất bại', async () => {
+        mockIsQrServerEnabled.mockReturnValueOnce(true);
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        mockSettingsService.update.mockImplementationOnce(() => {
+          throw new Error('Database disk error');
+        });
+
+        const interaction = createMockInteraction({
+          guildId: 'guild-other',
+          guild: { id: 'guild-other', ownerId: 'other-owner-456' },
+          user: { id: '418779992290492416' }, // Bot Owner ID
+          options: {
+            getSubcommandGroup: jest.fn().mockReturnValue('vietqr'),
+            getSubcommand: jest.fn().mockReturnValue('set'),
+            getString: jest.fn((key: string) => {
+              if (key === 'bank') return 'VCB';
+              if (key === 'account_no') return '111222333';
+              if (key === 'account_name') return 'BOT OWNER OVERRIDE';
+              return null;
+            }),
+          },
+        });
+
+        await expect(execute(interaction)).rejects.toThrow('Database disk error');
+
+        const calls = errorSpy.mock.calls.map((c) => String(c[0]));
+        const failedLog = calls.find((c) => c.includes('"result":"failed"'));
+        expect(failedLog).toBeDefined();
+        expect(failedLog).toContain('"actorId":"418779992290492416"');
+        expect(failedLog).toContain('"guildId":"guild-other"');
+        expect(failedLog).toContain('"action":"vietqr.set"');
+        expect(failedLog).not.toContain('111222333'); // Không leak số tài khoản
+
+        errorSpy.mockRestore();
       });
 
       it('vietqr status: xem trạng thái cấu hình hiện tại', async () => {
@@ -947,4 +1039,3 @@ describe('/config command — Execute Dispatch', () => {
     });
   });
 });
-

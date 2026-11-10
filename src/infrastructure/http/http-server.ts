@@ -337,44 +337,52 @@ export function createRequestHandler(client: Client): http.RequestListener {
         ) {
           const donation = getDonationByOrderCode(client.database, orderCode);
           if (donation) {
-            updateDonationStatus(client.database, orderCode, 'paid');
-            logger.info(
-              `[PayOS] Đã xác nhận quyên góp thành công cho user: ${donation.user_tag} (${donation.user_id}) - ${donation.amount} VNĐ`,
-            );
+            // Atomic update: Chỉ cập nhật và gửi DM nếu đơn đang ở trạng thái pending (chống duplicate webhook delivery)
+            const wasUpdated = updateDonationStatus(client.database, orderCode, 'paid');
+            if (wasUpdated) {
+              logger.info(
+                `[PayOS] Đã xác nhận quyên góp thành công cho user: ${donation.user_tag} (${donation.user_id}) - ${donation.amount} VNĐ`,
+              );
 
-            // Gửi tin nhắn cảm ơn qua DM cho người ủng hộ trên Discord (bọc catch đề phòng user đóng DM)
-            if (client.users?.send && donation.user_id) {
-              const thankEmbed = new EmbedBuilder()
-                .setTitle('☕ Cảm Ơn Bạn Đã Ủng Hộ Bot!')
-                .setColor(0xe67e22)
-                .setDescription(
-                  `Giao dịch quyên góp của bạn đã được PayOS xác nhận thành công.\nCảm ơn bạn đã đồng hành và tiếp sức cho dự án bot phát triển! ❤️`,
-                )
-                .addFields(
-                  { name: 'Mã đơn', value: `\`#${donation.order_code}\``, inline: true },
-                  {
-                    name: 'Số tiền',
-                    value: `**${donation.amount.toLocaleString('vi-VN')} VNĐ**`,
-                    inline: true,
-                  },
-                  {
-                    name: 'Lời nhắn',
-                    value: donation.message ? `*"${donation.message}"*` : 'Không có',
-                    inline: false,
-                  },
-                )
-                .setFooter({ text: 'Bot Delta • PayOS Automated Payment' })
-                .setTimestamp();
+              // Gửi tin nhắn cảm ơn qua DM cho người ủng hộ trên Discord (bọc catch đề phòng user đóng DM)
+              // Lỗi gửi DM không làm rollback trạng thái thanh toán đã ghi nhận thành công trong DB
+              if (client.users?.send && donation.user_id) {
+                const thankEmbed = new EmbedBuilder()
+                  .setTitle('☕ Cảm Ơn Bạn Đã Ủng Hộ Bot!')
+                  .setColor(0xe67e22)
+                  .setDescription(
+                    `Giao dịch quyên góp của bạn đã được PayOS xác nhận thành công.\nCảm ơn bạn đã đồng hành và tiếp sức cho dự án bot phát triển! ❤️`,
+                  )
+                  .addFields(
+                    { name: 'Mã đơn', value: `\`#${donation.order_code}\``, inline: true },
+                    {
+                      name: 'Số tiền',
+                      value: `**${donation.amount.toLocaleString('vi-VN')} VNĐ**`,
+                      inline: true,
+                    },
+                    {
+                      name: 'Lời nhắn',
+                      value: donation.message ? `*"${donation.message}"*` : 'Không có',
+                      inline: false,
+                    },
+                  )
+                  .setFooter({ text: 'Bot Delta • PayOS Automated Payment' })
+                  .setTimestamp();
 
-              client.users
-                .send(donation.user_id, {
-                  embeds: [thankEmbed],
-                })
-                .catch((err) => {
-                  logger.debug(
-                    `Không thể gửi DM cảm ơn cho user ${donation.user_id}: ${(err as Error).message}`,
-                  );
-                });
+                client.users
+                  .send(donation.user_id, {
+                    embeds: [thankEmbed],
+                  })
+                  .catch((err) => {
+                    logger.debug(
+                      `Không thể gửi DM cảm ơn cho user ${donation.user_id}: ${(err as Error).message}`,
+                    );
+                  });
+              }
+            } else {
+              logger.info(
+                `[PayOS] Đơn quyên góp #${orderCode} đã được xử lý trước đó hoặc không ở trạng thái pending (Bỏ qua duplicate webhook).`,
+              );
             }
           }
         }

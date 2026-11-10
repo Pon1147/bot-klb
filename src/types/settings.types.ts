@@ -98,7 +98,6 @@ export interface QrServerSettings {
  */
 export interface VietQrSettings {
   enabled: boolean;
-  mode?: 'server_wallet' | 'multi_seller'; // Chế độ: Quỹ máy chủ tập trung (server_wallet) hoặc Thợ kéo riêng lẻ (multi_seller)
   bankId: string | null; // Mã ngân hàng (VD: 'MB', 'VCB', 'TCB'...)
   accountNo: string | null; // Số tài khoản ngân hàng
   accountName: string | null; // Tên chủ tài khoản

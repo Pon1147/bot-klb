@@ -76,7 +76,6 @@ export const defaultGuildSettings: GuildSettings = {
   },
   vietqr: {
     enabled: true,
-    mode: 'server_wallet',
     bankId: null,
     accountNo: null,
     accountName: null,

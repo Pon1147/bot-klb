@@ -57,13 +57,33 @@ describe('payment.service', () => {
         created_at: Date.now(),
       });
 
-      const updated = updatePaymentStatus(db, 'TX1002', 'confirmed', 'Đã nhận đủ tiền');
+      const updated = updatePaymentStatus(db, 'TX1002', 'guild-1', 'confirmed', 'Đã nhận đủ tiền');
       expect(updated).toBe(true);
 
       const tx = getPaymentById(db, 'TX1002');
       expect(tx?.status).toBe('confirmed');
       expect(tx?.note).toBe('Đã nhận đủ tiền');
       expect(tx?.processed_at).toBeGreaterThan(0);
+    });
+
+    it('không thể cập nhật hóa đơn nếu sai guild_id (Cross-Guild Isolation)', () => {
+      createPayment(db, {
+        id: 'TX_CROSS_GUILD',
+        guild_id: 'guild-A',
+        buyer_id: 'buyer-1',
+        seller_id: 'seller-1',
+        amount: 50000,
+        description: 'Đơn guild A',
+        status: 'pending',
+        created_at: Date.now(),
+      });
+
+      // Thử cập nhật với guild-B
+      const crossUpdate = updatePaymentStatus(db, 'TX_CROSS_GUILD', 'guild-B', 'confirmed');
+      expect(crossUpdate).toBe(false);
+
+      const tx = getPaymentById(db, 'TX_CROSS_GUILD');
+      expect(tx?.status).toBe('pending');
     });
 
     it('không thể cập nhật hóa đơn đã hoàn tất hoặc bị hủy trước đó', () => {
@@ -79,7 +99,7 @@ describe('payment.service', () => {
         processed_at: Date.now(),
       });
 
-      const secondUpdate = updatePaymentStatus(db, 'TX1003', 'cancelled', 'Hủy nhầm');
+      const secondUpdate = updatePaymentStatus(db, 'TX1003', 'guild-1', 'cancelled', 'Hủy nhầm');
       expect(secondUpdate).toBe(false);
     });
 
