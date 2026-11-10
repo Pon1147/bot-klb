@@ -10,6 +10,7 @@ import {
   TextInputStyle,
   ButtonInteraction,
   ModalSubmitInteraction,
+  ChatInputCommandInteraction,
   GuildMember,
 } from 'discord.js';
 import Database from 'better-sqlite3';
@@ -56,7 +57,15 @@ export const feedbackSessions = new TTLStore<string, FeedbackSession>({
   name: 'FeedbackSessions',
 });
 
-const feedbackRateLimit = new Map<string, number>();
+interface FeedbackRateLimitEntry extends ExpiryEntry {
+  timestamp: number;
+}
+
+const feedbackRateLimit = new TTLStore<string, FeedbackRateLimitEntry>({
+  ttlMs: FEEDBACK_RATE_LIMIT_MS,
+  cleanupIntervalMs: 60 * 1000,
+  name: 'FeedbackRateLimit',
+});
 
 function createSessionId(): string {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
@@ -64,9 +73,10 @@ function createSessionId(): string {
 
 /**
  * Kiểm tra interaction có phải nút thanh toán Confirm / Cancel không
+ * Hỗ trợ cả snowflake ID và chuỗi UNASSIGNED
  */
 export function isPaymentButton(customId: string): boolean {
-  return /^pay_(confirm|cancel)_([A-Za-z0-9_-]+)_(\d{15,20})$/.test(customId);
+  return /^pay_(confirm|cancel)_([A-Za-z0-9_-]+)_([A-Za-z0-9_-]+)$/.test(customId);
 }
 
 /**
@@ -80,7 +90,7 @@ export function isPaymentModal(customId: string): boolean {
  * Kiểm tra interaction có phải nút đánh giá sao không
  */
 export function isFeedbackRateButton(customId: string): boolean {
-  return /^feedback_rate_([1-5])_([A-Za-z0-9_-]+)_(\d{15,20})$/.test(customId);
+  return /^feedback_rate_([1-5])_([A-Za-z0-9_-]+)_([A-Za-z0-9_-]+)$/.test(customId);
 }
 
 /**
@@ -152,13 +162,19 @@ export function buildRatingButtons(
  * - Staff Role (được cấu hình riêng cho từng Guild trong vietqr.staffRoleId)
  */
 export function canManagePayment(
-  interaction: ButtonInteraction | ModalSubmitInteraction,
+  interaction: ButtonInteraction | ModalSubmitInteraction | ChatInputCommandInteraction,
   guildId: string,
 ): boolean {
-  if (interaction.guild?.ownerId === interaction.user.id) return true;
+  if (
+    interaction.guild?.ownerId &&
+    interaction.user?.id &&
+    interaction.guild.ownerId === interaction.user.id
+  ) {
+    return true;
+  }
 
   const member = interaction.member as GuildMember | null;
-  if (member?.permissions?.has(PermissionFlagsBits.Administrator)) return true;
+  if (member?.permissions?.has?.(PermissionFlagsBits.Administrator)) return true;
 
   try {
     const settingsService = getSettingsService();
@@ -178,6 +194,12 @@ export function canManagePayment(
     if (settings.rbac?.moderatorRoleId && userRoles.includes(settings.rbac.moderatorRoleId)) {
       return true;
     }
+
+    // Nếu là ChatInputCommandInteraction (lệnh /pay create) và server chưa cấu hình staffRoleId riêng
+    const isCommand = !('customId' in interaction);
+    if (isCommand && !settings.vietqr?.staffRoleId) {
+      return true;
+    }
   } catch {
     // SettingsService fallback
   }
@@ -192,7 +214,9 @@ export async function handlePaymentButton(
   interaction: ButtonInteraction,
   database?: Database.Database,
 ): Promise<void> {
-  const match = interaction.customId.match(/^pay_(confirm|cancel)_([A-Za-z0-9_-]+)_(\d{15,20})$/);
+  const match = interaction.customId.match(
+    /^pay_(confirm|cancel)_([A-Za-z0-9_-]+)_([A-Za-z0-9_-]+)$/,
+  );
   if (!match) return;
 
   const [, actionStr, txId, buyerId] = match;
@@ -220,6 +244,17 @@ export async function handlePaymentButton(
   if (!tx || tx.status !== 'pending') {
     await interaction.reply({
       content: '⚠️ Hóa đơn này không còn ở trạng thái chờ xử lý.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  // Kiểm tra thời hạn hiệu lực của hóa đơn (Invoice Expiration)
+  const now = Date.now();
+  if (tx.expires_at && now > tx.expires_at) {
+    updatePaymentStatus(db, tx.id, 'cancelled', 'Hóa đơn đã hết hạn (Expired)');
+    await interaction.reply({
+      content: '⚠️ Hóa đơn này đã hết hạn hiệu lực thanh toán.',
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -309,6 +344,17 @@ export async function handlePaymentModal(
     return;
   }
 
+  // Kiểm tra thời hạn hiệu lực của hóa đơn khi submit modal
+  const now = Date.now();
+  if (tx.expires_at && now > tx.expires_at) {
+    paymentSessions.delete(sessionId);
+    updatePaymentStatus(db, tx.id, 'cancelled', 'Hóa đơn đã hết hạn (Expired)');
+    await interaction.editReply({
+      content: '⚠️ Hóa đơn thanh toán này đã hết hạn hiệu lực.',
+    });
+    return;
+  }
+
   const reason = interaction.fields.getTextInputValue('pay_reason')?.trim() || null;
   const isConfirm = action === 'confirm';
 
@@ -377,7 +423,8 @@ export async function handlePaymentModal(
               thanksMessage ||
               'Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ! Chúc bạn có trải nghiệm tuyệt vời ❤️';
 
-            if (enableRating) {
+            const isAssignedBuyer = tx.buyer_id && tx.buyer_id !== 'UNASSIGNED';
+            if (enableRating && isAssignedBuyer) {
               const ratingEmbed = new EmbedBuilder()
                 .setTitle('⭐ Đánh giá trải nghiệm dịch vụ')
                 .setDescription(
@@ -395,8 +442,9 @@ export async function handlePaymentModal(
                 components: [buildRatingButtons(tx.id, tx.buyer_id).toJSON() as any],
               });
             } else {
+              const mentionPart = isAssignedBuyer ? ` <@${tx.buyer_id}>` : '';
               await sendableChannel.send({
-                content: `${finalThanks} <@${tx.buyer_id}>`,
+                content: `${finalThanks}${mentionPart}`,
               });
             }
           }
@@ -423,25 +471,28 @@ export async function handleFeedbackRateButton(
   interaction: ButtonInteraction,
   database?: Database.Database,
 ): Promise<void> {
-  const match = interaction.customId.match(/^feedback_rate_([1-5])_([A-Za-z0-9_-]+)_(\d{15,20})$/);
+  const match = interaction.customId.match(
+    /^feedback_rate_([1-5])_([A-Za-z0-9_-]+)_([A-Za-z0-9_-]+)$/,
+  );
   if (!match) return;
 
   const [, ratingStr, txId, buyerId] = match;
   const rating = Number.parseInt(ratingStr, 10);
 
-  // Rate-limiting debounce
-  const now = Date.now();
-  const lastTap = feedbackRateLimit.get(interaction.user.id) || 0;
-  if (now - lastTap < FEEDBACK_RATE_LIMIT_MS) {
+  // Rate-limiting debounce qua TTLStore
+  if (feedbackRateLimit.get(interaction.user.id)) {
     await interaction.reply({
       content: 'Vui lòng thao tác chậm lại một chút.',
       flags: MessageFlags.Ephemeral,
     });
     return;
   }
-  feedbackRateLimit.set(interaction.user.id, now);
+  feedbackRateLimit.set(interaction.user.id, {
+    timestamp: Date.now(),
+    expiresAt: Date.now() + FEEDBACK_RATE_LIMIT_MS,
+  });
 
-  if (interaction.user.id !== buyerId) {
+  if (buyerId === 'UNASSIGNED' || interaction.user.id !== buyerId) {
     await interaction.reply({
       content: '🔒 Chỉ người mua của đơn hàng này mới có thể gửi đánh giá.',
       flags: MessageFlags.Ephemeral,
@@ -484,7 +535,7 @@ export async function handleFeedbackRateButton(
     buyerId,
     sourceChannelId: interaction.channelId,
     sourceMessageId: interaction.message.id,
-    expiresAt: now + PAYMENT_SESSION_TTL_MS,
+    expiresAt: Date.now() + PAYMENT_SESSION_TTL_MS,
   });
 
   const modal = new ModalBuilder()
@@ -493,11 +544,10 @@ export async function handleFeedbackRateButton(
 
   const commentInput = new TextInputBuilder()
     .setCustomId('feedback_comment')
-    .setLabel('Nhận xét của bạn về dịch vụ')
+    .setLabel('Nhận xét của bạn về dịch vụ (tùy chọn)')
     .setStyle(TextInputStyle.Paragraph)
     .setPlaceholder('Chia sẻ cảm nhận, trải nghiệm của bạn khi sử dụng dịch vụ...')
-    .setRequired(true)
-    .setMinLength(3)
+    .setRequired(false)
     .setMaxLength(500);
 
   modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(commentInput));
@@ -534,13 +584,7 @@ export async function handleFeedbackModal(
     return;
   }
 
-  const comment = interaction.fields.getTextInputValue('feedback_comment')?.trim();
-  if (!comment) {
-    await interaction.editReply({
-      content: '⚠️ Vui lòng nhập nhận xét của bạn.',
-    });
-    return;
-  }
+  const comment = interaction.fields.getTextInputValue('feedback_comment')?.trim() || null;
 
   const db = database || interaction.client.database;
   if (!db) {
@@ -618,7 +662,7 @@ export async function handleFeedbackModal(
               inline: true,
             },
             { name: 'Dịch vụ đã mua', value: tx.description, inline: false },
-            { name: 'Nhận xét', value: comment, inline: false },
+            { name: 'Nhận xét', value: comment || '*Không có nhận xét*', inline: false },
           )
           .setTimestamp();
 

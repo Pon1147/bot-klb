@@ -18,6 +18,7 @@ export function initializePaymentTables(database: Database.Database): void {
       status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'confirmed', 'cancelled')),
       note TEXT,
       created_at INTEGER NOT NULL,
+      expires_at INTEGER,
       processed_at INTEGER
     );
     CREATE INDEX IF NOT EXISTS idx_payments_guild_buyer ON payments(guild_id, buyer_id, status);
@@ -48,4 +49,10 @@ export function initializePaymentTables(database: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_donations_status ON donations(status);
   `);
+
+  // Migration idempotent: Bổ sung cột expires_at cho bảng payments nếu chưa có
+  const columns = database.prepare('PRAGMA table_info(payments)').all() as Array<{ name: string }>;
+  if (!columns.some((c) => c.name === 'expires_at')) {
+    database.exec('ALTER TABLE payments ADD COLUMN expires_at INTEGER');
+  }
 }

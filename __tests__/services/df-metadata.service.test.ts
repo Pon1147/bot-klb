@@ -26,6 +26,13 @@ describe('DfMetadataService — Synchronous Getters (Fallback baseline)', () => 
 
       const tempest = resolveOperator('10012');
       expect(tempest.name).toBe('Tempest');
+
+      const gizmo = resolveOperator('30011');
+      expect(gizmo.name).toBe('Gizmo');
+
+      const gizmoByName = resolveOperator('Thiết Bị');
+      expect(gizmoByName.name).toBe('Gizmo');
+      expect(gizmoByName.operatorId).toBe('30011');
     });
 
     it('nhận diện đúng các đặc vụ mới nhất (Aramis Orgueil, Desmoulins, Athos Leal, N-2)', () => {

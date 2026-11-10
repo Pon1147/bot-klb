@@ -17,6 +17,7 @@
  */
 
 import {
+  AttachmentBuilder,
   ChatInputCommandInteraction,
   ComponentType,
   Guild,
@@ -34,7 +35,12 @@ import {
   SettingsService,
   isQrServerEnabled,
 } from '../../services/settings.service.js';
-import { SUPPORTED_BANKS } from '../../utils/vietqr.utils.js';
+import {
+  SUPPORTED_BANKS,
+  normalizeBankCode,
+  fetchVietQrImageBuffer,
+  buildVietQrContainer,
+} from '../../utils/vietqr.utils.js';
 import { botConfig } from '../../config/bot.config.js';
 import {
   buildErrorContainer,
@@ -375,6 +381,18 @@ function buildVietQrGroup(
       sub
         .setName('status')
         .setDescription('Xem thông tin tài khoản nhận tiền hiện tại của máy chủ.'),
+    )
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
+        .setName('preview')
+        .setDescription('Xem trước và quét thử mã QR thanh toán mẫu của máy chủ.')
+        .addIntegerOption((opt) =>
+          opt
+            .setName('amount')
+            .setDescription('Số tiền thử nghiệm (mặc định 10,000 đ)')
+            .setMinValue(1000)
+            .setRequired(false),
+        ),
     );
 }
 
@@ -585,6 +603,8 @@ export async function execute(
         await handleVietQrWorkflow(interaction, db);
       } else if (subcommand === 'status') {
         await handleVietQrStatus(interaction, db);
+      } else if (subcommand === 'preview') {
+        await handleVietQrPreview(interaction, db);
       }
       break;
     }
@@ -1142,7 +1162,19 @@ export async function handleVietQrSet(
     return;
   }
 
-  const bank = interaction.options.getString('bank', true).trim().toUpperCase();
+  const rawBank = interaction.options.getString('bank', true).trim().toUpperCase();
+  const normalized = normalizeBankCode(rawBank);
+  if (!normalized) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        `⚠️ Ngân hàng \`${rawBank}\` không hợp lệ hoặc chưa được hỗ trợ.\n` +
+          `Các mã hỗ trợ: ${Object.keys(SUPPORTED_BANKS).join(', ')} (hoặc tên đầy đủ: VIETCOMBANK, TECHCOMBANK, AGRIBANK...).`,
+      ).toJSON(),
+    });
+    return;
+  }
+
+  const bank = normalized.bankCode;
   const accountNo = interaction.options.getString('account_no', true).trim();
   const accountName = interaction.options.getString('account_name', true).trim().toUpperCase();
   const prefix = interaction.options.getString('prefix')?.trim().toUpperCase() || 'NAP';
@@ -1233,5 +1265,86 @@ export async function handleVietQrStatus(
 
   await sendReply(interaction, {
     components: container.toJSON(),
+  });
+}
+
+/** Subcommand `vietqr preview` — Xem trước và quét thử mã QR thanh toán mẫu */
+export async function handleVietQrPreview(
+  interaction: ChatInputCommandInteraction,
+  _db?: Database.Database,
+): Promise<void> {
+  const guildId = interaction.guildId;
+  const guild = interaction.guild;
+  if (!guildId || !guild) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        'Lệnh này chỉ có thể sử dụng trong máy chủ Discord.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  // Guard: Server phải được Bot Owner mở tính năng QR trước đó
+  if (!isQrServerEnabled(guildId)) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '🔒 Tính năng QR Thanh toán tự động chưa được mở cho máy chủ này.\nVui lòng liên hệ Chủ sở hữu Bot (Bot Owner) để đăng ký kích hoạt gói QR Premium.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  const settingsService = getSettingsService();
+  const settings = settingsService.get(guildId);
+  const vietqr = settings.vietqr;
+
+  if (!vietqr || !vietqr.bankId || !vietqr.accountNo || !vietqr.accountName) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '⚠️ Máy chủ chưa thiết lập thông tin tài khoản ngân hàng nhận tiền.\nQuản trị viên vui lòng chạy lệnh `/config vietqr set` trước.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  const testAmount = interaction.options.getInteger('amount') || 10_000;
+  const testTransferCode = `${vietqr.prefix || 'NAP'} TEST ${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+  const qrBuffer = await fetchVietQrImageBuffer({
+    bankId: vietqr.bankId,
+    accountNo: vietqr.accountNo,
+    accountName: vietqr.accountName,
+    amount: testAmount,
+    addInfo: testTransferCode,
+    template: vietqr.template || 'compact2',
+  });
+
+  const files: AttachmentBuilder[] = [];
+  let attachmentName: string | null = null;
+  if (qrBuffer) {
+    attachmentName = 'test_vietqr.png';
+    files.push(new AttachmentBuilder(qrBuffer, { name: attachmentName }));
+  }
+
+  const container = buildVietQrContainer({
+    bankId: vietqr.bankId,
+    accountNo: vietqr.accountNo,
+    accountName: vietqr.accountName,
+    amount: testAmount,
+    transferCode: testTransferCode,
+    memo: 'Mã QR thử nghiệm cấu hình',
+    serverName: guild.name,
+    creatorId: interaction.user.id,
+    customerId: interaction.user.id,
+    attachmentName,
+    txId: 'TEST-CONFIG',
+  });
+
+  await interaction.reply({
+    content:
+      '> 🧪 **CHẾ ĐỘ XEM TRƯỚC (PREVIEW)**: Hãy dùng app ngân hàng quét thử mã bên dưới để kiểm tra tên chủ tài khoản và số tài khoản nhận tiền.',
+    components: container.toJSON(),
+    files,
+    flags: MessageFlags.IsComponentsV2,
   });
 }

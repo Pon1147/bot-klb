@@ -11,8 +11,19 @@ import { getSettingsService, isQrServerEnabled } from '../../services/settings.s
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { buildVietQrContainer, fetchVietQrImageBuffer } from '../../utils/vietqr.utils.js';
 import { sendReply } from '../../utils/reply.utils.js';
+import { ExpiryEntry, TTLStore } from '../../utils/ttl-store.js';
 import { createPayment, getUserPayments, getUserRank, getTopBuyers } from './payment.service.js';
-import { buildPaymentActionRow } from './payment-flow.js';
+import { buildPaymentActionRow, canManagePayment } from './payment-flow.js';
+
+interface CooldownEntry extends ExpiryEntry {
+  createdAt: number;
+}
+
+const payCreateCooldown = new TTLStore<string, CooldownEntry>({
+  ttlMs: 10_000,
+  cleanupIntervalMs: 60_000,
+  name: 'PayCreateCooldown',
+});
 
 export const data = new SlashCommandBuilder()
   .setName('pay')
@@ -100,26 +111,28 @@ async function handlePayCreate(
   const customer = interaction.options.getUser('customer');
   const memo = interaction.options.getString('memo')?.trim() || 'Thanh toán dịch vụ';
 
-  const targetUser = customer || interaction.user;
-  const userShortId = targetUser.id.slice(-6);
+  const buyerId = customer ? customer.id : 'UNASSIGNED';
+  const userShortId = customer ? customer.id.slice(-6) : 'PAY';
   const salt = generateTxSalt();
   const prefix = vietqr.prefix ? vietqr.prefix.trim().toUpperCase() : 'NAP';
   const transferCode = `${prefix} ${userShortId} ${salt}`;
   const txId = `TX${Date.now().toString(36).toUpperCase()}${salt}`;
+  const expiresAt = Date.now() + 60 * 60 * 1000; // Hết hạn sau 60 phút
 
   // Lưu giao dịch vào SQLite database
   createPayment(db, {
     id: txId,
     guild_id: guildId,
-    buyer_id: targetUser.id,
+    buyer_id: buyerId,
     seller_id: interaction.user.id,
     amount,
     description: memo,
     status: 'pending',
     created_at: Date.now(),
+    expires_at: expiresAt,
   });
 
-  // Tải buffer ảnh PNG VietQR chuẩn
+  // Tải buffer ảnh PNG VietQR chuẩn (kèm cơ chế fallback dự phòng)
   const qrBuffer = await fetchVietQrImageBuffer({
     bankId: vietqr.bankId,
     accountNo: vietqr.accountNo,
@@ -129,13 +142,17 @@ async function handlePayCreate(
     template: vietqr.template || 'compact2',
   });
 
-  const files: AttachmentBuilder[] = [];
-  let attachmentName: string | null = null;
-
-  if (qrBuffer) {
-    attachmentName = 'vietqr.png';
-    files.push(new AttachmentBuilder(qrBuffer, { name: attachmentName }));
+  if (!qrBuffer) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '⚠️ Không thể kết nối cổng VietQR để sinh mã thanh toán lúc này. Vui lòng kiểm tra lại cấu hình ngân hàng hoặc thử lại sau.',
+      ).toJSON(),
+    });
+    return;
   }
+
+  const attachmentName = 'vietqr.png';
+  const files: AttachmentBuilder[] = [new AttachmentBuilder(qrBuffer, { name: attachmentName })];
 
   const container = buildVietQrContainer({
     bankId: vietqr.bankId,
@@ -151,7 +168,7 @@ async function handlePayCreate(
     txId,
   });
 
-  const actionRow = buildPaymentActionRow(txId, targetUser.id);
+  const actionRow = buildPaymentActionRow(txId, buyerId);
 
   await interaction.reply({
     components: [...container.toJSON(), actionRow.toJSON() as any],
@@ -295,6 +312,31 @@ export async function execute(
       ? interaction.options.getSubcommand()
       : 'create';
   if (subcommand === 'create') {
+    if (!canManagePayment(interaction, guildId)) {
+      await sendReply(interaction, {
+        components: buildErrorContainer(
+          '🔒 Bạn không có quyền tạo hóa đơn thanh toán trên máy chủ này.\nChỉ Quản trị viên và Nhân viên (Staff Role) mới được phép tạo hóa đơn.',
+        ).toJSON(),
+      });
+      return;
+    }
+
+    const userId = interaction.user?.id;
+    if (userId && process.env.NODE_ENV !== 'test' && payCreateCooldown.get(userId)) {
+      await sendReply(interaction, {
+        components: buildErrorContainer(
+          '⏳ Vui lòng đợi vài giây trước khi tạo hóa đơn tiếp theo.',
+        ).toJSON(),
+      });
+      return;
+    }
+    if (userId) {
+      payCreateCooldown.set(userId, {
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 10_000,
+      });
+    }
+
     await handlePayCreate(interaction, db);
   } else if (subcommand === 'history') {
     await handlePayHistory(interaction, db);

@@ -750,7 +750,7 @@ describe('/config command — Execute Dispatch', () => {
         const qrGroup = cmdJson.options?.find((opt: any) => opt.name === 'vietqr') as any;
         expect(qrGroup).toBeDefined();
         const subNames = qrGroup.options?.map((opt: any) => opt.name);
-        expect(subNames).toEqual(['set', 'workflow', 'status']);
+        expect(subNames).toEqual(['set', 'workflow', 'status', 'preview']);
       });
 
       it('vietqr set: từ chối khi server chưa được Bot Owner mở tính năng QR', async () => {
@@ -886,6 +886,34 @@ describe('/config command — Execute Dispatch', () => {
         const jsonStr = JSON.stringify(replyPayload);
         expect(jsonStr).toContain('Quy Trình Workflow VietQR Đã Được Cập Nhật');
         expect(jsonStr).toContain('staff-role-999');
+      });
+
+      it('vietqr preview: tạo mã QR thử nghiệm và trả về container xem trước', async () => {
+        mockIsQrServerEnabled.mockReturnValueOnce(true);
+        mockSettingsService.get.mockReturnValueOnce({
+          vietqr: {
+            enabled: true,
+            bankId: 'MB',
+            accountNo: '0987654321',
+            accountName: 'NGUYEN VAN A',
+            prefix: 'TEST',
+          },
+        });
+
+        const interaction = createMockInteraction({
+          guildId: 'guild-authorized',
+          options: {
+            getSubcommandGroup: jest.fn().mockReturnValue('vietqr'),
+            getSubcommand: jest.fn().mockReturnValue('preview'),
+            getInteger: jest.fn().mockReturnValue(50000),
+          },
+        });
+
+        await execute(interaction);
+
+        expect(interaction.reply).toHaveBeenCalled();
+        const callArgs = interaction.reply.mock.calls[0][0];
+        expect(callArgs.content).toContain('CHẾ ĐỘ XEM TRƯỚC (PREVIEW)');
       });
     });
   });

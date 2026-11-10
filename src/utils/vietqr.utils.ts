@@ -14,6 +14,7 @@ export const SUPPORTED_BANKS: Record<string, string> = {
   TPB: 'TPBank (Tiên Phong)',
   ICB: 'VietinBank (Công Thương)',
   BIDV: 'BIDV (Đầu tư & Phát triển)',
+  VBA: 'Agribank (Nông nghiệp & PTNT)',
   VIB: 'VIB (Quốc Tế)',
   STB: 'Sacombank (Sài Gòn Thương Tín)',
   HDB: 'HDBank (Phát triển TP.HCM)',
@@ -36,6 +37,7 @@ export const BANK_BINS: Record<string, string> = {
   TPB: '970423',
   ICB: '970415',
   BIDV: '970418',
+  VBA: '970405',
   VIB: '970441',
   STB: '970403',
   HDB: '970437',
@@ -45,6 +47,55 @@ export const BANK_BINS: Record<string, string> = {
   LPB: '970449',
   KLB: '970452',
 };
+
+/**
+ * Bảng chuẩn hóa tên gọi phổ biến và tên viết tắt của ngân hàng sang mã chuẩn.
+ */
+export const BANK_ALIASES: Record<string, string> = {
+  VIETCOMBANK: 'VCB',
+  TECHCOMBANK: 'TCB',
+  VIETINBANK: 'ICB',
+  MBBANK: 'MB',
+  VPBANK: 'VPB',
+  TPBANK: 'TPB',
+  AGRIBANK: 'VBA',
+  SACOMBANK: 'STB',
+  KIENLONGBANK: 'KLB',
+  LPBANK: 'LPB',
+  LIENVIETPOSTBANK: 'LPB',
+  HDBANK: 'HDB',
+};
+
+/**
+ * Chuẩn hóa mã ngân hàng (Alias / Full name / BIN -> Standard Bank Code).
+ * Trả về mã chuẩn (ví dụ 'VCB') và mã BIN tương ứng hoặc null nếu không hợp lệ.
+ */
+export function normalizeBankCode(input: string): { bankCode: string; bin: string } | null {
+  if (!input) return null;
+  const clean = input.trim().toUpperCase();
+
+  // 1. Nếu người dùng nhập thẳng mã BIN 6 số
+  if (/^\d{6}$/.test(clean)) {
+    for (const [code, bin] of Object.entries(BANK_BINS)) {
+      if (bin === clean) return { bankCode: code, bin };
+    }
+    // Giữ nguyên BIN hợp lệ
+    return { bankCode: clean, bin: clean };
+  }
+
+  // 2. Tra cứu mã chuẩn trực tiếp
+  if (BANK_BINS[clean]) {
+    return { bankCode: clean, bin: BANK_BINS[clean] };
+  }
+
+  // 3. Tra cứu qua bảng Alias
+  const mapped = BANK_ALIASES[clean];
+  if (mapped && BANK_BINS[mapped]) {
+    return { bankCode: mapped, bin: BANK_BINS[mapped] };
+  }
+
+  return null;
+}
 
 export interface VietQrImageOptions {
   bankId: string;
@@ -74,10 +125,11 @@ export function buildVietQrImageUrl(options: VietQrImageOptions): string {
  * và fallback sang GET img.vietqr.io.
  */
 export async function fetchVietQrImageBuffer(options: VietQrImageOptions): Promise<Buffer | null> {
+  const normalized = normalizeBankCode(options.bankId);
   const rawBank = options.bankId.trim().toUpperCase();
-  const acqId = /^\d{6}$/.test(rawBank) ? rawBank : BANK_BINS[rawBank];
+  const acqId = normalized?.bin || (/^\d{6}$/.test(rawBank) ? rawBank : BANK_BINS[rawBank]);
 
-  // 1. Ưu tiên endpoint chính thức POST /v2/generate (tránh lỗi blank matrix của CDN GET đối với tài khoản định danh)
+  // 1. Ưu tiên endpoint chính thức POST /v2/generate (hỗ trợ đầy đủ cả tài khoản ảo PayOS 17 số)
   if (acqId) {
     try {
       const res = await fetch('https://api.vietqr.io/v2/generate', {
@@ -111,27 +163,41 @@ export async function fetchVietQrImageBuffer(options: VietQrImageOptions): Promi
   }
 
   // 2. Fallback sang CDN GET img.vietqr.io
-  const url = buildVietQrImageUrl(options);
+  const url = buildVietQrImageUrl({
+    ...options,
+    bankId: normalized?.bankCode || options.bankId,
+  });
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'BotKLB-Discord/1.6' },
       signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) return null;
-    const contentType = res.headers.get('content-type') || '';
-    if (contentType.includes('image/png') || contentType.includes('image/jpeg')) {
-      const arrayBuf = await res.arrayBuffer();
+    if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('image/png') || contentType.includes('image/jpeg')) {
+        const arrayBuf = await res.arrayBuffer();
+        return Buffer.from(arrayBuf);
+      }
+    }
+  } catch {
+    // Tiếp tục fallback bên dưới
+  }
+
+  // 3. Fallback dự phòng cấp 3: sinh QR qua qrserver nếu các endpoint VietQR bị quá tải
+  try {
+    const qrRes = await fetch(
+      `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(url)}`,
+      { signal: AbortSignal.timeout(4000) },
+    );
+    if (qrRes && qrRes.ok) {
+      const arrayBuf = await qrRes.arrayBuffer();
       return Buffer.from(arrayBuf);
     }
-    const text = await res.text();
-    const match = text.match(/data:image\/png;base64,([^"']+)/);
-    if (match && match[1]) {
-      return Buffer.from(match[1], 'base64');
-    }
-    return null;
   } catch {
-    return null;
+    // Không thể tải mã QR
   }
+
+  return null;
 }
 
 export interface VietQrContainerOptions {
@@ -179,9 +245,10 @@ export function buildVietQrContainer(options: VietQrContainerOptions): BuildCont
         template: 'compact2',
       });
 
-  const customerLine = customerId
-    ? `• **Khách hàng**: <@${customerId}>`
-    : `• **Khách hàng**: *Bất kỳ thành viên nào*`;
+  const customerLine =
+    customerId && customerId !== 'UNASSIGNED'
+      ? `• **Khách hàng**: <@${customerId}>`
+      : `• **Khách hàng**: *Bất kỳ thành viên nào (Hóa đơn mở)*`;
 
   const memoLine = memo ? `\n• **Dịch vụ / Ghi chú**: \`${memo}\`` : '';
 
@@ -189,9 +256,10 @@ export function buildVietQrContainer(options: VietQrContainerOptions): BuildCont
     ? `### 💳 Hóa Đơn Thanh Toán VietQR [${txId}]`
     : `### 💳 Hóa Đơn Thanh Toán / Chuyển Khoản VietQR`;
 
-  const targetNotification = customerId
-    ? `> 🔔 **Yêu cầu thanh toán** gửi tới <@${customerId}> từ <@${creatorId}>\n\n`
-    : '';
+  const targetNotification =
+    customerId && customerId !== 'UNASSIGNED'
+      ? `> 🔔 **Yêu cầu thanh toán** gửi tới <@${customerId}> từ <@${creatorId}>\n\n`
+      : '';
 
   const content = [
     `${targetNotification}${invoiceTitle}`,
@@ -207,7 +275,7 @@ export function buildVietQrContainer(options: VietQrContainerOptions): BuildCont
     '',
     `> ⚠️ **HƯỚNG DẪN THANH TOÁN**:`,
     `> 1. Mở ứng dụng Ngân hàng (MB, Vietcombank, Techcombank, MoMo...) và **Quét mã QR** bên dưới.`,
-    `> 2. Giữ **chính xác nội dung chuyển khoản** \`${transferCode}\` để hệ thống tự động ghi nhận giao dịch.`,
+    `> 2. Giữ **chính xác nội dung chuyển khoản** \`${transferCode}\` để nhân viên đối soát và xác nhận đơn hàng.`,
   ].join('\n');
 
   return makeResult(
@@ -267,12 +335,20 @@ export function buildPaymentResultContainer(
     ? '### ✅ Hóa Đơn Thanh Toán Đã Xác Nhận'
     : '### ❌ Hóa Đơn Thanh Toán Đã Bị Hủy';
 
+  const isUnassigned = !buyerId || buyerId === 'UNASSIGNED';
   const tagNotification = isConfirm
-    ? `🎉 <@${buyerId}> Hóa đơn thanh toán của bạn đã được xác nhận!`
-    : `⚠️ <@${buyerId}> Hóa đơn thanh toán đã bị hủy.`;
+    ? isUnassigned
+      ? '🎉 Hóa đơn thanh toán đã được xác nhận thành công!'
+      : `🎉 <@${buyerId}> Hóa đơn thanh toán của bạn đã được xác nhận!`
+    : isUnassigned
+      ? '⚠️ Hóa đơn thanh toán đã bị hủy.'
+      : `⚠️ <@${buyerId}> Hóa đơn thanh toán đã bị hủy.`;
 
   const formattedAmount = `${amount.toLocaleString('vi-VN')} đ`;
   const noteLine = reason ? `\n• **Ghi chú**: \`${reason}\`` : '';
+  const customerDisplay = isUnassigned
+    ? '*Thành viên chuyển khoản (Chưa định danh)*'
+    : `<@${buyerId}>`;
 
   const textLines = [
     statusTitle,
@@ -281,7 +357,7 @@ export function buildPaymentResultContainer(
     '',
     `• **Mã đơn (TX)**: \`${txId}\``,
     `• **Số tiền**: **${formattedAmount}**`,
-    `• **Khách hàng**: <@${buyerId}>`,
+    `• **Khách hàng**: ${customerDisplay}`,
     `• **Dịch vụ**: \`${description}\``,
     `• **Người thực hiện**: <@${operatorId}>${noteLine}`,
   ].join('\n');

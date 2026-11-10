@@ -278,9 +278,11 @@ function parseJsVariable<T>(jsText: string): T {
  * - Fix lỗi typo: CDN game từng để tên "Tempest1" thay vì "Tempest".
  */
 function normalizeOperatorName(id: string, rawName?: string): string {
-  if (id === '30011' || rawName === 'Thiết Bị') return 'Gizmo';
-  if (rawName === 'Tempest1') return 'Tempest';
-  return rawName || `Operator ${id}`;
+  const trimmed = rawName?.trim();
+  if (id === '30011' || trimmed === 'Thiết Bị' || trimmed?.toLowerCase() === 'thiết bị')
+    return 'Gizmo';
+  if (trimmed === 'Tempest1') return 'Tempest';
+  return trimmed || `Operator ${id}`;
 }
 
 /** Tự động trích xuất label ngắn S1, S2, S11 từ tên mùa giải */
@@ -438,10 +440,19 @@ export function resolveOperator(operatorId: string | number | undefined | null):
     };
   }
 
-  const idStr = String(operatorId);
+  const idStr = String(operatorId).trim();
+  if (idStr.toLowerCase() === 'thiết bị' || idStr === '30011') {
+    const existing = cache.operators.get('30011');
+    return {
+      operatorId: '30011',
+      name: 'Gizmo',
+      avatarUrl: existing?.avatarUrl ?? DEFAULT_AVATAR,
+    };
+  }
+
   const found = cache.operators.get(idStr);
   if (found) {
-    if (idStr === '30011' || found.name === 'Thiết Bị') {
+    if (found.name.trim().toLowerCase() === 'thiết bị') {
       return { ...found, name: 'Gizmo' };
     }
     return found;

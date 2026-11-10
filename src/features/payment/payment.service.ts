@@ -13,6 +13,7 @@ export interface PaymentRecord {
   status: PaymentStatus;
   note?: string | null;
   created_at: number;
+  expires_at?: number | null;
   processed_at?: number | null;
 }
 
@@ -54,8 +55,8 @@ export function createPayment(database: Database.Database, payment: PaymentRecor
       `
       INSERT INTO payments (
         id, guild_id, buyer_id, seller_id, amount,
-        description, status, note, created_at, processed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        description, status, note, created_at, expires_at, processed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     )
     .run(
@@ -68,6 +69,7 @@ export function createPayment(database: Database.Database, payment: PaymentRecor
       payment.status,
       payment.note || null,
       payment.created_at,
+      payment.expires_at || null,
       payment.processed_at || null,
     );
 }
@@ -85,13 +87,29 @@ export function getPaymentById(
 
 /**
  * Cập nhật trạng thái giao dịch (confirmed / cancelled)
+ * Hỗ trợ cập nhật buyer_id nếu hóa đơn mở được staff chỉ định người mua khi duyệt.
  */
 export function updatePaymentStatus(
   database: Database.Database,
   txId: string,
   status: PaymentStatus,
   note?: string | null,
+  buyerId?: string,
 ): boolean {
+  if (buyerId) {
+    const result = database
+      .prepare(
+        `
+        UPDATE payments
+        SET status = ?, note = ?, processed_at = ?, buyer_id = ?
+        WHERE id = ? AND status = 'pending'
+      `,
+      )
+      .run(status, note || null, Date.now(), buyerId, txId);
+
+    return result.changes === 1;
+  }
+
   const result = database
     .prepare(
       `
@@ -127,6 +145,7 @@ export function getUserPayments(
 
 /**
  * Lấy bảng xếp hạng top khách hàng chi tiêu nhiều nhất trong Guild
+ * Loại bỏ các hóa đơn chưa định danh (UNASSIGNED) để tránh thổi phồng thống kê.
  */
 export function getTopBuyers(database: Database.Database, guildId: string, limit = 10): TopBuyer[] {
   return database
@@ -137,7 +156,7 @@ export function getTopBuyers(database: Database.Database, guildId: string, limit
         SUM(amount) AS totalAmount,
         COUNT(id) AS txCount
       FROM payments
-      WHERE guild_id = ? AND status = 'confirmed'
+      WHERE guild_id = ? AND status = 'confirmed' AND buyer_id NOT IN ('UNASSIGNED', '')
       GROUP BY buyer_id
       ORDER BY totalAmount DESC
       LIMIT ?
@@ -159,7 +178,7 @@ export function getUserRank(
       `
       SELECT buyer_id, SUM(amount) as total
       FROM payments
-      WHERE guild_id = ? AND status = 'confirmed'
+      WHERE guild_id = ? AND status = 'confirmed' AND buyer_id NOT IN ('UNASSIGNED', '')
       GROUP BY buyer_id
       ORDER BY total DESC
     `,
