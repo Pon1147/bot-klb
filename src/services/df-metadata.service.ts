@@ -272,6 +272,17 @@ function parseJsVariable<T>(jsText: string): T {
   return JSON.parse(jsonStr) as T;
 }
 
+/**
+ * Chuẩn hóa tên đặc vụ từ CDN:
+ * - Fix lỗi dịch thuật: CDN game dịch nhầm codename "Gizmo" (Rashid Rahal - 30011) thành "Thiết Bị".
+ * - Fix lỗi typo: CDN game từng để tên "Tempest1" thay vì "Tempest".
+ */
+function normalizeOperatorName(id: string, rawName?: string): string {
+  if (id === '30011' || rawName === 'Thiết Bị') return 'Gizmo';
+  if (rawName === 'Tempest1') return 'Tempest';
+  return rawName || `Operator ${id}`;
+}
+
 /** Tự động trích xuất label ngắn S1, S2, S11 từ tên mùa giải */
 function extractShortLabel(seasonId: string, fullName: string): string {
   const match = fullName.match(/^(S\d+)/i);
@@ -318,7 +329,7 @@ export async function refreshDfMetadata(): Promise<void> {
               if (op.operator_id) {
                 const id = String(op.operator_id);
                 const rawName = op.language?.vi || op.full_name_i18n?.vi;
-                const name = rawName === 'Tempest1' ? 'Tempest' : rawName || `Operator ${id}`;
+                const name = normalizeOperatorName(id, rawName);
                 const avatarUrl = op.image_url || op.daily_report_avatar_url || DEFAULT_AVATAR;
                 opMap.set(id, { operatorId: id, name, avatarUrl });
               }
@@ -429,7 +440,12 @@ export function resolveOperator(operatorId: string | number | undefined | null):
 
   const idStr = String(operatorId);
   const found = cache.operators.get(idStr);
-  if (found) return found;
+  if (found) {
+    if (idStr === '30011' || found.name === 'Thiết Bị') {
+      return { ...found, name: 'Gizmo' };
+    }
+    return found;
+  }
 
   return {
     operatorId: idStr,

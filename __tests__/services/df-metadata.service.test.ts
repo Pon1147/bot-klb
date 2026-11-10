@@ -165,6 +165,36 @@ describe('DfMetadataService — Dynamic Refresh & Error Handling', () => {
     expect(resolveMapName(8888)).toBe('Chiến Trường Sa Mạc Mới');
   });
 
+  it('chuẩn hóa tên Gizmo thay vì "Thiết Bị" khi nạp từ CDN chính thức', async () => {
+    const mockOperatorsJs = `var basic_info_operators = [
+      {
+        "operator_id": "30011",
+        "image_url": "https://playdeltaforce.com/gizmo.png",
+        "language": { "vi": "Thiết Bị" }
+      },
+      {
+        "operator_id": "10012",
+        "image_url": "https://playdeltaforce.com/tempest.png",
+        "language": { "vi": "Tempest1" }
+      }
+    ];`;
+
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('operators_vi.js')) {
+        return Promise.resolve(new Response(mockOperatorsJs, { status: 200 }));
+      }
+      return Promise.resolve(new Response('var dummy = [];', { status: 200 }));
+    }) as any;
+
+    await refreshDfMetadata();
+
+    const gizmo = resolveOperator('30011');
+    expect(gizmo.name).toBe('Gizmo');
+
+    const tempest = resolveOperator('10012');
+    expect(tempest.name).toBe('Tempest');
+  });
+
   it('vẫn hoạt động an toàn và không throw exception khi fetch thất bại', async () => {
     global.fetch = jest.fn().mockRejectedValue(new Error('CDN Network Outage')) as any;
 
