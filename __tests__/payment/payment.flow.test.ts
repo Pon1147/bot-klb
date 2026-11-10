@@ -12,6 +12,8 @@ import {
   handlePaymentModal,
   handleFeedbackRateButton,
   handleFeedbackModal,
+  paymentSessions,
+  feedbackSessions,
 } from '../../src/features/payment/payment-flow.js';
 import { initializePaymentTables } from '../../src/database/payment.db.js';
 import { createPayment, getPaymentById } from '../../src/features/payment/payment.service.js';
@@ -55,6 +57,31 @@ describe('payment.flow', () => {
 
       const ratingRow = buildRatingButtons('TX1', 'buyer1');
       expect(ratingRow.components).toHaveLength(5);
+    });
+
+    it('paymentSessions và feedbackSessions tự động hết hạn và xóa khi quá TTL', () => {
+      paymentSessions.set('test_expired_session', {
+        action: 'confirm',
+        txId: 'TX1',
+        buyerId: 'buyer1',
+        sourceChannelId: null,
+        sourceMessageId: null,
+        userId: 'admin1',
+        expiresAt: Date.now() - 1000, // Đã hết hạn
+      });
+
+      expect(paymentSessions.get('test_expired_session')).toBeUndefined();
+
+      feedbackSessions.set('test_expired_feedback', {
+        rating: 5,
+        txId: 'TX1',
+        buyerId: 'buyer1',
+        sourceChannelId: null,
+        sourceMessageId: null,
+        expiresAt: Date.now() - 1000, // Đã hết hạn
+      });
+
+      expect(feedbackSessions.get('test_expired_feedback')).toBeUndefined();
     });
   });
 

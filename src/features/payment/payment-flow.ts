@@ -18,44 +18,45 @@ import { extractMemberRoleIds } from '../../config/permissions.js';
 import { createLogger } from '../../utils/logger.js';
 import { getPaymentById, updatePaymentStatus, saveFeedback } from './payment.service.js';
 import { buildPaymentResultContainer } from '../../utils/vietqr.utils.js';
+import { TTLStore, ExpiryEntry } from '../../utils/ttl-store.js';
 
 const logger = createLogger('PaymentFlow');
 
 const PAYMENT_SESSION_TTL_MS = 15 * 60 * 1000;
 const FEEDBACK_RATE_LIMIT_MS = 1500;
 
-interface PaymentSession {
+interface PaymentSession extends ExpiryEntry {
   action: 'confirm' | 'cancel';
   txId: string;
   buyerId: string;
   sourceChannelId: string | null;
   sourceMessageId: string | null;
   userId: string;
-  expiresAt: number;
 }
 
-interface FeedbackSession {
+interface FeedbackSession extends ExpiryEntry {
   rating: number;
   txId: string;
   buyerId: string;
   sourceChannelId: string | null;
   sourceMessageId: string | null;
-  expiresAt: number;
 }
 
-const paymentSessions = new Map<string, PaymentSession>();
-const feedbackSessions = new Map<string, FeedbackSession>();
+/** Quản lý phiên tương tác duyệt/hủy hóa đơn với TTL 15 phút và tự động dọn dẹp nền */
+export const paymentSessions = new TTLStore<string, PaymentSession>({
+  ttlMs: PAYMENT_SESSION_TTL_MS,
+  cleanupIntervalMs: 5 * 60 * 1000,
+  name: 'PaymentSessions',
+});
+
+/** Quản lý phiên đánh giá dịch vụ với TTL 15 phút và tự động dọn dẹp nền */
+export const feedbackSessions = new TTLStore<string, FeedbackSession>({
+  ttlMs: PAYMENT_SESSION_TTL_MS,
+  cleanupIntervalMs: 5 * 60 * 1000,
+  name: 'FeedbackSessions',
+});
+
 const feedbackRateLimit = new Map<string, number>();
-
-function cleanupSessions(): void {
-  const now = Date.now();
-  for (const [id, session] of paymentSessions.entries()) {
-    if (session.expiresAt <= now) paymentSessions.delete(id);
-  }
-  for (const [id, session] of feedbackSessions.entries()) {
-    if (session.expiresAt <= now) feedbackSessions.delete(id);
-  }
-}
 
 function createSessionId(): string {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
@@ -198,8 +199,6 @@ export async function handlePaymentButton(
   const action = actionStr as 'confirm' | 'cancel';
   const guildId = interaction.guildId;
 
-  cleanupSessions();
-
   if (!guildId || !canManagePayment(interaction, guildId)) {
     await interaction.reply({
       content: '🔒 Bạn không có quyền xác nhận hoặc hủy hóa đơn thanh toán này.',
@@ -278,7 +277,6 @@ export async function handlePaymentModal(
   const action = actionStr as 'confirm' | 'cancel';
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-  cleanupSessions();
 
   const session = paymentSessions.get(sessionId);
   if (!session || session.action !== action) {
@@ -520,7 +518,6 @@ export async function handleFeedbackModal(
   const sessionId = match[1];
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-  cleanupSessions();
 
   const session = feedbackSessions.get(sessionId);
   if (!session) {
