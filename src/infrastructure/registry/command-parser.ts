@@ -16,12 +16,14 @@ export interface ParsedCommand {
   group: string | null;
   subcommand: string | null;
   description: string;
+  descriptionLocalizations?: Record<string, string> | null;
   options: ParsedOption[];
 }
 
 export interface CommandLike {
   name: string;
   description?: string;
+  description_localizations?: Record<string, string> | null;
   options?: any[];
 }
 
@@ -46,6 +48,7 @@ export function extractCommandPathsFromBuilders(
         group: null,
         subcommand: null,
         description: json.description || '',
+        descriptionLocalizations: json.description_localizations || null,
         options: rootOptions.map((opt: any) => ({
           name: opt.name,
           description: opt.description || '',
@@ -67,6 +70,7 @@ export function extractCommandPathsFromBuilders(
           group: null,
           subcommand: opt.name,
           description: opt.description || '',
+          descriptionLocalizations: opt.description_localizations || null,
           options: subOptions.map((subOpt: any) => ({
             name: subOpt.name,
             description: subOpt.description || '',
@@ -86,6 +90,7 @@ export function extractCommandPathsFromBuilders(
             group: groupName,
             subcommand: sub.name,
             description: sub.description || '',
+            descriptionLocalizations: sub.description_localizations || null,
             options: subOptions.map((subOpt: any) => ({
               name: subOpt.name,
               description: subOpt.description || '',

@@ -1,6 +1,6 @@
 # Danh Mục Lệnh Chuẩn — Bot Delta (Ground Truth Command Catalog)
 
-> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v1.6.19**
+> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v1.7.0**
 > *Mọi AI Assistant và lập trình viên bắt buộc tuân theo tài liệu này. Không tự suy diễn cú pháp hay tham số.*
 
 ## 1. Thống Kê Tổng Quan
@@ -42,7 +42,7 @@
 | `/df.stats` | Xuất thẻ căn cước chiến binh (K/D, tỉ lệ rút quân, cấp bậc, số trận) & menu đổi mùa giải. | Display combat identity card (K/D, extraction rate, rank tier, matches) & season selector. | `DF_ACCESS` | *Không có* |
 | `/df.daily` | Báo cáo tổng hợp hiệu suất tác chiến trong ngày hôm nay. | Comprehensive summary report of your combat performance today. | `DF_ACCESS` | *Không có* |
 | `/df.history` | Xem lịch sử 1–20 trận gần nhất (operator, map, kết quả rút quân). | View recent match history for the last 1–20 deployments (operator, map, extraction result). | `DF_ACCESS` | `limit` |
-| `/df.vault` | Sảnh Triển Lãm Đồ Đỏ — Kho báu vật phẩm quý hiếm đã rút quân an toàn & tổng định giá. | Red Item Trophy Hall — Showcase of rare treasures successfully extracted & total appraisal valuation. | `DF_ACCESS` | *Không có* |
+| `/df.vault` | Sảnh Triển Lãm Đồ Đỏ — Kho báu vật phẩm quý hiếm đã rút quân an toàn & tổng định giá. | Red Item Trophy Hall — Showcase of rare treasures extracted & appraisal valuation. | `DF_ACCESS` | *Không có* |
 | `/df.match` | Soi chi tiết kết quả 1 trận cụ thể (kèm gợi ý tự động 5 trận gần nhất). | Inspect detailed results of a specific match (with auto-suggested recent 5 matches). | `DF_ACCESS` | `match_id` |
 | `/df.workshop` | Xem khuyến nghị sản xuất tối ưu tại Xưởng Căn Cứ Ngầm. | View optimal crafting recommendations at the Underground Base Workshop. | `DF_ACCESS` | *Không có* |
 | `/df.market` | Tra cứu giá nguyên liệu thị trường & biên lợi nhuận chế tác bàn xưởng từ HQ API. | Check market commodity prices & workbench crafting profit margins from the HQ API. | `DF_ACCESS` | `item` |

@@ -52,6 +52,20 @@ describe('CI Drift Guard — Bi-directional Command & Localization Parity', () =
       }
       expect(missingInEn).toEqual([]);
     });
+
+    it('mọi user command trong builder phải được cấu hình setDescriptionLocalizations en-US khớp với en.ts', () => {
+      const missingOrMismatched: string[] = [];
+      for (const cmd of parsedCommands) {
+        if (!isAdminCommand(cmd.path)) {
+          const expectedEnDesc = (EN_LOCALE.commands as any)[cmd.path]?.desc;
+          const actualEnDesc = cmd.descriptionLocalizations?.['en-US'];
+          if (!actualEnDesc || actualEnDesc !== expectedEnDesc) {
+            missingOrMismatched.push(`${cmd.path}: expected="${expectedEnDesc}", actual="${actualEnDesc}"`);
+          }
+        }
+      }
+      expect(missingOrMismatched).toEqual([]);
+    });
   });
 
   describe('2. Reverse Check: i18n Dictionary -> Builder (Orphan Metadata Guard)', () => {

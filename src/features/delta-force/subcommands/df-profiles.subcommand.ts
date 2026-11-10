@@ -24,6 +24,7 @@ import { execute as executeMap } from '../map.handler.js';
 import { execute as executeBuild } from '../build.handler.js';
 import { execute as executeLink } from '../link.handler.js';
 import { MAX_HISTORY_PAGE } from '../../../config/app.constants.js';
+import { EN_LOCALE } from '../../../locales/en.js';
 
 export function buildLinkGroup(
   group: SlashCommandSubcommandGroupBuilder,
@@ -32,10 +33,20 @@ export function buildLinkGroup(
     .setName('link')
     .setDescription('Liên kết / kiểm tra / xác thực tài khoản Delta Force HQ.')
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
-      sub.setName('start').setDescription('Tạo mã claim và gửi hướng dẫn qua DM.'),
+      sub
+        .setName('start')
+        .setDescription('Tạo mã claim và gửi hướng dẫn qua DM.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.link.start'].desc,
+        }),
     )
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
-      sub.setName('status').setDescription('Kiểm tra trạng thái liên kết hiện tại.'),
+      sub
+        .setName('status')
+        .setDescription('Kiểm tra trạng thái liên kết hiện tại.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.link.status'].desc,
+        }),
     );
 }
 
@@ -44,15 +55,28 @@ export function registerProfileSubcommands(
 ): SlashCommandSubcommandsOnlyBuilder {
   return builder
     .addSubcommand((sub) =>
-      sub.setName('stats').setDescription('Xem thống kê tài khoản Delta Force.'),
+      sub
+        .setName('stats')
+        .setDescription('Xem thống kê tài khoản Delta Force.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.stats'].desc,
+        }),
     )
     .addSubcommand((sub) =>
-      sub.setName('daily').setDescription('Trạng thái chiến đấu hàng ngày Delta Force.'),
+      sub
+        .setName('daily')
+        .setDescription('Trạng thái chiến đấu hàng ngày Delta Force.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.daily'].desc,
+        }),
     )
     .addSubcommand((sub) =>
       sub
         .setName('history')
         .setDescription('Xem lịch sử trận đấu Delta Force.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.history'].desc,
+        })
         .addIntegerOption((opt) =>
           opt
             .setName('limit')
@@ -64,12 +88,18 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('vault')
-        .setDescription('Sảnh Triển Lãm Đồ Đỏ: Xem bộ sưu tập đồ đỏ và tổng giá trị kho báu.'),
+        .setDescription('Sảnh Triển Lãm Đồ Đỏ: Xem bộ sưu tập đồ đỏ và tổng giá trị kho báu.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.vault'].desc,
+        }),
     )
     .addSubcommand((sub) =>
       sub
         .setName('match')
         .setDescription('Xem chi tiết kết quả và thành tích trận đấu.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.match'].desc,
+        })
         .addStringOption((opt) =>
           opt
             .setName('match_id')
@@ -79,12 +109,20 @@ export function registerProfileSubcommands(
         ),
     )
     .addSubcommand((sub) =>
-      sub.setName('workshop').setDescription('Xem thông tin sản xuất tại Xưởng Căn Cứ Ngầm.'),
+      sub
+        .setName('workshop')
+        .setDescription('Xem thông tin sản xuất tại Xưởng Căn Cứ Ngầm.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.workshop'].desc,
+        }),
     )
     .addSubcommand((sub) =>
       sub
         .setName('market')
         .setDescription('Tra cứu giá thị trường và bàn chế tác realtime.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.market'].desc,
+        })
         .addStringOption((opt) =>
           opt
             .setName('item')
@@ -94,20 +132,36 @@ export function registerProfileSubcommands(
         ),
     )
     .addSubcommand((sub) =>
-      sub.setName('unlink').setDescription('Hủy liên kết tài khoản Delta Force.'),
+      sub
+        .setName('unlink')
+        .setDescription('Hủy liên kết tài khoản Delta Force.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.unlink'].desc,
+        }),
     )
     .addSubcommand((sub) =>
       sub
         .setName('help')
-        .setDescription('Xem hướng dẫn sử dụng bot và tải tiện ích liên kết tài khoản.'),
+        .setDescription('Xem hướng dẫn sử dụng bot và tải tiện ích liên kết tài khoản.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.help'].desc,
+        }),
     )
     .addSubcommand((sub) =>
-      sub.setName('map').setDescription('Mô phỏng bản đồ 3D tương tác và cẩm nang học map.'),
+      sub
+        .setName('map')
+        .setDescription('Mô phỏng bản đồ 3D tương tác và cẩm nang học map.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.map'].desc,
+        }),
     )
     .addSubcommand((sub) =>
       sub
         .setName('build')
         .setDescription('Thư viện build súng và mã Gunsmith meta (Garena).')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.build'].desc,
+        })
         .addStringOption((opt) =>
           opt
             .setName('weapon')
@@ -125,6 +179,9 @@ export function registerProfileSubcommands(
       sub
         .setName('gun')
         .setDescription('Thư viện build súng và mã Gunsmith meta (Garena).')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.gun'].desc,
+        })
         .addStringOption((opt) =>
           opt
             .setName('weapon')

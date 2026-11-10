@@ -15,10 +15,14 @@ import {
 } from '../../services/payos.service.js';
 import { createDonation } from './payment.service.js';
 import { fetchVietQrImageBuffer } from '../../utils/vietqr.utils.js';
+import { EN_LOCALE } from '../../locales/en.js';
 
 export const data = new SlashCommandBuilder()
   .setName('donate')
   .setDescription('Ủng hộ Bot Owner / Buy Me a Coffee qua cổng thanh toán PayOS.')
+  .setDescriptionLocalizations({
+    'en-US': EN_LOCALE.commands['donate'].desc,
+  })
   .addIntegerOption((opt) =>
     opt
       .setName('amount')

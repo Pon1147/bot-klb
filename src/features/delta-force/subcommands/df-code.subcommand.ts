@@ -10,6 +10,7 @@ import {
 } from 'discord.js';
 import Database from 'better-sqlite3';
 import { execute as executeCode } from '../code.handler.js';
+import { EN_LOCALE } from '../../../locales/en.js';
 
 export function buildCodeGroup(
   group: SlashCommandSubcommandGroupBuilder,
@@ -21,12 +22,20 @@ export function buildCodeGroup(
       sub
         .setName('show')
         .setDescription('Xem mật khẩu hôm nay.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.code.show'].desc,
+        })
         .addIntegerOption((opt) =>
           opt.setName('page').setDescription('Số trang hiển thị').setMinValue(1),
         ),
     )
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
-      sub.setName('status').setDescription('Xem channel cấu hình gửi codes.'),
+      sub
+        .setName('status')
+        .setDescription('Xem channel cấu hình gửi codes.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.code.status'].desc,
+        }),
     )
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub

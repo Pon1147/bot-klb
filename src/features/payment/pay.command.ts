@@ -14,6 +14,7 @@ import { sendReply } from '../../utils/reply.utils.js';
 import { ExpiryEntry, TTLStore } from '../../utils/ttl-store.js';
 import { createPayment, getUserPayments, getUserRank, getTopBuyers } from './payment.service.js';
 import { buildPaymentActionRow, canManagePayment } from './payment-flow.js';
+import { EN_LOCALE } from '../../locales/en.js';
 
 interface CooldownEntry extends ExpiryEntry {
   createdAt: number;
@@ -32,6 +33,9 @@ export const data = new SlashCommandBuilder()
     sub
       .setName('create')
       .setDescription('Tạo hóa đơn thanh toán VietQR cho khách hàng trong kênh.')
+      .setDescriptionLocalizations({
+        'en-US': EN_LOCALE.commands['pay.create'].desc,
+      })
       .addIntegerOption((opt) =>
         opt
           .setName('amount')
@@ -58,6 +62,9 @@ export const data = new SlashCommandBuilder()
     sub
       .setName('history')
       .setDescription('Xem lịch sử giao dịch thanh toán thành công và thứ hạng cá nhân.')
+      .setDescriptionLocalizations({
+        'en-US': EN_LOCALE.commands['pay.history'].desc,
+      })
       .addUserOption((opt) =>
         opt
           .setName('target')
@@ -68,7 +75,10 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
     sub
       .setName('top')
-      .setDescription('Xem bảng xếp hạng Top khách hàng chi tiêu nhiều nhất máy chủ.'),
+      .setDescription('Xem bảng xếp hạng Top khách hàng chi tiêu nhiều nhất máy chủ.')
+      .setDescriptionLocalizations({
+        'en-US': EN_LOCALE.commands['pay.top'].desc,
+      }),
   );
 
 /** Sinh chuỗi ký tự ngẫu nhiên ngắn để đảm bảo mã giao dịch là duy nhất */

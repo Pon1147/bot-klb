@@ -108,7 +108,7 @@ export const EN_LOCALE = {
       example: '/df match match_id:1234567890',
     },
     'df.vault': {
-      desc: 'Red Item Trophy Hall — Showcase of rare treasures successfully extracted & total appraisal valuation.',
+      desc: 'Red Item Trophy Hall — Showcase of rare treasures extracted & appraisal valuation.',
       example: '/df vault',
     },
     'df.map': {

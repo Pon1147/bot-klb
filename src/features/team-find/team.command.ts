@@ -11,6 +11,7 @@ import Database from 'better-sqlite3';
 import { execute as executeTeamFind } from './team-find.handler.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import { sendReply } from '../../utils/reply.utils.js';
+import { EN_LOCALE } from '../../locales/en.js';
 
 // ─── Slash Command Builder ────────────────────────────────────────
 
@@ -18,7 +19,12 @@ export const data = new SlashCommandBuilder()
   .setName('team')
   .setDescription('Các lệnh tìm đội và quản lý nhóm chơi game.')
   .addSubcommand((sub) =>
-    sub.setName('find').setDescription('Tìm đồng đội chơi theo bản đồ và chế độ.'),
+    sub
+      .setName('find')
+      .setDescription('Tìm đồng đội chơi theo bản đồ và chế độ.')
+      .setDescriptionLocalizations({
+        'en-US': EN_LOCALE.commands['team.find'].desc,
+      }),
   );
 
 // ─── Execute ──────────────────────────────────────────────────────
