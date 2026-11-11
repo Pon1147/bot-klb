@@ -6,7 +6,9 @@
 import {
   AttachmentBuilder,
   ChatInputCommandInteraction,
+  GuildMember,
   MessageFlags,
+  PermissionFlagsBits,
   SlashCommandSubcommandBuilder,
   SlashCommandSubcommandGroupBuilder,
 } from 'discord.js';
@@ -21,7 +23,6 @@ import {
 } from '../../../utils/vietqr.utils.js';
 import { buildErrorContainer, buildInfoContainer } from '../../../utils/container.utils.js';
 import { sendReply } from '../../../utils/reply.utils.js';
-import { botConfig } from '../../../config/bot.config.js';
 import { createLogger } from '../../../utils/logger.js';
 
 const logger = createLogger('VietQrSubcommand');
@@ -107,6 +108,11 @@ export function buildVietQrGroup(
             .setMinValue(1000)
             .setRequired(false),
         ),
+    )
+    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
+        .setName('reset')
+        .setDescription('Gỡ bỏ và xóa toàn bộ thông tin tài khoản ngân hàng VietQR của máy chủ.'),
     );
 }
 
@@ -126,6 +132,20 @@ export async function handleVietQrWorkflow(
 
   if (!isQrServerEnabled(guildId)) {
     await sendReply(interaction, buildQrPremiumLockedResponse());
+    return;
+  }
+
+  // Kiểm tra quyền: Chỉ Server Owner hoặc Discord Administrator mới được cấu hình workflow thanh toán
+  const isGuildOwner = interaction.guild?.ownerId === interaction.user.id;
+  const member = interaction.member as GuildMember | null;
+  const isDiscordAdmin = Boolean(member?.permissions?.has?.(PermissionFlagsBits.Administrator));
+
+  if (!isGuildOwner && !isDiscordAdmin) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '🔒 Bạn không có quyền cấu hình quy trình thanh toán VietQR.\nChỉ Chủ sở hữu máy chủ (Server Owner) hoặc Quản trị viên (Administrator) mới có quyền thực hiện.',
+      ).toJSON(),
+    });
     return;
   }
 
@@ -188,12 +208,11 @@ export async function handleVietQrSet(
     return;
   }
 
-  // Kiểm tra quyền: Chỉ Guild Owner hoặc Bot Owner khẩn cấp mới được đổi STK ngân hàng của máy chủ
+  // Kiểm tra quyền: Chỉ duy nhất Chủ sở hữu máy chủ (Server Owner) mới có quyền đổi STK ngân hàng
   const isGuildOwner = interaction.guild?.ownerId === interaction.user.id;
-  const isBotOwner = Boolean(botConfig.botOwnerId && interaction.user.id === botConfig.botOwnerId);
 
-  if (!isGuildOwner && !isBotOwner) {
-    logger.warn('[Audit][Security] Từ chối truy cập cấu hình VietQR', {
+  if (!isGuildOwner) {
+    logger.warn('[Audit][Security] Từ chối truy cập cấu hình VietQR (không phải Server Owner)', {
       actorId: interaction.user.id,
       guildId,
       action: 'vietqr.set',
@@ -202,21 +221,10 @@ export async function handleVietQrSet(
     });
     await sendReply(interaction, {
       components: buildErrorContainer(
-        '🔒 Bạn không có quyền thay đổi thông tin ngân hàng của máy chủ.\nChỉ Chủ sở hữu máy chủ (Server Owner) mới có quyền thiết lập tài khoản nhận tiền.',
+        '🔒 Bạn không có quyền thay đổi thông tin ngân hàng của máy chủ.\nChỉ duy nhất Chủ sở hữu máy chủ (Server Owner) mới có quyền thiết lập tài khoản nhận tiền.',
       ).toJSON(),
     });
     return;
-  }
-
-  // Audit trail cho trường hợp Bot Owner dùng quyền khẩn cấp trên server của người khác
-  if (isBotOwner && !isGuildOwner) {
-    logger.warn('[Audit][Security] Bot Owner sử dụng quyền khẩn cấp cấu hình VietQR', {
-      actorId: interaction.user.id,
-      guildId,
-      action: 'vietqr.set',
-      timestamp: Date.now(),
-      result: 'authorized_emergency_override',
-    });
   }
 
   const rawBank = interaction.options.getString('bank', true).trim().toUpperCase();
@@ -253,25 +261,21 @@ export async function handleVietQrSet(
       },
     });
 
-    if (isBotOwner && !isGuildOwner) {
-      logger.warn('[Audit][Security] Bot Owner cập nhật cấu hình VietQR thành công', {
-        actorId: interaction.user.id,
-        guildId,
-        action: 'vietqr.set',
-        timestamp: Date.now(),
-        result: 'success',
-      });
-    }
+    logger.info('[Audit] Server Owner cập nhật cấu hình VietQR thành công', {
+      actorId: interaction.user.id,
+      guildId,
+      action: 'vietqr.set',
+      timestamp: Date.now(),
+      result: 'success',
+    });
   } catch (err) {
-    if (isBotOwner && !isGuildOwner) {
-      logger.error('[Audit][Security] Bot Owner cập nhật cấu hình VietQR thất bại', {
-        actorId: interaction.user.id,
-        guildId,
-        action: 'vietqr.set',
-        timestamp: Date.now(),
-        result: 'failed',
-      });
-    }
+    logger.error('[Audit] Server Owner cập nhật cấu hình VietQR thất bại', {
+      actorId: interaction.user.id,
+      guildId,
+      action: 'vietqr.set',
+      timestamp: Date.now(),
+      result: 'failed',
+    });
     throw err;
   }
 
@@ -436,6 +440,82 @@ export async function handleVietQrPreview(
   }
 }
 
+export async function handleVietQrReset(
+  interaction: ChatInputCommandInteraction,
+  _db?: Database.Database,
+): Promise<void> {
+  const guildId = interaction.guildId;
+  if (!guildId) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        'Lệnh này chỉ có thể sử dụng trong máy chủ Discord.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  if (!isQrServerEnabled(guildId)) {
+    await sendReply(interaction, buildQrPremiumLockedResponse());
+    return;
+  }
+
+  // Kiểm tra quyền: Chỉ duy nhất Chủ sở hữu máy chủ (Server Owner) mới có quyền gỡ bỏ STK ngân hàng
+  const isGuildOwner = interaction.guild?.ownerId === interaction.user.id;
+  if (!isGuildOwner) {
+    logger.warn('[Audit][Security] Từ chối gỡ cấu hình VietQR (không phải Server Owner)', {
+      actorId: interaction.user.id,
+      guildId,
+      action: 'vietqr.reset',
+      timestamp: Date.now(),
+      result: 'denied_not_owner',
+    });
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '🔒 Bạn không có quyền gỡ bỏ cấu hình ngân hàng của máy chủ.\nChỉ duy nhất Chủ sở hữu máy chủ (Server Owner) mới có quyền thực hiện.',
+      ).toJSON(),
+    });
+    return;
+  }
+
+  const settingsService = getSettingsService();
+  const currentSettings = settingsService.get(guildId);
+  const currentVietQr = currentSettings.vietqr;
+
+  settingsService.update(guildId, {
+    vietqr: {
+      enabled: false,
+      bankId: null,
+      accountNo: null,
+      accountName: null,
+      prefix: currentVietQr?.prefix || 'NAP',
+      template: currentVietQr?.template || 'compact2',
+      staffRoleId: null,
+      feedbackChannelId: null,
+      enableRating: true,
+      thanksMessage: null,
+    },
+  });
+
+  logger.info('[Audit] Server Owner đã gỡ bỏ cấu hình VietQR thành công', {
+    actorId: interaction.user.id,
+    guildId,
+    action: 'vietqr.reset',
+    timestamp: Date.now(),
+    result: 'success',
+  });
+
+  const container = buildInfoContainer(
+    `### 🗑️ Đã Gỡ Bỏ Cấu Hình VietQR Máy Chủ\n\n` +
+      `• **Trạng thái**: Đã xóa thông tin tài khoản ngân hàng nhận tiền.\n` +
+      `• **Người thực hiện**: <@${interaction.user.id}> (Chủ sở hữu máy chủ)\n\n` +
+      `> ℹ️ *Mọi lệnh tạo hóa đơn \`/pay create\` trên máy chủ sẽ tạm dừng cho đến khi Server Owner thiết lập lại STK qua lệnh \`/config vietqr set\`.*`,
+  );
+
+  await sendReply(interaction, {
+    components: container.toJSON(),
+  });
+}
+
 export async function executeVietQrGroup(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
@@ -449,5 +529,7 @@ export async function executeVietQrGroup(
     await handleVietQrStatus(interaction, database);
   } else if (subcommand === 'preview') {
     await handleVietQrPreview(interaction, database);
+  } else if (subcommand === 'reset') {
+    await handleVietQrReset(interaction, database);
   }
 }

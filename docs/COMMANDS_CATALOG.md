@@ -1,11 +1,11 @@
 # Danh Mục Lệnh Chuẩn — Bot Delta (Ground Truth Command Catalog)
 
-> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v1.9.0**
+> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v1.10.0**
 > *Mọi AI Assistant và lập trình viên bắt buộc tuân theo tài liệu này. Không tự suy diễn cú pháp hay tham số.*
 
 ## 1. Thống Kê Tổng Quan
 
-- **Tổng số lệnh thực thi**: `56` subcommands.
+- **Tổng số lệnh thực thi**: `57` subcommands.
 - **Nhóm lệnh**: `/df`, `/team`, `/pay`, `/donate`, `/config`.
 
 ## 2. Bảng Tra Cứu Lệnh Chi Tiết
@@ -39,6 +39,7 @@
 | `/config vietqr workflow` | Cấu hình quy trình duyệt bill, nhận feedback 5 sao và lời cảm ơn. | *(Admin / Internal)* | `MANAGE_CONFIG` | `staff_role`, `feedback_channel`, `enable_rating`, `thanks_message` |
 | `/config vietqr status` | Xem thông tin tài khoản nhận tiền hiện tại của máy chủ. | *(Admin / Internal)* | `MANAGE_CONFIG` | *Không có* |
 | `/config vietqr preview` | Xem trước và quét thử mã QR thanh toán mẫu của máy chủ. | *(Admin / Internal)* | `MANAGE_CONFIG` | `amount` |
+| `/config vietqr reset` | Gỡ bỏ và xóa toàn bộ thông tin tài khoản ngân hàng VietQR của máy chủ. | *(Admin / Internal)* | `MANAGE_RBAC` | *Không có* |
 | `/df stats` | Xuất thẻ căn cước chiến binh (K/D, tỉ lệ rút quân, cấp bậc, số trận) & menu đổi mùa giải. | Display combat identity card (K/D, extraction rate, rank tier, matches) & season selector. | `DF_ACCESS` | *Không có* |
 | `/df daily` | Báo cáo tổng hợp hiệu suất tác chiến trong ngày hôm nay. | Comprehensive summary report of your combat performance today. | `DF_ACCESS` | *Không có* |
 | `/df history` | Xem lịch sử 1–20 trận gần nhất (operator, map, kết quả rút quân). | View recent match history for the last 1–20 deployments (operator, map, extraction result). | `DF_ACCESS` | `limit` |

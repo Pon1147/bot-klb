@@ -528,8 +528,8 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
   // ─── 7. PHASE 4: Command Path Policy Mapping ──────────────────────
   describe('PHASE 4 — Command Path Policy Mapping', () => {
-    it('COMMAND_PATH_POLICIES chứa đúng 56 canonical command paths', () => {
-      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(56);
+    it('COMMAND_PATH_POLICIES chứa đúng 57 canonical command paths', () => {
+      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(57);
     });
 
     it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds, config.bot.announce, config.bot.setannouncechannel, config.qr-server.* và df.autopost.*', () => {
@@ -540,6 +540,8 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(resolveCommandPolicy('config.bot.setannouncechannel')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.qr-server.toggle')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.qr-server.status')).toBe(Policy.MANAGE_RBAC);
+      expect(resolveCommandPolicy('config.vietqr.set')).toBe(Policy.MANAGE_RBAC);
+      expect(resolveCommandPolicy('config.vietqr.reset')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('df.autopost.set')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('df.autopost.toggle')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('df.autopost.status')).toBe(Policy.MANAGE_RBAC);

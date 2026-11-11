@@ -191,6 +191,7 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'config.qr-server.toggle': Policy.MANAGE_RBAC,
   'config.qr-server.status': Policy.MANAGE_RBAC,
   'config.vietqr.set': Policy.MANAGE_RBAC,
+  'config.vietqr.reset': Policy.MANAGE_RBAC,
   'config.vietqr.workflow': Policy.MANAGE_CONFIG,
   'config.vietqr.status': Policy.MANAGE_CONFIG,
   'config.vietqr.preview': Policy.MANAGE_CONFIG,
