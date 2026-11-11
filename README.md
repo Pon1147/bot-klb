@@ -62,43 +62,67 @@ Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và
 
 > 📖 **Tra cứu đầy đủ 55 lệnh**: Xem chi tiết tại [**Ground Truth Command Catalog (`docs/COMMANDS_CATALOG.md`)**](docs/COMMANDS_CATALOG.md) — tài liệu duy nhất được sinh tự động và bảo vệ bởi CI Drift Guard.
 
-| Nhóm lệnh | Lệnh con | Quyền hạn | Mô tả (Song ngữ) |
-| :--- | :--- | :--- | :--- |
-| **/df** | `stats` | Thành viên | Xem thẻ căn cước chiến binh & thống kê mùa giải |
-| | `daily` | Thành viên | Báo cáo chiến đấu tổng hợp trong ngày |
-| | `history [limit]` | Thành viên | Lịch sử 1–20 trận gần nhất (kết quả, operator, map) |
-| | `match [match_id]` | Thành viên | Chi tiết kết quả & phân tích thông số trận đấu |
-| | `vault` | Thành viên | Sảnh Triển Lãm Đồ Đỏ: Xem bộ sưu tập kho báu |
-| | `market [item]` | Thành viên | Tra cứu giá thị trường và bàn chế tác realtime |
-| | `map` | Thành viên | Cẩm nang bản đồ chiến thuật & link 3D tương tác |
-| | `build` / `gun [weapon] [mode]` | Thành viên | Thư viện mã súng Gunsmith meta Garena |
-| | `workshop` | Thành viên | Khuyến nghị công thức chế tác Xưởng Căn Cứ Ngầm |
-| | `code show [page]` | Thành viên | Mật mã két sắt 6 bản đồ hôm nay (cập nhật tự động) |
-| | `code status` | Thành viên | Kiểm tra trạng thái đồng bộ mật mã hôm nay |
-| | `code setchannel <channel>` | Quản trị viên | Đặt kênh tự động gửi mật mã mỗi sáng |
-| | `code settime <time>` | Quản trị viên | Đặt giờ gửi mật mã hằng ngày (định dạng HH:mm) |
-| | `code setadminchannel <channel>`| Quản trị viên | Kênh nhận cảnh báo khi bot cào mật mã gặp sự cố |
-| | `link start` | Thành viên | Tạo mã claim liên kết tài khoản & tải DF Toolbox |
-| | `link status` | Thành viên | Kiểm tra trạng thái liên kết Delta Force HQ |
-| | `unlink` | Thành viên | Hủy liên kết tài khoản game khỏi Discord ID |
-| | `help` | Thành viên | Trung tâm trợ giúp đa ngữ & hướng dẫn sử dụng |
-| | `autopost set <type> <hours>` | Bot Owner | Cấu hình chu kỳ phát sóng tự động map / gun meta |
-| | `autopost toggle <type> <bool>`| Bot Owner | Bật / tắt tự động phát sóng nội dung |
-| | `autopost status` | Bot Owner | Xem trạng thái cấu hình Auto-Post toàn hệ thống |
-| | `autopost run <type>` | Bot Owner | Bắn thử nghiệm ngay lập tức 1 đợt phát sóng |
-| **/team** | `find` | Thành viên | Tìm đồng đội chơi theo bản đồ, chế độ & voice |
-| **/pay** | `create <amount> [customer] [memo]` | Thành viên | Tạo hóa đơn thanh toán VietQR động trong kênh |
-| | `history [target]` | Thành viên | Lịch sử giao dịch thanh toán cá nhân |
-| | `top` | Thành viên | Bảng xếp hạng Top khách hàng chi tiêu server |
-| **/donate** | `<amount> [message]` | Thành viên | Quyên góp ủng hộ vận hành bot qua cổng PayOS |
-| **/config** | `roles set` / `view` | Server Owner / Admin | Cấu hình role Bot Admin / Moderator / Member |
-| | `vietqr set` / `workflow` / `status` | Quản trị viên | Cấu hình tài khoản VietQR và quy trình duyệt đơn |
-| | `qr-server toggle` / `status` | Bot Owner | Cấp quyền sử dụng tính năng tạo QR cho server |
-| | `welcome ...` | Quản trị viên | Cấu hình kênh, role, bật tắt thông điệp chào mừng |
-| | `leave ...` | Quản trị viên | Cấu hình thông báo khi thành viên rời máy chủ |
-| | `booster ...` | Quản trị viên | Cấu hình quà tặng & tri ân server booster |
-| | `container edit` / `reset` | Quản trị viên | Tùy chỉnh layout Discord Components V2 |
-| | `bot guilds` / `announce` / `setannouncechannel` | Bot Owner | Quản trị bot toàn hệ thống & phát thông báo |
+<!-- COMMANDS_TABLE_START -->
+
+| Lệnh (Slash Command) | Quyền hạn | Mô tả chức năng |
+| :--- | :--- | :--- |
+| `/config roles set` | Server Owner / Admin | Thiết lập role cho một phân quyền bot. |
+| `/config roles view` | Server Owner / Admin | Xem danh sách role RBAC hiện tại của máy chủ. |
+| `/config welcome setchannel` | Quản trị viên | Chọn kênh gửi tin nhắn chào mừng. |
+| `/config welcome setrole` | Quản trị viên | Chọn role tự động cấp khi vào server. |
+| `/config welcome toggle` | Quản trị viên | Bật hoặc tắt hệ thống chào mừng. |
+| `/config welcome status` | Quản trị viên | Xem trạng thái cấu hình chào mừng hiện tại. |
+| `/config welcome test` | Quản trị viên | Gửi tin nhắn chào mừng thử nghiệm để kiểm tra hiển thị. |
+| `/config leave setchannel` | Quản trị viên | Chọn kênh gửi tin nhắn tạm biệt. |
+| `/config leave toggle` | Quản trị viên | Bật hoặc tắt hệ thống tạm biệt. |
+| `/config leave status` | Quản trị viên | Xem trạng thái cấu hình tạm biệt hiện tại. |
+| `/config leave test` | Quản trị viên | Gửi tin nhắn tạm biệt thử nghiệm để kiểm tra hiển thị. |
+| `/config booster setchannel` | Quản trị viên | Chọn kênh gửi tin nhắn cảm ơn Booster. |
+| `/config booster setrole` | Quản trị viên | Chọn role dành riêng cho Booster. |
+| `/config booster toggle` | Quản trị viên | Bật hoặc tắt hệ thống thông báo Booster. |
+| `/config booster status` | Quản trị viên | Xem trạng thái cấu hình Booster hiện tại. |
+| `/config booster test` | Quản trị viên | Gửi tin nhắn cảm ơn Booster thử nghiệm để kiểm tra hiển thị. |
+| `/config container edit` | Quản trị viên | Chỉnh sửa container settings (Interactive UI). |
+| `/config container reset` | Quản trị viên | Reset container settings về mặc định. |
+| `/config bot guilds` | Server Owner / Admin | Xem danh sách các máy chủ (guilds) bot đang tham gia. |
+| `/config bot setannouncechannel` | Server Owner / Admin | Cấu hình kênh nhận thông báo cập nhật bot cho máy chủ này. |
+| `/config bot announce` | Bot Owner | Phát thông báo cập nhật tới toàn bộ máy chủ (chỉ dành cho Bot Owner). |
+| `/config qr-server toggle` | Bot Owner | Bật hoặc tắt tính năng QR tự động cho máy chủ. |
+| `/config qr-server status` | Bot Owner | Xem trạng thái tính năng QR của máy chủ. |
+| `/config vietqr set` | Server Owner / Admin | Cài đặt thông tin tài khoản ngân hàng nhận tiền. |
+| `/config vietqr workflow` | Quản trị viên | Cấu hình quy trình duyệt bill, nhận feedback 5 sao và lời cảm ơn. |
+| `/config vietqr status` | Quản trị viên | Xem thông tin tài khoản nhận tiền hiện tại của máy chủ. |
+| `/config vietqr preview` | Quản trị viên | Xem trước và quét thử mã QR thanh toán mẫu của máy chủ. |
+| `/df stats` | Thành viên | Xuất thẻ căn cước chiến binh (K/D, tỉ lệ rút quân, cấp bậc, số trận) & menu đổi mùa giải. |
+| `/df daily` | Thành viên | Báo cáo tổng hợp hiệu suất tác chiến trong ngày hôm nay. |
+| `/df history` | Thành viên | Xem lịch sử 1–20 trận gần nhất (operator, map, kết quả rút quân). |
+| `/df vault` | Thành viên | Sảnh Triển Lãm Đồ Đỏ — Kho báu vật phẩm quý hiếm đã rút quân an toàn & tổng định giá. |
+| `/df match` | Thành viên | Soi chi tiết kết quả 1 trận cụ thể (kèm gợi ý tự động 5 trận gần nhất). |
+| `/df workshop` | Thành viên | Xem khuyến nghị sản xuất tối ưu tại Xưởng Căn Cứ Ngầm. |
+| `/df market` | Thành viên | Tra cứu giá nguyên liệu thị trường & biên lợi nhuận chế tác bàn xưởng từ HQ API. |
+| `/df unlink` | Thành viên | Hủy liên kết tài khoản Delta Force HQ khỏi tài khoản Discord của bạn. |
+| `/df help` | Thành viên | Hiển thị cẩm nang hướng dẫn sử dụng Bot Delta toàn tập. |
+| `/df map` | Thành viên | Cẩm nang bản đồ, soi két sắt, lối rút quân & liên kết mô phỏng 3D tại deltaforcetools.gg. |
+| `/df build` | Thành viên | Thư viện build súng meta Garena, lọc theo chế độ/loại súng & copy mã 1-chạm. |
+| `/df gun` | Thành viên | Tra cứu nhanh build súng meta theo tên súng và chế độ chơi. |
+| `/df code show` | Thành viên | Bảng mật mã két sắt 6 bản đồ hôm nay (tự động cập nhật mỗi sáng). |
+| `/df code status` | Thành viên | Kiểm tra trạng thái cập nhật mật mã két sắt hôm nay. |
+| `/df code setchannel` | Quản trị viên | Đặt channel tự động gửi codes mỗi ngày. |
+| `/df code settime` | Quản trị viên | Đặt giờ tự động gửi codes mỗi ngày. |
+| `/df code setadminchannel` | Quản trị viên | Đặt channel nhận thông báo lỗi scheduler. |
+| `/df link start` | Thành viên | Khởi tạo phiên liên kết tài khoản Delta Force HQ và nhận tiện ích DF Toolbox. |
+| `/df link status` | Thành viên | Kiểm tra trạng thái liên kết tài khoản Delta Force HQ hiện tại. |
+| `/df autopost set` | Bot Owner | Thiết lập chu kỳ lặp lại cho loại nội dung. |
+| `/df autopost toggle` | Bot Owner | Bật hoặc tắt phát tự động cho loại nội dung. |
+| `/df autopost status` | Bot Owner | Xem trạng thái cấu hình Auto-Post toàn hệ thống. |
+| `/df autopost run` | Bot Owner | Bắn thử nghiệm ngay lập tức 1 đợt tới toàn bộ các máy chủ. |
+| `/pay create` | Thành viên | Tạo mã QR thanh toán VietQR chuyển khoản ngân hàng tự động. |
+| `/pay history` | Thành viên | Xem lịch sử các giao dịch thanh toán VietQR của bạn trong máy chủ. |
+| `/pay top` | Thành viên | Xem bảng xếp hạng top thành viên ủng hộ / chi tiêu nhiều nhất trong máy chủ. |
+| `/donate` | Thành viên | Tạo link thanh toán PayOS ủng hộ nhà phát triển duy trì bot. |
+| `/team find` | Thành viên | Đăng tin tuyển hoặc tìm squad leo rank theo map, chế độ & điều phối voice chat tự động. |
+
+<!-- COMMANDS_TABLE_END -->
 
 ---
 

@@ -21,6 +21,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "deploy:guild": "tsx scripts/deploy-commands.ts",
+    "docs:generate": "tsx scripts/generate-command-docs.ts",
     "test:mongo": "tsx scripts/test-mongo.ts",
     "package:extension": "tsx scripts/package-extension.ts",
     "version:bump": "tsx scripts/bump-version.ts",

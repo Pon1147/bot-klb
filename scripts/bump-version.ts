@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { packageExtension } from './package-extension.js';
+import { writeCatalogFile } from './generate-command-docs.js';
 
 type BumpType = 'patch' | 'minor' | 'major';
 type BumpTarget = 'all' | 'bot' | 'ext';
@@ -113,6 +114,14 @@ async function run(): Promise<void> {
   syncHtmlVersions(newExtVersion);
   updateVersionTs(newBotVersion, newExtVersion);
   console.log(`✓ Đồng bộ HTML & version.ts thành công (Bot v${newBotVersion}, Extension v${newExtVersion})`);
+
+  // Tự động đồng bộ Catalog tài liệu và bảng lệnh trong README.md
+  try {
+    writeCatalogFile();
+    console.log('✓ Tự động đồng bộ COMMANDS_CATALOG.md và README.md thành công!');
+  } catch (err) {
+    console.warn('⚠ Không thể tự động đồng bộ tài liệu lệnh:', err);
+  }
 
   // Đóng gói lại file zip
   await packageExtension();
