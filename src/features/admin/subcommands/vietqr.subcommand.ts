@@ -454,20 +454,16 @@ export async function handleVietQrPreview(
   const replyContent =
     '> 🧪 **CHẾ ĐỘ XEM TRƯỚC (PREVIEW)**: Hãy dùng app ngân hàng quét thử mã bên dưới để kiểm tra tên chủ tài khoản và số tài khoản nhận tiền.';
 
-  if (interaction.deferred && typeof interaction.editReply === 'function') {
-    await interaction.editReply({
-      content: replyContent,
-      components: container.toJSON(),
-      files,
-    });
-  } else {
-    await interaction.reply({
+  await sendReply(
+    interaction,
+    {
       content: replyContent,
       components: container.toJSON(),
       files,
       flags: MessageFlags.IsComponentsV2,
-    });
-  }
+    },
+    true,
+  );
 }
 
 export async function handleVietQrReset(

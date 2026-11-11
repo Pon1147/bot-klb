@@ -9,6 +9,7 @@ import {
   execute,
   buildAnnouncementContainer,
 } from '../../src/features/admin/config.command.js';
+import { MessageFlags } from 'discord.js';
 import { executeSectionCommand } from '../../src/utils/section-config.handlers.js';
 import { startInteractiveEdit } from '../../src/features/container/container-edit.handler.js';
 import { handleContainerReset } from '../../src/features/container/container-reset.handler.js';
@@ -79,7 +80,10 @@ function createMockInteraction(overrides: Record<string, unknown> = {}): any {
       getBoolean: jest.fn().mockReturnValue(true),
     },
     reply: jest.fn().mockResolvedValue({}),
-    deferReply: jest.fn().mockResolvedValue({}),
+    deferReply: jest.fn().mockImplementation(function (this: any) {
+      this.deferred = true;
+      return Promise.resolve({});
+    }),
     editReply: jest.fn().mockResolvedValue({}),
   };
 
@@ -1021,7 +1025,7 @@ describe('/config command — Execute Dispatch', () => {
         expect(jsonStr).toContain('staff-role-999');
       });
 
-      it('vietqr preview: tạo mã QR thử nghiệm và trả về container xem trước', async () => {
+      it('vietqr preview: tạo mã QR thử nghiệm và trả về container xem trước với IsComponentsV2', async () => {
         mockIsQrServerEnabled.mockReturnValueOnce(true);
         mockSettingsService.get.mockReturnValueOnce({
           vietqr: {
@@ -1044,9 +1048,15 @@ describe('/config command — Execute Dispatch', () => {
 
         await execute(interaction);
 
-        expect(interaction.reply).toHaveBeenCalled();
-        const callArgs = interaction.reply.mock.calls[0][0];
+        expect(interaction.deferReply).toHaveBeenCalledWith(
+          expect.objectContaining({
+            flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+          }),
+        );
+        expect(interaction.editReply).toHaveBeenCalled();
+        const callArgs = interaction.editReply.mock.calls[0][0];
         expect(callArgs.content).toContain('CHẾ ĐỘ XEM TRƯỚC (PREVIEW)');
+        expect(callArgs.flags & MessageFlags.IsComponentsV2).toBe(MessageFlags.IsComponentsV2);
       });
 
       it('vietqr reset: từ chối khi máy chủ chưa mở QR Server', async () => {
