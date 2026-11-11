@@ -73,21 +73,51 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           : 'https://bot-klb-production.up.railway.app/api/v1/auth/claim';
         console.log(`[SW] Sending claim to Bot API: ${targetUrl}`);
 
-        const res = await fetch(targetUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+        let res;
+        let data = {};
+        try {
+          res = await fetch(targetUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
 
-        console.log(`[SW] Bot API response status: ${res.status} ${res.statusText}`);
+          console.log(`[SW] Bot API response status: ${res.status} ${res.statusText}`);
 
-        const data = await res.json().catch((err) => {
-          console.warn('[SW] Failed to parse JSON response from Bot API:', err);
-          return {};
-        });
+          data = await res.json().catch((err) => {
+            console.warn('[SW] Failed to parse JSON response from Bot API:', err);
+            return {};
+          });
+        } catch (fetchErr) {
+          console.warn(`[SW] Failed to fetch targetUrl (${targetUrl}):`, fetchErr);
+        }
+
+        // Auto Dev Fallback: Nếu targetUrl mặc định (Production) không tìm thấy code (401 hoặc !data.ok),
+        // tự động thử gửi tới local dev bot (http://localhost:8080/api/v1/auth/claim)
+        if ((!res || res.status === 401 || !data?.ok) && !targetUrl.includes('localhost') && !targetUrl.includes('127.0.0.1')) {
+          try {
+            console.log('[SW] Primary API rejected or unavailable. Trying local dev fallback (http://localhost:8080)...');
+            const localUrl = 'http://localhost:8080/api/v1/auth/claim';
+            const localRes = await fetch(localUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            if (localRes.ok) {
+              const localData = await localRes.json().catch(() => ({}));
+              if (localData?.ok) {
+                console.log('[SW] ✓ Successfully claimed via local dev bot (localhost:8080)!');
+                sendResponse({ ok: true });
+                return;
+              }
+            }
+          } catch (localErr) {
+            console.warn('[SW] Local dev fallback unavailable:', localErr);
+          }
+        }
 
         console.log('[SW] Bot API response data:', data);
-        sendResponse({ ok: res.ok && data.ok, error: data.error });
+        sendResponse({ ok: Boolean(res?.ok && data?.ok), error: data?.error || 'Mạng không ổn định hoặc Bot API chưa sẵn sàng. Thử lại sau.' });
       } catch (e) {
         console.error('[SW] Network error when calling Bot API:', e);
         sendResponse({ ok: false, error: 'Mạng không ổn định hoặc Bot API chưa sẵn sàng. Thử lại sau.' });

@@ -7,7 +7,10 @@
 jest.mock('discord.js', () => ({
   MessageFlags: { IsComponentsV2: 65536, Ephemeral: 64 },
   AttachmentBuilder: class {
-    constructor(public attachment: any, public data?: any) {}
+    constructor(
+      public attachment: any,
+      public data?: any,
+    ) {}
   },
   ActionRowBuilder: class {
     constructor() {
@@ -203,21 +206,45 @@ describe('df-link.command', () => {
       expect(mockReply).toHaveBeenCalled();
     });
 
-    it('nên reply chứa claim code trong container', async () => {
+    it('nên reply chứa claim code trong container và 3 buttons trực quan, không spam file zip followUp', async () => {
       const interaction = createMockInteraction();
       await execute(interaction, mockDb);
+
+      expect(interaction.followUp).not.toHaveBeenCalled();
 
       const replyCall = mockReply.mock.calls[0];
       expect(replyCall[0].components).toBeDefined();
       expect(replyCall[0].components).toHaveLength(2);
-      // component đầu tiên là container với TextDisplay chứa claim code, component thứ 2 là ActionRow chứa link buttons
+      // component đầu tiên là container với TextDisplay chứa claim code, component thứ 2 là ActionRow chứa buttons
       const infoComp = replyCall[0].components[0];
       expect(infoComp.type).toBe(17); // Container
       expect(replyCall[0].components[1].type).toBe(1); // ActionRow
+
       // Tìm TextDisplay trong nested components
       const textDisplay = infoComp.components?.find((c: any) => c.content?.includes('ABC123'));
       expect(textDisplay).toBeDefined();
       expect(textDisplay?.content).toContain('ABC123');
+
+      // ActionRow chứa đúng 3 nút: Garena link, nút tải tiện ích on-demand, nút hỗ trợ
+      const buttons = replyCall[0].components[1].components;
+      expect(buttons).toHaveLength(3);
+      expect(buttons[0].url).toContain('playdeltaforce.com');
+      expect(buttons[1].custom_id).toBe('df_help:dl:222:vi');
+      expect(buttons[2].url).toContain('discord.gg');
+    });
+
+    it('hỗ trợ song ngữ English khi interaction có locale en-US', async () => {
+      const interaction = createMockInteraction({ locale: 'en-US' });
+      await execute(interaction, mockDb);
+
+      const replyCall = mockReply.mock.calls[0];
+      const infoComp = replyCall[0].components[0];
+      const textDisplay = infoComp.components?.find((c: any) => c.content?.includes('ABC123'));
+      expect(textDisplay?.content).toContain('Your Link Code');
+
+      const buttons = replyCall[0].components[1].components;
+      expect(buttons[1].custom_id).toBe('df_help:dl:222:en');
+      expect(buttons[1].label).toBe('📥 2. Download Extension');
     });
   });
 

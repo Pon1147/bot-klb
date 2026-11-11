@@ -225,7 +225,7 @@
             state.candidate = null;
             renderPanel();
           } else {
-            console.warn('[LinkContent] Claim rejected by Bot Server:', response.error);
+            console.info('[LinkContent] Claim rejected by Bot Server:', response.error);
             handleClaimFailure(response.error);
           }
         },

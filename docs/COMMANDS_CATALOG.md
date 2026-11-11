@@ -1,6 +1,6 @@
 # Danh Mục Lệnh Chuẩn — Bot Delta (Ground Truth Command Catalog)
 
-> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v1.8.1**
+> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v1.8.2**
 > *Mọi AI Assistant và lập trình viên bắt buộc tuân theo tài liệu này. Không tự suy diễn cú pháp hay tham số.*
 
 ## 1. Thống Kê Tổng Quan
