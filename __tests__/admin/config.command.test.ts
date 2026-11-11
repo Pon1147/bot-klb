@@ -1055,7 +1055,8 @@ describe('/config command — Execute Dispatch', () => {
         );
         expect(interaction.editReply).toHaveBeenCalled();
         const callArgs = interaction.editReply.mock.calls[0][0];
-        expect(callArgs.content).toContain('CHẾ ĐỘ XEM TRƯỚC (PREVIEW)');
+        expect(callArgs.content).toBeUndefined();
+        expect(JSON.stringify(callArgs.components)).toContain('CHẾ ĐỘ XEM TRƯỚC (PREVIEW)');
         expect(callArgs.flags & MessageFlags.IsComponentsV2).toBe(MessageFlags.IsComponentsV2);
       });
 

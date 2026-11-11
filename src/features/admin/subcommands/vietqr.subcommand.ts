@@ -437,6 +437,9 @@ export async function handleVietQrPreview(
     files.push(new AttachmentBuilder(qrBuffer, { name: attachmentName }));
   }
 
+  const previewNotice =
+    '> 🧪 **CHẾ ĐỘ XEM TRƯỚC (PREVIEW)**: Hãy dùng app ngân hàng quét thử mã bên dưới để kiểm tra tên chủ tài khoản và số tài khoản nhận tiền.';
+
   const container = buildVietQrContainer({
     bankId: vietqr.bankId,
     accountNo: vietqr.accountNo,
@@ -449,15 +452,12 @@ export async function handleVietQrPreview(
     customerId: interaction.user.id,
     attachmentName,
     txId: 'TEST-CONFIG',
+    notice: previewNotice,
   });
-
-  const replyContent =
-    '> 🧪 **CHẾ ĐỘ XEM TRƯỚC (PREVIEW)**: Hãy dùng app ngân hàng quét thử mã bên dưới để kiểm tra tên chủ tài khoản và số tài khoản nhận tiền.';
 
   await sendReply(
     interaction,
     {
-      content: replyContent,
       components: container.toJSON(),
       files,
       flags: MessageFlags.IsComponentsV2,
