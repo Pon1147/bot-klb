@@ -450,7 +450,7 @@ export async function routeInteraction(
   try {
     // ── Runtime Environment Guard (Cách ly tuyệt đối Dev và Product) ──
     // 1. Khi bot chạy ở môi trường DEV (local VSCode):
-    //    Bot CHỈ xử lý các tương tác trong Server DEV (1475517632848592918) hoặc DM của Bot Owner.
+    //    Bot CHỈ xử lý các tương tác trong Server DEV (1569650906390335549) hoặc DM của Bot Owner.
     //    Mọi tương tác trên các server Product khác được bỏ qua hoàn toàn để bot trên Railway độc quyền xử lý!
     if (botConfig.isDev && process.env.NODE_ENV !== 'test') {
       const isDev = interaction.guildId === botConfig.devGuildId;
@@ -464,7 +464,7 @@ export async function routeInteraction(
     }
 
     // 2. Khi bot chạy ở môi trường PRODUCT (Railway):
-    //    Bot BỎ QUA hoàn toàn Server DEV (1475517632848592918) để nhường quyền xử lý độc quyền cho phiên local VSCode!
+    //    Bot BỎ QUA hoàn toàn Server DEV (1569650906390335549) để nhường quyền xử lý độc quyền cho phiên local VSCode!
     if (botConfig.isProduct && process.env.NODE_ENV !== 'test') {
       if (interaction.guildId === botConfig.devGuildId) {
         logger.debug(

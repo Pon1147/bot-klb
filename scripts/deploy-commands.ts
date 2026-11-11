@@ -10,8 +10,11 @@ import { createLogger } from '../src/utils/logger.js';
 const logger = createLogger('DeployScript');
 
 async function main() {
+  const targetGuildId = botConfig.isDev
+    ? (botConfig.devGuildId || botConfig.guildId)
+    : botConfig.guildId;
   logger.info(`Starting command deployment...`);
-  logger.info(`Target Guild ID: ${botConfig.guildId}`);
+  logger.info(`Target Guild ID: ${targetGuildId}`);
   logger.info(`Command Scope: ${botConfig.commandScope}`);
 
   const commands = new Collection<string, CommandModule>();

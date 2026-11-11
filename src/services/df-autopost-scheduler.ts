@@ -108,11 +108,14 @@ export async function broadcastAutoPost(
   try {
     const delayMs = options.delayMs ?? 1000;
     const allGuilds = Array.from(client.guilds.cache.values());
-    // Khi chạy ở môi trường DEV (local VSCode), chỉ phát sóng tới Server DEV thử nghiệm, không gửi vào các server Product
+    // Khi chạy ở môi trường DEV (local VSCode), chỉ phát sóng tới Server DEV thử nghiệm.
+    // Khi chạy ở môi trường PRODUCT (Railway), bỏ qua Server DEV để không làm nhiễu server test.
     const guilds =
       botConfig.isDev && process.env.NODE_ENV !== 'test'
         ? allGuilds.filter((g) => g.id === botConfig.devGuildId)
-        : allGuilds;
+        : botConfig.isProduct && process.env.NODE_ENV !== 'test'
+          ? allGuilds.filter((g) => g.id !== botConfig.devGuildId)
+          : allGuilds;
     const settingsService = getSettingsService();
 
     logger.info(`[Broadcast][type=${type}] Bắt đầu phát sóng tới ${guilds.length} máy chủ...`);

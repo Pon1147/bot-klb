@@ -321,12 +321,14 @@ export async function deployCommands(
     return;
   }
 
-  const isGlobal = botConfig.commandScope === 'global' || !botConfig.guildId;
+  const targetGuildId = botConfig.guildId;
+  const isGlobal =
+    botConfig.commandScope === 'global' || !targetGuildId || targetGuildId === '000000000000000000';
   const targetRoute = isGlobal
     ? Routes.applicationCommands(botConfig.clientId)
-    : Routes.applicationGuildCommands(botConfig.clientId, botConfig.guildId);
+    : Routes.applicationGuildCommands(botConfig.clientId, targetGuildId);
 
-  const scopeLabel = isGlobal ? 'GLOBAL' : `GUILD (${botConfig.guildId})`;
+  const scopeLabel = isGlobal ? 'GLOBAL' : `GUILD (${targetGuildId})`;
   logger.info(`Bắt đầu quy trình deploy commands [Scope: ${scopeLabel}]...`);
 
   const rest = new REST().setToken(botConfig.token);
@@ -337,7 +339,7 @@ export async function deployCommands(
     existingCommands = (await rest.get(targetRoute)) as APIApplicationCommand[];
     logger.info(`Đã fetch ${existingCommands.length} command(s) từ Discord [${scopeLabel}]`, {
       scope: isGlobal ? 'global' : 'guild',
-      guildId: isGlobal ? undefined : botConfig.guildId,
+      guildId: isGlobal ? undefined : targetGuildId,
       existingCommands: existingCommands.map((c) => c.name),
     });
   } catch (error) {
@@ -409,7 +411,7 @@ export async function deployCommands(
   logger.info(`Deploying ${localCommands.length} command(s) đến [${scopeLabel}]`, {
     clientId: botConfig.clientId,
     scope: isGlobal ? 'global' : 'guild',
-    guildId: isGlobal ? undefined : botConfig.guildId,
+    guildId: isGlobal ? undefined : targetGuildId,
     newCommands: diff.toAdd,
     changedCommands: diff.toUpdate,
   });

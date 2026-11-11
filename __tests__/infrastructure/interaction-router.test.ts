@@ -1318,7 +1318,7 @@ describe('interaction-router — BUG-02 Interaction Acknowledgment & Error Fallb
       expect(executeMock).not.toHaveBeenCalled();
     });
 
-    it('khi bot chạy ở môi trường DEV (local VSCode): xử lý bình thường interaction từ Dev Server (1475517632848592918)', async () => {
+    it('khi bot chạy ở môi trường DEV (local VSCode): xử lý bình thường interaction từ Dev Server (1569650906390335549)', async () => {
       process.env.NODE_ENV = 'development';
 
       const executeMock = jest.fn().mockResolvedValue(undefined);
@@ -1343,7 +1343,7 @@ describe('interaction-router — BUG-02 Interaction Acknowledgment & Error Fallb
       expect(executeMock).toHaveBeenCalledTimes(1);
     });
 
-    it('khi bot chạy ở môi trường PRODUCT (Railway): bỏ qua interaction từ Dev Server (1475517632848592918)', async () => {
+    it('khi bot chạy ở môi trường PRODUCT (Railway): bỏ qua interaction từ Dev Server (1569650906390335549)', async () => {
       process.env.NODE_ENV = 'production';
       (botConfig as any).isProduct = true;
       (botConfig as any).isDev = false;

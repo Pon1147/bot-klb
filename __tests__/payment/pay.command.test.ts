@@ -97,7 +97,7 @@ describe('pay.command', () => {
     const interaction: any = {
       guildId: 'guild-authorized',
       guild: { name: 'VIP Server' },
-      user: { id: '1475517632848592918' },
+      user: { id: '111111111111111111' },
       options: {
         getSubcommand: () => 'create',
       },
@@ -136,7 +136,7 @@ describe('pay.command', () => {
     const interaction: any = {
       guildId: 'guild-authorized',
       guild: { name: 'VIP Server' },
-      user: { id: '1475517632848592918' },
+      user: { id: '111111111111111111' },
       client: { database: db },
       options: {
         getSubcommand: () => 'create',

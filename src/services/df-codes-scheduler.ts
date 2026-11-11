@@ -184,6 +184,15 @@ export function startDfCodesScheduler(client: Client, database: Database.Databas
       continue;
     }
 
+    // Khi chạy ở môi trường PRODUCT (Railway), bỏ qua server DEV để không gửi đè hoặc can thiệp phiên test
+    if (
+      botConfig.isProduct &&
+      process.env.NODE_ENV !== 'test' &&
+      guild_id === botConfig.devGuildId
+    ) {
+      continue;
+    }
+
     const settings = settingsService.get(guild_id);
     const dfCodes = settings.dfCodes;
 

@@ -19,7 +19,7 @@ function requireEnvVariable(variableName: string, fallback?: string): string {
 export type AppEnvironment = 'dev' | 'stage' | 'product';
 
 /** ID máy chủ Discord chuyên biệt dành riêng cho môi trường DEV thử nghiệm */
-export const DEV_GUILD_ID = '1475517632848592918';
+export const DEV_GUILD_ID = '1569650906390335549';
 
 /**
  * Kiểm tra xem một guildId có phải là máy chủ DEV thử nghiệm hay không.
