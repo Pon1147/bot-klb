@@ -20,7 +20,7 @@ export async function requireDfToken(
   const token = getDfToken(database, interaction.user.id);
   if (!token) {
     const err = buildErrorContainer(
-      'Bạn chưa liên kết tài khoản. Dùng `/df link start` để bắt đầu.',
+      'Bạn chưa liên kết tài khoản. Dùng `/df link start` để bắt đầu (yêu cầu PC/Laptop).',
     );
     await sendReply(interaction, { components: err.toJSON() });
     return true;
@@ -54,7 +54,7 @@ export async function requireDfBinding(
 
   if (!binding && !legacyToken) {
     const err = buildErrorContainer(
-      'Bạn chưa liên kết tài khoản. Dùng `/df link start` để bắt đầu.',
+      'Bạn chưa liên kết tài khoản. Dùng `/df link start` để bắt đầu (yêu cầu PC/Laptop).',
     );
     await sendReply(interaction, { components: err.toJSON() });
     return true;

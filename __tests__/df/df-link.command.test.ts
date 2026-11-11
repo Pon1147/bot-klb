@@ -224,6 +224,7 @@ describe('df-link.command', () => {
       const textDisplay = infoComp.components?.find((c: any) => c.content?.includes('ABC123'));
       expect(textDisplay).toBeDefined();
       expect(textDisplay?.content).toContain('ABC123');
+      expect(textDisplay?.content).toContain('cần thực hiện trên máy tính (PC/Laptop)');
 
       // ActionRow chứa đúng 3 nút: Garena link, nút tải tiện ích on-demand, nút hỗ trợ
       const buttons = replyCall[0].components[1].components;
@@ -241,6 +242,7 @@ describe('df-link.command', () => {
       const infoComp = replyCall[0].components[0];
       const textDisplay = infoComp.components?.find((c: any) => c.content?.includes('ABC123'));
       expect(textDisplay?.content).toContain('Your Link Code');
+      expect(textDisplay?.content).toContain('requires a computer (PC/Laptop)');
 
       const buttons = replyCall[0].components[1].components;
       expect(buttons[1].custom_id).toBe('df_help:dl:222:en');
