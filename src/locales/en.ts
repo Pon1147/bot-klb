@@ -179,5 +179,156 @@ export const EN_LOCALE = {
       desc: 'Generate a PayOS payment link to support bot server operating costs.',
       example: '/donate amount:20000',
     },
+
+    // ─── Administration & Configuration Commands (BM-01 & BM-02) ───
+    'config.roles.set': {
+      desc: 'Configure RBAC permissions for administrative and member roles.',
+      example: '/config roles set role_type:bot_admin role:@AdminRole',
+    },
+    'config.roles.view': {
+      desc: 'View current role-based access control (RBAC) configuration.',
+      example: '/config roles view',
+    },
+
+    'config.welcome.setchannel': {
+      desc: 'Select the channel for automated new member welcome messages.',
+      example: '/config welcome setchannel channel:#welcome',
+    },
+    'config.welcome.setrole': {
+      desc: 'Set the automatic role assigned to new members upon joining.',
+      example: '/config welcome setrole role:@Member',
+    },
+    'config.welcome.toggle': {
+      desc: 'Enable or disable the automated member welcome system.',
+      example: '/config welcome toggle enabled:true',
+    },
+    'config.welcome.status': {
+      desc: 'View current member welcome system configuration and status.',
+      example: '/config welcome status',
+    },
+    'config.welcome.test': {
+      desc: 'Send a test welcome message to preview layout and formatting.',
+      example: '/config welcome test',
+    },
+
+    'config.leave.setchannel': {
+      desc: 'Select the channel for member departure and farewell notices.',
+      example: '/config leave setchannel channel:#farewell',
+    },
+    'config.leave.toggle': {
+      desc: 'Enable or disable member departure notifications.',
+      example: '/config leave toggle enabled:true',
+    },
+    'config.leave.status': {
+      desc: 'View current member departure notification configuration.',
+      example: '/config leave status',
+    },
+    'config.leave.test': {
+      desc: 'Send a test farewell message to preview layout and formatting.',
+      example: '/config leave test',
+    },
+
+    'config.booster.setchannel': {
+      desc: 'Select the channel for server booster appreciation messages.',
+      example: '/config booster setchannel channel:#boosters',
+    },
+    'config.booster.setrole': {
+      desc: 'Set the designated reward role for server boosters.',
+      example: '/config booster setrole role:@BoosterRole',
+    },
+    'config.booster.toggle': {
+      desc: 'Enable or disable the server booster appreciation system.',
+      example: '/config booster toggle enabled:true',
+    },
+    'config.booster.status': {
+      desc: 'View current server booster configuration status.',
+      example: '/config booster status',
+    },
+    'config.booster.test': {
+      desc: 'Send a test booster appreciation message to preview layout.',
+      example: '/config booster test',
+    },
+
+    'config.container.edit': {
+      desc: 'Interactively edit Discord Components V2 message containers.',
+      example: '/config container edit type:welcome',
+    },
+    'config.container.reset': {
+      desc: 'Reset Discord Components V2 container layout to default templates.',
+      example: '/config container reset type:welcome',
+    },
+
+    'config.bot.guilds': {
+      desc: 'View list of all Discord servers the bot has joined (Bot Owner).',
+      example: '/config bot guilds',
+    },
+    'config.bot.setannouncechannel': {
+      desc: 'Set the designated channel to receive bot update announcements.',
+      example: '/config bot setannouncechannel channel:#announcements',
+    },
+    'config.bot.announce': {
+      desc: 'Broadcast feature update announcements to all servers (Bot Owner).',
+      example: '/config bot announce preview:true',
+    },
+
+    'config.qr-server.toggle': {
+      desc: 'Enable or disable premium VietQR payment licensing for a server.',
+      example: '/config qr-server toggle enabled:true',
+    },
+    'config.qr-server.status': {
+      desc: 'Check premium VietQR payment licensing status for a server.',
+      example: '/config qr-server status',
+    },
+
+    'config.vietqr.set': {
+      desc: 'Configure the receiving bank account for automated VietQR payments.',
+      example: '/config vietqr set bank:MB account_no:0987654321 account_name:JohnDoe',
+    },
+    'config.vietqr.workflow': {
+      desc: 'Configure payment approval workflow, staff role & feedback ratings.',
+      example: '/config vietqr workflow staff_role:@Staff enable_rating:true',
+    },
+    'config.vietqr.status': {
+      desc: 'View current receiving bank account details and payment status.',
+      example: '/config vietqr status',
+    },
+    'config.vietqr.preview': {
+      desc: 'Generate a sample VietQR code to preview and test bank scanning.',
+      example: '/config vietqr preview amount:50000',
+    },
+    'config.vietqr.reset': {
+      desc: 'Remove and reset all VietQR banking account configuration.',
+      example: '/config vietqr reset',
+    },
+
+    'df.code.setchannel': {
+      desc: 'Set the channel to auto-receive daily 6-map safe vault codes.',
+      example: '/df code setchannel channel:#daily-codes',
+    },
+    'df.code.settime': {
+      desc: 'Set daily scheduled time to post safe vault codes (default 08:00).',
+      example: '/df code settime time:08:00',
+    },
+    'df.code.setadminchannel': {
+      desc: 'Set the administrative channel for safe codes scheduler error logs.',
+      example: '/df code setadminchannel channel:#bot-logs',
+    },
+
+    'df.autopost.set': {
+      desc: 'Schedule auto-posting for map tactical guides or meta weapon builds.',
+      example: '/df autopost set type:map interval_hours:6',
+    },
+    'df.autopost.toggle': {
+      desc: 'Toggle automated tactical guide and weapon build broadcasting.',
+      example: '/df autopost toggle',
+    },
+    'df.autopost.status': {
+      desc: 'View auto-posting schedules and channel broadcast status.',
+      example: '/df autopost status',
+    },
+    'df.autopost.run': {
+      desc: 'Immediately trigger a tactical guide or weapon build broadcast.',
+      example: '/df autopost run type:map',
+    },
   },
 } as const;

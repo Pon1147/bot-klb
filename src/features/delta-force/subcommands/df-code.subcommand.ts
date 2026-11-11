@@ -18,6 +18,9 @@ export function buildCodeGroup(
   return group
     .setName('code')
     .setDescription('Mật khẩu hằng ngày của các map.')
+    .setDescriptionLocalizations({
+      'en-US': 'Daily safe vault combination codes and scheduler configuration.',
+    })
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('show')
@@ -26,7 +29,11 @@ export function buildCodeGroup(
           'en-US': EN_LOCALE.commands['df.code.show'].desc,
         })
         .addIntegerOption((opt) =>
-          opt.setName('page').setDescription('Số trang hiển thị').setMinValue(1),
+          opt
+            .setName('page')
+            .setDescription('Số trang hiển thị')
+            .setDescriptionLocalizations({ 'en-US': 'Page number' })
+            .setMinValue(1),
         ),
     )
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
@@ -41,18 +48,29 @@ export function buildCodeGroup(
       sub
         .setName('setchannel')
         .setDescription('Đặt channel tự động gửi codes mỗi ngày.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.code.setchannel'].desc,
+        })
         .addChannelOption((opt) =>
-          opt.setName('channel').setDescription('Kênh để gửi codes.').setRequired(true),
+          opt
+            .setName('channel')
+            .setDescription('Kênh để gửi codes.')
+            .setDescriptionLocalizations({ 'en-US': 'Channel to post daily safe codes' })
+            .setRequired(true),
         ),
     )
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('settime')
         .setDescription('Đặt giờ tự động gửi codes mỗi ngày.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.code.settime'].desc,
+        })
         .addStringOption((opt) =>
           opt
             .setName('time')
             .setDescription('Giờ gửi theo định dạng HH:mm (24h), ví dụ 08:00')
+            .setDescriptionLocalizations({ 'en-US': 'Schedule time in HH:mm format (e.g., 08:00)' })
             .setRequired(true),
         ),
     )
@@ -60,10 +78,14 @@ export function buildCodeGroup(
       sub
         .setName('setadminchannel')
         .setDescription('Đặt channel nhận thông báo lỗi scheduler.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.code.setadminchannel'].desc,
+        })
         .addChannelOption((opt) =>
           opt
             .setName('channel')
             .setDescription('Channel để bot gửi thông báo khi scrape lỗi.')
+            .setDescriptionLocalizations({ 'en-US': 'Channel for scheduler error notifications' })
             .setRequired(true),
         ),
     );

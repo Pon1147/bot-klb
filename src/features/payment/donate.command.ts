@@ -27,6 +27,9 @@ export const data = new SlashCommandBuilder()
     opt
       .setName('amount')
       .setDescription('Số tiền ủng hộ (VNĐ, tối thiểu 2,000 đ)')
+      .setDescriptionLocalizations({
+        'en-US': 'Donation amount (VND, minimum 2,000 VND)',
+      })
       .setMinValue(2000)
       .setMaxValue(50_000_000)
       .setRequired(true),
@@ -35,6 +38,9 @@ export const data = new SlashCommandBuilder()
     opt
       .setName('message')
       .setDescription('Lời nhắn gửi đến Bot Owner (tối đa 100 ký tự)')
+      .setDescriptionLocalizations({
+        'en-US': 'Message to Bot Owner (max 100 characters)',
+      })
       .setMaxLength(100)
       .setRequired(false),
   );

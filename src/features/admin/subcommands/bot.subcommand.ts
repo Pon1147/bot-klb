@@ -23,6 +23,7 @@ import {
 } from '../../../utils/container.utils.js';
 import { sendReply } from '../../../utils/reply.utils.js';
 import { COLORS } from '../../../config/container.variables.js';
+import { EN_LOCALE } from '../../../locales/en.js';
 
 export function buildBotGroup(
   group: SlashCommandSubcommandGroupBuilder,
@@ -30,17 +31,29 @@ export function buildBotGroup(
   return group
     .setName('bot')
     .setDescription('Xem thông tin và quản trị cấp cao bot.')
+    .setDescriptionLocalizations({
+      'en-US': 'Global bot administration and multi-server broadcasts.',
+    })
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
-      sub.setName('guilds').setDescription('Xem danh sách các máy chủ (guilds) bot đang tham gia.'),
+      sub
+        .setName('guilds')
+        .setDescription('Xem danh sách các máy chủ (guilds) bot đang tham gia.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['config.bot.guilds'].desc,
+        }),
     )
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('setannouncechannel')
         .setDescription('Cấu hình kênh nhận thông báo cập nhật bot cho máy chủ này.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['config.bot.setannouncechannel'].desc,
+        })
         .addChannelOption((opt) =>
           opt
             .setName('channel')
             .setDescription('Kênh văn bản nhận thông báo từ bot')
+            .setDescriptionLocalizations({ 'en-US': 'Text channel for bot update announcements' })
             .setRequired(true),
         ),
     )
@@ -48,22 +61,28 @@ export function buildBotGroup(
       sub
         .setName('announce')
         .setDescription('Phát thông báo cập nhật tới toàn bộ máy chủ (chỉ dành cho Bot Owner).')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['config.bot.announce'].desc,
+        })
         .addStringOption((opt) =>
           opt
             .setName('title')
             .setDescription('Tiêu đề thông báo tùy chỉnh (tùy chọn)')
+            .setDescriptionLocalizations({ 'en-US': 'Custom announcement title (optional)' })
             .setRequired(false),
         )
         .addStringOption((opt) =>
           opt
             .setName('message')
             .setDescription('Nội dung thông báo cần phát sóng (tùy chọn nếu muốn gửi changelog)')
+            .setDescriptionLocalizations({ 'en-US': 'Broadcast message body (optional)' })
             .setRequired(false),
         )
         .addBooleanOption((opt) =>
           opt
             .setName('preview')
             .setDescription('Chỉ xem trước giao diện thông báo, chưa phát thật (mặc định: false)')
+            .setDescriptionLocalizations({ 'en-US': 'Preview announcement layout without sending' })
             .setRequired(false),
         ),
     );

@@ -10,6 +10,7 @@ import {
 } from '../../utils/container.utils.js';
 import { startInteractiveEdit } from './container-edit.handler.js';
 import { handleContainerReset } from './container-reset.handler.js';
+import { EN_LOCALE } from '../../locales/en.js';
 
 export function buildContainerGroup(
   group: SlashCommandSubcommandGroupBuilder,
@@ -17,16 +18,25 @@ export function buildContainerGroup(
   return group
     .setName('container')
     .setDescription('Tùy biến giao diện thông báo Components V2.')
+    .setDescriptionLocalizations({
+      'en-US': 'Customize and edit Discord Components V2 message layout.',
+    })
     .addSubcommand((sub) =>
       sub
         .setName('edit')
         .setDescription('Chỉnh sửa container settings (Interactive UI).')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['config.container.edit'].desc,
+        })
         .addStringOption(buildEditTypeOptionCallback),
     )
     .addSubcommand((sub) =>
       sub
         .setName('reset')
         .setDescription('Reset container settings về mặc định.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['config.container.reset'].desc,
+        })
         .addStringOption(buildResetTypeOptionCallback),
     );
 }

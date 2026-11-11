@@ -25,7 +25,10 @@ import { sendReply } from '../../utils/reply.utils.js';
 // Khởi tạo SlashCommandBuilder với BM-03 Profile subcommands
 const commandBuilder = new SlashCommandBuilder()
   .setName('df')
-  .setDescription('Các lệnh Delta Force: stats, daily, history, workshop, link, code, unlink.');
+  .setDescription('Các lệnh Delta Force: stats, daily, history, workshop, link, code, unlink.')
+  .setDescriptionLocalizations({
+    'en-US': 'Delta Force suite: stats, daily, history, weapon builds, tactical maps & tools.',
+  });
 
 registerProfileSubcommands(commandBuilder);
 

@@ -15,6 +15,7 @@ import { buildErrorContainer, buildTextOnlyContainer } from '../../../utils/cont
 import { sendReply } from '../../../utils/reply.utils.js';
 import { COLORS } from '../../../config/container.variables.js';
 import { createLogger } from '../../../utils/logger.js';
+import { EN_LOCALE } from '../../../locales/en.js';
 
 const logger = createLogger('RolesSubcommand');
 
@@ -30,14 +31,21 @@ export function buildRolesGroup(
   return group
     .setName('roles')
     .setDescription('Cấu hình và xem các role RBAC của máy chủ.')
+    .setDescriptionLocalizations({
+      'en-US': 'Configure role-based access control (RBAC) permissions.',
+    })
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('set')
         .setDescription('Thiết lập role cho một phân quyền bot.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['config.roles.set'].desc,
+        })
         .addStringOption((opt) =>
           opt
             .setName('role_type')
             .setDescription('Loại quyền cần gán role')
+            .setDescriptionLocalizations({ 'en-US': 'Permission level to assign role' })
             .setRequired(true)
             .addChoices(
               { name: 'Bot Admin', value: 'bot_admin' },
@@ -46,11 +54,20 @@ export function buildRolesGroup(
             ),
         )
         .addRoleOption((opt) =>
-          opt.setName('role').setDescription('Role Discord cần gán').setRequired(true),
+          opt
+            .setName('role')
+            .setDescription('Role Discord cần gán')
+            .setDescriptionLocalizations({ 'en-US': 'The Discord role to bind' })
+            .setRequired(true),
         ),
     )
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
-      sub.setName('view').setDescription('Xem danh sách role RBAC hiện tại của máy chủ.'),
+      sub
+        .setName('view')
+        .setDescription('Xem danh sách role RBAC hiện tại của máy chủ.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['config.roles.view'].desc,
+        }),
     );
 }
 

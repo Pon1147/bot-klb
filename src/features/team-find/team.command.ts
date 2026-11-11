@@ -18,6 +18,9 @@ import { EN_LOCALE } from '../../locales/en.js';
 export const data = new SlashCommandBuilder()
   .setName('team')
   .setDescription('Các lệnh tìm đội và quản lý nhóm chơi game.')
+  .setDescriptionLocalizations({
+    'en-US': 'Team finder and party management commands.',
+  })
   .addSubcommand((sub) =>
     sub
       .setName('find')

@@ -14,6 +14,7 @@ import { botConfig } from '../../../config/bot.config.js';
 import { buildErrorContainer, buildInfoContainer } from '../../../utils/container.utils.js';
 import { sendReply } from '../../../utils/reply.utils.js';
 import { createLogger } from '../../../utils/logger.js';
+import { EN_LOCALE } from '../../../locales/en.js';
 
 const logger = createLogger('QrServerSubcommand');
 
@@ -23,17 +24,28 @@ export function buildQrServerGroup(
   return group
     .setName('qr-server')
     .setDescription('Quản lý cấp quyền tính năng QR trả phí cho máy chủ (chỉ dành cho Bot Owner).')
+    .setDescriptionLocalizations({
+      'en-US': 'Manage premium VietQR licensing for servers (Bot Owner).',
+    })
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('toggle')
         .setDescription('Bật hoặc tắt tính năng QR tự động cho máy chủ.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['config.qr-server.toggle'].desc,
+        })
         .addBooleanOption((opt) =>
-          opt.setName('enabled').setDescription('Bật (true) hoặc Tắt (false)').setRequired(true),
+          opt
+            .setName('enabled')
+            .setDescription('Bật (true) hoặc Tắt (false)')
+            .setDescriptionLocalizations({ 'en-US': 'Enable (true) or Disable (false)' })
+            .setRequired(true),
         )
         .addStringOption((opt) =>
           opt
             .setName('server_id')
             .setDescription('ID máy chủ Discord (để trống sẽ áp dụng cho máy chủ hiện tại)')
+            .setDescriptionLocalizations({ 'en-US': 'Target Discord server ID (optional)' })
             .setRequired(false),
         ),
     )
@@ -41,10 +53,14 @@ export function buildQrServerGroup(
       sub
         .setName('status')
         .setDescription('Xem trạng thái tính năng QR của máy chủ.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['config.qr-server.status'].desc,
+        })
         .addStringOption((opt) =>
           opt
             .setName('server_id')
             .setDescription('ID máy chủ Discord (để trống sẽ xem máy chủ hiện tại)')
+            .setDescriptionLocalizations({ 'en-US': 'Target Discord server ID (optional)' })
             .setRequired(false),
         ),
     );

@@ -33,6 +33,9 @@ export function buildLinkGroup(
   return group
     .setName('link')
     .setDescription('Liên kết / kiểm tra / xác thực tài khoản Delta Force HQ.')
+    .setDescriptionLocalizations({
+      'en-US': 'Link / check / verify Delta Force HQ account.',
+    })
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('start')
@@ -82,6 +85,9 @@ export function registerProfileSubcommands(
           opt
             .setName('limit')
             .setDescription('Số trận hiển thị (1-20)')
+            .setDescriptionLocalizations({
+              'en-US': 'Number of matches to display (1-20)',
+            })
             .setMinValue(1)
             .setMaxValue(MAX_HISTORY_PAGE),
         ),
@@ -105,6 +111,9 @@ export function registerProfileSubcommands(
           opt
             .setName('match_id')
             .setDescription('Chọn trận đấu gần đây (hoặc để trống xem trận mới nhất)')
+            .setDescriptionLocalizations({
+              'en-US': 'Select recent match (or leave empty for latest)',
+            })
             .setAutocomplete(true)
             .setRequired(false),
         ),
@@ -128,6 +137,9 @@ export function registerProfileSubcommands(
           opt
             .setName('item')
             .setDescription('Tên hoặc mã vật phẩm cần tra cứu.')
+            .setDescriptionLocalizations({
+              'en-US': 'Item name or code to look up.',
+            })
             .setAutocomplete(true)
             .setRequired(false),
         ),
@@ -167,12 +179,18 @@ export function registerProfileSubcommands(
           opt
             .setName('weapon')
             .setDescription('Tên súng cần tra cứu (ví dụ: AKM, M4A1, CAR-15...)')
+            .setDescriptionLocalizations({
+              'en-US': 'Weapon name to look up (e.g. AKM, M4A1, CAR-15...)',
+            })
             .setRequired(false),
         )
         .addStringOption((opt) =>
           opt
             .setName('mode')
             .setDescription('Chế độ chơi (ví dụ: Hazard Operations, Havoc Warfare...)')
+            .setDescriptionLocalizations({
+              'en-US': 'Game mode (e.g. Hazard Operations, Havoc Warfare...)',
+            })
             .setRequired(false),
         ),
     )
@@ -187,12 +205,18 @@ export function registerProfileSubcommands(
           opt
             .setName('weapon')
             .setDescription('Tên súng cần tra cứu (ví dụ: AKM, M4A1, CAR-15...)')
+            .setDescriptionLocalizations({
+              'en-US': 'Weapon name to look up (e.g. AKM, M4A1, CAR-15...)',
+            })
             .setRequired(false),
         )
         .addStringOption((opt) =>
           opt
             .setName('mode')
             .setDescription('Chế độ chơi (ví dụ: Hazard Operations, Havoc Warfare...)')
+            .setDescriptionLocalizations({
+              'en-US': 'Game mode (e.g. Hazard Operations, Havoc Warfare...)',
+            })
             .setRequired(false),
         ),
     )

@@ -33,6 +33,9 @@ const payCreateCooldown = new TTLStore<string, CooldownEntry>({
 export const data = new SlashCommandBuilder()
   .setName('pay')
   .setDescription('Hệ thống hóa đơn thanh toán VietQR và lịch sử giao dịch.')
+  .setDescriptionLocalizations({
+    'en-US': 'VietQR billing invoice system and transaction history.',
+  })
   .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
     sub
       .setName('create')
@@ -44,6 +47,9 @@ export const data = new SlashCommandBuilder()
         opt
           .setName('amount')
           .setDescription('Số tiền cần chuyển khoản (VNĐ, tối thiểu 1,000 đ)')
+          .setDescriptionLocalizations({
+            'en-US': 'Payment amount (VND, minimum 1,000 VND)',
+          })
           .setMinValue(1000)
           .setMaxValue(500_000_000)
           .setRequired(true),
@@ -52,12 +58,18 @@ export const data = new SlashCommandBuilder()
         opt
           .setName('customer')
           .setDescription('Khách hàng / Thành viên cần thanh toán (tag người nhận)')
+          .setDescriptionLocalizations({
+            'en-US': 'Customer / Member to invoice (mention receiver)',
+          })
           .setRequired(false),
       )
       .addStringOption((opt) =>
         opt
           .setName('memo')
           .setDescription('Tên dịch vụ hoặc ghi chú đơn hàng (ví dụ: Mua code, Thuê buff, v.v.)')
+          .setDescriptionLocalizations({
+            'en-US': 'Order description or notes (e.g., Code purchase, Boost, etc.)',
+          })
           .setMaxLength(100)
           .setRequired(false),
       ),
@@ -73,6 +85,9 @@ export const data = new SlashCommandBuilder()
         opt
           .setName('target')
           .setDescription('Xem lịch sử của thành viên khác (mặc định là chính bạn)')
+          .setDescriptionLocalizations({
+            'en-US': 'View history of another member (defaults to you)',
+          })
           .setRequired(false),
       ),
   )

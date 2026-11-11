@@ -12,28 +12,14 @@ describe('CI Drift Guard — Bi-directional Command & Localization Parity', () =
   const parsedCommands = extractCommandPathsFromBuilders(allBuilders);
   const runtimePaths = parsedCommands.map((c) => c.path);
 
-  // Wildcard Prefix Allowlist cho các lệnh Admin/Nội bộ (chỉ cần tiếng Việt)
-  const ADMIN_PREFIX_ALLOWLIST = ['config.', 'df.autopost.', 'df.code.set'];
-
-  function isAdminCommand(path: string): boolean {
-    return ADMIN_PREFIX_ALLOWLIST.some((prefix) => path.startsWith(prefix));
-  }
-
-  // Lệnh người dùng bắt buộc song ngữ
-  const requiredUserPaths = runtimePaths.filter((path) => !isAdminCommand(path));
-
   describe('1. Builder -> i18n Dictionary Parity', () => {
-    it('phân vùng lệnh admin và user từ builder là phân hoạch hoàn chỉnh (tổng phân vùng = tổng builder paths)', () => {
-      const adminPaths = runtimePaths.filter(isAdminCommand);
-      expect(adminPaths.length + requiredUserPaths.length).toBe(runtimePaths.length);
+    it('toàn bộ 57 lệnh từ builder đều được quét đầy đủ', () => {
       expect(runtimePaths.length).toBe(57);
-      expect(adminPaths.length).toBe(35); // 28 config.* + 4 df.autopost.* + 3 df.code.set*
-      expect(requiredUserPaths.length).toBe(22);
     });
 
-    it('mọi user command bắt buộc phải có đầy đủ mô tả và ví dụ trong vi.ts', () => {
+    it('mọi command bắt buộc phải có đầy đủ mô tả và ví dụ trong vi.ts', () => {
       const missingInVi: string[] = [];
-      for (const path of requiredUserPaths) {
+      for (const path of runtimePaths) {
         const cmdMeta = (VI_LOCALE.commands as any)[path];
         if (!cmdMeta || !cmdMeta.desc || !cmdMeta.example) {
           missingInVi.push(path);
@@ -42,9 +28,9 @@ describe('CI Drift Guard — Bi-directional Command & Localization Parity', () =
       expect(missingInVi).toEqual([]);
     });
 
-    it('mọi user command bắt buộc phải có đầy đủ mô tả và ví dụ trong en.ts', () => {
+    it('mọi command bắt buộc phải có đầy đủ mô tả và ví dụ trong en.ts', () => {
       const missingInEn: string[] = [];
-      for (const path of requiredUserPaths) {
+      for (const path of runtimePaths) {
         const cmdMeta = (EN_LOCALE.commands as any)[path];
         if (!cmdMeta || !cmdMeta.desc || !cmdMeta.example) {
           missingInEn.push(path);
@@ -53,15 +39,13 @@ describe('CI Drift Guard — Bi-directional Command & Localization Parity', () =
       expect(missingInEn).toEqual([]);
     });
 
-    it('mọi user command trong builder phải được cấu hình setDescriptionLocalizations en-US khớp với en.ts', () => {
+    it('mọi command trong builder phải được cấu hình setDescriptionLocalizations en-US khớp với en.ts', () => {
       const missingOrMismatched: string[] = [];
       for (const cmd of parsedCommands) {
-        if (!isAdminCommand(cmd.path)) {
-          const expectedEnDesc = (EN_LOCALE.commands as any)[cmd.path]?.desc;
-          const actualEnDesc = cmd.descriptionLocalizations?.['en-US'];
-          if (!actualEnDesc || actualEnDesc !== expectedEnDesc) {
-            missingOrMismatched.push(`${cmd.path}: expected="${expectedEnDesc}", actual="${actualEnDesc}"`);
-          }
+        const expectedEnDesc = (EN_LOCALE.commands as any)[cmd.path]?.desc;
+        const actualEnDesc = cmd.descriptionLocalizations?.['en-US'];
+        if (!actualEnDesc || actualEnDesc !== expectedEnDesc) {
+          missingOrMismatched.push(`${cmd.path}: expected="${expectedEnDesc}", actual="${actualEnDesc}"`);
         }
       }
       expect(missingOrMismatched).toEqual([]);

@@ -178,5 +178,156 @@ export const VI_LOCALE = {
       desc: 'Tạo link thanh toán PayOS ủng hộ nhà phát triển duy trì bot.',
       example: '/donate amount:20000',
     },
+
+    // ─── Lệnh Quản Trị & Cấu Hình Máy Chủ (BM-01 & BM-02) ───
+    'config.roles.set': {
+      desc: 'Thiết lập vai trò quản trị phân quyền RBAC (Admin, Mod, Member).',
+      example: '/config roles set role_type:bot_admin role:@AdminRole',
+    },
+    'config.roles.view': {
+      desc: 'Xem cấu hình phân quyền vai trò hiện tại của máy chủ.',
+      example: '/config roles view',
+    },
+
+    'config.welcome.setchannel': {
+      desc: 'Chọn kênh gửi tin nhắn chào mừng thành viên mới.',
+      example: '/config welcome setchannel channel:#welcome',
+    },
+    'config.welcome.setrole': {
+      desc: 'Chọn role tự động cấp cho thành viên mới khi vào máy chủ.',
+      example: '/config welcome setrole role:@Member',
+    },
+    'config.welcome.toggle': {
+      desc: 'Bật hoặc tắt hệ thống chào mừng thành viên mới.',
+      example: '/config welcome toggle enabled:true',
+    },
+    'config.welcome.status': {
+      desc: 'Xem trạng thái cấu hình hệ thống chào mừng hiện tại.',
+      example: '/config welcome status',
+    },
+    'config.welcome.test': {
+      desc: 'Gửi tin nhắn chào mừng thử nghiệm để kiểm tra giao diện.',
+      example: '/config welcome test',
+    },
+
+    'config.leave.setchannel': {
+      desc: 'Chọn kênh gửi thông báo khi thành viên rời máy chủ.',
+      example: '/config leave setchannel channel:#farewell',
+    },
+    'config.leave.toggle': {
+      desc: 'Bật hoặc tắt hệ thống thông báo thành viên rời máy chủ.',
+      example: '/config leave toggle enabled:true',
+    },
+    'config.leave.status': {
+      desc: 'Xem trạng thái cấu hình thông báo thành viên rời máy chủ.',
+      example: '/config leave status',
+    },
+    'config.leave.test': {
+      desc: 'Gửi tin nhắn thông báo rời máy chủ thử nghiệm để xem trước.',
+      example: '/config leave test',
+    },
+
+    'config.booster.setchannel': {
+      desc: 'Chọn kênh gửi tin nhắn cảm ơn khi có thành viên Boost máy chủ.',
+      example: '/config booster setchannel channel:#boosters',
+    },
+    'config.booster.setrole': {
+      desc: 'Chọn role dành riêng cho Server Booster.',
+      example: '/config booster setrole role:@BoosterRole',
+    },
+    'config.booster.toggle': {
+      desc: 'Bật hoặc tắt hệ thống thông báo cảm ơn Server Booster.',
+      example: '/config booster toggle enabled:true',
+    },
+    'config.booster.status': {
+      desc: 'Xem trạng thái cấu hình cảm ơn Server Booster hiện tại.',
+      example: '/config booster status',
+    },
+    'config.booster.test': {
+      desc: 'Gửi tin nhắn cảm ơn Booster thử nghiệm để xem trước giao diện.',
+      example: '/config booster test',
+    },
+
+    'config.container.edit': {
+      desc: 'Chỉnh sửa giao diện tin nhắn Container V2 của máy chủ tương tác.',
+      example: '/config container edit type:welcome',
+    },
+    'config.container.reset': {
+      desc: 'Đặt lại giao diện tin nhắn Container V2 về mẫu mặc định.',
+      example: '/config container reset type:welcome',
+    },
+
+    'config.bot.guilds': {
+      desc: 'Xem danh sách các máy chủ mà bot đang tham gia (Bot Owner).',
+      example: '/config bot guilds',
+    },
+    'config.bot.setannouncechannel': {
+      desc: 'Thiết lập kênh nhận thông báo cập nhật tính năng mới từ bot.',
+      example: '/config bot setannouncechannel channel:#announcements',
+    },
+    'config.bot.announce': {
+      desc: 'Phát sóng thông báo cập nhật tới toàn bộ máy chủ (Bot Owner).',
+      example: '/config bot announce preview:true',
+    },
+
+    'config.qr-server.toggle': {
+      desc: 'Bật hoặc tắt tính năng QR thanh toán trả phí cho máy chủ (Bot Owner).',
+      example: '/config qr-server toggle enabled:true',
+    },
+    'config.qr-server.status': {
+      desc: 'Kiểm tra trạng thái cấp phép tính năng QR của máy chủ (Bot Owner).',
+      example: '/config qr-server status',
+    },
+
+    'config.vietqr.set': {
+      desc: 'Cấu hình thông tin tài khoản ngân hàng nhận tiền chuyển khoản VietQR.',
+      example: '/config vietqr set bank:MB account_no:0987654321 account_name:JohnDoe',
+    },
+    'config.vietqr.workflow': {
+      desc: 'Cấu hình quy trình duyệt đơn, role nhân viên và đánh giá feedback.',
+      example: '/config vietqr workflow staff_role:@Staff enable_rating:true',
+    },
+    'config.vietqr.status': {
+      desc: 'Xem thông tin tài khoản nhận tiền VietQR hiện tại của máy chủ.',
+      example: '/config vietqr status',
+    },
+    'config.vietqr.preview': {
+      desc: 'Tạo mã QR thanh toán thử nghiệm để quét kiểm tra số tài khoản.',
+      example: '/config vietqr preview amount:50000',
+    },
+    'config.vietqr.reset': {
+      desc: 'Gỡ bỏ và xóa toàn bộ thông tin tài khoản ngân hàng VietQR của máy chủ.',
+      example: '/config vietqr reset',
+    },
+
+    'df.code.setchannel': {
+      desc: 'Cài đặt kênh tự động gửi mật mã két sắt 6 bản đồ mỗi ngày.',
+      example: '/df code setchannel channel:#daily-codes',
+    },
+    'df.code.settime': {
+      desc: 'Cài đặt giờ tự động gửi mật mã két sắt hằng ngày (mặc định 08:00).',
+      example: '/df code settime time:08:00',
+    },
+    'df.code.setadminchannel': {
+      desc: 'Cài đặt kênh nhận thông báo lỗi lịch trình gửi mã két sắt.',
+      example: '/df code setadminchannel channel:#bot-logs',
+    },
+
+    'df.autopost.set': {
+      desc: 'Cài đặt lịch tự động đăng cẩm nang bản đồ hoặc build súng meta.',
+      example: '/df autopost set type:map interval_hours:6',
+    },
+    'df.autopost.toggle': {
+      desc: 'Bật hoặc tắt hệ thống tự động đăng cẩm nang định kỳ.',
+      example: '/df autopost toggle',
+    },
+    'df.autopost.status': {
+      desc: 'Xem trạng thái các kênh tự động đăng bài của bot.',
+      example: '/df autopost status',
+    },
+    'df.autopost.run': {
+      desc: 'Kích hoạt gửi ngay cẩm nang bản đồ hoặc súng mà không cần chờ lịch.',
+      example: '/df autopost run type:map',
+    },
   },
 } as const;
