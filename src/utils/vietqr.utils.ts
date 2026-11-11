@@ -393,6 +393,57 @@ export function buildPaymentResultContainer(
 }
 
 /**
+ * Tùy chọn để tạo Container V2 hiển thị feedback/đánh giá từ khách hàng.
+ */
+export interface CustomerFeedbackContainerOptions {
+  buyerName: string;
+  rating: number;
+  serviceName: string;
+  comment?: string | null;
+  txId: string;
+  timestamp?: number;
+}
+
+/**
+ * Tạo Container V2 hiển thị đánh giá / feedback của khách hàng gửi vào kênh feedback.
+ * Thiết kế chuẩn UI Components V2: không dùng legacy embeds.
+ */
+export function buildCustomerFeedbackContainer(
+  options: CustomerFeedbackContainerOptions,
+): BuildContainerResult {
+  const { buyerName, rating, serviceName, comment, txId, timestamp = Date.now() } = options;
+  const tsSec = Math.floor(timestamp / 1000);
+  const clampedRating = Math.max(1, Math.min(5, Math.floor(rating || 5)));
+  const starString = '🌟'.repeat(clampedRating);
+
+  const topSection = [`👤 **@${buyerName}**`, `### 🏆 ${starString}`].join('\n');
+
+  const commentText =
+    comment && comment.trim() ? `> *“${comment.trim()}”*` : `> *Khách hàng không để lại lời nhắn.*`;
+
+  const reviewSection = [`**📝 Đánh giá — ${serviceName}**`, commentText].join('\n');
+
+  const footerSection = `🧾 \`${txId}\` · <t:${tsSec}:f> · <t:${tsSec}:R>`;
+
+  return makeResult(
+    [
+      {
+        type: ComponentType.Container,
+        components: [
+          { type: ComponentType.TextDisplay, content: topSection },
+          { type: ComponentType.Separator, accentColor: 0xf1c40f },
+          { type: ComponentType.TextDisplay, content: reviewSection },
+          { type: ComponentType.Separator },
+          { type: ComponentType.TextDisplay, content: footerSection },
+        ],
+      },
+    ],
+    MessageFlags.IsComponentsV2,
+    [],
+  );
+}
+
+/**
  * Xây dựng payload thông báo lỗi khi máy chủ chưa được Bot Owner cấp phép mở tính năng QR Premium,
  * tích hợp sẵn Button liên hệ trực tiếp Bot Owner trên Discord và Button dẫn vào máy chủ hỗ trợ.
  */

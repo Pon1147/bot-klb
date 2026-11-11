@@ -17,6 +17,7 @@ import {
 } from '../../src/features/payment/payment-flow.js';
 import { initializePaymentTables } from '../../src/database/payment.db.js';
 import { createPayment, getPaymentById } from '../../src/features/payment/payment.service.js';
+import { buildCustomerFeedbackContainer } from '../../src/utils/vietqr.utils.js';
 import * as settingsModule from '../../src/services/settings.service.js';
 
 describe('payment.flow', () => {
@@ -524,6 +525,111 @@ describe('payment.flow', () => {
           content: expect.stringContaining('Bạn đã gửi đánh giá cho đơn hàng này rồi'),
         }),
       );
+    });
+
+    it('buildCustomerFeedbackContainer tạo Container V2 chuẩn, dùng buyerName thay vì ID và không có legacy fields', () => {
+      const result = buildCustomerFeedbackContainer({
+        buyerName: 'GMC trunggg2',
+        rating: 5,
+        serviceName: 'Val GhostX',
+        comment: 'Tuyệt vời! Chất lượng cao cấp, giao hàng nhanh chóng và hỗ trợ khách hàng xuất sắc.',
+        txId: 'TX12345',
+        timestamp: 1794380000000,
+      });
+
+      expect(result.flags).toBe(MessageFlags.IsComponentsV2);
+      const componentsJson = JSON.stringify(result.components);
+      // Dùng buyerName kèm @, không dùng snowflake ID thô
+      expect(componentsJson).toContain('@GMC trunggg2');
+      expect(componentsJson).not.toContain('<@112233445566778899>');
+      expect(componentsJson).toContain('🏆 🌟🌟🌟🌟🌟');
+      expect(componentsJson).toContain('📝 Đánh giá — Val GhostX');
+      expect(componentsJson).toContain('Tuyệt vời! Chất lượng cao cấp');
+      expect(componentsJson).toContain('TX12345');
+    });
+
+    it('handleFeedbackModal gửi feedback dạng Container V2 tới feedbackChannelId', async () => {
+      createPayment(db, {
+        id: 'TX_FB_MODAL_TEST',
+        guild_id: 'guild-1',
+        buyer_id: 'buyer-user-id',
+        seller_id: 'seller-id',
+        amount: 150000,
+        description: 'Val GhostX Pack',
+        status: 'confirmed',
+        created_at: Date.now(),
+      });
+
+      // Mock settings service có cấu hình feedbackChannelId
+      jest.spyOn(settingsModule, 'getSettingsService').mockReturnValue({
+        get: jest.fn().mockReturnValue({
+          vietqr: {
+            feedbackChannelId: 'fb-channel-777',
+          },
+        }),
+      } as any);
+
+      // Tạo session feedback
+      feedbackSessions.set('sessfb1', {
+        txId: 'TX_FB_MODAL_TEST',
+        buyerId: 'buyer-user-id',
+        rating: 5,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 60000,
+      });
+
+      const mockFbChannelSend = jest.fn();
+      const mockDeferReply = jest.fn();
+      const mockEditReply = jest.fn();
+
+      const modalInteraction: any = {
+        customId: 'feedback_modal_sessfb1',
+        guildId: 'guild-1',
+        user: { id: 'buyer-user-id', username: 'trunggg2' },
+        member: { displayName: 'GMC trunggg2' },
+        fields: {
+          getTextInputValue: jest
+            .fn()
+            .mockReturnValue(
+              'Tuyệt vời! Chất lượng cao cấp, giao hàng nhanh chóng và hỗ trợ khách hàng xuất sắc.',
+            ),
+        },
+        deferReply: mockDeferReply,
+        editReply: mockEditReply,
+        client: {
+          database: db,
+          channels: {
+            fetch: jest.fn().mockImplementation((channelId: string) => {
+              if (channelId === 'fb-channel-777') {
+                return Promise.resolve({
+                  isTextBased: () => true,
+                  send: mockFbChannelSend,
+                });
+              }
+              return Promise.resolve(null);
+            }),
+          },
+        },
+      };
+
+      await handleFeedbackModal(modalInteraction, db);
+
+      expect(mockDeferReply).toHaveBeenCalled();
+      expect(mockEditReply).toHaveBeenCalledWith(
+        expect.objectContaining({ content: expect.stringContaining('Cảm ơn bạn rất nhiều') }),
+      );
+
+      // Xác minh tin nhắn gửi tới feedbackChannel dùng Container V2
+      expect(mockFbChannelSend).toHaveBeenCalled();
+      const sendArgs = mockFbChannelSend.mock.calls[0][0];
+      expect(sendArgs.content).toBeUndefined();
+      expect(sendArgs.embeds).toBeUndefined();
+      expect(sendArgs.flags).toBe(MessageFlags.IsComponentsV2);
+
+      const sentComponentsJson = JSON.stringify(sendArgs.components);
+      expect(sentComponentsJson).toContain('@GMC trunggg2');
+      expect(sentComponentsJson).toContain('🏆 🌟🌟🌟🌟🌟');
+      expect(sentComponentsJson).toContain('Val GhostX Pack');
     });
   });
 });

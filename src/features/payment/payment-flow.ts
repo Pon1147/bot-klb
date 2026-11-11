@@ -18,7 +18,10 @@ import { getSettingsService } from '../../services/settings.service.js';
 import { extractMemberRoleIds } from '../../config/permissions.js';
 import { createLogger } from '../../utils/logger.js';
 import { getPaymentById, updatePaymentStatus, saveFeedback } from './payment.service.js';
-import { buildPaymentResultContainer } from '../../utils/vietqr.utils.js';
+import {
+  buildPaymentResultContainer,
+  buildCustomerFeedbackContainer,
+} from '../../utils/vietqr.utils.js';
 import { TTLStore, ExpiryEntry } from '../../utils/ttl-store.js';
 
 const logger = createLogger('PaymentFlow');
@@ -661,26 +664,28 @@ export async function handleFeedbackModal(
         .catch(() => null);
       if (fbChannel && fbChannel.isTextBased() && 'send' in fbChannel) {
         const sendableFbChannel = fbChannel as any;
-        const starString = '⭐'.repeat(session.rating);
-        const fbEmbed = new EmbedBuilder()
-          .setTitle(`🌟 Đánh giá mới từ ${interaction.user.tag}`)
-          .setColor(0xf1c40f)
-          .addFields(
-            { name: 'Mã đơn (TX)', value: `\`${tx.id}\``, inline: true },
-            { name: 'Khách hàng', value: `<@${session.buyerId}>`, inline: true },
-            {
-              name: 'Đánh giá',
-              value: `${starString} (**${session.rating}/5 sao**)`,
-              inline: true,
-            },
-            { name: 'Dịch vụ đã mua', value: tx.description, inline: false },
-            { name: 'Nhận xét', value: comment || '*Không có nhận xét*', inline: false },
-          )
-          .setTimestamp();
+
+        const buyerMember = interaction.member;
+        const buyerName =
+          buyerMember &&
+          typeof buyerMember === 'object' &&
+          'displayName' in buyerMember &&
+          typeof buyerMember.displayName === 'string'
+            ? buyerMember.displayName
+            : interaction.user.globalName || interaction.user.username;
+
+        const feedbackContainer = buildCustomerFeedbackContainer({
+          buyerName,
+          rating: session.rating,
+          serviceName: tx.description || 'Dịch vụ máy chủ',
+          comment,
+          txId: tx.id,
+          timestamp: Date.now(),
+        });
 
         await sendableFbChannel.send({
-          content: `📢 **Đánh giá trải nghiệm dịch vụ mới** từ <@${session.buyerId}>:`,
-          embeds: [fbEmbed],
+          components: feedbackContainer.toJSON(),
+          flags: MessageFlags.IsComponentsV2,
         });
       }
     }
