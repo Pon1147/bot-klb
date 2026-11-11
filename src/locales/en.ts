@@ -123,6 +123,10 @@ export const EN_LOCALE = {
       desc: 'Quick search for meta weapon loadouts by gun name and game mode.',
       example: '/df gun weapon:m4a1',
     },
+    'df.gift-code': {
+      desc: 'Get 280 starter giftcodes and tools to auto-redeem rewards on Garena.',
+      example: '/df gift-code',
+    },
     'df.code.show': {
       desc: 'Today’s safe vault combination codes for all 6 maps (auto-updated daily).',
       example: '/df code show page:1',

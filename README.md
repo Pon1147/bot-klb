@@ -1,6 +1,6 @@
 # Delta Bot (`bot-klb`) — Discord Bot
 
-[![Version](https://img.shields.io/badge/version-1.8.2-informational.svg)](#)
+[![Version](https://img.shields.io/badge/version-1.8.3-informational.svg)](#)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D22.12.0-brightgreen.svg)](https://nodejs.org/)
 [![Discord.js](https://img.shields.io/badge/discord.js-v14-blue.svg)](https://discord.js.org/)
 [![Architecture](https://img.shields.io/badge/architecture-vertical--slice-orange.svg)](#kiến-trúc-dự-án)
@@ -105,6 +105,7 @@ Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và
 | `/df map` | Thành viên | Cẩm nang bản đồ, soi két sắt, lối rút quân & liên kết mô phỏng 3D tại deltaforcetools.gg. |
 | `/df build` | Thành viên | Thư viện build súng meta Garena, lọc theo chế độ/loại súng & copy mã 1-chạm. |
 | `/df gun` | Thành viên | Tra cứu nhanh build súng meta theo tên súng và chế độ chơi. |
+| `/df gift-code` | Thành viên | Nhận 280 mã giftcode tân thủ và công cụ tự động nhận quà. |
 | `/df code show` | Thành viên | Bảng mật mã két sắt 6 bản đồ hôm nay (tự động cập nhật mỗi sáng). |
 | `/df code status` | Thành viên | Kiểm tra trạng thái cập nhật mật mã két sắt hôm nay. |
 | `/df code setchannel` | Quản trị viên | Đặt channel tự động gửi codes mỗi ngày. |

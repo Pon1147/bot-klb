@@ -18,6 +18,11 @@ import { execute as executeAutopost } from '../../src/features/delta-force/autop
 import { execute as executeVault } from '../../src/features/delta-force/vault.handler.js';
 import { execute as executeMatch } from '../../src/features/delta-force/match.handler.js';
 import { execute as executeMarket } from '../../src/features/delta-force/market.handler.js';
+import { execute as executeGiftCode } from '../../src/features/delta-force/gift-code.handler.js';
+
+jest.mock('../../src/features/delta-force/gift-code.handler.js', () => ({
+  execute: jest.fn().mockResolvedValue(undefined),
+}));
 
 jest.mock('../../src/features/delta-force/stats.handler.js', () => ({
   execute: jest.fn().mockResolvedValue(undefined),
@@ -99,7 +104,7 @@ describe('/df command — Structure & Builder', () => {
     expect(json.name).toBe('df');
   });
 
-  it('phải chứa direct subcommands: stats, daily, history, workshop, unlink, help, map, build, gun', () => {
+  it('phải chứa direct subcommands: stats, daily, history, workshop, unlink, help, map, build, gun, gift-code', () => {
     const directSubs = json.options?.filter((o: any) => o.type === 1).map((o: any) => o.name);
     expect(directSubs).toEqual([
       'stats',
@@ -114,6 +119,7 @@ describe('/df command — Structure & Builder', () => {
       'map',
       'build',
       'gun',
+      'gift-code',
     ]);
   });
 
@@ -329,6 +335,18 @@ describe('/df command — Execute Dispatch', () => {
 
     await execute(interaction);
     expect(executeMap).toHaveBeenCalledWith(interaction, expect.anything());
+  });
+
+  it('phải dispatch tới executeGiftCode khi chọn subcommand "gift-code"', async () => {
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommandGroup: jest.fn().mockReturnValue(null),
+        getSubcommand: jest.fn().mockReturnValue('gift-code'),
+      },
+    });
+
+    await execute(interaction);
+    expect(executeGiftCode).toHaveBeenCalledWith(interaction, expect.anything());
   });
 
   it('phải dispatch tới executeAutopost khi chọn group "autopost"', async () => {

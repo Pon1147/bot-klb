@@ -72,6 +72,41 @@ export async function packageExtension(): Promise<string> {
     }
   }
 
+  // Tự động đồng bộ DEFAULT_CODES từ popup.js sang src/features/delta-force/giftcodes.data.ts
+  const popupJsPath = path.join(sourceDir, 'popup', 'popup.js');
+  const giftcodesTsPath = path.resolve(rootDir, 'src', 'features', 'delta-force', 'giftcodes.data.ts');
+  if (fs.existsSync(popupJsPath)) {
+    try {
+      const popupContent = fs.readFileSync(popupJsPath, 'utf8');
+      const match = popupContent.match(/const DEFAULT_CODES = \[([\s\S]*?)\];/);
+      if (match) {
+        const codes = match[1]
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.includes("'") || line.includes('"'))
+          .map((line) => line.replace(/[^a-zA-Z0-9_-]/g, ''))
+          .filter(Boolean);
+
+        if (codes.length > 0) {
+          const tsContent = [
+            '/**',
+            ` * Danh sách ${codes.length} mã Giftcode Garena Delta Force tân thủ.`,
+            ' * Tự động đồng bộ từ DEFAULT_CODES trong garena-redeem-code/popup/popup.js',
+            ' * bởi scripts/package-extension.ts.',
+            ' */',
+            `export const STARTER_GIFT_CODES: readonly string[] = ${JSON.stringify(codes, null, 2)} as const;`,
+            '',
+          ].join('\n');
+
+          fs.writeFileSync(giftcodesTsPath, tsContent, 'utf8');
+          console.log(`✓ Đã đồng bộ ${codes.length} giftcodes từ popup.js sang giftcodes.data.ts`);
+        }
+      }
+    } catch (err) {
+      console.warn('Cảnh báo khi đồng bộ giftcodes:', err);
+    }
+  }
+
   // Đảm bảo thư mục đích tồn tại
   fs.mkdirSync(targetDir, { recursive: true });
 

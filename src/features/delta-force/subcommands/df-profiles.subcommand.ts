@@ -23,6 +23,7 @@ import { execute as executeUnlink } from '../unlink.handler.js';
 import { execute as executeMap } from '../map.handler.js';
 import { execute as executeBuild } from '../build.handler.js';
 import { execute as executeLink } from '../link.handler.js';
+import { execute as executeGiftCode } from '../gift-code.handler.js';
 import { MAX_HISTORY_PAGE } from '../../../config/app.constants.js';
 import { EN_LOCALE } from '../../../locales/en.js';
 
@@ -194,6 +195,14 @@ export function registerProfileSubcommands(
             .setDescription('Chế độ chơi (ví dụ: Hazard Operations, Havoc Warfare...)')
             .setRequired(false),
         ),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('gift-code')
+        .setDescription('Nhận 280 mã giftcode tân thủ và công cụ tự động nhận quà.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.gift-code'].desc,
+        }),
     );
 }
 
@@ -233,6 +242,10 @@ export async function dispatchProfileSubcommand(
     case 'build':
     case 'gun':
       await executeBuild(interaction, database);
+      return true;
+    case 'gift-code':
+    case 'giftcode':
+      await executeGiftCode(interaction, database);
       return true;
     default:
       return false;

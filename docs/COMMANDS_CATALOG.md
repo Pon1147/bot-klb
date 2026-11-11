@@ -1,11 +1,11 @@
 # Danh Mục Lệnh Chuẩn — Bot Delta (Ground Truth Command Catalog)
 
-> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v1.8.2**
+> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v1.8.3**
 > *Mọi AI Assistant và lập trình viên bắt buộc tuân theo tài liệu này. Không tự suy diễn cú pháp hay tham số.*
 
 ## 1. Thống Kê Tổng Quan
 
-- **Tổng số lệnh thực thi**: `55` subcommands.
+- **Tổng số lệnh thực thi**: `56` subcommands.
 - **Nhóm lệnh**: `/df`, `/team`, `/pay`, `/donate`, `/config`.
 
 ## 2. Bảng Tra Cứu Lệnh Chi Tiết
@@ -51,6 +51,7 @@
 | `/df map` | Cẩm nang bản đồ, soi két sắt, lối rút quân & liên kết mô phỏng 3D tại deltaforcetools.gg. | Map tactical guides, safe locations, evacuation routes & 3D simulation links at deltaforcetools.gg. | `DF_ACCESS` | *Không có* |
 | `/df build` | Thư viện build súng meta Garena, lọc theo chế độ/loại súng & copy mã 1-chạm. | Garena meta weapon build library with mode/class filtering and 1-tap code copy. | `DF_ACCESS` | `weapon`, `mode` |
 | `/df gun` | Tra cứu nhanh build súng meta theo tên súng và chế độ chơi. | Quick search for meta weapon loadouts by gun name and game mode. | `DF_ACCESS` | `weapon`, `mode` |
+| `/df gift-code` | Nhận 280 mã giftcode tân thủ và công cụ tự động nhận quà. | Get 280 starter giftcodes and tools to auto-redeem rewards on Garena. | `DF_ACCESS` | *Không có* |
 | `/df code show` | Bảng mật mã két sắt 6 bản đồ hôm nay (tự động cập nhật mỗi sáng). | Today’s safe vault combination codes for all 6 maps (auto-updated daily). | `DF_ACCESS` | `page` |
 | `/df code status` | Kiểm tra trạng thái cập nhật mật mã két sắt hôm nay. | Check the status of today’s safe vault codes synchronization. | `DF_ACCESS` | *Không có* |
 | `/df code setchannel` | Đặt channel tự động gửi codes mỗi ngày. | *(Admin / Internal)* | `MANAGE_DF_CODE` | `channel*` |
