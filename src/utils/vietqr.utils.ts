@@ -1,6 +1,14 @@
-import { ComponentType, MessageFlags } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ComponentType,
+  InteractionReplyOptions,
+  MessageFlags,
+} from 'discord.js';
+import { botConfig } from '../config/bot.config.js';
 import { COLORS } from '../config/container.variables.js';
-import { makeResult, BuildContainerResult } from './container.utils.js';
+import { makeResult, BuildContainerResult, buildErrorContainer } from './container.utils.js';
 
 /**
  * Danh sách ngân hàng phổ biến được VietQR hỗ trợ.
@@ -378,4 +386,46 @@ export function buildPaymentResultContainer(
     MessageFlags.IsComponentsV2,
     [],
   );
+}
+
+/**
+ * Xây dựng payload thông báo lỗi khi máy chủ chưa được Bot Owner cấp phép mở tính năng QR Premium,
+ * tích hợp sẵn Button liên hệ trực tiếp Bot Owner trên Discord và Button dẫn vào máy chủ hỗ trợ.
+ */
+export function buildQrPremiumLockedResponse(customMessage?: string): InteractionReplyOptions {
+  const ownerMention = botConfig.botOwnerId ? `<@${botConfig.botOwnerId}>` : '(Bot Owner)';
+  const msg =
+    customMessage ??
+    `🔒 Tính năng QR Thanh toán tự động chưa được mở cho máy chủ này.\n` +
+      `Vui lòng liên hệ Chủ sở hữu Bot ${ownerMention} để đăng ký kích hoạt gói QR Premium.`;
+
+  const container = buildErrorContainer(msg);
+  const buttons: ButtonBuilder[] = [];
+
+  if (botConfig.botOwnerId) {
+    buttons.push(
+      new ButtonBuilder()
+        .setLabel('Liên Hệ Bot Owner')
+        .setStyle(ButtonStyle.Link)
+        .setURL(`https://discord.com/users/${botConfig.botOwnerId}`)
+        .setEmoji('👑'),
+    );
+  }
+
+  buttons.push(
+    new ButtonBuilder()
+      .setLabel('Máy Chủ Hỗ Trợ')
+      .setStyle(ButtonStyle.Link)
+      .setURL('https://discord.gg/vz6w6c3Xe3')
+      .setEmoji('💬'),
+  );
+
+  const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(buttons);
+
+  return {
+    components: [
+      ...container.toJSON(),
+      actionRow.toJSON(),
+    ] as unknown as InteractionReplyOptions['components'],
+  };
 }

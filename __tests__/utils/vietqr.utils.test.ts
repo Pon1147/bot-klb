@@ -2,9 +2,11 @@
 import {
   buildVietQrImageUrl,
   buildVietQrContainer,
+  buildQrPremiumLockedResponse,
   SUPPORTED_BANKS,
 } from '../../src/utils/vietqr.utils.js';
-import { ComponentType } from 'discord.js';
+import { ComponentType, ButtonStyle } from 'discord.js';
+import { botConfig } from '../../src/config/bot.config.js';
 
 describe('vietqr.utils', () => {
   describe('buildVietQrImageUrl', () => {
@@ -79,6 +81,30 @@ describe('vietqr.utils', () => {
       expect(SUPPORTED_BANKS['VCB']).toBeDefined();
       expect(SUPPORTED_BANKS['TCB']).toBeDefined();
       expect(SUPPORTED_BANKS['ACB']).toBeDefined();
+    });
+  });
+
+  describe('buildQrPremiumLockedResponse', () => {
+    it('tạo payload chứa thông báo lỗi khóa và các Button liên hệ', () => {
+      const response = buildQrPremiumLockedResponse();
+      expect(response.components).toBeDefined();
+      expect(response.components.length).toBe(2);
+
+      const jsonStr = JSON.stringify(response);
+      expect(jsonStr).toContain('Tính năng QR Thanh toán tự động chưa được mở');
+      expect(jsonStr).toContain('Máy Chủ Hỗ Trợ');
+      expect(jsonStr).toContain('https://discord.gg/vz6w6c3Xe3');
+
+      if (botConfig.botOwnerId) {
+        expect(jsonStr).toContain('Liên Hệ Bot Owner');
+        expect(jsonStr).toContain(`https://discord.com/users/${botConfig.botOwnerId}`);
+      }
+    });
+
+    it('cho phép tùy biến nội dung thông báo lỗi', () => {
+      const response = buildQrPremiumLockedResponse('Thông báo khóa tùy biến');
+      const jsonStr = JSON.stringify(response);
+      expect(jsonStr).toContain('Thông báo khóa tùy biến');
     });
   });
 });

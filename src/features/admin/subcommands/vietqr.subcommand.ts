@@ -17,6 +17,7 @@ import {
   normalizeBankCode,
   fetchVietQrImageBuffer,
   buildVietQrContainer,
+  buildQrPremiumLockedResponse,
 } from '../../../utils/vietqr.utils.js';
 import { buildErrorContainer, buildInfoContainer } from '../../../utils/container.utils.js';
 import { sendReply } from '../../../utils/reply.utils.js';
@@ -124,11 +125,7 @@ export async function handleVietQrWorkflow(
   }
 
   if (!isQrServerEnabled(guildId)) {
-    await sendReply(interaction, {
-      components: buildErrorContainer(
-        '🔒 Tính năng QR Thanh toán tự động chưa được mở cho máy chủ này.\nVui lòng liên hệ Chủ sở hữu Bot (Bot Owner) để đăng ký kích hoạt gói QR Premium.',
-      ).toJSON(),
-    });
+    await sendReply(interaction, buildQrPremiumLockedResponse());
     return;
   }
 
@@ -187,11 +184,7 @@ export async function handleVietQrSet(
   }
 
   if (!isQrServerEnabled(guildId)) {
-    await sendReply(interaction, {
-      components: buildErrorContainer(
-        '🔒 Tính năng QR Thanh toán tự động chưa được mở cho máy chủ này.\nVui lòng liên hệ Chủ sở hữu Bot (Bot Owner) để đăng ký kích hoạt gói QR Premium.',
-      ).toJSON(),
-    });
+    await sendReply(interaction, buildQrPremiumLockedResponse());
     return;
   }
 
@@ -313,11 +306,7 @@ export async function handleVietQrStatus(
   }
 
   if (!isQrServerEnabled(guildId)) {
-    await sendReply(interaction, {
-      components: buildErrorContainer(
-        '🔒 Tính năng QR Thanh toán tự động chưa được mở cho máy chủ này.\nVui lòng liên hệ Chủ sở hữu Bot (Bot Owner) để đăng ký kích hoạt gói QR Premium.',
-      ).toJSON(),
-    });
+    await sendReply(interaction, buildQrPremiumLockedResponse());
     return;
   }
 
@@ -374,11 +363,7 @@ export async function handleVietQrPreview(
   }
 
   if (!isQrServerEnabled(guildId)) {
-    await sendReply(interaction, {
-      components: buildErrorContainer(
-        '🔒 Tính năng QR Thanh toán tự động chưa được mở cho máy chủ này.\nVui lòng liên hệ Chủ sở hữu Bot (Bot Owner) để đăng ký kích hoạt gói QR Premium.',
-      ).toJSON(),
-    });
+    await sendReply(interaction, buildQrPremiumLockedResponse());
     return;
   }
 

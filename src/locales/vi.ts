@@ -122,6 +122,10 @@ export const VI_LOCALE = {
       desc: 'Tra cứu nhanh build súng meta theo tên súng và chế độ chơi.',
       example: '/df gun weapon:m4a1',
     },
+    'df.gift-code': {
+      desc: 'Nhận 280 mã giftcode tân thủ và công cụ tự động nhận quà trên Garena.',
+      example: '/df gift-code',
+    },
     'df.code.show': {
       desc: 'Bảng mật mã két sắt 6 bản đồ hôm nay (tự động cập nhật mỗi sáng).',
       example: '/df code show page:1',

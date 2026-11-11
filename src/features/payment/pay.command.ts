@@ -9,7 +9,11 @@ import {
 import Database from 'better-sqlite3';
 import { getSettingsService, isQrServerEnabled } from '../../services/settings.service.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
-import { buildVietQrContainer, fetchVietQrImageBuffer } from '../../utils/vietqr.utils.js';
+import {
+  buildVietQrContainer,
+  fetchVietQrImageBuffer,
+  buildQrPremiumLockedResponse,
+} from '../../utils/vietqr.utils.js';
 import { sendReply } from '../../utils/reply.utils.js';
 import { ExpiryEntry, TTLStore } from '../../utils/ttl-store.js';
 import { createPayment, getUserPayments, getUserRank, getTopBuyers } from './payment.service.js';
@@ -312,11 +316,7 @@ export async function execute(
 
   // Guard bảo mật cấp máy chủ: Máy chủ phải được Bot Owner mở tính năng QR trước đó
   if (!isQrServerEnabled(guildId)) {
-    await sendReply(interaction, {
-      components: buildErrorContainer(
-        '🔒 Máy chủ này chưa kích hoạt gói tính năng QR Thanh toán tự động.\nVui lòng liên hệ Quản trị viên máy chủ hoặc Chủ sở hữu Bot (Bot Owner) để đăng ký.',
-      ).toJSON(),
-    });
+    await sendReply(interaction, buildQrPremiumLockedResponse());
     return;
   }
 

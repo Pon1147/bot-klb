@@ -228,7 +228,6 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'df.market': Policy.DF_ACCESS,
   'df.help': Policy.DF_ACCESS,
   'df.gift-code': Policy.DF_ACCESS,
-  'df.giftcode': Policy.DF_ACCESS,
 
   'df.code.show': Policy.DF_ACCESS,
   'df.code.status': Policy.DF_ACCESS,
