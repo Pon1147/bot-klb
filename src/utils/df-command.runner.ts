@@ -143,7 +143,7 @@ export async function runDfCommand(
 
   if (!apiToken) {
     const err = buildErrorContainer(
-      'Bạn chưa liên kết tài khoản. Dùng `/df link start` để bắt đầu (yêu cầu PC/Laptop).',
+      'Bạn chưa liên kết tài khoản. Dùng `/df link start` để bắt đầu (hỗ trợ PC, hoặc Orion iOS / Kiwi Android).',
     );
     await sendReply(ctx.interaction, { components: err.toJSON() });
     return true;

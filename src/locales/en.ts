@@ -65,7 +65,7 @@ export const EN_LOCALE = {
           '• **Secure Token Extraction**: End-to-end encrypted with AES-256-GCM without exposing your password.',
         feature_3:
           '• **Real-time Sync**: Keeps match history and extraction trophies up to date after every deployment.',
-        install_title: '### Quick Installation Guide (Requires PC/Laptop):',
+        install_title: '### Quick Setup Guide (PC, or Orion iOS / Kiwi Android):',
         install_1: '1. Click **[ Download Extension ]** below to download `DF-Extension.zip`.',
         install_2: '2. Extract the downloaded `.zip` file into a local folder on your computer.',
         install_3:
