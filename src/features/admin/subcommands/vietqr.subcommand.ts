@@ -40,6 +40,9 @@ export function buildVietQrGroup(
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('set')
+        .setNameLocalizations({
+          vi: 'tài-khoản',
+        })
         .setDescription('Cài đặt thông tin tài khoản ngân hàng nhận tiền.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.vietqr.set'].desc,
@@ -47,6 +50,9 @@ export function buildVietQrGroup(
         .addStringOption((opt) =>
           opt
             .setName('bank')
+            .setNameLocalizations({
+              vi: 'ngân-hàng',
+            })
             .setDescription('Mã ngân hàng (ví dụ: MB, VCB, TCB, ACB, VPB, TPB, BIDV...)')
             .setDescriptionLocalizations({ 'en-US': 'Bank code (e.g., MB, VCB, TCB, ACB, TPB)' })
             .setRequired(true),
@@ -54,6 +60,9 @@ export function buildVietQrGroup(
         .addStringOption((opt) =>
           opt
             .setName('account_no')
+            .setNameLocalizations({
+              vi: 'số-tk',
+            })
             .setDescription('Số tài khoản ngân hàng nhận tiền')
             .setDescriptionLocalizations({ 'en-US': 'Receiving bank account number' })
             .setRequired(true),
@@ -61,6 +70,9 @@ export function buildVietQrGroup(
         .addStringOption((opt) =>
           opt
             .setName('account_name')
+            .setNameLocalizations({
+              vi: 'chủ-tk',
+            })
             .setDescription('Tên chủ tài khoản (viết hoa không dấu, ví dụ: NGUYEN VAN A)')
             .setDescriptionLocalizations({ 'en-US': 'Account holder name in uppercase' })
             .setRequired(true),
@@ -68,6 +80,9 @@ export function buildVietQrGroup(
         .addStringOption((opt) =>
           opt
             .setName('prefix')
+            .setNameLocalizations({
+              vi: 'tiền-tố',
+            })
             .setDescription('Cú pháp tiền tố nội dung chuyển khoản (mặc định: NAP)')
             .setDescriptionLocalizations({ 'en-US': 'Transfer description prefix (default: NAP)' })
             .setRequired(false),
@@ -76,6 +91,9 @@ export function buildVietQrGroup(
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('workflow')
+        .setNameLocalizations({
+          vi: 'quy-trình',
+        })
         .setDescription('Cấu hình quy trình duyệt bill, nhận feedback 5 sao và lời cảm ơn.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.vietqr.workflow'].desc,
@@ -83,6 +101,9 @@ export function buildVietQrGroup(
         .addRoleOption((opt) =>
           opt
             .setName('staff_role')
+            .setNameLocalizations({
+              vi: 'vai-trò-duyệt',
+            })
             .setDescription('Role nhân viên/thợ được quyền duyệt/hủy hóa đơn (ngoài Admin)')
             .setDescriptionLocalizations({
               'en-US': 'Staff role permitted to verify/cancel payments',
@@ -92,6 +113,9 @@ export function buildVietQrGroup(
         .addChannelOption((opt) =>
           opt
             .setName('feedback_channel')
+            .setNameLocalizations({
+              vi: 'kênh-đánh-giá',
+            })
             .setDescription('Kênh nhận thông báo review đánh giá 5 sao từ khách')
             .setDescriptionLocalizations({ 'en-US': 'Channel to receive 5-star customer feedback' })
             .setRequired(false),
@@ -99,6 +123,9 @@ export function buildVietQrGroup(
         .addBooleanOption((opt) =>
           opt
             .setName('enable_rating')
+            .setNameLocalizations({
+              vi: 'bật-đánh-giá',
+            })
             .setDescription('Bật hoặc tắt nút bấm đánh giá 1-5 sao sau khi thanh toán')
             .setDescriptionLocalizations({ 'en-US': 'Enable or disable 1-5 star rating buttons' })
             .setRequired(false),
@@ -106,6 +133,9 @@ export function buildVietQrGroup(
         .addStringOption((opt) =>
           opt
             .setName('thanks_message')
+            .setNameLocalizations({
+              vi: 'lời-cảm-ơn',
+            })
             .setDescription('Lời cảm ơn tùy chỉnh của máy chủ sau khi duyệt đơn')
             .setDescriptionLocalizations({ 'en-US': 'Custom thank-you message after approval' })
             .setMaxLength(250)
@@ -115,6 +145,9 @@ export function buildVietQrGroup(
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('status')
+        .setNameLocalizations({
+          vi: 'trạng-thái',
+        })
         .setDescription('Xem thông tin tài khoản nhận tiền hiện tại của máy chủ.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.vietqr.status'].desc,
@@ -123,6 +156,9 @@ export function buildVietQrGroup(
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('preview')
+        .setNameLocalizations({
+          vi: 'xem-thử',
+        })
         .setDescription('Xem trước và quét thử mã QR thanh toán mẫu của máy chủ.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.vietqr.preview'].desc,
@@ -130,6 +166,9 @@ export function buildVietQrGroup(
         .addIntegerOption((opt) =>
           opt
             .setName('amount')
+            .setNameLocalizations({
+              vi: 'số-tiền',
+            })
             .setDescription('Số tiền thử nghiệm (mặc định 10,000 đ)')
             .setDescriptionLocalizations({ 'en-US': 'Test invoice amount in VND' })
             .setMinValue(1000)
@@ -139,6 +178,9 @@ export function buildVietQrGroup(
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('reset')
+        .setNameLocalizations({
+          vi: 'xóa-cấu-hình',
+        })
         .setDescription('Gỡ bỏ và xóa toàn bộ thông tin tài khoản ngân hàng VietQR của máy chủ.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.vietqr.reset'].desc,

@@ -33,6 +33,9 @@ export { buildAnnouncementContainer };
 
 export const data = new SlashCommandBuilder()
   .setName('config')
+  .setNameLocalizations({
+    vi: 'cài-đặt',
+  })
   .setDescription('Quản lý cấu hình bot, roles, welcome, booster, và container.')
   .setDescriptionLocalizations({
     'en-US': 'Manage bot configuration, roles, welcome, booster, and containers.',

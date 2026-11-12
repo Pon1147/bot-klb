@@ -32,6 +32,9 @@ export function buildLinkGroup(
 ): SlashCommandSubcommandGroupBuilder {
   return group
     .setName('link')
+    .setNameLocalizations({
+      vi: 'liên-kết',
+    })
     .setDescription('Liên kết / kiểm tra / xác thực tài khoản Delta Force HQ.')
     .setDescriptionLocalizations({
       'en-US': 'Link / check / verify Delta Force HQ account.',
@@ -39,6 +42,9 @@ export function buildLinkGroup(
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('start')
+        .setNameLocalizations({
+          vi: 'bắt-đầu',
+        })
         .setDescription('Tạo mã claim và gửi hướng dẫn qua DM.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.link.start'].desc,
@@ -47,6 +53,9 @@ export function buildLinkGroup(
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('status')
+        .setNameLocalizations({
+          vi: 'trạng-thái',
+        })
         .setDescription('Kiểm tra trạng thái liên kết hiện tại.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.link.status'].desc,
@@ -61,6 +70,9 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('stats')
+        .setNameLocalizations({
+          vi: 'thống-kê',
+        })
         .setDescription('Xem thống kê tài khoản Delta Force.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.stats'].desc,
@@ -69,6 +81,9 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('daily')
+        .setNameLocalizations({
+          vi: 'hôm-nay',
+        })
         .setDescription('Trạng thái chiến đấu hàng ngày Delta Force.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.daily'].desc,
@@ -77,6 +92,9 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('history')
+        .setNameLocalizations({
+          vi: 'lịch-sử',
+        })
         .setDescription('Xem lịch sử trận đấu Delta Force.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.history'].desc,
@@ -84,6 +102,9 @@ export function registerProfileSubcommands(
         .addIntegerOption((opt) =>
           opt
             .setName('limit')
+            .setNameLocalizations({
+              vi: 'số-lượng',
+            })
             .setDescription('Số trận hiển thị (1-20)')
             .setDescriptionLocalizations({
               'en-US': 'Number of matches to display (1-20)',
@@ -95,6 +116,9 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('vault')
+        .setNameLocalizations({
+          vi: 'kho-đồ',
+        })
         .setDescription('Sảnh Triển Lãm Đồ Đỏ: Xem bộ sưu tập đồ đỏ và tổng giá trị kho báu.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.vault'].desc,
@@ -103,6 +127,9 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('match')
+        .setNameLocalizations({
+          vi: 'trận-đấu',
+        })
         .setDescription('Xem chi tiết kết quả và thành tích trận đấu.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.match'].desc,
@@ -110,6 +137,9 @@ export function registerProfileSubcommands(
         .addStringOption((opt) =>
           opt
             .setName('match_id')
+            .setNameLocalizations({
+              vi: 'mã-trận',
+            })
             .setDescription('Chọn trận đấu gần đây (hoặc để trống xem trận mới nhất)')
             .setDescriptionLocalizations({
               'en-US': 'Select recent match (or leave empty for latest)',
@@ -121,6 +151,9 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('workshop')
+        .setNameLocalizations({
+          vi: 'chế-tác',
+        })
         .setDescription('Xem thông tin sản xuất tại Xưởng Căn Cứ Ngầm.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.workshop'].desc,
@@ -129,6 +162,9 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('market')
+        .setNameLocalizations({
+          vi: 'chợ',
+        })
         .setDescription('Tra cứu giá thị trường và bàn chế tác realtime.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.market'].desc,
@@ -136,6 +172,9 @@ export function registerProfileSubcommands(
         .addStringOption((opt) =>
           opt
             .setName('item')
+            .setNameLocalizations({
+              vi: 'vật-phẩm',
+            })
             .setDescription('Tên hoặc mã vật phẩm cần tra cứu.')
             .setDescriptionLocalizations({
               'en-US': 'Item name or code to look up.',
@@ -147,6 +186,9 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('unlink')
+        .setNameLocalizations({
+          vi: 'hủy-liên-kết',
+        })
         .setDescription('Hủy liên kết tài khoản Delta Force.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.unlink'].desc,
@@ -155,6 +197,9 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('help')
+        .setNameLocalizations({
+          vi: 'hướng-dẫn',
+        })
         .setDescription('Xem hướng dẫn sử dụng bot và tải tiện ích liên kết tài khoản.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.help'].desc,
@@ -163,6 +208,9 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('map')
+        .setNameLocalizations({
+          vi: 'bản-đồ',
+        })
         .setDescription('Mô phỏng bản đồ 3D tương tác và cẩm nang học map.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.map'].desc,
@@ -171,6 +219,9 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('build')
+        .setNameLocalizations({
+          vi: 'mod-súng',
+        })
         .setDescription('Thư viện build súng và mã Gunsmith meta (Garena).')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.build'].desc,
@@ -178,6 +229,9 @@ export function registerProfileSubcommands(
         .addStringOption((opt) =>
           opt
             .setName('weapon')
+            .setNameLocalizations({
+              vi: 'vũ-khí',
+            })
             .setDescription('Tên súng cần tra cứu (ví dụ: AKM, M4A1, CAR-15...)')
             .setDescriptionLocalizations({
               'en-US': 'Weapon name to look up (e.g. AKM, M4A1, CAR-15...)',
@@ -187,6 +241,9 @@ export function registerProfileSubcommands(
         .addStringOption((opt) =>
           opt
             .setName('mode')
+            .setNameLocalizations({
+              vi: 'chế-độ',
+            })
             .setDescription('Chế độ chơi (ví dụ: Hazard Operations, Havoc Warfare...)')
             .setDescriptionLocalizations({
               'en-US': 'Game mode (e.g. Hazard Operations, Havoc Warfare...)',
@@ -197,6 +254,9 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('gun')
+        .setNameLocalizations({
+          vi: 'súng',
+        })
         .setDescription('Thư viện build súng và mã Gunsmith meta (Garena).')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.gun'].desc,
@@ -204,6 +264,9 @@ export function registerProfileSubcommands(
         .addStringOption((opt) =>
           opt
             .setName('weapon')
+            .setNameLocalizations({
+              vi: 'vũ-khí',
+            })
             .setDescription('Tên súng cần tra cứu (ví dụ: AKM, M4A1, CAR-15...)')
             .setDescriptionLocalizations({
               'en-US': 'Weapon name to look up (e.g. AKM, M4A1, CAR-15...)',
@@ -213,6 +276,9 @@ export function registerProfileSubcommands(
         .addStringOption((opt) =>
           opt
             .setName('mode')
+            .setNameLocalizations({
+              vi: 'chế-độ',
+            })
             .setDescription('Chế độ chơi (ví dụ: Hazard Operations, Havoc Warfare...)')
             .setDescriptionLocalizations({
               'en-US': 'Game mode (e.g. Hazard Operations, Havoc Warfare...)',
@@ -223,6 +289,9 @@ export function registerProfileSubcommands(
     .addSubcommand((sub) =>
       sub
         .setName('gift-code')
+        .setNameLocalizations({
+          vi: 'mã-quà',
+        })
         .setDescription('Nhận 280 mã giftcode tân thủ và công cụ tự động nhận quà.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['df.gift-code'].desc,

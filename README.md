@@ -1,12 +1,12 @@
 # Delta Bot (`bot-klb`) — Discord Bot
 
-[![Version](https://img.shields.io/badge/version-1.11.0-informational.svg)](#)
+[![Version](https://img.shields.io/badge/version-1.12.0-informational.svg)](#)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D22.12.0-brightgreen.svg)](https://nodejs.org/)
 [![Discord.js](https://img.shields.io/badge/discord.js-v14-blue.svg)](https://discord.js.org/)
 [![Architecture](https://img.shields.io/badge/architecture-vertical--slice-orange.svg)](#kiến-trúc-dự-án)
 [![TypeScript](https://img.shields.io/badge/typescript-5.x-blue.svg)](https://www.typescriptlang.org/)
 
-Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và quản trị máy chủ Discord, tích hợp **Discord Components V2**, **Hỗ trợ Song ngữ Tự động (i18n: Tiếng Việt ⟷ English)**, cào mật khẩu hằng ngày tự động, dashboard thống kê đồ họa chất lượng cao, thư viện Gunsmith meta, bản đồ 3D tương tác, tiện ích **DF Toolbox Extension (v1.6.0)** tự động nhập giftcode Garena, thanh toán hóa đơn VietQR động & cổng quyên góp PayOS, cùng cơ chế liên kết tài khoản game bảo mật bằng AES-256-GCM.
+Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và quản trị máy chủ Discord, tích hợp **Discord Components V2**, **Hỗ trợ Song ngữ Tự động (i18n: Tiếng Việt ⟷ English)**, cào mật khẩu hằng ngày tự động, dashboard thống kê đồ họa chất lượng cao, thư viện Gunsmith meta, bản đồ 3D tương tác, tiện ích **DF Toolbox Extension (v1.7.0)** tự động nhập giftcode Garena, thanh toán hóa đơn VietQR động & cổng quyên góp PayOS, cùng cơ chế liên kết tài khoản game bảo mật bằng AES-256-GCM.
 
 ---
 
@@ -32,7 +32,7 @@ Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và
   * Người dùng có thể hủy liên kết và xóa dữ liệu bất kỳ lúc nào qua `/df unlink`.
 * **Trung Tâm Trợ Giúp Đa Ngữ (`/df help`)**: Bảng cẩm nang 6 trang tích hợp điều hướng Components V2, tự động thích ứng ngôn ngữ client (`vi` hoặc `en`), kèm nút tải tiện ích mở rộng **DF Toolbox Extension**.
 
-### 2. Tiện Ích Trình Duyệt: DF Toolbox Extension (v1.6.0)
+### 2. Tiện Ích Trình Duyệt: DF Toolbox Extension (v1.7.0)
 * **Auto Redeem Giftcode Garena**: Tự động hóa quá trình nhập danh sách hàng trăm mã giftcode Delta Force trên trang đổi quà Garena CDK, tự bypass CSP và nhận diện kết quả tự động.
 * **Floating Dashboard trực quan**: Gắn bảng điều khiển trực tiếp trên giao diện web đổi quà, hiển thị tiến độ, nhật ký, số mã thành công/thất bại theo thời gian thực.
 * **Auth State Engine & Cloud Relay**: Tự động trích xuất và đồng bộ session/token game an toàn với máy chủ bot qua webhook một chạm.
@@ -84,16 +84,16 @@ Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và
 | `/config booster test` | Quản trị viên | Gửi tin nhắn cảm ơn Booster thử nghiệm để xem trước giao diện. |
 | `/config container edit` | Quản trị viên | Chỉnh sửa giao diện tin nhắn Container V2 của máy chủ tương tác. |
 | `/config container reset` | Quản trị viên | Đặt lại giao diện tin nhắn Container V2 về mẫu mặc định. |
-| `/config bot guilds` | Server Owner / Admin | Xem danh sách các máy chủ mà bot đang tham gia (Bot Owner). |
+| `/config bot guilds` | Thành viên | Xem danh sách các máy chủ mà bot đang tham gia (Bot Owner). |
 | `/config bot setannouncechannel` | Server Owner / Admin | Thiết lập kênh nhận thông báo cập nhật tính năng mới từ bot. |
 | `/config bot announce` | Bot Owner | Phát sóng thông báo cập nhật tới toàn bộ máy chủ (Bot Owner). |
 | `/config qr-server toggle` | Bot Owner | Bật hoặc tắt tính năng QR thanh toán trả phí cho máy chủ (Bot Owner). |
 | `/config qr-server status` | Bot Owner | Kiểm tra trạng thái cấp phép tính năng QR của máy chủ (Bot Owner). |
-| `/config vietqr set` | Server Owner / Admin | Cấu hình thông tin tài khoản ngân hàng nhận tiền chuyển khoản VietQR. |
-| `/config vietqr workflow` | Quản trị viên | Cấu hình quy trình duyệt đơn, role nhân viên và đánh giá feedback. |
+| `/config vietqr set` | Thành viên | Cấu hình thông tin tài khoản ngân hàng nhận tiền chuyển khoản VietQR. |
+| `/config vietqr workflow` | Server Owner / Admin | Cấu hình quy trình duyệt đơn, role nhân viên và đánh giá feedback. |
 | `/config vietqr status` | Quản trị viên | Xem thông tin tài khoản nhận tiền VietQR hiện tại của máy chủ. |
 | `/config vietqr preview` | Quản trị viên | Tạo mã QR thanh toán thử nghiệm để quét kiểm tra số tài khoản. |
-| `/config vietqr reset` | Server Owner / Admin | Gỡ bỏ và xóa toàn bộ thông tin tài khoản ngân hàng VietQR của máy chủ. |
+| `/config vietqr reset` | Thành viên | Gỡ bỏ và xóa toàn bộ thông tin tài khoản ngân hàng VietQR của máy chủ. |
 | `/df stats` | Thành viên | Xuất thẻ căn cước chiến binh (K/D, tỉ lệ rút quân, cấp bậc, số trận) & menu đổi mùa giải. |
 | `/df daily` | Thành viên | Báo cáo tổng hợp hiệu suất tác chiến trong ngày hôm nay. |
 | `/df history` | Thành viên | Xem lịch sử 1–20 trận gần nhất (operator, map, kết quả rút quân). |
@@ -106,7 +106,7 @@ Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và
 | `/df map` | Thành viên | Cẩm nang bản đồ, soi két sắt, lối rút quân & liên kết mô phỏng 3D tại deltaforcetools.gg. |
 | `/df build` | Thành viên | Thư viện build súng meta Garena, lọc theo chế độ/loại súng & copy mã 1-chạm. |
 | `/df gun` | Thành viên | Tra cứu nhanh build súng meta theo tên súng và chế độ chơi. |
-| `/df gift-code` | Thành viên | Nhận 280 mã giftcode tân thủ và công cụ tự động nhận quà trên Garena. |
+| `/df gift-code` | Thành viên | Nhận 200+ mã giftcode tân thủ và công cụ tự động nhận quà trên Garena. |
 | `/df code show` | Thành viên | Bảng mật mã két sắt 6 bản đồ hôm nay (tự động cập nhật mỗi sáng). |
 | `/df code status` | Thành viên | Kiểm tra trạng thái cập nhật mật mã két sắt hôm nay. |
 | `/df code setchannel` | Quản trị viên | Cài đặt kênh tự động gửi mật mã két sắt 6 bản đồ mỗi ngày. |

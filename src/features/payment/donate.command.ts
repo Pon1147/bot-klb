@@ -19,6 +19,9 @@ import { EN_LOCALE } from '../../locales/en.js';
 
 export const data = new SlashCommandBuilder()
   .setName('donate')
+  .setNameLocalizations({
+    vi: 'ủng-hộ',
+  })
   .setDescription('Ủng hộ Bot Owner / Buy Me a Coffee qua cổng thanh toán PayOS.')
   .setDescriptionLocalizations({
     'en-US': EN_LOCALE.commands['donate'].desc,
@@ -26,6 +29,9 @@ export const data = new SlashCommandBuilder()
   .addIntegerOption((opt) =>
     opt
       .setName('amount')
+      .setNameLocalizations({
+        vi: 'số-tiền',
+      })
       .setDescription('Số tiền ủng hộ (VNĐ, tối thiểu 2,000 đ)')
       .setDescriptionLocalizations({
         'en-US': 'Donation amount (VND, minimum 2,000 VND)',
@@ -37,6 +43,9 @@ export const data = new SlashCommandBuilder()
   .addStringOption((opt) =>
     opt
       .setName('message')
+      .setNameLocalizations({
+        vi: 'lời-nhắn',
+      })
       .setDescription('Lời nhắn gửi đến Bot Owner (tối đa 100 ký tự)')
       .setDescriptionLocalizations({
         'en-US': 'Message to Bot Owner (max 100 characters)',

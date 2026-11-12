@@ -45,6 +45,9 @@ export function buildBotGroup(
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('setannouncechannel')
+        .setNameLocalizations({
+          vi: 'đặt-kênh-thông-báo',
+        })
         .setDescription('Cấu hình kênh nhận thông báo cập nhật bot cho máy chủ này.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.bot.setannouncechannel'].desc,
@@ -52,6 +55,9 @@ export function buildBotGroup(
         .addChannelOption((opt) =>
           opt
             .setName('channel')
+            .setNameLocalizations({
+              vi: 'kênh',
+            })
             .setDescription('Kênh văn bản nhận thông báo từ bot')
             .setDescriptionLocalizations({ 'en-US': 'Text channel for bot update announcements' })
             .setRequired(true),

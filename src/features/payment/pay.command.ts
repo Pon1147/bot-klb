@@ -39,6 +39,9 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
     sub
       .setName('create')
+      .setNameLocalizations({
+        vi: 'tạo-đơn',
+      })
       .setDescription('Tạo hóa đơn thanh toán VietQR cho khách hàng trong kênh.')
       .setDescriptionLocalizations({
         'en-US': EN_LOCALE.commands['pay.create'].desc,
@@ -46,6 +49,9 @@ export const data = new SlashCommandBuilder()
       .addIntegerOption((opt) =>
         opt
           .setName('amount')
+          .setNameLocalizations({
+            vi: 'số-tiền',
+          })
           .setDescription('Số tiền cần chuyển khoản (VNĐ, tối thiểu 1,000 đ)')
           .setDescriptionLocalizations({
             'en-US': 'Payment amount (VND, minimum 1,000 VND)',
@@ -57,6 +63,9 @@ export const data = new SlashCommandBuilder()
       .addUserOption((opt) =>
         opt
           .setName('customer')
+          .setNameLocalizations({
+            vi: 'khách-hàng',
+          })
           .setDescription('Khách hàng / Thành viên cần thanh toán (tag người nhận)')
           .setDescriptionLocalizations({
             'en-US': 'Customer / Member to invoice (mention receiver)',
@@ -66,6 +75,9 @@ export const data = new SlashCommandBuilder()
       .addStringOption((opt) =>
         opt
           .setName('memo')
+          .setNameLocalizations({
+            vi: 'nội-dung',
+          })
           .setDescription('Tên dịch vụ hoặc ghi chú đơn hàng (ví dụ: Mua code, Thuê buff, v.v.)')
           .setDescriptionLocalizations({
             'en-US': 'Order description or notes (e.g., Code purchase, Boost, etc.)',
@@ -77,6 +89,9 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
     sub
       .setName('history')
+      .setNameLocalizations({
+        vi: 'lịch-sử',
+      })
       .setDescription('Xem lịch sử giao dịch thanh toán thành công và thứ hạng cá nhân.')
       .setDescriptionLocalizations({
         'en-US': EN_LOCALE.commands['pay.history'].desc,
@@ -84,6 +99,9 @@ export const data = new SlashCommandBuilder()
       .addUserOption((opt) =>
         opt
           .setName('target')
+          .setNameLocalizations({
+            vi: 'thành-viên',
+          })
           .setDescription('Xem lịch sử của thành viên khác (mặc định là chính bạn)')
           .setDescriptionLocalizations({
             'en-US': 'View history of another member (defaults to you)',
@@ -94,6 +112,9 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
     sub
       .setName('top')
+      .setNameLocalizations({
+        vi: 'bxh',
+      })
       .setDescription('Xem bảng xếp hạng Top khách hàng chi tiêu nhiều nhất máy chủ.')
       .setDescriptionLocalizations({
         'en-US': EN_LOCALE.commands['pay.top'].desc,

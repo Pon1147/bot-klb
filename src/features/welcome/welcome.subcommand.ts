@@ -13,6 +13,9 @@ export function buildWelcomeGroup(
 ): SlashCommandSubcommandGroupBuilder {
   return group
     .setName('welcome')
+    .setNameLocalizations({
+      vi: 'chào-mừng',
+    })
     .setDescription('Cấu hình hệ thống chào mừng thành viên mới.')
     .setDescriptionLocalizations({
       'en-US': 'Configure automated welcome messages for new members.',
@@ -20,6 +23,9 @@ export function buildWelcomeGroup(
     .addSubcommand((sub) =>
       sub
         .setName('setchannel')
+        .setNameLocalizations({
+          vi: 'đặt-kênh',
+        })
         .setDescription('Chọn kênh gửi tin nhắn chào mừng.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.welcome.setchannel'].desc,
@@ -27,6 +33,9 @@ export function buildWelcomeGroup(
         .addChannelOption((opt) =>
           opt
             .setName('channel')
+            .setNameLocalizations({
+              vi: 'kênh',
+            })
             .setDescription('Kênh tin nhắn')
             .setDescriptionLocalizations({ 'en-US': 'The text channel for welcome messages' })
             .setRequired(true),
@@ -35,6 +44,9 @@ export function buildWelcomeGroup(
     .addSubcommand((sub) =>
       sub
         .setName('setrole')
+        .setNameLocalizations({
+          vi: 'gán-role',
+        })
         .setDescription('Chọn role tự động cấp khi vào server.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.welcome.setrole'].desc,
@@ -42,6 +54,9 @@ export function buildWelcomeGroup(
         .addRoleOption((opt) =>
           opt
             .setName('role')
+            .setNameLocalizations({
+              vi: 'vai-trò',
+            })
             .setDescription('Role cần cấp')
             .setDescriptionLocalizations({ 'en-US': 'The role to automatically grant' })
             .setRequired(true),
@@ -50,6 +65,9 @@ export function buildWelcomeGroup(
     .addSubcommand((sub) =>
       sub
         .setName('toggle')
+        .setNameLocalizations({
+          vi: 'bật-tắt',
+        })
         .setDescription('Bật hoặc tắt hệ thống chào mừng.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.welcome.toggle'].desc,
@@ -57,6 +75,9 @@ export function buildWelcomeGroup(
         .addBooleanOption((opt) =>
           opt
             .setName('enabled')
+            .setNameLocalizations({
+              vi: 'trạng-thái',
+            })
             .setDescription('Bật (true) hoặc Tắt (false)')
             .setDescriptionLocalizations({ 'en-US': 'Enable (true) or Disable (false)' })
             .setRequired(true),
@@ -65,6 +86,9 @@ export function buildWelcomeGroup(
     .addSubcommand((sub) =>
       sub
         .setName('status')
+        .setNameLocalizations({
+          vi: 'trạng-thái',
+        })
         .setDescription('Xem trạng thái cấu hình chào mừng hiện tại.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.welcome.status'].desc,
@@ -73,6 +97,9 @@ export function buildWelcomeGroup(
     .addSubcommand((sub) =>
       sub
         .setName('test')
+        .setNameLocalizations({
+          vi: 'thử-nghiệm',
+        })
         .setDescription('Gửi tin nhắn chào mừng thử nghiệm để kiểm tra hiển thị.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.welcome.test'].desc,

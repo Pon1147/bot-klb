@@ -30,6 +30,9 @@ export function buildRolesGroup(
 ): SlashCommandSubcommandGroupBuilder {
   return group
     .setName('roles')
+    .setNameLocalizations({
+      vi: 'vai-trò',
+    })
     .setDescription('Cấu hình và xem các role RBAC của máy chủ.')
     .setDescriptionLocalizations({
       'en-US': 'Configure role-based access control (RBAC) permissions.',
@@ -37,6 +40,9 @@ export function buildRolesGroup(
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('set')
+        .setNameLocalizations({
+          vi: 'gán',
+        })
         .setDescription('Thiết lập role cho một phân quyền bot.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.roles.set'].desc,
@@ -44,6 +50,9 @@ export function buildRolesGroup(
         .addStringOption((opt) =>
           opt
             .setName('role_type')
+            .setNameLocalizations({
+              vi: 'loại-quyền',
+            })
             .setDescription('Loại quyền cần gán role')
             .setDescriptionLocalizations({ 'en-US': 'Permission level to assign role' })
             .setRequired(true)
@@ -56,6 +65,9 @@ export function buildRolesGroup(
         .addRoleOption((opt) =>
           opt
             .setName('role')
+            .setNameLocalizations({
+              vi: 'vai-trò',
+            })
             .setDescription('Role Discord cần gán')
             .setDescriptionLocalizations({ 'en-US': 'The Discord role to bind' })
             .setRequired(true),
@@ -64,6 +76,9 @@ export function buildRolesGroup(
     .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
       sub
         .setName('view')
+        .setNameLocalizations({
+          vi: 'xem',
+        })
         .setDescription('Xem danh sách role RBAC hiện tại của máy chủ.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.roles.view'].desc,

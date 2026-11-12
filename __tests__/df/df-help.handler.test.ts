@@ -77,7 +77,7 @@ describe('DF Help Handler & Extension Utils', () => {
       const root = container.toJSON()[0] as any;
       const text = root.components.find((c: any) => c.type === ComponentType.TextDisplay);
       expect(text.content).toContain('Tiện Ích DF Toolbox & Liên Kết Tài Khoản');
-      expect(text.content).toContain('277+ Giftcode Garena');
+      expect(text.content).toContain('200+ Giftcode Garena');
       expect(text.content).toContain('Developer mode');
       expect(text.content).toContain('Load unpacked');
       expect(text.content).toContain('/df link status');

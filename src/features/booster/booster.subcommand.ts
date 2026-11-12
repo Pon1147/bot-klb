@@ -13,6 +13,9 @@ export function buildBoosterGroup(
 ): SlashCommandSubcommandGroupBuilder {
   return group
     .setName('booster')
+    .setNameLocalizations({
+      vi: 'booster',
+    })
     .setDescription('Cấu hình hệ thống cảm ơn Server Booster.')
     .setDescriptionLocalizations({
       'en-US': 'Configure server booster appreciation messages and roles.',
@@ -20,6 +23,9 @@ export function buildBoosterGroup(
     .addSubcommand((sub) =>
       sub
         .setName('setchannel')
+        .setNameLocalizations({
+          vi: 'đặt-kênh',
+        })
         .setDescription('Chọn kênh gửi tin nhắn cảm ơn Booster.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.booster.setchannel'].desc,
@@ -27,6 +33,9 @@ export function buildBoosterGroup(
         .addChannelOption((opt) =>
           opt
             .setName('channel')
+            .setNameLocalizations({
+              vi: 'kênh',
+            })
             .setDescription('Kênh tin nhắn')
             .setDescriptionLocalizations({ 'en-US': 'The text channel to send booster messages' })
             .setRequired(true),
@@ -35,6 +44,9 @@ export function buildBoosterGroup(
     .addSubcommand((sub) =>
       sub
         .setName('setrole')
+        .setNameLocalizations({
+          vi: 'gán-role',
+        })
         .setDescription('Chọn role dành riêng cho Booster.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.booster.setrole'].desc,
@@ -42,6 +54,9 @@ export function buildBoosterGroup(
         .addRoleOption((opt) =>
           opt
             .setName('role')
+            .setNameLocalizations({
+              vi: 'vai-trò',
+            })
             .setDescription('Role Booster')
             .setDescriptionLocalizations({ 'en-US': 'The role to assign to server boosters' })
             .setRequired(true),
@@ -50,6 +65,9 @@ export function buildBoosterGroup(
     .addSubcommand((sub) =>
       sub
         .setName('toggle')
+        .setNameLocalizations({
+          vi: 'bật-tắt',
+        })
         .setDescription('Bật hoặc tắt hệ thống thông báo Booster.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.booster.toggle'].desc,
@@ -57,6 +75,9 @@ export function buildBoosterGroup(
         .addBooleanOption((opt) =>
           opt
             .setName('enabled')
+            .setNameLocalizations({
+              vi: 'trạng-thái',
+            })
             .setDescription('Bật (true) hoặc Tắt (false)')
             .setDescriptionLocalizations({ 'en-US': 'Enable (true) or Disable (false)' })
             .setRequired(true),
@@ -65,6 +86,9 @@ export function buildBoosterGroup(
     .addSubcommand((sub) =>
       sub
         .setName('status')
+        .setNameLocalizations({
+          vi: 'trạng-thái',
+        })
         .setDescription('Xem trạng thái cấu hình Booster hiện tại.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.booster.status'].desc,
@@ -73,6 +97,9 @@ export function buildBoosterGroup(
     .addSubcommand((sub) =>
       sub
         .setName('test')
+        .setNameLocalizations({
+          vi: 'thử-nghiệm',
+        })
         .setDescription('Gửi tin nhắn cảm ơn Booster thử nghiệm để kiểm tra hiển thị.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.booster.test'].desc,

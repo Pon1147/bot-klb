@@ -17,6 +17,9 @@ export function buildContainerGroup(
 ): SlashCommandSubcommandGroupBuilder {
   return group
     .setName('container')
+    .setNameLocalizations({
+      vi: 'giao-diện',
+    })
     .setDescription('Tùy biến giao diện thông báo Components V2.')
     .setDescriptionLocalizations({
       'en-US': 'Customize and edit Discord Components V2 message layout.',
@@ -24,6 +27,9 @@ export function buildContainerGroup(
     .addSubcommand((sub) =>
       sub
         .setName('edit')
+        .setNameLocalizations({
+          vi: 'chỉnh-sửa',
+        })
         .setDescription('Chỉnh sửa container settings (Interactive UI).')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.container.edit'].desc,
@@ -33,6 +39,9 @@ export function buildContainerGroup(
     .addSubcommand((sub) =>
       sub
         .setName('reset')
+        .setNameLocalizations({
+          vi: 'đặt-lại',
+        })
         .setDescription('Reset container settings về mặc định.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.container.reset'].desc,

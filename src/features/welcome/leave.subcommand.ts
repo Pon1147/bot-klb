@@ -13,6 +13,9 @@ export function buildLeaveGroup(
 ): SlashCommandSubcommandGroupBuilder {
   return group
     .setName('leave')
+    .setNameLocalizations({
+      vi: 'tạm-biệt',
+    })
     .setDescription('Cấu hình hệ thống tạm biệt khi thành viên rời server.')
     .setDescriptionLocalizations({
       'en-US': 'Configure member leave and farewell notifications.',
@@ -20,6 +23,9 @@ export function buildLeaveGroup(
     .addSubcommand((sub) =>
       sub
         .setName('setchannel')
+        .setNameLocalizations({
+          vi: 'đặt-kênh',
+        })
         .setDescription('Chọn kênh gửi tin nhắn tạm biệt.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.leave.setchannel'].desc,
@@ -27,6 +33,9 @@ export function buildLeaveGroup(
         .addChannelOption((opt) =>
           opt
             .setName('channel')
+            .setNameLocalizations({
+              vi: 'kênh',
+            })
             .setDescription('Kênh tin nhắn')
             .setDescriptionLocalizations({ 'en-US': 'The text channel for farewell notices' })
             .setRequired(true),
@@ -35,6 +44,9 @@ export function buildLeaveGroup(
     .addSubcommand((sub) =>
       sub
         .setName('toggle')
+        .setNameLocalizations({
+          vi: 'bật-tắt',
+        })
         .setDescription('Bật hoặc tắt hệ thống tạm biệt.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.leave.toggle'].desc,
@@ -42,6 +54,9 @@ export function buildLeaveGroup(
         .addBooleanOption((opt) =>
           opt
             .setName('enabled')
+            .setNameLocalizations({
+              vi: 'trạng-thái',
+            })
             .setDescription('Bật (true) hoặc Tắt (false)')
             .setDescriptionLocalizations({ 'en-US': 'Enable (true) or Disable (false)' })
             .setRequired(true),
@@ -50,6 +65,9 @@ export function buildLeaveGroup(
     .addSubcommand((sub) =>
       sub
         .setName('status')
+        .setNameLocalizations({
+          vi: 'trạng-thái',
+        })
         .setDescription('Xem trạng thái cấu hình tạm biệt hiện tại.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.leave.status'].desc,
@@ -58,6 +76,9 @@ export function buildLeaveGroup(
     .addSubcommand((sub) =>
       sub
         .setName('test')
+        .setNameLocalizations({
+          vi: 'thử-nghiệm',
+        })
         .setDescription('Gửi tin nhắn tạm biệt thử nghiệm để kiểm tra hiển thị.')
         .setDescriptionLocalizations({
           'en-US': EN_LOCALE.commands['config.leave.test'].desc,

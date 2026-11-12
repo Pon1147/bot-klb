@@ -24,6 +24,9 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((sub) =>
     sub
       .setName('find')
+      .setNameLocalizations({
+        vi: 'tìm-đội',
+      })
       .setDescription('Tìm đồng đội chơi theo bản đồ và chế độ.')
       .setDescriptionLocalizations({
         'en-US': EN_LOCALE.commands['team.find'].desc,
