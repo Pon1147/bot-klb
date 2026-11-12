@@ -58,8 +58,8 @@ async function handleStart(
         '1️⃣ Click **"1. Open Garena Event Page"** below and log in to your game account.',
         `2️⃣ The **DF Toolbox** panel will pop up in the corner ➔ Paste code **\`${code}\`** ➔ Click **Link Discord**. Done!`,
         '',
-        '> ⚠️ *Notice: This linking step requires a computer (PC/Laptop) with Chrome/Edge browser.*',
-        '> 💡 *First time and don’t have the extension yet? Click **"Download Extension"** below or see the visual guide in `/df help`.*',
+        '> 💡 *Recommended on **PC/Laptop** (Chrome/Edge). On mobile: supports extension via **Orion Browser** (iOS) or **Kiwi Browser** (Android).*',
+        '> 📥 *Click **"Download Extension"** below (or see `/df help` for visual guide).*',
       ].join('\n')
     : [
         '## 🔗 Liên Kết Tài Khoản Delta Force',
@@ -70,8 +70,8 @@ async function handleStart(
         '1️⃣ Bấm nút **"1. Mở Cổng Sự Kiện Garena"** bên dưới và đăng nhập nick game.',
         `2️⃣ Bảng **DF Toolbox** sẽ hiện ở góc màn hình web ➔ Dán mã **\`${code}\`** ➔ Bấm **Liên kết Discord**. Xong!`,
         '',
-        '> ⚠️ *Lưu ý: Thao tác liên kết này cần thực hiện trên máy tính (PC/Laptop) dùng trình duyệt Chrome/Edge.*',
-        '> 💡 *Bạn mới dùng lần đầu và chưa có tiện ích? Bấm nút **"Tải Tiện Ích"** bên dưới (hoặc gõ `/df help` để xem hình ảnh hướng dẫn).*',
+        '> 💡 *Khuyên dùng trên **PC/Laptop** (Chrome/Edge). Nếu dùng điện thoại: hỗ trợ cài tiện ích qua **Orion Browser** (iOS) hoặc **Kiwi Browser** (Android).*',
+        '> 📥 *Bấm nút **"Tải Tiện Ích"** bên dưới (hoặc gõ `/df help` để xem hướng dẫn).*',
       ].join('\n');
 
   const info = buildInfoContainer(textContent);
