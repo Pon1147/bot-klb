@@ -59,7 +59,7 @@ export const VI_LOCALE = {
           '**DF Toolbox** là tiện ích mở rộng (Chrome Extension) hỗ trợ đồng bộ dữ liệu game & tự động đổi Giftcode.',
         features_title: '### Tính năng nổi bật:',
         feature_1:
-          '• **Đổi 277+ Giftcode Garena tự động**: Tự quét & nhận quà toàn bộ code còn hạn chỉ với 1 click.',
+          '• **Đổi 200+ Giftcode Garena tự động**: Tự quét & nhận quà toàn bộ code còn hạn chỉ với 1 click.',
         feature_2:
           '• **Trích xuất Token an toàn**: Tự động mã hóa AES-256-GCM gửi về bot để xem stats mà không lộ mật khẩu.',
         feature_3:
@@ -123,7 +123,7 @@ export const VI_LOCALE = {
       example: '/df gun weapon:m4a1',
     },
     'df.gift-code': {
-      desc: 'Nhận 280 mã giftcode tân thủ và công cụ tự động nhận quà trên Garena.',
+      desc: 'Nhận 200+ mã giftcode tân thủ và công cụ tự động nhận quà trên Garena.',
       example: '/df gift-code',
     },
     'df.code.show': {

@@ -60,7 +60,7 @@ export const EN_LOCALE = {
           '**DF Toolbox** is a lightweight Chrome Extension for seamless game data sync & automated giftcode redemption.',
         features_title: '### Key Highlights:',
         feature_1:
-          '• **Auto-Claim 277+ Garena Giftcodes**: Automatically scans and redeems all active codes in 1 click.',
+          '• **Auto-Claim 200+ Garena Giftcodes**: Automatically scans and redeems all active codes in 1 click.',
         feature_2:
           '• **Secure Token Extraction**: End-to-end encrypted with AES-256-GCM without exposing your password.',
         feature_3:
@@ -124,7 +124,7 @@ export const EN_LOCALE = {
       example: '/df gun weapon:m4a1',
     },
     'df.gift-code': {
-      desc: 'Get 280 starter giftcodes and tools to auto-redeem rewards on Garena.',
+      desc: 'Get 200+ starter giftcodes and tools to auto-redeem rewards on Garena.',
       example: '/df gift-code',
     },
     'df.code.show': {
