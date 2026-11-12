@@ -153,6 +153,8 @@ export const BOT_ROLES = {
   MEMBER: 'MEMBER',
 } as const;
 
+export type Policy = keyof typeof Policy;
+
 /**
  * Cấp bậc thẩm quyền theo thứ tự ưu tiên (Precedence):
  * GUILD_OWNER -> ADMINISTRATOR -> BOT_ADMIN -> MODERATOR -> MEMBER -> EVERYONE
@@ -168,10 +170,10 @@ export type AuthorityLevel =
  * - DF_ACCESS: Quyền truy cập tính năng game DF (Mặc định Everyone, hoặc Member role nếu cấu hình)
  * - TEAM_ACCESS: Quyền tìm đồng đội (Mặc định Everyone, hoặc Member role nếu cấu hình)
  */
-export type Policy =
-  'MANAGE_RBAC' | 'MANAGE_CONFIG' | 'MANAGE_DF_CODE' | 'DF_ACCESS' | 'TEAM_ACCESS' | 'PAY_ACCESS';
 
 export const Policy = {
+  BOT_OWNER: 'BOT_OWNER',
+  GUILD_OWNER: 'GUILD_OWNER',
   MANAGE_RBAC: 'MANAGE_RBAC',
   MANAGE_CONFIG: 'MANAGE_CONFIG',
   MANAGE_DF_CODE: 'MANAGE_DF_CODE',
@@ -185,14 +187,14 @@ export const Policy = {
 export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'config.roles.set': Policy.MANAGE_RBAC,
   'config.roles.view': Policy.MANAGE_RBAC,
-  'config.bot.guilds': Policy.MANAGE_RBAC,
-  'config.bot.announce': Policy.MANAGE_RBAC,
+  'config.bot.guilds': Policy.BOT_OWNER,
+  'config.bot.announce': Policy.BOT_OWNER,
   'config.bot.setannouncechannel': Policy.MANAGE_RBAC,
-  'config.qr-server.toggle': Policy.MANAGE_RBAC,
-  'config.qr-server.status': Policy.MANAGE_RBAC,
-  'config.vietqr.set': Policy.MANAGE_RBAC,
-  'config.vietqr.reset': Policy.MANAGE_RBAC,
-  'config.vietqr.workflow': Policy.MANAGE_CONFIG,
+  'config.qr-server.toggle': Policy.BOT_OWNER,
+  'config.qr-server.status': Policy.BOT_OWNER,
+  'config.vietqr.set': Policy.GUILD_OWNER,
+  'config.vietqr.reset': Policy.GUILD_OWNER,
+  'config.vietqr.workflow': Policy.MANAGE_RBAC,
   'config.vietqr.status': Policy.MANAGE_CONFIG,
   'config.vietqr.preview': Policy.MANAGE_CONFIG,
 
@@ -239,10 +241,10 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'df.link.start': Policy.DF_ACCESS,
   'df.link.status': Policy.DF_ACCESS,
 
-  'df.autopost.set': Policy.MANAGE_RBAC,
-  'df.autopost.toggle': Policy.MANAGE_RBAC,
-  'df.autopost.status': Policy.MANAGE_RBAC,
-  'df.autopost.run': Policy.MANAGE_RBAC,
+  'df.autopost.set': Policy.BOT_OWNER,
+  'df.autopost.toggle': Policy.BOT_OWNER,
+  'df.autopost.status': Policy.BOT_OWNER,
+  'df.autopost.run': Policy.BOT_OWNER,
 
   'team.find': Policy.TEAM_ACCESS,
   'pay.create': Policy.PAY_ACCESS,
@@ -311,6 +313,25 @@ export function resolvePolicy(policy: Policy, options: ResolvePolicyOptions): Re
     return {
       allowed: false,
       reason: 'Chỉ có thể sử dụng lệnh này trong máy chủ (server).',
+    };
+  }
+
+  // 0. Bot Owner Policy Check: Router đã bypass cho Bot Owner thật. Bất kỳ ai khác đều bị từ chối.
+  if (policy === 'BOT_OWNER') {
+    return {
+      allowed: false,
+      reason: '🔒 Lệnh này chỉ dành riêng cho Bot Owner (Chủ sở hữu bot).',
+    };
+  }
+
+  // 0.1. Guild Owner Policy Check: Chỉ duy nhất Chủ sở hữu máy chủ (Server Owner)
+  if (policy === 'GUILD_OWNER') {
+    if (isGuildOwner) {
+      return { allowed: true, matchedAuthority: 'GUILD_OWNER' };
+    }
+    return {
+      allowed: false,
+      reason: '🔒 Lệnh này chỉ dành riêng cho Chủ sở hữu máy chủ (Server Owner).',
     };
   }
 

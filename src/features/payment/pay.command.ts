@@ -17,7 +17,7 @@ import {
 import { sendReply } from '../../utils/reply.utils.js';
 import { ExpiryEntry, TTLStore } from '../../utils/ttl-store.js';
 import { createPayment, getUserPayments, getUserRank, getTopBuyers } from './payment.service.js';
-import { buildPaymentActionRow, canManagePayment } from './payment-flow.js';
+import { buildPaymentActionRow, canCreatePaymentInvoice } from './payment-flow.js';
 import { EN_LOCALE } from '../../locales/en.js';
 
 interface CooldownEntry extends ExpiryEntry {
@@ -164,6 +164,15 @@ async function handlePayCreate(
     account_name: vietqr.accountName,
   });
 
+  // Defer reply để chống interaction timeout 3s khi fetch ảnh từ cổng thanh toán
+  if (
+    typeof interaction.deferReply === 'function' &&
+    !interaction.deferred &&
+    !interaction.replied
+  ) {
+    await interaction.deferReply();
+  }
+
   // Tải buffer ảnh PNG VietQR chuẩn (kèm cơ chế fallback dự phòng)
   const qrBuffer = await fetchVietQrImageBuffer({
     bankId: vietqr.bankId,
@@ -202,11 +211,15 @@ async function handlePayCreate(
 
   const actionRow = buildPaymentActionRow(txId, buyerId);
 
-  await interaction.reply({
-    components: [...container.toJSON(), actionRow.toJSON() as any],
-    files,
-    flags: MessageFlags.IsComponentsV2,
-  });
+  await sendReply(
+    interaction,
+    {
+      components: [...container.toJSON(), actionRow.toJSON() as any],
+      files,
+      flags: MessageFlags.IsComponentsV2,
+    },
+    false,
+  );
 }
 
 /**
@@ -340,7 +353,7 @@ export async function execute(
       ? interaction.options.getSubcommand()
       : 'create';
   if (subcommand === 'create') {
-    if (!canManagePayment(interaction, guildId)) {
+    if (!canCreatePaymentInvoice(interaction, guildId)) {
       await sendReply(interaction, {
         components: buildErrorContainer(
           '🔒 Bạn không có quyền tạo hóa đơn thanh toán trên máy chủ này.\nChỉ Quản trị viên và Nhân viên (Staff Role) mới được phép tạo hóa đơn.',

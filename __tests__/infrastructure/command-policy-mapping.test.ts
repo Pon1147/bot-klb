@@ -32,6 +32,8 @@ describe('CI Security Guard — Command RBAC Policy Mapping', () => {
 
   test('Mọi key trong COMMAND_PATH_POLICIES đều phải là Policy hợp lệ', () => {
     const validPolicies = new Set([
+      'BOT_OWNER',
+      'GUILD_OWNER',
       'MANAGE_RBAC',
       'MANAGE_CONFIG',
       'MANAGE_DF_CODE',

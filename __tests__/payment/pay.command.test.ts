@@ -133,6 +133,21 @@ describe('pay.command', () => {
     } as any);
 
     const mockReply = jest.fn();
+    const mockEditReply = jest.fn().mockResolvedValue(undefined);
+    const mockDeferReply = jest.fn().mockImplementation(async () => {
+      interaction.deferred = true;
+    });
+
+    // Mock global.fetch để diệt open handle gọi mạng thật và trả về mock QR PNG
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        code: '00',
+        data: { qrDataURL: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' },
+      }),
+    } as any);
+
     const interaction: any = {
       guildId: 'guild-authorized',
       guild: { name: 'VIP Server' },
@@ -144,27 +159,38 @@ describe('pay.command', () => {
         getUser: jest.fn().mockReturnValue({ id: '998877665544332211' }),
         getString: jest.fn().mockReturnValue('Mua goi Premium'),
       },
+      deferReply: mockDeferReply,
+      deferred: false,
+      replied: false,
+      editReply: mockEditReply,
       reply: mockReply,
     };
 
-    await execute(interaction, db);
+    try {
+      await execute(interaction, db);
 
-    expect(mockReply).toHaveBeenCalledWith(
-      expect.objectContaining({
-        flags: MessageFlags.IsComponentsV2,
-        components: expect.arrayContaining([
-          expect.objectContaining({
-            components: expect.arrayContaining([
-              expect.objectContaining({
-                content: expect.stringContaining('<@998877665544332211>'),
-              }),
-              expect.objectContaining({
-                content: expect.stringContaining('100.000 đ'),
-              }),
-            ]),
-          }),
-        ]),
-      }),
-    );
+      // Khẳng định deferReply được gọi để chống interaction timeout 3s
+      expect(mockDeferReply).toHaveBeenCalled();
+
+      // Khi đã deferReply, bot dùng editReply để phản hồi
+      expect(mockEditReply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          components: expect.arrayContaining([
+            expect.objectContaining({
+              components: expect.arrayContaining([
+                expect.objectContaining({
+                  content: expect.stringContaining('<@998877665544332211>'),
+                }),
+                expect.objectContaining({
+                  content: expect.stringContaining('100.000 đ'),
+                }),
+              ]),
+            }),
+          ]),
+        }),
+      );
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 });

@@ -31,6 +31,46 @@ describe('PHASE 1 — Permission / Policy Model', () => {
   };
 
   // ─── 1. Policy: MANAGE_RBAC ───────────────────────────────────────
+  describe('Policy: BOT_OWNER', () => {
+    it('mọi user trong server (kể cả Guild Owner, Admin, Bot Admin) đều bị từ chối ở tầng resolvePolicy (vì router đã bypass cho Bot Owner)', () => {
+      const res = resolvePolicy(Policy.BOT_OWNER, {
+        userRoleIds: ['role-bot-admin'],
+        isGuildOwner: true,
+        isAdmin: true,
+        guildRbac: baseRbac,
+        isGuild: true,
+      });
+      expect(res.allowed).toBe(false);
+      expect(res.reason).toContain('Bot Owner');
+    });
+  });
+
+  describe('Policy: GUILD_OWNER', () => {
+    it('Guild Owner → allow', () => {
+      const res = resolvePolicy(Policy.GUILD_OWNER, {
+        userRoleIds: [],
+        isGuildOwner: true,
+        isAdmin: true,
+        guildRbac: baseRbac,
+        isGuild: true,
+      });
+      expect(res.allowed).toBe(true);
+      expect(res.matchedAuthority).toBe('GUILD_OWNER');
+    });
+
+    it('Administrator thường (không phải Guild Owner) → deny', () => {
+      const res = resolvePolicy(Policy.GUILD_OWNER, {
+        userRoleIds: [],
+        isGuildOwner: false,
+        isAdmin: true,
+        guildRbac: baseRbac,
+        isGuild: true,
+      });
+      expect(res.allowed).toBe(false);
+      expect(res.reason).toContain('Chủ sở hữu máy chủ');
+    });
+  });
+
   describe('Policy: MANAGE_RBAC', () => {
     it('Guild Owner → allow', () => {
       const res = resolvePolicy(Policy.MANAGE_RBAC, {
@@ -532,20 +572,26 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(57);
     });
 
-    it('MANAGE_RBAC policy mapping cho config.roles.*, config.bot.guilds, config.bot.announce, config.bot.setannouncechannel, config.qr-server.* và df.autopost.*', () => {
+    it('Policy mapping cho BOT_OWNER, GUILD_OWNER và MANAGE_RBAC', () => {
+      // MANAGE_RBAC
       expect(resolveCommandPolicy('config.roles.set')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.roles.view')).toBe(Policy.MANAGE_RBAC);
-      expect(resolveCommandPolicy('config.bot.guilds')).toBe(Policy.MANAGE_RBAC);
-      expect(resolveCommandPolicy('config.bot.announce')).toBe(Policy.MANAGE_RBAC);
       expect(resolveCommandPolicy('config.bot.setannouncechannel')).toBe(Policy.MANAGE_RBAC);
-      expect(resolveCommandPolicy('config.qr-server.toggle')).toBe(Policy.MANAGE_RBAC);
-      expect(resolveCommandPolicy('config.qr-server.status')).toBe(Policy.MANAGE_RBAC);
-      expect(resolveCommandPolicy('config.vietqr.set')).toBe(Policy.MANAGE_RBAC);
-      expect(resolveCommandPolicy('config.vietqr.reset')).toBe(Policy.MANAGE_RBAC);
-      expect(resolveCommandPolicy('df.autopost.set')).toBe(Policy.MANAGE_RBAC);
-      expect(resolveCommandPolicy('df.autopost.toggle')).toBe(Policy.MANAGE_RBAC);
-      expect(resolveCommandPolicy('df.autopost.status')).toBe(Policy.MANAGE_RBAC);
-      expect(resolveCommandPolicy('df.autopost.run')).toBe(Policy.MANAGE_RBAC);
+      expect(resolveCommandPolicy('config.vietqr.workflow')).toBe(Policy.MANAGE_RBAC);
+
+      // BOT_OWNER (Lệnh toàn hệ thống)
+      expect(resolveCommandPolicy('config.bot.guilds')).toBe(Policy.BOT_OWNER);
+      expect(resolveCommandPolicy('config.bot.announce')).toBe(Policy.BOT_OWNER);
+      expect(resolveCommandPolicy('config.qr-server.toggle')).toBe(Policy.BOT_OWNER);
+      expect(resolveCommandPolicy('config.qr-server.status')).toBe(Policy.BOT_OWNER);
+      expect(resolveCommandPolicy('df.autopost.set')).toBe(Policy.BOT_OWNER);
+      expect(resolveCommandPolicy('df.autopost.toggle')).toBe(Policy.BOT_OWNER);
+      expect(resolveCommandPolicy('df.autopost.status')).toBe(Policy.BOT_OWNER);
+      expect(resolveCommandPolicy('df.autopost.run')).toBe(Policy.BOT_OWNER);
+
+      // GUILD_OWNER (Chỉ chủ server)
+      expect(resolveCommandPolicy('config.vietqr.set')).toBe(Policy.GUILD_OWNER);
+      expect(resolveCommandPolicy('config.vietqr.reset')).toBe(Policy.GUILD_OWNER);
     });
 
     it('MANAGE_CONFIG policy mapping cho config.welcome.*, booster.* và container.*', () => {
@@ -569,8 +615,6 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(resolveCommandPolicy('config.container.edit')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.container.reset')).toBe(Policy.MANAGE_CONFIG);
 
-      expect(resolveCommandPolicy('config.vietqr.set')).toBe(Policy.MANAGE_RBAC);
-      expect(resolveCommandPolicy('config.vietqr.workflow')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.vietqr.status')).toBe(Policy.MANAGE_CONFIG);
       expect(resolveCommandPolicy('config.vietqr.preview')).toBe(Policy.MANAGE_CONFIG);
     });

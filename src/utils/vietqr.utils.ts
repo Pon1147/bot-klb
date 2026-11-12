@@ -119,8 +119,8 @@ export interface VietQrImageOptions {
  */
 export function buildVietQrImageUrl(options: VietQrImageOptions): string {
   const { bankId, accountNo, accountName, amount, addInfo, template = 'compact2' } = options;
-  const cleanBank = bankId.trim().toUpperCase();
-  const cleanAcc = accountNo.trim();
+  const cleanBank = encodeURIComponent(bankId.trim().toUpperCase());
+  const cleanAcc = encodeURIComponent(accountNo.trim().replace(/[^A-Za-z0-9]/g, ''));
   const cleanName = encodeURIComponent(accountName.trim());
   const cleanInfo = encodeURIComponent(addInfo.trim());
 
@@ -144,11 +144,11 @@ export async function fetchVietQrImageBuffer(options: VietQrImageOptions): Promi
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'BotKLB-Discord/1.6',
+          'User-Agent': 'BotKLB-Discord/1.11',
         },
         body: JSON.stringify({
           acqId,
-          accountNo: options.accountNo.trim(),
+          accountNo: options.accountNo.trim().replace(/[^A-Za-z0-9]/g, ''),
           accountName: options.accountName.trim(),
           amount: options.amount,
           addInfo: options.addInfo.trim(),
@@ -177,7 +177,7 @@ export async function fetchVietQrImageBuffer(options: VietQrImageOptions): Promi
   });
   try {
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'BotKLB-Discord/1.6' },
+      headers: { 'User-Agent': 'BotKLB-Discord/1.11' },
       signal: AbortSignal.timeout(5000),
     });
     if (res.ok) {
@@ -188,21 +188,7 @@ export async function fetchVietQrImageBuffer(options: VietQrImageOptions): Promi
       }
     }
   } catch {
-    // Tiếp tục fallback bên dưới
-  }
-
-  // 3. Fallback dự phòng cấp 3: sinh QR qua qrserver nếu các endpoint VietQR bị quá tải
-  try {
-    const qrRes = await fetch(
-      `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(url)}`,
-      { signal: AbortSignal.timeout(4000) },
-    );
-    if (qrRes && qrRes.ok) {
-      const arrayBuf = await qrRes.arrayBuffer();
-      return Buffer.from(arrayBuf);
-    }
-  } catch {
-    // Không thể tải mã QR
+    // Không tải được ảnh từ CDN
   }
 
   return null;

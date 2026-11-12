@@ -849,7 +849,10 @@ describe('interaction-router — Bot Owner RBAC Bypass', () => {
     jest.clearAllMocks();
     mockExecute = jest.fn().mockResolvedValue(undefined);
     mockClient = {
-      commands: new Map([['df', { execute: mockExecute }]]),
+      commands: new Map([
+        ['df', { execute: mockExecute }],
+        ['config', { execute: mockExecute }],
+      ]),
       database: {},
     };
     mockSettingsService.get.mockReturnValue({
@@ -901,7 +904,64 @@ describe('interaction-router — Bot Owner RBAC Bypass', () => {
     expect(mockExecute).not.toHaveBeenCalled();
     expect(interaction.reply).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: expect.stringContaining('Quản trị viên'),
+        content: expect.stringContaining('Bot Owner'),
+        flags: MessageFlags.Ephemeral,
+      }),
+    );
+  });
+
+  it('Administrator thường (không phải Bot Owner) cũng bị từ chối truy cập lệnh BOT_OWNER (config.bot.guilds)', async () => {
+    const interaction = createMockInteraction({
+      commandName: 'config',
+      options: {
+        getSubcommandGroup: jest.fn(() => 'bot'),
+        getSubcommand: jest.fn(() => 'guilds'),
+      },
+      user: { id: 'admin-not-bot-owner' },
+      memberPermissions: {
+        has: jest.fn((perm: bigint) => perm === PermissionFlagsBits.Administrator),
+      },
+      member: {
+        permissions: { has: () => true },
+        roles: { cache: new Map() },
+      },
+    });
+
+    await routeInteraction(mockClient, interaction as any);
+
+    expect(mockExecute).not.toHaveBeenCalled();
+    expect(interaction.reply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('Bot Owner'),
+        flags: MessageFlags.Ephemeral,
+      }),
+    );
+  });
+
+  it('Administrator thường (không phải Server Owner) bị từ chối khi gọi lệnh GUILD_OWNER (config.vietqr.set)', async () => {
+    const interaction = createMockInteraction({
+      commandName: 'config',
+      guild: { ownerId: 'real-server-owner', id: 'guild-test-123' },
+      options: {
+        getSubcommandGroup: jest.fn(() => 'vietqr'),
+        getSubcommand: jest.fn(() => 'set'),
+      },
+      user: { id: 'admin-not-guild-owner' },
+      memberPermissions: {
+        has: jest.fn((perm: bigint) => perm === PermissionFlagsBits.Administrator),
+      },
+      member: {
+        permissions: { has: () => true },
+        roles: { cache: new Map() },
+      },
+    });
+
+    await routeInteraction(mockClient, interaction as any);
+
+    expect(mockExecute).not.toHaveBeenCalled();
+    expect(interaction.reply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('Chủ sở hữu máy chủ'),
         flags: MessageFlags.Ephemeral,
       }),
     );

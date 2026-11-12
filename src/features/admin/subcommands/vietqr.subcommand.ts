@@ -285,9 +285,46 @@ export async function handleVietQrSet(
   }
 
   const bank = normalized.bankCode;
-  const accountNo = interaction.options.getString('account_no', true).trim();
-  const accountName = interaction.options.getString('account_name', true).trim().toUpperCase();
-  const prefix = interaction.options.getString('prefix')?.trim().toUpperCase() || 'NAP';
+  const rawAccountNo = interaction.options.getString('account_no', true).trim();
+  if (!/^[A-Za-z0-9]{6,25}$/.test(rawAccountNo)) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '⚠️ Số tài khoản không hợp lệ. Vui lòng chỉ nhập 6-25 ký tự chữ và số (không chứa khoảng trắng hay ký tự đặc biệt).',
+      ).toJSON(),
+    });
+    return;
+  }
+  const accountNo = rawAccountNo;
+
+  const rawAccountName = interaction.options.getString('account_name', true).trim();
+  // Bỏ dấu tiếng Việt và viết hoa
+  const cleanAccountName = rawAccountName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toUpperCase();
+
+  if (!/^[A-Z0-9 ]{2,50}$/.test(cleanAccountName)) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '⚠️ Tên chủ tài khoản không hợp lệ. Vui lòng nhập từ 2-50 ký tự chữ cái (ví dụ: NGUYEN VAN A).',
+      ).toJSON(),
+    });
+    return;
+  }
+  const accountName = cleanAccountName;
+
+  const rawPrefix = (interaction.options.getString('prefix')?.trim() || 'NAP').toUpperCase();
+  if (!/^[A-Z0-9]{2,10}$/.test(rawPrefix)) {
+    await sendReply(interaction, {
+      components: buildErrorContainer(
+        '⚠️ Tiền tố nội dung không hợp lệ. Vui lòng nhập từ 2-10 ký tự chữ in hoa hoặc chữ số (ví dụ: NAP, PAY, SHOP).',
+      ).toJSON(),
+    });
+    return;
+  }
+  const prefix = rawPrefix;
 
   const settingsService = getSettingsService();
   const currentSettings = settingsService.get(guildId);
@@ -332,7 +369,8 @@ export async function handleVietQrSet(
       `• **Chủ tài khoản**: **${accountName}**\n` +
       `• **Tiền tố nội dung**: \`${prefix}\`\n` +
       `• **Trạng thái**: 🟢 Sẵn sàng nhận chuyển khoản\n\n` +
-      `> ℹ️ *Thành viên máy chủ hiện có thể sử dụng lệnh \`/pay create\` để tạo mã QR thanh toán tự động.*`,
+      `> ℹ️ *Thành viên máy chủ hiện có thể sử dụng lệnh \`/pay create\` để tạo mã QR thanh toán tự động.*\n` +
+      `> 💡 **Khuyến nghị an toàn**: Quét thử mã bằng lệnh \`/config vietqr preview\` trước khi nhận tiền của khách!`,
   );
 
   await sendReply(interaction, {
@@ -499,11 +537,6 @@ export async function handleVietQrReset(
         'Lệnh này chỉ có thể sử dụng trong máy chủ Discord.',
       ).toJSON(),
     });
-    return;
-  }
-
-  if (!isQrServerEnabled(guildId)) {
-    await sendReply(interaction, buildQrPremiumLockedResponse());
     return;
   }
 

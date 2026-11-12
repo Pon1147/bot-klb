@@ -1,5 +1,10 @@
 import { PermissionFlagsBits } from 'discord.js';
-import { handleVietQrWorkflow, handleVietQrStatus } from '../../src/features/admin/subcommands/vietqr.subcommand.js';
+import {
+  handleVietQrWorkflow,
+  handleVietQrStatus,
+  handleVietQrSet,
+  handleVietQrReset,
+} from '../../src/features/admin/subcommands/vietqr.subcommand.js';
 import * as settingsModule from '../../src/services/settings.service.js';
 
 describe('vietqr.subcommand: handleVietQrWorkflow', () => {
@@ -249,6 +254,142 @@ describe('vietqr.subcommand: handleVietQrWorkflow', () => {
       const stringified = JSON.stringify(replyArg);
       expect(stringified).toContain('@everyone');
       expect(stringified).toContain('Không hợp lệ — hệ thống đã vô hiệu hóa để bảo vệ');
+    });
+  });
+
+  describe('handleVietQrSet Input Validation', () => {
+    it('từ chối khi số tài khoản chứa ký tự đặc biệt hoặc quá ngắn/dài', async () => {
+      const mockReply = jest.fn();
+      const interaction: any = {
+        guildId,
+        guild: { ownerId: 'owner-id' },
+        user: { id: 'owner-id' },
+        options: {
+          getString: jest.fn((name: string) => {
+            if (name === 'bank') return 'MB';
+            if (name === 'account_no') return '123-456-789'; // Ký tự lạ
+            if (name === 'account_name') return 'NGUYEN VAN A';
+            if (name === 'prefix') return 'NAP';
+            return null;
+          }),
+        },
+        reply: mockReply,
+        replied: false,
+        deferred: false,
+      };
+
+      await handleVietQrSet(interaction);
+
+      expect(mockReply).toHaveBeenCalled();
+      const stringified = JSON.stringify(mockReply.mock.calls[0][0]);
+      expect(stringified).toContain('Số tài khoản không hợp lệ');
+      expect(mockSettingsUpdate).not.toHaveBeenCalled();
+    });
+
+    it('tự động chuẩn hóa bỏ dấu tiếng Việt và viết hoa tên chủ tài khoản', async () => {
+      const mockReply = jest.fn();
+      const interaction: any = {
+        guildId,
+        guild: { ownerId: 'owner-id' },
+        user: { id: 'owner-id' },
+        options: {
+          getString: jest.fn((name: string) => {
+            if (name === 'bank') return 'MB';
+            if (name === 'account_no') return '0123456789';
+            if (name === 'account_name') return 'Nguyễn Văn Đạt'; // Có dấu tiếng Việt
+            if (name === 'prefix') return 'NAP';
+            return null;
+          }),
+        },
+        reply: mockReply,
+        replied: false,
+        deferred: false,
+      };
+
+      await handleVietQrSet(interaction);
+
+      expect(mockReply).toHaveBeenCalled();
+      expect(mockSettingsUpdate).toHaveBeenCalledWith(guildId, {
+        vietqr: expect.objectContaining({
+          accountName: 'NGUYEN VAN DAT', // Đã bỏ dấu và viết hoa
+          accountNo: '0123456789',
+        }),
+      });
+    });
+
+    it('từ chối khi prefix chứa ký tự đặc biệt hoặc quá dài', async () => {
+      const mockReply = jest.fn();
+      const interaction: any = {
+        guildId,
+        guild: { ownerId: 'owner-id' },
+        user: { id: 'owner-id' },
+        options: {
+          getString: jest.fn((name: string) => {
+            if (name === 'bank') return 'MB';
+            if (name === 'account_no') return '0123456789';
+            if (name === 'account_name') return 'NGUYEN VAN A';
+            if (name === 'prefix') return 'PREFIX_TOO_LONG_123';
+            return null;
+          }),
+        },
+        reply: mockReply,
+        replied: false,
+        deferred: false,
+      };
+
+      await handleVietQrSet(interaction);
+
+      expect(mockReply).toHaveBeenCalled();
+      const stringified = JSON.stringify(mockReply.mock.calls[0][0]);
+      expect(stringified).toContain('Tiền tố nội dung không hợp lệ');
+      expect(mockSettingsUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleVietQrReset Permissions & Premium Bypass', () => {
+    it('cho phép Server Owner gỡ bỏ thông tin ngân hàng ngay cả khi server bị khóa QR Premium', async () => {
+      jest.spyOn(settingsModule, 'isQrServerEnabled').mockReturnValue(false); // Bị khóa Premium
+
+      const mockReply = jest.fn();
+      const interaction: any = {
+        guildId,
+        guild: { ownerId: 'owner-id' },
+        user: { id: 'owner-id' }, // Là Server Owner
+        reply: mockReply,
+        replied: false,
+        deferred: false,
+      };
+
+      await handleVietQrReset(interaction);
+
+      expect(mockReply).toHaveBeenCalled();
+      expect(mockSettingsUpdate).toHaveBeenCalledWith(guildId, {
+        vietqr: expect.objectContaining({
+          enabled: false,
+          bankId: null,
+          accountNo: null,
+          accountName: null,
+        }),
+      });
+    });
+
+    it('từ chối Administrator không phải Server Owner khi gọi reset', async () => {
+      const mockReply = jest.fn();
+      const interaction: any = {
+        guildId,
+        guild: { ownerId: 'other-owner-id' },
+        user: { id: 'admin-user-id' }, // Admin thường, không phải Owner
+        reply: mockReply,
+        replied: false,
+        deferred: false,
+      };
+
+      await handleVietQrReset(interaction);
+
+      expect(mockReply).toHaveBeenCalled();
+      const stringified = JSON.stringify(mockReply.mock.calls[0][0]);
+      expect(stringified).toContain('Bạn không có quyền gỡ bỏ cấu hình ngân hàng');
+      expect(mockSettingsUpdate).not.toHaveBeenCalled();
     });
   });
 });

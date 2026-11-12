@@ -8,6 +8,8 @@ import {
   isFeedbackRateButton,
   isFeedbackModal,
   canManagePayment,
+  canCreatePaymentInvoice,
+  canApprovePaymentInvoice,
   handlePaymentButton,
   handlePaymentModal,
   handleFeedbackRateButton,
@@ -175,6 +177,27 @@ describe('payment.flow', () => {
         },
       };
       expect(canManagePayment(memberWithRawArray, guildId)).toBe(false);
+    });
+
+    it('tách bạch canCreatePaymentInvoice và canApprovePaymentInvoice khi server chưa cấu hình staffRoleId', () => {
+      jest.spyOn(settingsModule, 'getSettingsService').mockReturnValue({
+        get: jest.fn().mockReturnValue({
+          vietqr: { staffRoleId: null },
+          rbac: {},
+        }),
+      } as any);
+
+      const regularMemberInteraction: any = {
+        guild: { ownerId: 'owner-id' },
+        user: { id: 'regular-user' },
+        member: { permissions: { has: () => false }, roles: { cache: new Map() } },
+      };
+
+      // canCreatePaymentInvoice: Mọi member được phép tạo hóa đơn cho chính họ
+      expect(canCreatePaymentInvoice(regularMemberInteraction, 'guild-1')).toBe(true);
+
+      // canApprovePaymentInvoice: Member thường TUYỆT ĐỐI KHÔNG được duyệt đơn
+      expect(canApprovePaymentInvoice(regularMemberInteraction, 'guild-1')).toBe(false);
     });
   });
 

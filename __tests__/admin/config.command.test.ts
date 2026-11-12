@@ -1060,7 +1060,7 @@ describe('/config command — Execute Dispatch', () => {
         expect(callArgs.flags & MessageFlags.IsComponentsV2).toBe(MessageFlags.IsComponentsV2);
       });
 
-      it('vietqr reset: từ chối khi máy chủ chưa mở QR Server', async () => {
+      it('vietqr reset: cho phép Server Owner xóa STK ngay cả khi máy chủ chưa mở QR Server', async () => {
         mockIsQrServerEnabled.mockReturnValueOnce(false);
 
         const interaction = createMockInteraction({
@@ -1075,7 +1075,7 @@ describe('/config command — Execute Dispatch', () => {
 
         const replyPayload = interaction.reply.mock.calls[0][0];
         const jsonStr = JSON.stringify(replyPayload);
-        expect(jsonStr).toContain('Tính năng QR Thanh toán tự động chưa được mở');
+        expect(jsonStr).toContain('Đã Gỡ Bỏ Cấu Hình VietQR Máy Chủ');
       });
 
       it('vietqr reset: từ chối khi người dùng không phải Server Owner', async () => {

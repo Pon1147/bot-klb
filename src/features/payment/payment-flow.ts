@@ -158,13 +158,13 @@ export function buildRatingButtons(
 }
 
 /**
- * Kiểm tra người dùng có quyền duyệt/hủy thanh toán không:
+ * Kiểm tra người dùng có quyền duyệt/hủy thanh toán không (Approve/Cancel invoice):
  * - Guild Owner
  * - Discord Administrator
  * - BOT_ADMIN hoặc MODERATOR role
- * - Staff Role (được cấu hình riêng cho từng Guild trong vietqr.staffRoleId)
+ * - Staff Role hợp lệ (được cấu hình trong vietqr.staffRoleId, khác @everyone)
  */
-export function canManagePayment(
+export function canApprovePaymentInvoice(
   interaction: ButtonInteraction | ModalSubmitInteraction | ChatInputCommandInteraction,
   guildId: string,
 ): boolean {
@@ -182,10 +182,9 @@ export function canManagePayment(
   try {
     const settingsService = getSettingsService();
     const settings = settingsService.get(guildId);
-
     const userRoles = extractMemberRoleIds(interaction.member);
 
-    // Kiểm tra Staff Role riêng của tính năng QR (chặn @everyone nếu lỡ lưu vào settings)
+    // Kiểm tra Staff Role riêng của tính năng QR (loại trừ @everyone)
     if (
       settings.vietqr?.staffRoleId &&
       settings.vietqr.staffRoleId !== guildId &&
@@ -201,18 +200,45 @@ export function canManagePayment(
     if (settings.rbac?.moderatorRoleId && userRoles.includes(settings.rbac.moderatorRoleId)) {
       return true;
     }
-
-    // Nếu là ChatInputCommandInteraction (lệnh /pay create) và server chưa cấu hình staffRoleId riêng
-    const isCommand = !('customId' in interaction);
-    if (isCommand && !settings.vietqr?.staffRoleId) {
-      return true;
-    }
   } catch {
     // SettingsService fallback
   }
 
   return false;
 }
+
+/**
+ * Kiểm tra người dùng có quyền tạo hóa đơn thanh toán không (/pay create):
+ * - Guild Owner, Administrator, Bot Admin, Moderator
+ * - Staff Role nếu có cấu hình
+ * - Mọi thành viên nếu server chưa chỉ định staffRoleId riêng (thành viên tự tạo hóa đơn)
+ */
+export function canCreatePaymentInvoice(
+  interaction: ChatInputCommandInteraction,
+  guildId: string,
+): boolean {
+  if (canApprovePaymentInvoice(interaction, guildId)) {
+    return true;
+  }
+
+  try {
+    const settingsService = getSettingsService();
+    const settings = settingsService.get(guildId);
+    // Nếu server chưa cấu hình staffRoleId riêng -> mở cho mọi thành viên tạo hóa đơn
+    if (!settings.vietqr?.staffRoleId || settings.vietqr.staffRoleId === guildId) {
+      return true;
+    }
+  } catch {
+    // Fallback
+  }
+
+  return false;
+}
+
+/**
+ * Alias tương thích ngược cho canApprovePaymentInvoice
+ */
+export const canManagePayment = canApprovePaymentInvoice;
 
 /**
  * Xử lý khi Admin hoặc Staff bấm nút Confirm hoặc Cancel trên hóa đơn
