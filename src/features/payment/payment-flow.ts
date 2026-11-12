@@ -185,8 +185,12 @@ export function canManagePayment(
 
     const userRoles = extractMemberRoleIds(interaction.member);
 
-    // Kiểm tra Staff Role riêng của tính năng QR
-    if (settings.vietqr?.staffRoleId && userRoles.includes(settings.vietqr.staffRoleId)) {
+    // Kiểm tra Staff Role riêng của tính năng QR (chặn @everyone nếu lỡ lưu vào settings)
+    if (
+      settings.vietqr?.staffRoleId &&
+      settings.vietqr.staffRoleId !== guildId &&
+      userRoles.includes(settings.vietqr.staffRoleId)
+    ) {
       return true;
     }
 

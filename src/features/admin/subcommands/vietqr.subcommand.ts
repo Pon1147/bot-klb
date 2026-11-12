@@ -180,6 +180,17 @@ export async function handleVietQrWorkflow(
   }
 
   const staffRole = interaction.options.getRole('staff_role');
+  if (staffRole) {
+    const isManaged = Boolean((staffRole as { managed?: boolean }).managed);
+    if (staffRole.id === guildId || isManaged) {
+      await sendReply(interaction, {
+        components: buildErrorContainer(
+          'Không thể sử dụng role @everyone hoặc role tích hợp/bot (managed role) làm role nhân viên duyệt đơn.',
+        ).toJSON(),
+      });
+      return;
+    }
+  }
   const feedbackChannel = interaction.options.getChannel('feedback_channel');
   const enableRating = interaction.options.getBoolean('enable_rating');
   const thanksMessage = interaction.options.getString('thanks_message');
@@ -195,9 +206,13 @@ export async function handleVietQrWorkflow(
     template: 'compact2' as const,
   };
 
+  // Tự động làm sạch dữ liệu cũ nếu staffRoleId từng bị lưu nhầm thành @everyone (guildId)
+  const cleanCurrentStaffRoleId =
+    currentVietQr.staffRoleId === guildId ? null : currentVietQr.staffRoleId;
+
   const updatedVietQr = {
     ...currentVietQr,
-    ...(staffRole ? { staffRoleId: staffRole.id } : {}),
+    staffRoleId: staffRole ? staffRole.id : cleanCurrentStaffRoleId,
     ...(feedbackChannel ? { feedbackChannelId: feedbackChannel.id } : {}),
     ...(enableRating !== null ? { enableRating } : {}),
     ...(thanksMessage ? { thanksMessage } : {}),
@@ -362,6 +377,13 @@ export async function handleVietQrStatus(
   const bankDisplayName =
     SUPPORTED_BANKS[vietqr.bankId.toUpperCase()] ?? vietqr.bankId.toUpperCase();
 
+  const isInvalidStaffRole = Boolean(vietqr.staffRoleId && vietqr.staffRoleId === guildId);
+  const staffRoleDisplay = isInvalidStaffRole
+    ? '⚠️ `@everyone` *(Không hợp lệ — hệ thống đã vô hiệu hóa để bảo vệ)*'
+    : vietqr.staffRoleId
+      ? `<@&${vietqr.staffRoleId}>`
+      : '*Chưa thiết lập (Chỉ Admin)*';
+
   const container = buildInfoContainer(
     `### 💳 Cấu Hình VietQR Máy Chủ\n\n` +
       `• **Ngân hàng**: **${bankDisplayName}** (\`${vietqr.bankId.toUpperCase()}\`)\n` +
@@ -370,7 +392,7 @@ export async function handleVietQrStatus(
       `• **Tiền tố nội dung**: \`${vietqr.prefix ?? 'NAP'}\`\n` +
       `• **Trạng thái**: ${vietqr.enabled ? '🟢 Đang hoạt động' : '🔴 Tạm dừng'}\n\n` +
       `**⚙️ Workflow & Quy trình:**\n` +
-      `• **Role nhân viên (Staff)**: ${vietqr.staffRoleId ? `<@&${vietqr.staffRoleId}>` : '*Chưa thiết lập (Chỉ Admin)*'}\n` +
+      `• **Role nhân viên (Staff)**: ${staffRoleDisplay}\n` +
       `• **Kênh nhận Feedback**: ${vietqr.feedbackChannelId ? `<#${vietqr.feedbackChannelId}>` : '*Chưa thiết lập*'}\n` +
       `• **Đánh giá 1-5 sao**: ${vietqr.enableRating !== false ? '🟢 Bật' : '🔴 Tắt'}\n` +
       `• **Lời cảm ơn**: *"${vietqr.thanksMessage ?? 'Mặc định'}"*`,

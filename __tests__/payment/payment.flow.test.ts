@@ -142,6 +142,40 @@ describe('payment.flow', () => {
 
       expect(canManagePayment(regularInteraction, 'guild-1')).toBe(false);
     });
+
+    it('từ chối tuyệt đối role @everyone làm staff role ngay cả khi guild lưu nhầm staffRoleId bằng guildId (hỗ trợ cả 2 dạng member)', () => {
+      const guildId = 'guild-123456';
+      jest.spyOn(settingsModule, 'getSettingsService').mockReturnValue({
+        get: jest.fn().mockReturnValue({
+          vietqr: { staffRoleId: guildId }, // Server lỡ lưu staffRoleId bằng @everyone (guildId)
+          rbac: {},
+        }),
+      } as any);
+
+      // Dạng 1: Discord.js Collection/Map cache (chỉ chứa role @everyone với id bằng guildId)
+      const memberWithCacheMap: any = {
+        guild: { ownerId: 'real-owner-999' },
+        user: { id: 'random-user-1' },
+        customId: 'pay_confirm_TX_123_buyer1',
+        member: {
+          permissions: { has: () => false },
+          roles: { cache: new Map([[guildId, { id: guildId, name: '@everyone' }]]) },
+        },
+      };
+      expect(canManagePayment(memberWithCacheMap, guildId)).toBe(false);
+
+      // Dạng 2: Raw Gateway Array (member.roles là mảng string IDs chỉ gồm guildId)
+      const memberWithRawArray: any = {
+        guild: { ownerId: 'real-owner-999' },
+        user: { id: 'random-user-2' },
+        customId: 'pay_cancel_TX_123_buyer1',
+        member: {
+          permissions: { has: () => false },
+          roles: [guildId],
+        },
+      };
+      expect(canManagePayment(memberWithRawArray, guildId)).toBe(false);
+    });
   });
 
   describe('Interactive Handlers', () => {
