@@ -28,6 +28,7 @@ export * as weaponLoadoutsService from './weapon-loadouts.service.js';
 export * from './stats-select.handler.js';
 export { handleMatchSelect, MATCH_SELECT_PREFIX } from './match.handler.js';
 export { handleHelpButton } from './help.handler.js';
+export { handleLinkButton } from './link.handler.js';
 export { getExtensionZipPath } from './extension.utils.js';
 
 // Re-export BM-05 Team Find cho tương thích ngược

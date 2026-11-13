@@ -32,6 +32,7 @@ import {
 import {
   handleDfStatsSelect,
   handleHelpButton,
+  handleLinkButton,
   handleMatchSelect,
   MATCH_SELECT_PREFIX,
 } from '../../features/delta-force/index.js';
@@ -157,6 +158,9 @@ async function handleButton(interaction: ButtonInteraction): Promise<void> {
 
   // DF Help tab switch buttons
   if ((await handleHelpButton(interaction)).handled) return;
+
+  // DF Link buttons (refresh / mobile / safety)
+  if ((await handleLinkButton(interaction, interaction.client.database)).handled) return;
 
   // Payment VietQR Confirm / Cancel buttons
   if (isPaymentButton(interaction.customId)) {
