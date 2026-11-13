@@ -6,8 +6,6 @@
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,
-  SlashCommandSubcommandBuilder,
-  SlashCommandSubcommandGroupBuilder,
   SlashCommandSubcommandsOnlyBuilder,
 } from 'discord.js';
 import Database from 'better-sqlite3';
@@ -27,46 +25,21 @@ import { execute as executeGiftCode } from '../gift-code.handler.js';
 import { MAX_HISTORY_PAGE } from '../../../config/app.constants.js';
 import { EN_LOCALE } from '../../../locales/en.js';
 
-export function buildLinkGroup(
-  group: SlashCommandSubcommandGroupBuilder,
-): SlashCommandSubcommandGroupBuilder {
-  return group
-    .setName('link')
-    .setNameLocalizations({
-      vi: 'liên-kết',
-    })
-    .setDescription('Liên kết / kiểm tra / xác thực tài khoản Delta Force HQ.')
-    .setDescriptionLocalizations({
-      'en-US': 'Link / check / verify Delta Force HQ account.',
-    })
-    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
-      sub
-        .setName('start')
-        .setNameLocalizations({
-          vi: 'bắt-đầu',
-        })
-        .setDescription('Tạo mã claim và gửi hướng dẫn qua DM.')
-        .setDescriptionLocalizations({
-          'en-US': EN_LOCALE.commands['df.link.start'].desc,
-        }),
-    )
-    .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
-      sub
-        .setName('status')
-        .setNameLocalizations({
-          vi: 'trạng-thái',
-        })
-        .setDescription('Kiểm tra trạng thái liên kết hiện tại.')
-        .setDescriptionLocalizations({
-          'en-US': EN_LOCALE.commands['df.link.status'].desc,
-        }),
-    );
-}
-
 export function registerProfileSubcommands(
   builder: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder,
 ): SlashCommandSubcommandsOnlyBuilder {
   return builder
+    .addSubcommand((sub) =>
+      sub
+        .setName('link')
+        .setNameLocalizations({
+          vi: 'liên-kết',
+        })
+        .setDescription('Liên kết tài khoản Delta Force HQ và nhận tiện ích DF Toolbox.')
+        .setDescriptionLocalizations({
+          'en-US': EN_LOCALE.commands['df.link'].desc,
+        }),
+    )
     .addSubcommand((sub) =>
       sub
         .setName('stats')
@@ -220,7 +193,7 @@ export function registerProfileSubcommands(
       sub
         .setName('build')
         .setNameLocalizations({
-          vi: 'mod-súng',
+          vi: 'build-súng',
         })
         .setDescription('Thư viện build súng và mã Gunsmith meta (Garena).')
         .setDescriptionLocalizations({
@@ -253,48 +226,13 @@ export function registerProfileSubcommands(
     )
     .addSubcommand((sub) =>
       sub
-        .setName('gun')
+        .setName('giftcode')
         .setNameLocalizations({
-          vi: 'súng',
+          vi: 'giftcode',
         })
-        .setDescription('Thư viện build súng và mã Gunsmith meta (Garena).')
+        .setDescription('Nhận 200+ mã giftcode tân thủ và công cụ tự động nhận quà trên Garena.')
         .setDescriptionLocalizations({
-          'en-US': EN_LOCALE.commands['df.gun'].desc,
-        })
-        .addStringOption((opt) =>
-          opt
-            .setName('weapon')
-            .setNameLocalizations({
-              vi: 'vũ-khí',
-            })
-            .setDescription('Tên súng cần tra cứu (ví dụ: AKM, M4A1, CAR-15...)')
-            .setDescriptionLocalizations({
-              'en-US': 'Weapon name to look up (e.g. AKM, M4A1, CAR-15...)',
-            })
-            .setRequired(false),
-        )
-        .addStringOption((opt) =>
-          opt
-            .setName('mode')
-            .setNameLocalizations({
-              vi: 'chế-độ',
-            })
-            .setDescription('Chế độ chơi (ví dụ: Hazard Operations, Havoc Warfare...)')
-            .setDescriptionLocalizations({
-              'en-US': 'Game mode (e.g. Hazard Operations, Havoc Warfare...)',
-            })
-            .setRequired(false),
-        ),
-    )
-    .addSubcommand((sub) =>
-      sub
-        .setName('gift-code')
-        .setNameLocalizations({
-          vi: 'mã-quà',
-        })
-        .setDescription('Nhận 280 mã giftcode tân thủ và công cụ tự động nhận quà.')
-        .setDescriptionLocalizations({
-          'en-US': EN_LOCALE.commands['df.gift-code'].desc,
+          'en-US': EN_LOCALE.commands['df.giftcode'].desc,
         }),
     );
 }
@@ -305,6 +243,9 @@ export async function dispatchProfileSubcommand(
 ): Promise<boolean> {
   const subcommand = interaction.options.getSubcommand();
   switch (subcommand) {
+    case 'link':
+      await executeLink(interaction, database);
+      return true;
     case 'stats':
       await executeStats(interaction, database);
       return true;

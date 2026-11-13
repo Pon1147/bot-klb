@@ -13,8 +13,8 @@ describe('CI Drift Guard — Bi-directional Command & Localization Parity', () =
   const runtimePaths = parsedCommands.map((c) => c.path);
 
   describe('1. Builder -> i18n Dictionary Parity', () => {
-    it('toàn bộ 57 lệnh từ builder đều được quét đầy đủ', () => {
-      expect(runtimePaths.length).toBe(57);
+    it('toàn bộ 55 lệnh từ builder đều được quét đầy đủ', () => {
+      expect(runtimePaths.length).toBe(55);
     });
 
     it('mọi command bắt buộc phải có đầy đủ mô tả và ví dụ trong vi.ts', () => {

@@ -118,7 +118,7 @@ export async function handleDfStatsSelect(
       );
       await sendReply(interaction, {
         content:
-          'Binding tài khoản bị lỗi hoặc khóa không hợp lệ. Vui lòng unlink và liên kết lại bằng `/df link start`.',
+          'Binding tài khoản bị lỗi hoặc khóa không hợp lệ. Vui lòng unlink và liên kết lại bằng `/df link`.',
         flags: 64,
       });
       return { handled: true };
@@ -133,7 +133,7 @@ export async function handleDfStatsSelect(
 
   if (!apiToken) {
     await sendReply(interaction, {
-      content: 'Chưa liên kết tài khoản. Dùng `/df link start`.',
+      content: 'Chưa liên kết tài khoản. Dùng `/df link`.',
       flags: 64,
     });
     return { handled: true };

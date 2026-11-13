@@ -35,8 +35,7 @@ export const EN_LOCALE = {
         intro:
           '**Bot Delta** is a dedicated Discord assistant for **Delta Force (Garena Server)** players.\n🌐 **Bilingual Support**: Seamlessly adapts to your Discord client language (Vietnamese ⟷ English).',
         step_title: '### 3 Quick Steps to Get Started:',
-        step_1:
-          '1. **`/df link start`**: Get your link token & install the **DF Toolbox** extension.',
+        step_1: '1. **`/df link`**: Get your link token & install the **DF Toolbox** extension.',
         step_2:
           '2. **`/df stats`**: View your combat identity card (K/D, survival rate, rank, matches).',
         step_3: '3. **`/df code show`**: Access today’s safe vault codes across all 6 maps.',
@@ -48,7 +47,7 @@ export const EN_LOCALE = {
       },
       2: {
         heading: '# Combat Profiles & Player Stats',
-        note: '*Note: You must link your account using `/df link start` for the bot to fetch stats from Delta Force HQ.*',
+        note: '*Note: You must link your account using `/df link` for the bot to fetch stats from Delta Force HQ.*',
       },
       3: {
         heading: '# Tactics, Maps & Weapon Meta',
@@ -119,13 +118,9 @@ export const EN_LOCALE = {
       desc: 'Garena meta weapon build library with mode/class filtering and 1-tap code copy.',
       example: '/df build weapon:m4a1 mode:havoc',
     },
-    'df.gun': {
-      desc: 'Quick search for meta weapon loadouts by gun name and game mode.',
-      example: '/df gun weapon:m4a1',
-    },
-    'df.gift-code': {
+    'df.giftcode': {
       desc: 'Get 200+ starter giftcodes and tools to auto-redeem rewards on Garena.',
-      example: '/df gift-code',
+      example: '/df giftcode',
     },
     'df.code.show': {
       desc: 'Today’s safe vault combination codes for all 6 maps (auto-updated daily).',
@@ -143,13 +138,9 @@ export const EN_LOCALE = {
       desc: 'View optimal crafting recommendations at the Underground Base Workshop.',
       example: '/df workshop',
     },
-    'df.link.start': {
-      desc: 'Initiate a Delta Force HQ account linking session and download DF Toolbox.',
-      example: '/df link start',
-    },
-    'df.link.status': {
-      desc: 'Check the current linking status of your Delta Force HQ account.',
-      example: '/df link status',
+    'df.link': {
+      desc: 'Link your Delta Force HQ account and get DF Toolbox extension.',
+      example: '/df link',
     },
     'df.unlink': {
       desc: 'Unlink your Delta Force HQ account from your Discord identity.',
@@ -159,9 +150,9 @@ export const EN_LOCALE = {
       desc: 'Display the comprehensive user guide and help manual for Bot Delta.',
       example: '/df help',
     },
-    'team.find': {
+    team: {
       desc: 'Post or find squad recruitment for rank climb by map, mode & automated voice dispatch.',
-      example: '/team find map:dam rank:diamond mic:true',
+      example: '/team',
     },
     'pay.create': {
       desc: 'Create an automated VietQR bank transfer payment invoice.',

@@ -35,8 +35,7 @@ export const VI_LOCALE = {
         intro:
           '**Bot Delta** là trợ lý Discord chuyên biệt cho game thủ **Delta Force (Server Garena)**.\n🌐 **Song ngữ tự động**: Hỗ trợ Tiếng Việt & English thích ứng theo ngôn ngữ client Discord.',
         step_title: '### 3 Bước khởi đầu cho tân binh:',
-        step_1:
-          '1. **`/df link start`**: Nhận mã định danh & cài đặt tiện ích mở rộng **DF Toolbox**.',
+        step_1: '1. **`/df link`**: Nhận mã định danh & cài đặt tiện ích mở rộng **DF Toolbox**.',
         step_2:
           '2. **`/df stats`**: Tra cứu thẻ căn cước chiến binh (K/D, tỉ lệ sống sót, rank, số trận).',
         step_3: '3. **`/df code show`**: Lấy ngay bảng mật mã két sắt 6 bản đồ hôm nay.',
@@ -47,7 +46,7 @@ export const VI_LOCALE = {
       },
       2: {
         heading: '# Hồ Sơ Chiến Đấu & Thống Kê Cá Nhân',
-        note: '*Lưu ý: Bạn cần liên kết tài khoản qua `/df link start` để bot đọc dữ liệu cá nhân từ Delta Force HQ.*',
+        note: '*Lưu ý: Bạn cần liên kết tài khoản qua `/df link` để bot đọc dữ liệu cá nhân từ Delta Force HQ.*',
       },
       3: {
         heading: '# Tác Chiến, Bản Đồ & Vũ Khí Meta',
@@ -118,13 +117,9 @@ export const VI_LOCALE = {
       desc: 'Thư viện build súng meta Garena, lọc theo chế độ/loại súng & copy mã 1-chạm.',
       example: '/df build weapon:m4a1 mode:havoc',
     },
-    'df.gun': {
-      desc: 'Tra cứu nhanh build súng meta theo tên súng và chế độ chơi.',
-      example: '/df gun weapon:m4a1',
-    },
-    'df.gift-code': {
-      desc: 'Nhận 200+ mã giftcode tân thủ và công cụ tự động nhận quà trên Garena.',
-      example: '/df gift-code',
+    'df.giftcode': {
+      desc: 'Nhận 280 mã giftcode tân thủ và công cụ tự động nhận quà.',
+      example: '/df giftcode',
     },
     'df.code.show': {
       desc: 'Bảng mật mã két sắt 6 bản đồ hôm nay (tự động cập nhật mỗi sáng).',
@@ -142,13 +137,9 @@ export const VI_LOCALE = {
       desc: 'Xem khuyến nghị sản xuất tối ưu tại Xưởng Căn Cứ Ngầm.',
       example: '/df workshop',
     },
-    'df.link.start': {
-      desc: 'Khởi tạo phiên liên kết tài khoản Delta Force HQ và nhận tiện ích DF Toolbox.',
-      example: '/df link start',
-    },
-    'df.link.status': {
-      desc: 'Kiểm tra trạng thái liên kết tài khoản Delta Force HQ hiện tại.',
-      example: '/df link status',
+    'df.link': {
+      desc: 'Liên kết tài khoản Delta Force HQ và nhận tiện ích mở rộng DF Toolbox.',
+      example: '/df link',
     },
     'df.unlink': {
       desc: 'Hủy liên kết tài khoản Delta Force HQ khỏi tài khoản Discord của bạn.',
@@ -158,9 +149,9 @@ export const VI_LOCALE = {
       desc: 'Hiển thị cẩm nang hướng dẫn sử dụng Bot Delta toàn tập.',
       example: '/df help',
     },
-    'team.find': {
+    team: {
       desc: 'Đăng tin tuyển hoặc tìm squad leo rank theo map, chế độ & điều phối voice chat tự động.',
-      example: '/team find map:dam rank:diamond mic:true',
+      example: '/team',
     },
     'pay.create': {
       desc: 'Tạo mã QR thanh toán VietQR chuyển khoản ngân hàng tự động.',

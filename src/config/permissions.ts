@@ -225,12 +225,11 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'df.unlink': Policy.DF_ACCESS,
   'df.map': Policy.DF_ACCESS,
   'df.build': Policy.DF_ACCESS,
-  'df.gun': Policy.DF_ACCESS,
   'df.vault': Policy.DF_ACCESS,
   'df.match': Policy.DF_ACCESS,
   'df.market': Policy.DF_ACCESS,
   'df.help': Policy.DF_ACCESS,
-  'df.gift-code': Policy.DF_ACCESS,
+  'df.giftcode': Policy.DF_ACCESS,
 
   'df.code.show': Policy.DF_ACCESS,
   'df.code.status': Policy.DF_ACCESS,
@@ -238,6 +237,7 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'df.code.settime': Policy.MANAGE_DF_CODE,
   'df.code.setadminchannel': Policy.MANAGE_DF_CODE,
 
+  'df.link': Policy.DF_ACCESS,
   'df.link.start': Policy.DF_ACCESS,
   'df.link.status': Policy.DF_ACCESS,
 
@@ -246,6 +246,7 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'df.autopost.status': Policy.BOT_OWNER,
   'df.autopost.run': Policy.BOT_OWNER,
 
+  team: Policy.TEAM_ACCESS,
   'team.find': Policy.TEAM_ACCESS,
   'pay.create': Policy.PAY_ACCESS,
   'pay.history': Policy.PAY_ACCESS,

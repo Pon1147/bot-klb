@@ -142,7 +142,7 @@ export async function execute(
 
     const footerText = isPersonal
       ? `-# ⓘ Dữ liệu chốt lúc: \`${lastUpdatedText}\` (Đồng bộ cụm Garena SEA từ Delta Force HQ).`
-      : `-# ⓘ Dữ liệu chốt lúc: \`${lastUpdatedText}\` (Cụm Global · Dùng \`/df link start\` để xem giá cụm Garena).`;
+      : `-# ⓘ Dữ liệu chốt lúc: \`${lastUpdatedText}\` (Cụm Global · Dùng \`/df link\` để xem giá cụm Garena).`;
 
     const sectionContent = [
       `# 🛠️ Bàn Chế Tác: **${itemName}**`,

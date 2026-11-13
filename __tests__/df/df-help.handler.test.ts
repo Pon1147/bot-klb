@@ -41,7 +41,7 @@ describe('DF Help Handler & Extension Utils', () => {
       expect(text).toBeDefined();
       expect(text.content).toContain('Trung Tâm Trợ Giúp — Bot Delta');
       expect(text.content).toContain('Pon1147');
-      expect(text.content).toContain('/df link start');
+      expect(text.content).toContain('/df link');
       expect(text.content).toContain('/df stats');
       expect(text.content).toContain('/df code show');
       expect(text.content.length).toBeLessThan(4000);
@@ -69,7 +69,7 @@ describe('DF Help Handler & Extension Utils', () => {
       expect(text.content).toContain('/df code show');
       expect(text.content).toContain('/df market');
       expect(text.content).toContain('/df workshop');
-      expect(text.content).toContain('/team find');
+      expect(text.content).toContain('/team');
     });
 
     it('Trang 4: Chứa Tiện ích & Liên kết tài khoản HQ', () => {
@@ -80,7 +80,7 @@ describe('DF Help Handler & Extension Utils', () => {
       expect(text.content).toContain('200+ Giftcode Garena');
       expect(text.content).toContain('Developer mode');
       expect(text.content).toContain('Load unpacked');
-      expect(text.content).toContain('/df link status');
+      expect(text.content).toContain('/df link');
       expect(text.content).toContain('/df unlink');
     });
 

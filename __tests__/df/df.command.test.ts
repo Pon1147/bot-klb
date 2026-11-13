@@ -104,9 +104,10 @@ describe('/df command — Structure & Builder', () => {
     expect(json.name).toBe('df');
   });
 
-  it('phải chứa direct subcommands: stats, daily, history, workshop, unlink, help, map, build, gun, gift-code', () => {
+  it('phải chứa direct subcommands: link, stats, daily, history, vault, match, workshop, market, unlink, help, map, build, giftcode', () => {
     const directSubs = json.options?.filter((o: any) => o.type === 1).map((o: any) => o.name);
     expect(directSubs).toEqual([
+      'link',
       'stats',
       'daily',
       'history',
@@ -118,8 +119,7 @@ describe('/df command — Structure & Builder', () => {
       'help',
       'map',
       'build',
-      'gun',
-      'gift-code',
+      'giftcode',
     ]);
   });
 
@@ -134,9 +134,9 @@ describe('/df command — Structure & Builder', () => {
     expect(limitOpt.max_value).toBe(20);
   });
 
-  it('phải chứa 3 SubcommandGroups: code, link và autopost', () => {
+  it('phải chứa 2 SubcommandGroups: code và autopost', () => {
     const groups = json.options?.filter((o: any) => o.type === 2).map((o: any) => o.name);
-    expect(groups).toEqual(['code', 'link', 'autopost']);
+    expect(groups).toEqual(['code', 'autopost']);
   });
 
   describe('code group structure', () => {
@@ -176,20 +176,24 @@ describe('/df command — Structure & Builder', () => {
       expect(chanOpt.required).toBe(true);
     });
   });
-
-  describe('link group structure', () => {
-    const linkGroup = json.options?.find((o: any) => o.name === 'link');
-
-    it('phải có subcommands: start, status', () => {
-      const subNames = linkGroup.options?.map((s: any) => s.name);
-      expect(subNames).toEqual(['start', 'status']);
-    });
-  });
 });
 
 describe('/df command — Execute Dispatch', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('phải dispatch tới executeLink khi chọn subcommand "link"', async () => {
+    const interaction = createMockInteraction({
+      options: {
+        getSubcommandGroup: jest.fn().mockReturnValue(null),
+        getSubcommand: jest.fn().mockReturnValue('link'),
+        getString: jest.fn().mockReturnValue(null),
+      },
+    });
+
+    await execute(interaction);
+    expect(executeLink).toHaveBeenCalledWith(interaction, expect.anything());
   });
 
   it('phải dispatch tới executeStats khi chọn subcommand "stats"', async () => {
@@ -298,19 +302,6 @@ describe('/df command — Execute Dispatch', () => {
 
     await execute(interaction);
     expect(executeCode).toHaveBeenCalledWith(interaction, expect.anything());
-  });
-
-  it('phải dispatch tới executeLink khi group là "link"', async () => {
-    const interaction = createMockInteraction({
-      options: {
-        getSubcommandGroup: jest.fn().mockReturnValue('link'),
-        getSubcommand: jest.fn().mockReturnValue('start'),
-        getString: jest.fn().mockReturnValue(null),
-      },
-    });
-
-    await execute(interaction);
-    expect(executeLink).toHaveBeenCalledWith(interaction, expect.anything());
   });
 
   it('phải dispatch tới executeHelp khi chọn subcommand "help"', async () => {

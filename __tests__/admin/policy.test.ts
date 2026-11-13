@@ -568,8 +568,8 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
   // ─── 7. PHASE 4: Command Path Policy Mapping ──────────────────────
   describe('PHASE 4 — Command Path Policy Mapping', () => {
-    it('COMMAND_PATH_POLICIES chứa đúng 57 canonical command paths', () => {
-      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(57);
+    it('COMMAND_PATH_POLICIES chứa đúng 58 canonical command paths (bao gồm alias tương thích ngược)', () => {
+      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(58);
     });
 
     it('Policy mapping cho BOT_OWNER, GUILD_OWNER và MANAGE_RBAC', () => {
@@ -635,13 +635,12 @@ describe('PHASE 1 — Permission / Policy Model', () => {
       expect(resolveCommandPolicy('df.unlink')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.map')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.build')).toBe(Policy.DF_ACCESS);
-      expect(resolveCommandPolicy('df.gun')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.vault')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.match')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.market')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.help')).toBe(Policy.DF_ACCESS);
-      expect(resolveCommandPolicy('df.link.start')).toBe(Policy.DF_ACCESS);
-      expect(resolveCommandPolicy('df.link.status')).toBe(Policy.DF_ACCESS);
+      expect(resolveCommandPolicy('df.link')).toBe(Policy.DF_ACCESS);
+      expect(resolveCommandPolicy('df.giftcode')).toBe(Policy.DF_ACCESS);
       expect(resolveCommandPolicy('df.link.start')).toBe(Policy.DF_ACCESS);
     });
 

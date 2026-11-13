@@ -49,7 +49,7 @@ describe('CI Security Guard — Command RBAC Policy Mapping', () => {
     }
   });
 
-  test('df.gift-code phải được phân quyền DF_ACCESS', () => {
-    expect(resolveCommandPolicy('df.gift-code')).toBe('DF_ACCESS');
+  test('df.giftcode phải được phân quyền DF_ACCESS', () => {
+    expect(resolveCommandPolicy('df.giftcode')).toBe('DF_ACCESS');
   });
 });

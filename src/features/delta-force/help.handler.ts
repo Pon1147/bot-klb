@@ -152,17 +152,17 @@ export function buildHelpPageContainer(
       const code = dict.commands['df.code.show'];
       const market = dict.commands['df.market'];
       const workshop = dict.commands['df.workshop'];
-      const team = dict.commands['team.find'];
+      const team = dict.commands['team'];
 
       content = [
         p.heading,
         '',
         `• **\`/df map\`**: ${map.desc}`,
-        `• **\`/df build\` (hoặc \`/df gun [weapon] [mode]\`)**: ${build.desc}`,
+        `• **\`/df build [weapon] [mode]\`**: ${build.desc}`,
         `• **\`/df code show [page]\`**: ${code.desc}`,
         `• **\`/df market [item]\`**: ${market.desc}`,
         `• **\`/df workshop\`**: ${workshop.desc}`,
-        `• **\`/team find\`**: ${team.desc}`,
+        `• **\`/team\`**: ${team.desc}`,
         '',
         footer,
       ].join('\n');
@@ -190,8 +190,8 @@ export function buildHelpPageContainer(
         p.install_4,
         '',
         locale === 'en'
-          ? '• **`/df link status`**: Check account linking • **`/df unlink`**: Unlink account.'
-          : '• **`/df link status`**: Kiểm tra trạng thái liên kết • **`/df unlink`**: Hủy liên kết tài khoản.',
+          ? '• **`/df link`**: Check or start account linking • **`/df unlink`**: Unlink account.'
+          : '• **`/df link`**: Kiểm tra hoặc bắt đầu liên kết tài khoản • **`/df unlink`**: Hủy liên kết tài khoản.',
         '',
         footer,
       ].join('\n');

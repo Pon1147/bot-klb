@@ -23,18 +23,28 @@ import { sendReply } from '../../utils/reply.utils.js';
 import { maskString } from '../../utils/string.utils.js';
 import { resolveUserLocale } from '../../infrastructure/i18n/locale-resolver.js';
 
+/**
+ * Entry point thực thi /df link.
+ * Tự động phân nhánh:
+ * - Nếu đã liên kết: Hiển thị thông tin binding hiện tại + hướng dẫn gỡ bằng /df unlink.
+ * - Nếu chưa liên kết: Tự động sinh claim code + hiển thị hướng dẫn 2 bước kèm 3 nút tiện ích.
+ */
 export async function execute(
   interaction: ChatInputCommandInteraction,
   database: Database.Database,
 ): Promise<void> {
-  const subcommand = interaction.options.getSubcommand();
+  if (await requireGuild(interaction)) return;
 
-  switch (subcommand) {
-    case 'start':
-      return handleStart(interaction, database);
-    case 'status':
-      return handleStatus(interaction, database);
+  // Kiểm tra xem user đã có binding chưa
+  const binding = getActiveBinding(database, interaction.user.id);
+  const legacyToken = !binding ? getDfToken(database, interaction.user.id) : null;
+
+  if (binding || legacyToken) {
+    return handleStatus(interaction, database);
   }
+
+  // Chưa liên kết -> Tự động sinh claim code và gửi hướng dẫn
+  return handleStart(interaction, database);
 }
 
 /** Subcommand `start` — tạo claim code, reply ephemeral trực quan cho non-tech users */
@@ -129,7 +139,7 @@ async function handleStatus(
       `**Đã liên kết (legacy)**\n\n` +
         `OpenID: ${masked}\n` +
         `Liên kết lúc: ${legacyToken.linked_at}\n\n` +
-        `> ⚠️ Bạn nên dùng \`/df link start\` để cập nhật lên hệ thống mới.`,
+        `> ⚠️ Bạn nên dùng \`/df link\` để cập nhật lên hệ thống mới.`,
     );
     await sendReply(interaction, { components: info.toJSON() });
     return;

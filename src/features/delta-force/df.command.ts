@@ -13,8 +13,6 @@ import Database from 'better-sqlite3';
 import { buildCodeGroup, executeCodeGroup } from './subcommands/df-code.subcommand.js';
 import { buildAutopostGroup, executeAutopostGroup } from './subcommands/df-autopost.subcommand.js';
 import {
-  buildLinkGroup,
-  executeLinkGroup,
   registerProfileSubcommands,
   dispatchProfileSubcommand,
 } from './subcommands/df-profiles.subcommand.js';
@@ -33,10 +31,7 @@ const commandBuilder = new SlashCommandBuilder()
 registerProfileSubcommands(commandBuilder);
 
 // Gắn các SubcommandGroups
-commandBuilder
-  .addSubcommandGroup(buildCodeGroup)
-  .addSubcommandGroup(buildLinkGroup)
-  .addSubcommandGroup(buildAutopostGroup);
+commandBuilder.addSubcommandGroup(buildCodeGroup).addSubcommandGroup(buildAutopostGroup);
 
 export const data = commandBuilder;
 
@@ -51,11 +46,6 @@ export async function execute(
   // 1. Phân phối nhóm SubcommandGroups
   if (group === 'code') {
     await executeCodeGroup(interaction, db);
-    return;
-  }
-
-  if (group === 'link') {
-    await executeLinkGroup(interaction, db);
     return;
   }
 
