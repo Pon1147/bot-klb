@@ -209,30 +209,14 @@ export function canApprovePaymentInvoice(
 
 /**
  * Kiểm tra người dùng có quyền tạo hóa đơn thanh toán không (/pay create):
- * - Guild Owner, Administrator, Bot Admin, Moderator
- * - Staff Role nếu có cấu hình
- * - Mọi thành viên nếu server chưa chỉ định staffRoleId riêng (thành viên tự tạo hóa đơn)
+ * Mô hình 1 (Thu ngân / POS): Chỉ Quản trị viên, Chủ máy chủ hoặc Staff Role mới được tạo hóa đơn.
+ * Chống triệt để việc thành viên thường tạo bill ảo làm rác kênh chat và database.
  */
 export function canCreatePaymentInvoice(
   interaction: ChatInputCommandInteraction,
   guildId: string,
 ): boolean {
-  if (canApprovePaymentInvoice(interaction, guildId)) {
-    return true;
-  }
-
-  try {
-    const settingsService = getSettingsService();
-    const settings = settingsService.get(guildId);
-    // Nếu server chưa cấu hình staffRoleId riêng -> mở cho mọi thành viên tạo hóa đơn
-    if (!settings.vietqr?.staffRoleId || settings.vietqr.staffRoleId === guildId) {
-      return true;
-    }
-  } catch {
-    // Fallback
-  }
-
-  return false;
+  return canApprovePaymentInvoice(interaction, guildId);
 }
 
 /**

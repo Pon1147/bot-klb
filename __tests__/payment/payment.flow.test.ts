@@ -179,10 +179,10 @@ describe('payment.flow', () => {
       expect(canManagePayment(memberWithRawArray, guildId)).toBe(false);
     });
 
-    it('tách bạch canCreatePaymentInvoice và canApprovePaymentInvoice khi server chưa cấu hình staffRoleId', () => {
+    it('Mô hình Thu ngân (POS): canCreatePaymentInvoice chỉ cho phép Staff/Admin, chặn member thường', () => {
       jest.spyOn(settingsModule, 'getSettingsService').mockReturnValue({
         get: jest.fn().mockReturnValue({
-          vietqr: { staffRoleId: null },
+          vietqr: { staffRoleId: 'staff-role-id' },
           rbac: {},
         }),
       } as any);
@@ -193,10 +193,22 @@ describe('payment.flow', () => {
         member: { permissions: { has: () => false }, roles: { cache: new Map() } },
       };
 
-      // canCreatePaymentInvoice: Mọi member được phép tạo hóa đơn cho chính họ
-      expect(canCreatePaymentInvoice(regularMemberInteraction, 'guild-1')).toBe(true);
+      const staffInteraction: any = {
+        guild: { ownerId: 'owner-id' },
+        user: { id: 'staff-user' },
+        member: {
+          permissions: { has: () => false },
+          roles: { cache: new Map([['staff-role-id', { id: 'staff-role-id' }]]) },
+        },
+      };
 
-      // canApprovePaymentInvoice: Member thường TUYỆT ĐỐI KHÔNG được duyệt đơn
+      // Member thường bị chặn tạo hóa đơn
+      expect(canCreatePaymentInvoice(regularMemberInteraction, 'guild-1')).toBe(false);
+
+      // Staff được phép tạo hóa đơn
+      expect(canCreatePaymentInvoice(staffInteraction, 'guild-1')).toBe(true);
+
+      // Member thường TUYỆT ĐỐI KHÔNG được duyệt đơn
       expect(canApprovePaymentInvoice(regularMemberInteraction, 'guild-1')).toBe(false);
     });
   });

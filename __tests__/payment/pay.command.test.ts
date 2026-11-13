@@ -150,8 +150,9 @@ describe('pay.command', () => {
 
     const interaction: any = {
       guildId: 'guild-authorized',
-      guild: { name: 'VIP Server' },
+      guild: { name: 'VIP Server', ownerId: '111111111111111111' },
       user: { id: '111111111111111111' },
+      member: { permissions: { has: () => true } },
       client: { database: db },
       options: {
         getSubcommand: () => 'create',
@@ -192,5 +193,41 @@ describe('pay.command', () => {
     } finally {
       global.fetch = originalFetch;
     }
+  });
+
+  it('từ chối thành viên thường tạo hóa đơn khi không có quyền Staff/Admin', async () => {
+    const testDb = new Database(':memory:');
+    initializePaymentTables(testDb);
+    const mockReply = jest.fn();
+    const interaction: any = {
+      guildId: 'guild-authorized',
+      guild: { name: 'VIP Server', ownerId: 'other-owner-id' },
+      user: { id: 'regular-user-id' },
+      member: { permissions: { has: () => false }, roles: { cache: new Map() } },
+      client: { database: testDb },
+      options: {
+        getSubcommand: () => 'create',
+        getInteger: jest.fn().mockReturnValue(50000),
+      },
+      deferred: false,
+      replied: false,
+      reply: mockReply,
+    };
+
+    await execute(interaction, testDb);
+
+    expect(mockReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        components: expect.arrayContaining([
+          expect.objectContaining({
+            components: expect.arrayContaining([
+              expect.objectContaining({
+                content: expect.stringContaining('Bạn không có quyền tạo hóa đơn thanh toán'),
+              }),
+            ]),
+          }),
+        ]),
+      }),
+    );
   });
 });
