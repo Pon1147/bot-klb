@@ -62,11 +62,10 @@ temp/
 # =========================
 # AI config & agent artifacts
 # =========================
-.github/copilot-instructions.md
 .memories
-.claude
+.claude/*
+!.claude/skills/
 .agents/
-AGENTS.md
 LAZY-SENIOR-DEV-REPORT.md
 docs/superpowers/
 docs/plans/
