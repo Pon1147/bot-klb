@@ -64,7 +64,7 @@ export const VI_LOCALE = {
           '• **Trích xuất Token an toàn**: Tự động mã hóa AES-256-GCM gửi về bot để xem stats mà không lộ mật khẩu.',
         feature_3:
           '• **Cập nhật realtime**: Tự động đồng bộ lịch sử đấu và chiến tích sau mỗi trận rút quân.',
-        install_title: '### Hướng dẫn cài đặt nhanh (Yêu cầu PC/Laptop):',
+        install_title: '### Hướng dẫn cài đặt tiện ích (PC, hoặc Orion iOS / Kiwi Android):',
         install_1: '1. Bấm nút **[ Tải tiện ích ]** bên dưới để tải file `DF-Extension.zip`.',
         install_2: '2. Giải nén file `.zip` vừa tải ra một thư mục trên máy tính.',
         install_3:
