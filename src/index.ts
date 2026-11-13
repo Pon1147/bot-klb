@@ -44,6 +44,12 @@ bootstrap()
     process.once('SIGINT', () => void handleShutdown('SIGINT'));
   })
   .catch((error) => {
-    logger.fatal('Fatal error starting bot:', { error });
+    logger.fatal(
+      `Fatal error starting bot: ${error instanceof Error ? error.message : String(error)}`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    );
     process.exit(1);
   });

@@ -228,15 +228,15 @@ export async function handleLinkButton(
     const safetyText = isEn
       ? [
           '### 🛡️ Is DF Toolbox Safe?',
-          '• **Limited Scope**: The extension only operates on official Garena and Delta Force web pages (e.g. `playdeltaforce.com`, `sso.garena.com`). It has **no access** to Discord or any other external websites.',
-          '• **No Password Access**: You log in directly on Garena’s official auth page. The bot & extension **never** touch or store your password or OTP.',
+          '• **Limited Scope**: The extension only operates on Delta Force event pages (`playdeltaforce.com`) and redeem pages (`redeem.df.garena.sg`). It **does not run on Garena SSO login pages** and has **no access** to Discord or any other external websites.',
+          '• **Zero Password Access**: You log in securely on Garena’s official auth portal. The bot & extension **never** touch, see, or store your password or OTP.',
           '• **Encrypted Storage**: Authentication session data is encrypted when stored on our server.',
           '• **Full Control**: You can revoke account link anytime via `/df unlink`.',
         ].join('\n')
       : [
           '### 🛡️ DF Toolbox Có An Toàn Không?',
-          '• **Phạm vi hoạt động**: Tiện ích chỉ hoạt động trên các trang web thuộc Garena và Delta Force (như `playdeltaforce.com`, `sso.garena.com`), **không có quyền truy cập Discord** hay bất kỳ trang web nào khác.',
-          '• **Không đụng mật khẩu**: Bạn đăng nhập trực tiếp trên cổng xác thực Garena. Bot và tiện ích **tuyệt đối không bao giờ** hỏi hay lưu mật khẩu hoặc OTP.',
+          '• **Phạm vi hoạt động**: Tiện ích chỉ hoạt động trên trang sự kiện Delta Force (`playdeltaforce.com`) và trang đổi mã (`redeem.df.garena.sg`). **Hoàn toàn không chạy trên trang đăng nhập SSO Garena** và không có quyền truy cập Discord hay bất kỳ trang web nào khác.',
+          '• **Tuyệt đối không đụng mật khẩu**: Bạn đăng nhập an toàn trực tiếp trên cổng Garena. Tiện ích và bot **tuyệt đối không bao giờ** thấy, hỏi hay lưu mật khẩu hoặc OTP.',
           '• **Mã hóa khi lưu**: Dữ liệu phiên đăng nhập được mã hóa an toàn khi lưu trữ trên máy chủ.',
           '• **Toàn quyền hủy**: Bạn có thể chủ động hủy liên kết bất kỳ lúc nào bằng lệnh `/df unlink`.',
         ].join('\n');

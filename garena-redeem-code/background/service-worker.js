@@ -93,26 +93,28 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         }
 
         // Auto Dev Fallback: Nếu targetUrl mặc định (Production) không tìm thấy code (401 hoặc !data.ok),
-        // tự động thử gửi tới local dev bot (http://localhost:8080/api/v1/auth/claim)
+        // tự động thử gửi tới local dev bot (port 8088 hoặc 8080)
         if ((!res || res.status === 401 || !data?.ok) && !targetUrl.includes('localhost') && !targetUrl.includes('127.0.0.1')) {
-          try {
-            console.log('[SW] Primary API rejected or unavailable. Trying local dev fallback (http://localhost:8080)...');
-            const localUrl = 'http://localhost:8080/api/v1/auth/claim';
-            const localRes = await fetch(localUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
-            });
-            if (localRes.ok) {
-              const localData = await localRes.json().catch(() => ({}));
-              if (localData?.ok) {
-                console.log('[SW] ✓ Successfully claimed via local dev bot (localhost:8080)!');
-                sendResponse({ ok: true });
-                return;
+          const devPorts = [8088, 8080];
+          for (const devPort of devPorts) {
+            try {
+              const localUrl = `http://localhost:${devPort}/api/v1/auth/claim`;
+              const localRes = await fetch(localUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              if (localRes.ok) {
+                const localData = await localRes.json().catch(() => ({}));
+                if (localData?.ok) {
+                  console.log(`[SW] ✓ Successfully claimed via local dev bot (localhost:${devPort})!`);
+                  sendResponse({ ok: true });
+                  return;
+                }
               }
+            } catch (localErr) {
+              // Port này không có bot dev, thử tiếp port khác
             }
-          } catch (localErr) {
-            console.warn('[SW] Local dev fallback unavailable:', localErr);
           }
         }
 
