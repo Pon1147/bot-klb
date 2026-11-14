@@ -178,6 +178,7 @@
     capture.requestMap = new Map(); // requestId → { code, requestId, ... }
 
     window.addEventListener('message', (e) => {
+      if (e.origin !== window.location.origin) return;
       if (e.source !== window) return;
       if (e.data?.source !== 'garena-redeem-capture') return;
 

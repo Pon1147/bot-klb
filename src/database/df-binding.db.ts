@@ -494,7 +494,12 @@ export function purgeRevokedCredentialsMigration(database: Database.Database): n
            cred_nonce = 'PURGED', 
            cred_tag = 'PURGED', 
            updated_at = CURRENT_TIMESTAMP 
-       WHERE status = 'revoked' AND cred_ciphertext != 'PURGED'`,
+       WHERE status = 'revoked' 
+         AND (
+           cred_ciphertext IS NOT 'PURGED' 
+           OR cred_nonce IS NOT 'PURGED' 
+           OR cred_tag IS NOT 'PURGED'
+         )`,
     )
     .run();
 

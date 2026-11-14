@@ -21,6 +21,7 @@
   // ===== A. Lắng nghe candidate từ MAIN world =====
   window.addEventListener('message', (event) => {
     if (event.origin !== window.location.origin) return;
+    if (event.source !== window) return; // Bắt buộc nguồn phát phải từ chính window (MAIN world)
     const d = event.data;
     if (!d || d.source !== 'df-link-capture') return;
     if (d.type !== 'CREDENTIAL_CANDIDATE') return;

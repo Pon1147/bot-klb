@@ -158,6 +158,8 @@
     // ===== Lắng nghe message event từ popup OAuth =====
     window.addEventListener('message', (event) => {
       try {
+        if (event.origin !== window.location.origin) return;
+        if (!event.source || event.source === window) return; // Nguồn phát bắt buộc phải là popup/iframe (không nhận message tự phát từ chính window)
         const d = event.data;
         if (d && typeof d === 'object') {
           if (d.openid && d.token) {
