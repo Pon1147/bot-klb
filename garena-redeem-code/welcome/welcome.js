@@ -1,5 +1,5 @@
 // Dynamic extension version from manifest
-let extVersion = '1.6.0';
+let extVersion = '1.9.3';
 try {
   const manifest = typeof chrome !== 'undefined' && chrome?.runtime?.getManifest ? chrome.runtime.getManifest() : null;
   if (manifest?.version) {
@@ -20,7 +20,7 @@ const TRANSLATIONS = {
 
     // Tab 1: Link Guide
     link_step1_title: 'Lấy mã liên kết trên Discord',
-    link_step1_desc: 'Mở kênh Discord có <strong>Bot Delta</strong>, gõ lệnh dưới đây. Bot sẽ phản hồi riêng (chỉ bạn nhìn thấy) kèm mã Claim 6 ký tự (ví dụ: <code>TAKCGF</code>, hiệu lực 10 phút):',
+    link_step1_desc: 'Mở kênh Discord có <strong>Bot Delta</strong>, gõ lệnh <code>/df link</code> (hoặc <code>/df liên-kết</code> nếu Discord dùng tiếng Việt). Bot sẽ phản hồi riêng (chỉ bạn nhìn thấy) kèm mã Claim 6 ký tự (ví dụ: <code>TAKCGF</code>, hiệu lực 10 phút):',
     copy_btn: 'Sao chép',
     copied_btn: '✓ Đã chép!',
     copy_err: 'Lỗi copy!',
@@ -36,15 +36,16 @@ const TRANSLATIONS = {
     link_step2_btn: 'Mở Delta Force HQ (Garena) ↗',
     mock_hq_login: '👤 Đăng Nhập Garena ✓',
 
-    link_step3_title: 'Nhập mã trên bảng tiện ích DF Toolbox',
-    link_step3_desc: 'Sau khi đăng nhập xong, bảng tiện ích <strong>DF Toolbox — Link</strong> sẽ tự động xuất hiện ở góc dưới bên phải màn hình. Bạn dán mã Claim nhận từ Discord vào ô và bấm <strong>Liên kết Discord</strong>:',
-    mock_panel_status: 'Đã capture! OpenID: 1002•••',
-    mock_panel_btn: 'Liên kết Discord',
-    mock_panel_hint: '<strong>🛡️ An toàn:</strong> Tuyệt đối không lưu mật khẩu<br>1. Gõ <strong>/df link start</strong> trên Discord để lấy mã 6 ký tự<br>2. Dán mã vào ô phía trên<br>3. Bấm nút <strong>Liên kết Discord</strong>',
+    link_step3_title: 'Ủy quyền & Nhập mã trên tiện ích DF Toolbox',
+    link_step3_desc: 'Bảng tiện ích <strong>DF Toolbox</strong> sẽ hiển thị ở góc dưới bên phải màn hình. Tiện ích mặc định tắt hoàn toàn thu thập dữ liệu; bạn bấm <strong>Bắt đầu Ủy quyền</strong>, dán mã Claim, tick xác nhận đồng thuận và bấm <strong>Xác nhận & Liên kết</strong>:',
+    mock_panel_status: '✓ Đã phát hiện phiên Garena (OpenID: 1002•••)',
+    mock_panel_btn: 'Xác nhận & Liên kết',
+    mock_panel_consent: '☑ Tôi đồng ý gửi thông tin phiên tới Bot để tra cứu stats cho đến khi gõ /df unlink.',
+    mock_panel_hint: '<strong>🛡️ An toàn & Minh bạch:</strong> Tuyệt đối không lưu mật khẩu. Token lưu trữ mã hóa AES-256-GCM và có thể hủy bất kỳ lúc nào qua /df unlink.',
     tip_manual_link: '💡 <em>Mẹo: Bạn cũng có thể mở icon DF Toolbox trên thanh tiện ích Chrome để dán mã Claim thủ công bất cứ lúc nào.</em>',
 
     link_step4_title: 'Kiểm tra trạng thái & Trải nghiệm',
-    link_step4_desc: 'Quay lại Discord và gõ lệnh kiểm tra:',
+    link_step4_desc: 'Quay lại Discord và gõ lại <code>/df link</code> để kiểm tra trạng thái:',
     link_success_note: '✅ Khi đã liên kết thành công, bạn sẽ xem được đầy đủ thống kê K/D, lịch sử trận đấu, sảnh đồ đỏ và bảng giá chợ Garena đồng bộ từ máy chủ Garena!',
 
     // Tab 2: Auto Redeem
@@ -86,7 +87,7 @@ const TRANSLATIONS = {
 
     // Tab 1: Link Guide
     link_step1_title: 'Get authentication link code on Discord',
-    link_step1_desc: 'Open any Discord channel with <strong>Bot Delta</strong> and run the command below. The bot will send an ephemeral message (only visible to you) with a 6-character Claim code (e.g. <code>TAKCGF</code>, valid for 10 minutes):',
+    link_step1_desc: 'Open any Discord channel with <strong>Bot Delta</strong> and run <code>/df link</code>. The bot will send an ephemeral message (only visible to you) with a 6-character Claim code (e.g. <code>TAKCGF</code>, valid for 10 minutes):',
     copy_btn: 'Copy',
     copied_btn: '✓ Copied!',
     copy_err: 'Copy error!',
@@ -102,15 +103,16 @@ const TRANSLATIONS = {
     link_step2_btn: 'Open Delta Force HQ (Garena) ↗',
     mock_hq_login: '👤 Garena Login ✓',
 
-    link_step3_title: 'Enter code in DF Toolbox extension panel',
-    link_step3_desc: 'After logging in, the <strong>DF Toolbox — Link</strong> panel will automatically appear in the bottom-right corner. Paste the Claim code from Discord and click <strong>Link Discord</strong>:',
-    mock_panel_status: 'Captured! OpenID: 1002•••',
-    mock_panel_btn: 'Link Discord',
-    mock_panel_hint: '<strong>🛡️ Secure:</strong> Never stores passwords<br>1. Type <strong>/df link start</strong> on Discord for a 6-character code<br>2. Paste code into the box above<br>3. Click <strong>Link Discord</strong>',
+    link_step3_title: 'Authorize & Enter code in DF Toolbox extension',
+    link_step3_desc: 'The <strong>DF Toolbox</strong> panel appears in the bottom-right corner. All collection is disabled by default; click <strong>Start Authorization</strong>, paste your Claim code, check explicit consent, and click <strong>Confirm & Link</strong>:',
+    mock_panel_status: '✓ Garena session detected (OpenID: 1002•••)',
+    mock_panel_btn: 'Confirm & Link',
+    mock_panel_consent: '☑ I agree to send session info to Bot for stats lookup until I run /df unlink.',
+    mock_panel_hint: '<strong>🛡️ Secure & Transparent:</strong> Zero password storage. Tokens are AES-256-GCM encrypted and revokable anytime via /df unlink.',
     tip_manual_link: '💡 <em>Tip: You can also click the DF Toolbox icon in Chrome toolbar to paste your Claim code manually anytime.</em>',
 
     link_step4_title: 'Verify Status & Enjoy',
-    link_step4_desc: 'Return to Discord and run the status check command:',
+    link_step4_desc: 'Return to Discord and run <code>/df link</code> to verify status:',
     link_success_note: '✅ Once linked successfully, you can view your full K/D stats, match history, red vault showcase, and live Garena market prices synchronized from Garena servers!',
 
     // Tab 2: Auto Redeem
