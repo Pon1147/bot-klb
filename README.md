@@ -6,55 +6,60 @@
 [![Architecture](https://img.shields.io/badge/architecture-vertical--slice-orange.svg)](#kiến-trúc-dự-án)
 [![TypeScript](https://img.shields.io/badge/typescript-5.x-blue.svg)](https://www.typescriptlang.org/)
 
-Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và quản trị máy chủ Discord, tích hợp **Discord Components V2**, **Hỗ trợ Song ngữ Tự động (i18n: Tiếng Việt ⟷ English)**, cào mật khẩu hằng ngày tự động, dashboard thống kê đồ họa chất lượng cao, thư viện Gunsmith meta, bản đồ 3D tương tác, tiện ích **DF Toolbox Extension (v1.9.0)** tự động nhập giftcode Garena, thanh toán hóa đơn VietQR động & cổng quyên góp PayOS, cùng cơ chế liên kết tài khoản game bảo mật bằng AES-256-GCM.
+Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và quản trị máy chủ Discord, tích hợp **Discord Components V2**, **Hỗ trợ Song ngữ Tự động (i18n: Tiếng Việt ⟷ English)**, cào mật khẩu hằng ngày tự động, dashboard thống kê đồ họa chất lượng cao, thư viện Gunsmith meta, bản đồ 3D tương tác, tiện ích **DF Toolbox Extension (v1.9.3)** tự động nhập giftcode Garena, thanh toán hóa đơn VietQR động & cổng quyên góp PayOS, cùng cơ chế liên kết tài khoản game bảo mật bằng AES-256-GCM.
 
 ---
 
 ## 🌟 Tính năng Nổi bật
 
 ### 1. Delta Force Suite (`/df`)
-* **Thống kê Mùa giải (`/df stats`)**: Hiển thị bảng tổng quan chỉ số chiến đấu, sinh tồn, kinh tế và tiểu đội qua ảnh dashboard sinh động được render động từ SVG.
-* **Báo cáo Chiến đấu Ngày (`/df daily`)**: Tra cứu điểm thương tổn, số hồ sơ tài liệu (docs) thu hồi, số trận, K/D và tỷ lệ rút quân thành công trong ngày.
-* **Lịch sử Trận đấu (`/df history`)**: Xem chi tiết kết quả các trận gần nhất (bản đồ, operator, kill, phần thưởng) có phân trang.
-* **Chi tiết Trận đấu (`/df match`)**: Phân tích chuyên sâu thông số trận đánh cụ thể (autocomplete hỗ trợ chọn trận gần đây hoặc xem trận mới nhất).
-* **Sảnh Triển Lãm Đồ Đỏ (`/df vault`)**: Trưng bày kho báu vật phẩm giá trị cao (đồ đỏ) thu thập được cùng tổng giá trị định giá.
-* **Thị Trường & Chế Tác (`/df market`)**: Tra cứu giá vật phẩm realtime trên thị trường và công thức bàn chế tác tối ưu (hỗ trợ autocomplete).
-* **Bản Đồ 3D Tương Tác (`/df map`)**: Cung cấp góc nhìn bản đồ chiến thuật trực quan, vị trí tài nguyên và cẩm nang học map.
-* **Thư Viện Gunsmith Meta (`/df build` / `/df gun`)**: Tra cứu bảng ngọc, phụ kiện tối ưu và mã build súng chuẩn meta máy chủ Garena theo từng chế độ chơi.
-* **Khuyến nghị Chế tạo Xưởng (`/df workshop`)**: Gợi ý các công thức sản xuất tối ưu tại Xưởng Căn Cứ Ngầm.
-* **Mật khẩu 6 Bản đồ Hằng ngày (`/df code`)**:
-  * Tự động cào dữ liệu từ Delta Force HQ với bộ đệm **Cache 30 phút** và **In-flight Promise Deduplication** chống nghẽn CPU.
-  * Tự động gửi mật khẩu định kỳ theo lịch cron cấu hình riêng cho từng server (`/df code setchannel`, `/df code settime`).
-* **Auto-Post Toàn Hệ Thống (`/df autopost`)**: Bot Owner quản lý chu kỳ tự động phát sóng bản đồ 3D và build súng meta định kỳ tới toàn bộ các guild.
-* **Liên kết Tài khoản An toàn (`/df link`)**:
-  * Hỗ trợ xác thực qua tiện ích Chrome Extension (**DF Toolbox**) bằng cơ chế Webhook handoff.
-  * Mã hóa token người dùng bằng **AES-256-GCM** trước khi lưu vào cơ sở dữ liệu.
-  * Người dùng có thể hủy liên kết và xóa dữ liệu bất kỳ lúc nào qua `/df unlink`.
-* **Trung Tâm Trợ Giúp Đa Ngữ (`/df help`)**: Bảng cẩm nang 6 trang tích hợp điều hướng Components V2, tự động thích ứng ngôn ngữ client (`vi` hoặc `en`), kèm nút tải tiện ích mở rộng **DF Toolbox Extension**.
 
-### 2. Tiện Ích Trình Duyệt: DF Toolbox Extension (v1.9.0)
-* **Auto Redeem Giftcode Garena**: Tự động hóa quá trình nhập danh sách hàng trăm mã giftcode Delta Force trên trang đổi quà Garena CDK, tự bypass CSP và nhận diện kết quả tự động.
-* **Floating Dashboard trực quan**: Gắn bảng điều khiển trực tiếp trên giao diện web đổi quà, hiển thị tiến độ, nhật ký, số mã thành công/thất bại theo thời gian thực.
-* **Auth State Engine & Cloud Relay**: Tự động trích xuất và đồng bộ session/token game an toàn với máy chủ bot qua webhook một chạm.
-* **Quản lý Mã & Phân Trang**: Popup extension hiện đại hỗ trợ lọc mã theo trạng thái (Redeemed, Dead, Retryable, Untested) và phân trang tiện lợi.
+- **Thống kê Mùa giải (`/df stats`)**: Hiển thị bảng tổng quan chỉ số chiến đấu, sinh tồn, kinh tế và tiểu đội qua ảnh dashboard sinh động được render động từ SVG.
+- **Báo cáo Chiến đấu Ngày (`/df daily`)**: Tra cứu điểm thương tổn, số hồ sơ tài liệu (docs) thu hồi, số trận, K/D và tỷ lệ rút quân thành công trong ngày.
+- **Lịch sử Trận đấu (`/df history`)**: Xem chi tiết kết quả các trận gần nhất (bản đồ, operator, kill, phần thưởng) có phân trang.
+- **Chi tiết Trận đấu (`/df match`)**: Phân tích chuyên sâu thông số trận đánh cụ thể (autocomplete hỗ trợ chọn trận gần đây hoặc xem trận mới nhất).
+- **Sảnh Triển Lãm Đồ Đỏ (`/df vault`)**: Trưng bày kho báu vật phẩm giá trị cao (đồ đỏ) thu thập được cùng tổng giá trị định giá.
+- **Thị Trường & Chế Tác (`/df market`)**: Tra cứu giá vật phẩm realtime trên thị trường và công thức bàn chế tác tối ưu (hỗ trợ autocomplete).
+- **Bản Đồ 3D Tương Tác (`/df map`)**: Cung cấp góc nhìn bản đồ chiến thuật trực quan, vị trí tài nguyên và cẩm nang học map.
+- **Thư Viện Gunsmith Meta (`/df build` / `/df gun`)**: Tra cứu bảng ngọc, phụ kiện tối ưu và mã build súng chuẩn meta máy chủ Garena theo từng chế độ chơi.
+- **Khuyến nghị Chế tạo Xưởng (`/df workshop`)**: Gợi ý các công thức sản xuất tối ưu tại Xưởng Căn Cứ Ngầm.
+- **Mật khẩu 6 Bản đồ Hằng ngày (`/df code`)**:
+  - Tự động cào dữ liệu từ Delta Force HQ với bộ đệm **Cache 30 phút** và **In-flight Promise Deduplication** chống nghẽn CPU.
+  - Tự động gửi mật khẩu định kỳ theo lịch cron cấu hình riêng cho từng server (`/df code setchannel`, `/df code settime`).
+- **Auto-Post Toàn Hệ Thống (`/df autopost`)**: Bot Owner quản lý chu kỳ tự động phát sóng bản đồ 3D và build súng meta định kỳ tới toàn bộ các guild.
+- **Liên kết Tài khoản An toàn (`/df link`)**:
+  - Hỗ trợ xác thực qua tiện ích Chrome Extension (**DF Toolbox**) bằng cơ chế Ủy quyền Chủ động (On-Demand Opt-In Claim API).
+  - Mã hóa token người dùng bằng **AES-256-GCM** trước khi lưu vào cơ sở dữ liệu.
+  - Người dùng có thể hủy liên kết và xóa dữ liệu bất kỳ lúc nào qua `/df unlink`.
+- **Trung Tâm Trợ Giúp Đa Ngữ (`/df help`)**: Bảng cẩm nang 6 trang tích hợp điều hướng Components V2, tự động thích ứng ngôn ngữ client (`vi` hoặc `en`), kèm nút tải tiện ích mở rộng **DF Toolbox Extension**.
+
+### 2. Tiện Ích Trình Duyệt: DF Toolbox Extension (v1.9.3)
+
+- **Auto Redeem Giftcode Garena**: Tự động hóa quá trình nhập danh sách hàng trăm mã giftcode Delta Force trên trang đổi quà Garena CDK, tự bypass CSP và nhận diện kết quả tự động.
+- **Floating Dashboard trực quan**: Gắn bảng điều khiển trực tiếp trên giao diện web đổi quà, hiển thị tiến độ, nhật ký, số mã thành công/thất bại theo thời gian thực.
+- **Ủy quyền Chủ động (On-Demand Opt-In)**: Mặc định không thu thập dữ liệu; người dùng xem trước Raw JSON (gồm độ dài token thật) và tick xác nhận đồng thuận trước khi gửi dữ liệu mã hóa TLS.
+- **Quản lý Mã & Phân Trang**: Popup extension hiện đại hỗ trợ lọc mã theo trạng thái (Redeemed, Dead, Retryable, Untested) và phân trang tiện lợi.
 
 ### 3. Tìm Đội Chơi Game (`/team`)
-* **Hệ thống LFG (`/team find`)**: Giao diện chọn bản đồ, chế độ chơi và mic tương tác qua Discord Components V2, tự động quản lý slot và điều phối kênh voice.
+
+- **Hệ thống LFG (`/team find`)**: Giao diện chọn bản đồ, chế độ chơi và mic tương tác qua Discord Components V2, tự động quản lý slot và điều phối kênh voice.
 
 ### 4. Hệ Thống Thanh Toán & Quyên Góp (`/pay` & `/donate`)
-* **Hóa đơn VietQR Động (`/pay create`)**: Tạo mã QR thanh toán chuẩn VietQR (NAPAS 247) tự động điền số tiền và nội dung, hỗ trợ nút xác nhận/hủy và chấm điểm dịch vụ (1–5 ⭐).
-* **Lịch sử & BXH Chi tiêu (`/pay history` & `/pay top`)**: Tra cứu lịch sử thanh toán cá nhân và vinh danh Top người ủng hộ server.
-* **Quyên góp Duy trì Bot (`/donate`)**: Tạo link thanh toán PayOS ủng hộ chi phí vận hành máy chủ bot một cách minh bạch.
+
+- **Hóa đơn VietQR Động (`/pay create`)**: Tạo mã QR thanh toán chuẩn VietQR (NAPAS 247) tự động điền số tiền và nội dung, hỗ trợ nút xác nhận/hủy và chấm điểm dịch vụ (1–5 ⭐).
+- **Lịch sử & BXH Chi tiêu (`/pay history` & `/pay top`)**: Tra cứu lịch sử thanh toán cá nhân và vinh danh Top người ủng hộ server.
+- **Quyên góp Duy trì Bot (`/donate`)**: Tạo link thanh toán PayOS ủng hộ chi phí vận hành máy chủ bot một cách minh bạch.
 
 ### 5. Quản trị Server Tập trung (`/config`)
-* **RBAC per-guild (`/config roles`)**: Thiết lập phân quyền chi tiết cho Bot Admin, Moderator và Member theo từng server.
-* **Cấu hình VietQR & Workflow (`/config vietqr`)**: Thiết lập số tài khoản ngân hàng nhận tiền, role nhân viên duyệt đơn, và kênh gửi đánh giá dịch vụ.
-* **Mở Tính Năng QR Server (`/config qr-server`)**: Bot Owner cấp phép mở tính năng tạo hóa đơn VietQR cho từng máy chủ.
-* **Hệ thống Chào mừng (`/config welcome`)**: Tự động gửi thông điệp chào đón và cấp role khi thành viên mới tham gia.
-* **Hệ thống Tạm biệt (`/config leave`)**: Tự động thông báo khi thành viên rời máy chủ.
-* **Cảm ơn Server Booster (`/config booster`)**: Tự động ghi nhận và trao role ưu đãi cho người ủng hộ server.
-* **Quản lý Discord Components V2 (`/config container`)**: Trình chỉnh sửa cấu hình giao diện linh hoạt.
-* **Thông Báo Toàn Hệ Thống (`/config bot`)**: Phát sóng tin tức, changelog phiên bản tới toàn bộ các guild.
+
+- **RBAC per-guild (`/config roles`)**: Thiết lập phân quyền chi tiết cho Bot Admin, Moderator và Member theo từng server.
+- **Cấu hình VietQR & Workflow (`/config vietqr`)**: Thiết lập số tài khoản ngân hàng nhận tiền, role nhân viên duyệt đơn, và kênh gửi đánh giá dịch vụ.
+- **Mở Tính Năng QR Server (`/config qr-server`)**: Bot Owner cấp phép mở tính năng tạo hóa đơn VietQR cho từng máy chủ.
+- **Hệ thống Chào mừng (`/config welcome`)**: Tự động gửi thông điệp chào đón và cấp role khi thành viên mới tham gia.
+- **Hệ thống Tạm biệt (`/config leave`)**: Tự động thông báo khi thành viên rời máy chủ.
+- **Cảm ơn Server Booster (`/config booster`)**: Tự động ghi nhận và trao role ưu đãi cho người ủng hộ server.
+- **Quản lý Discord Components V2 (`/config container`)**: Trình chỉnh sửa cấu hình giao diện linh hoạt.
+- **Thông Báo Toàn Hệ Thống (`/config bot`)**: Phát sóng tin tức, changelog phiên bản tới toàn bộ các guild.
 
 ---
 
@@ -150,21 +155,23 @@ src/
 └── types/                # Type declarations & Discord client augmentation
 ```
 
-* **Module Resolution**: `node16` (mọi relative import bắt buộc có đuôi `.js`).
-* **Bảo mật**: Mọi token và thông tin nhạy cảm được mã hóa qua AES-256-GCM. Không bao giờ lưu chat log công khai của người dùng.
+- **Module Resolution**: `node16` (mọi relative import bắt buộc có đuôi `.js`).
+- **Bảo mật**: Mọi token và thông tin nhạy cảm được mã hóa qua AES-256-GCM. Không bao giờ lưu chat log công khai của người dùng.
 
-* **Module Resolution**: `node16` (mọi relative import bắt buộc có đuôi `.js`).
-* **Bảo mật**: Mọi token và thông tin nhạy cảm được mã hóa qua AES-256-GCM. Không bao giờ lưu chat log công khai của người dùng.
+- **Module Resolution**: `node16` (mọi relative import bắt buộc có đuôi `.js`).
+- **Bảo mật**: Mọi token và thông tin nhạy cảm được mã hóa qua AES-256-GCM. Không bao giờ lưu chat log công khai của người dùng.
 
 ---
 
 ## 🚀 Cài đặt & Chạy cục bộ
 
 ### 1. Yêu cầu hệ thống
-* **Node.js**: Phiên bản `>= 22.12.0`
-* **npm**: Phiên bản đi kèm với Node.js
+
+- **Node.js**: Phiên bản `>= 22.12.0`
+- **npm**: Phiên bản đi kèm với Node.js
 
 ### 2. Thiết lập môi trường
+
 ```bash
 # 1. Clone repository
 git clone https://github.com/Pon1147/bot-klb.git
@@ -178,16 +185,16 @@ cp .env.example .env
 ```
 
 Điền các biến cần thiết trong file `.env`:
+
 ```env
 BOT_TOKEN=your_discord_bot_token
 CLIENT_ID=your_discord_application_id
 GUILD_ID=your_development_guild_id
 DF_CRYPTO_KEY_V1=your_32_byte_hex_key
-DF_LINK_CHANNEL_ID=your_admin_webhook_channel_id
-DF_WEBHOOK_SECRET=your_secret
 ```
 
 ### 3. Chạy Bot
+
 ```bash
 # Chạy ở chế độ phát triển (auto-reload qua tsx)
 npm run dev
@@ -209,32 +216,34 @@ npm start
 ## ☁️ Hướng dẫn Triển khai (Deployment)
 
 ### Railway (Khuyến nghị)
+
 1. Truy cập [railway.app](https://railway.app) → Đăng nhập bằng GitHub.
 2. Chọn **New Project** → **Deploy from GitHub repo** → chọn `bot-klb`.
 3. Vào tab **Variables** và thêm các biến môi trường từ `.env.example`.
 4. Cấu hình:
-   * **Build Command**: `npm run build`
-   * **Start Command**: `npm start`
+   - **Build Command**: `npm run build`
+   - **Start Command**: `npm start`
 5. Railway sẽ tự động build và chạy bot mỗi khi bạn push code lên nhánh `main`.
 
 ### Render
-1. Truy cập [render.com](https://render.com) → Chọn **New** → **Background Worker** *(quan trọng: không chọn Web Service vì bot Discord không có HTTP port để listen và sẽ bị sleep sau 15 phút)*.
+
+1. Truy cập [render.com](https://render.com) → Chọn **New** → **Background Worker** _(quan trọng: không chọn Web Service vì bot Discord không có HTTP port để listen và sẽ bị sleep sau 15 phút)_.
 2. Kết nối tới repo `bot-klb`.
 3. Cấu hình:
-   * **Build Command**: `npm install && npm run build`
-   * **Start Command**: `npm start`
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm start`
 4. Điền các Environment Variables tương ứng và bấm **Deploy**.
 
 ---
 
 ## 🛡️ Chính sách & Điều khoản
 
-* 🔒 [Chính sách Bảo mật (Privacy Policy)](PRIVACY.md)
-* 📜 [Điều khoản Dịch vụ (Terms of Service)](TERMS.md)
+- 🔒 [Chính sách Bảo mật (Privacy Policy)](PRIVACY.md)
+- 📜 [Điều khoản Dịch vụ (Terms of Service)](TERMS.md)
 
 ---
 
 ## 📄 Bản quyền & Tuyên bố từ chối trách nhiệm
 
-* Dự án là một sản phẩm cộng đồng phi lợi nhuận, **không liên kết, không được tài trợ hoặc bảo trợ bởi** TiMi Studio Group, Team Jade, Level Infinite hay Garena.
-* Mọi nhãn hiệu và tài sản đồ họa liên quan đến Delta Force thuộc bản quyền của chủ sở hữu tương ứng.
+- Dự án là một sản phẩm cộng đồng phi lợi nhuận, **không liên kết, không được tài trợ hoặc bảo trợ bởi** TiMi Studio Group, Team Jade, Level Infinite hay Garena.
+- Mọi nhãn hiệu và tài sản đồ họa liên quan đến Delta Force thuộc bản quyền của chủ sở hữu tương ứng.

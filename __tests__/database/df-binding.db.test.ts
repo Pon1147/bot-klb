@@ -24,6 +24,7 @@ import {
   expireBindingAsync,
   revokeBinding,
   revokeBindingAsync,
+  purgeRevokedCredentialsMigration,
   touchLastOk,
   updateLastError,
   syncBindingsFromMongoToSqlite,
@@ -394,6 +395,103 @@ describe('database/df-binding.db', () => {
       expect(result.success).toBe(true);
       expect(getDfToken(db, 'user-legacy-only')).toBeUndefined();
     });
+
+    it('tẩy sạch (PURGED) cred_ciphertext, cred_nonce, cred_tag khi revoke thành công', async () => {
+      upsertAccountBinding(
+        db,
+        'user-purge',
+        'openid-purge',
+        'nonce-secret',
+        'ciphertext-secret',
+        'tag-secret',
+      );
+
+      const res = await revokeBindingAsync(db, 'user-purge');
+      expect(res.success).toBe(true);
+
+      const row = db
+        .prepare('SELECT * FROM df_account_bindings WHERE discord_user_id = ?')
+        .get('user-purge') as any;
+
+      expect(row.status).toBe('revoked');
+      expect(row.cred_ciphertext).toBe('PURGED');
+      expect(row.cred_nonce).toBe('PURGED');
+      expect(row.cred_tag).toBe('PURGED');
+    });
+  });
+
+  describe('purgeRevokedCredentialsMigration (Security & Legal Remediation)', () => {
+    it('tẩy sạch ciphertext của các bản ghi revoked cũ và xóa token legacy mồ côi', () => {
+      // 1. Tạo 2 bản ghi revoked cũ với ciphertext thật và 1 bản ghi bị purged dở dang (ciphertext = PURGED nhưng nonce/tag còn tồn tại)
+      upsertAccountBinding(db, 'user-old-1', 'openid-1', 'nonce-1', 'secret-cipher-1', 'tag-1');
+      upsertAccountBinding(db, 'user-old-2', 'openid-2', 'nonce-2', 'secret-cipher-2', 'tag-2');
+      upsertAccountBinding(db, 'user-old-3', 'openid-3', 'nonce-3', 'PURGED', 'tag-3');
+      db.prepare("UPDATE df_account_bindings SET status = 'revoked' WHERE discord_user_id IN ('user-old-1', 'user-old-2', 'user-old-3')").run();
+
+      // 2. Tạo 1 token legacy của user đã revoked và 1 token của user legacy hợp lệ (chưa từng tạo binding mới)
+      saveDfToken(db, 'user-old-1', 'openid-1', 'legacy-raw-token-1');
+      saveDfToken(db, 'user-legacy-pure', 'openid-pure', 'legacy-raw-token-pure');
+
+      // 3. Chạy migration
+      const purgedCount = purgeRevokedCredentialsMigration(db);
+      expect(purgedCount).toBe(3);
+
+      // 4. Kiểm tra toàn bộ bản ghi (kể cả bản ghi dở dang) đã được tẩy sạch 100%
+      const rows = db.prepare("SELECT * FROM df_account_bindings WHERE discord_user_id IN ('user-old-1', 'user-old-2', 'user-old-3')").all() as any[];
+      expect(rows).toHaveLength(3);
+      for (const r of rows) {
+        expect(r.cred_ciphertext).toBe('PURGED');
+        expect(r.cred_nonce).toBe('PURGED');
+        expect(r.cred_tag).toBe('PURGED');
+      }
+
+      // 5. Kiểm tra tính Idempotent: chạy lại lần 2 không thay đổi bản ghi nào
+      expect(purgeRevokedCredentialsMigration(db)).toBe(0);
+
+      // 5. Token legacy của user đã revoked bị xóa
+      expect(getDfToken(db, 'user-old-1')).toBeUndefined();
+
+      // 6. Token của user legacy hợp lệ BẮT BUỘC ĐƯỢC BẢO LƯU NGUYÊN VẸN
+      expect(getDfToken(db, 'user-legacy-pure')).toBeDefined();
+      expect(getDfToken(db, 'user-legacy-pure')?.token).toBe('legacy-raw-token-pure');
+    });
+
+    it('tẩy sạch an toàn với IS NOT "PURGED" kể cả khi các cột chứa giá trị NULL (NULL-safe)', () => {
+      const customDb = new Database(':memory:');
+      customDb.exec(`
+        CREATE TABLE df_account_bindings (
+          discord_user_id TEXT PRIMARY KEY,
+          status TEXT,
+          cred_ciphertext TEXT,
+          cred_nonce TEXT,
+          cred_tag TEXT,
+          updated_at DATETIME
+        );
+        CREATE TABLE df_tokens (
+          discord_id TEXT
+        );
+      `);
+
+      // Bản ghi revoked có các cột credential là NULL
+      customDb
+        .prepare('INSERT INTO df_account_bindings VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)')
+        .run('user-null', 'revoked', null, null, null);
+
+      const count = purgeRevokedCredentialsMigration(customDb);
+      expect(count).toBe(1);
+
+      const row = customDb
+        .prepare('SELECT * FROM df_account_bindings WHERE discord_user_id = ?')
+        .get('user-null') as any;
+      expect(row.cred_ciphertext).toBe('PURGED');
+      expect(row.cred_nonce).toBe('PURGED');
+      expect(row.cred_tag).toBe('PURGED');
+
+      // Chạy lại đảm bảo idempotent
+      expect(purgeRevokedCredentialsMigration(customDb)).toBe(0);
+
+      customDb.close();
+    });
   });
 
   describe('touchLastOk', () => {
@@ -461,9 +559,17 @@ describe('database/df-binding.db', () => {
       const count = await syncBindingsFromMongoToSqlite(db);
       expect(count).toBe(0);
 
-      // Reconciliation phải chuyển binding sang revoked và xóa token legacy
+      // Reconciliation phải chuyển binding sang revoked, tẩy sạch ciphertext và xóa token legacy
       expect(getActiveBinding(db, 'user-phantom')).toBeUndefined();
       expect(getDfToken(db, 'user-phantom')).toBeUndefined();
+
+      const phantomRow = db
+        .prepare('SELECT * FROM df_account_bindings WHERE discord_user_id = ?')
+        .get('user-phantom') as any;
+      expect(phantomRow.status).toBe('revoked');
+      expect(phantomRow.cred_ciphertext).toBe('PURGED');
+      expect(phantomRow.cred_nonce).toBe('PURGED');
+      expect(phantomRow.cred_tag).toBe('PURGED');
     });
 
     it('đồng bộ thành công và fallback new Date().toISOString() khi captured_at falsy', async () => {

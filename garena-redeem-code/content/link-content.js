@@ -1,8 +1,9 @@
 /**
- * Isolated content script — bridge + panel cho tab Link trên HQ.
+ * Isolated content script — Opt-In & Transparent Authorization Bridge cho tab Link trên HQ.
  *
- * Lắng nghe postMessage từ link-page-capture.js → render panel → submit claim.
- * Dùng chrome.runtime.sendMessage (giữ SW alive) + storage polling cho result.
+ * MẶC ĐỊNH KHÔNG HOOK, KHÔNG BẮT TOKEN.
+ * Chỉ khi người dùng bấm "Bắt đầu Ủy quyền", script mới tiêm động link-page-capture.js vào DOM.
+ * Bắt buộc hiển thị Raw JSON preview (gồm độ dài token thật) và Checkbox đồng thuận trước khi gửi.
  */
 
 (function () {
@@ -12,34 +13,178 @@
 
   // ===== STATE =====
   let state = {
+    status: 'idle', // idle | authorizing | candidate_captured | submitting | success | error
     candidate: null,
     endpoint: null,
-    claimCode: null,
-    status: 'idle', // idle | capturing | ready | submitting | success | error
+    claimCode: '',
+    consentChecked: false,
+    authTimerSeconds: 60,
+    timerInterval: null,
+    errorMessage: null,
   };
 
   // ===== A. Lắng nghe candidate từ MAIN world =====
   window.addEventListener('message', (event) => {
     if (event.origin !== window.location.origin) return;
+    if (event.source !== window) return;
+
     const d = event.data;
     if (!d || d.source !== 'df-link-capture') return;
+
+    if (d.type === 'CAPTURE_TIMEOUT') {
+      if (state.status === 'authorizing') {
+        stopAuthorization(false);
+        state.status = 'idle';
+        state.errorMessage = 'Hết thời gian chờ (60s). Vui lòng bấm "Bắt đầu Ủy quyền" nếu bạn muốn thử lại.';
+        renderPanel();
+      }
+      return;
+    }
+
     if (d.type !== 'CREDENTIAL_CANDIDATE') return;
     if (!d.credential?.openid || !d.credential?.token) return;
 
+    // Strict validation: openid phải là chuỗi số (Garena ID), token >= 32 ký tự, endpoint hợp lệ
+    const cred = d.credential;
+    if (!/^\d+$/.test(cred.openid)) return;
+    if (typeof cred.token !== 'string' || cred.token.length < 32) return;
+    const validEndpoints = [
+      'AuthLogin',
+      'GetPlayerStats',
+      'GetRoleInfo',
+      'DFToolBoxGetUserRoleInfo',
+      'GetDailyReport',
+      'GetWorkbenchList',
+      'GetCardCollection',
+      'Unknown',
+    ];
+    if (
+      !d.endpoint ||
+      typeof d.endpoint !== 'string' ||
+      (!validEndpoints.includes(d.endpoint) && !d.endpoint.startsWith('DFToolBox') && !d.endpoint.startsWith('Get'))
+    ) {
+      return;
+    }
+
     console.log(`[LinkContent] Captured credentials from ${d.endpoint}: openid=${d.credential.openid.slice(0, 4)}***`);
+
+    // Dừng timer đếm ngược
+    if (state.timerInterval) {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+    }
+
     state.candidate = d.credential;
     state.endpoint = d.endpoint;
-    state.status = 'ready';
+    state.status = 'candidate_captured';
+    state.errorMessage = null;
 
     renderPanel();
   });
 
-  // ===== Render panel ngay khi load (trước khi có credential) =====
+  // Khởi động giao diện mặc định
   renderPanel();
 
-  // ===== B. Inject panel UI =====
+  // ===== B. Tiêm & Dọn dẹp On-Demand Script =====
+  function extractFromPerformance() {
+    try {
+      const entries = window.performance?.getEntriesByType?.('resource') || [];
+      for (let i = entries.length - 1; i >= 0; i--) {
+        const urlStr = entries[i]?.name || '';
+        if (urlStr.includes('sg-act.playerinfinite.com') && urlStr.includes('/DfTools/')) {
+          const p = new URL(urlStr, window.location.origin).searchParams;
+          const openid = p.get('openid');
+          const token = p.get('token');
+          if (openid && token && /^\d+$/.test(openid) && typeof token === 'string' && token.length >= 32) {
+            const urlPath = urlStr.split('?')[0];
+            const endpoint = urlPath.split('/').pop() || 'DfTools';
+            return {
+              credential: {
+                openid,
+                token,
+                ts: p.get('ts') || '0',
+                s: p.get('s') || '0',
+                u: p.get('u'),
+                a: p.get('a'),
+                game_id: p.get('game_id') || '30150',
+              },
+              endpoint,
+            };
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[LinkContent] Performance scan error:', e);
+    }
+    return null;
+  }
+
+  function startAuthorization() {
+    // 1. Quét tức thì Performance Resource Buffer: Nếu đã có phiên thì nhận diện ngay 0s
+    const existing = extractFromPerformance();
+    if (existing) {
+      console.log(`[LinkContent] Instant session found in performance buffer: openid=${existing.credential.openid.slice(0, 4)}*** from ${existing.endpoint}`);
+      state.candidate = existing.credential;
+      state.endpoint = existing.endpoint;
+      state.status = 'candidate_captured';
+      state.errorMessage = null;
+      renderPanel();
+      return;
+    }
+
+    // 2. Nếu chưa có phiên (chưa đăng nhập), mở cửa sổ đếm ngược 60s và tiêm script đón đầu
+    state.status = 'authorizing';
+    state.authTimerSeconds = 60;
+    state.errorMessage = null;
+
+    // Tiêm link-page-capture.js vào DOM MAIN world
+    const existingScript = document.getElementById('df-link-capture-script');
+    if (existingScript) existingScript.remove();
+
+    const script = document.createElement('script');
+    script.id = 'df-link-capture-script';
+    script.src = chrome.runtime.getURL('content/link-page-capture.js');
+    (document.head || document.documentElement).appendChild(script);
+
+    // Bắt đầu đếm ngược 60s
+    if (state.timerInterval) clearInterval(state.timerInterval);
+    state.timerInterval = setInterval(() => {
+      state.authTimerSeconds--;
+      if (state.authTimerSeconds <= 0) {
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+      }
+      const timerEl = document.querySelector('#df-auth-timer');
+      if (timerEl) {
+        timerEl.textContent = `${state.authTimerSeconds}s`;
+      }
+    }, 1000);
+
+    renderPanel();
+  }
+
+  function stopAuthorization(userInitiated = true) {
+    if (state.timerInterval) {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+    }
+
+    // Phát tín hiệu dừng tới capture script
+    window.postMessage({ type: 'DF_STOP_CAPTURE' }, window.location.origin);
+
+    const script = document.getElementById('df-link-capture-script');
+    if (script) script.remove();
+
+    if (userInitiated) {
+      state.status = 'idle';
+      state.candidate = null;
+      state.errorMessage = null;
+      renderPanel();
+    }
+  }
+
+  // ===== C. Inject panel UI =====
   function renderPanel() {
-    // Xóa panel cũ nếu có
     const oldPanel = document.getElementById('df-toolbox-panel');
     if (oldPanel) oldPanel.remove();
 
@@ -51,7 +196,7 @@
           position: fixed;
           bottom: 20px;
           right: 20px;
-          width: 320px;
+          width: 340px;
           background: #0b0e14;
           color: #f1f5f9;
           border: 1px solid rgba(0, 229, 153, 0.3);
@@ -61,13 +206,27 @@
           font-family: 'Segoe UI', system-ui, sans-serif;
           font-size: 13px;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 16px rgba(0, 229, 153, 0.15);
+          box-sizing: border-box;
         }
         #df-toolbox-panel h3 {
-          margin: 0 0 12px;
+          margin: 0 0 10px;
           color: #00e599;
           font-size: 14px;
           font-weight: 700;
-          letter-spacing: 0.3px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        #df-toolbox-panel .btn-close {
+          background: none;
+          border: none;
+          color: #64748b;
+          font-size: 16px;
+          cursor: pointer;
+          padding: 0 4px;
+        }
+        #df-toolbox-panel .btn-close:hover {
+          color: #f1f5f9;
         }
         #df-toolbox-panel .status {
           padding: 8px 12px;
@@ -77,8 +236,13 @@
           border: 1px solid rgba(255, 255, 255, 0.08);
           color: #94a3b8;
           font-size: 12px;
+          line-height: 1.4;
         }
-        #df-toolbox-panel input {
+        #df-toolbox-panel .status.error {
+          border-color: #ef4444;
+          color: #fca5a5;
+        }
+        #df-toolbox-panel input[type="text"] {
           width: 100%;
           box-sizing: border-box;
           padding: 8px 10px;
@@ -88,15 +252,41 @@
           color: #f1f5f9;
           font-size: 13px;
           font-family: 'JetBrains Mono', Consolas, monospace;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
           outline: none;
-          transition: border-color 0.2s;
         }
-        #df-toolbox-panel input:focus {
+        #df-toolbox-panel input[type="text"]:focus {
           border-color: #00e599;
-          box-shadow: 0 0 8px rgba(0, 229, 153, 0.25);
         }
-        #df-toolbox-panel button {
+        #df-toolbox-panel .preview-box {
+          background: #05080f;
+          border: 1px solid rgba(0, 229, 153, 0.2);
+          border-radius: 6px;
+          padding: 8px;
+          margin-bottom: 10px;
+          font-family: Consolas, monospace;
+          font-size: 11px;
+          color: #94a3b8;
+          max-height: 120px;
+          overflow-y: auto;
+          white-space: pre-wrap;
+          word-break: break-all;
+        }
+        #df-toolbox-panel .consent-label {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          font-size: 11px;
+          color: #cbd5e1;
+          margin-bottom: 12px;
+          cursor: pointer;
+          line-height: 1.4;
+        }
+        #df-toolbox-panel .consent-label input {
+          margin-top: 2px;
+          cursor: pointer;
+        }
+        #df-toolbox-panel button.primary {
           width: 100%;
           padding: 10px;
           border: none;
@@ -107,151 +297,199 @@
           font-size: 13px;
           cursor: pointer;
           transition: all 0.2s;
-          box-shadow: 0 0 12px rgba(0, 229, 153, 0.25);
         }
-        #df-toolbox-panel button:hover:not(:disabled) {
+        #df-toolbox-panel button.primary:hover:not(:disabled) {
           background: #00c784;
-          box-shadow: 0 0 16px rgba(0, 229, 153, 0.4);
         }
-        #df-toolbox-panel button:disabled {
+        #df-toolbox-panel button.primary:disabled {
           background: #1e293b;
           color: #64748b;
-          box-shadow: none;
           cursor: not-allowed;
         }
+        #df-toolbox-panel button.secondary {
+          width: 100%;
+          padding: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 6px;
+          background: transparent;
+          color: #94a3b8;
+          font-size: 12px;
+          cursor: pointer;
+          margin-top: 6px;
+        }
+        #df-toolbox-panel button.secondary:hover {
+          color: #f1f5f9;
+          border-color: rgba(255, 255, 255, 0.25);
+        }
         #df-toolbox-panel .hint {
-          margin-top: 12px;
+          margin-top: 10px;
           font-size: 11px;
           color: #64748b;
-          line-height: 1.5;
+          line-height: 1.4;
         }
       </style>
-      <h3>DF Toolbox — Link</h3>
-      <div class="status" id="df-link-status">${getStatusText()}</div>
-      <input type="text" id="df-link-code" placeholder="Dán claim code từ Discord" maxlength="6" />
-      <button id="df-link-submit" ${state.status !== 'ready' ? 'disabled' : ''}>Liên kết Discord</button>
-      <div class="hint">
-        <strong>🛡️ An toàn 100%:</strong> Tuyệt đối không lưu mật khẩu<br>
-        1. Gõ <strong>/df link start</strong> trên Discord để lấy mã 6 ký tự<br>
-        2. Dán mã vào ô phía trên<br>
-        3. Bấm nút <strong>Liên kết Discord</strong><br>
-        4. Kiểm tra tin nhắn riêng chúc mừng từ bot!
-      </div>
+      <h3>
+        <span>DF Toolbox — Liên kết Bot</span>
+        <button class="btn-close" id="df-btn-close" title="Đóng">✕</button>
+      </h3>
+      ${renderContentBody()}
     `;
 
     document.body.appendChild(panel);
-
-    // Bind submit button
-    const submitBtn = panel.querySelector('#df-link-submit');
-    submitBtn.addEventListener('click', handleSubmit);
-
-    // Auto-fill code from storage if exists
-    chrome.storage.local.get(['df_claim_code'], (result) => {
-      if (result.df_claim_code) {
-        panel.querySelector('#df-link-code').value = result.df_claim_code;
-      }
-    });
+    bindPanelEvents(panel);
   }
 
-  function getStatusText() {
+  function renderContentBody() {
+    if (state.errorMessage) {
+      return `
+        <div class="status error">${state.errorMessage}</div>
+        <button class="primary" id="df-btn-start">Thử lại</button>
+      `;
+    }
+
     switch (state.status) {
-      case 'idle': return 'Đang chờ credential từ HQ session...';
-      case 'ready': return `Đã capture! OpenID: ${state.candidate.openid.slice(0, 4)}•••`;
-      case 'submitting': return 'Đang gửi claim...';
-      case 'success': return '✅ Đã liên kết thành công! Chờ DM xác nhận.';
-      case 'error': return '❌ Lỗi — xem console.';
-      default: return 'Đang tải...';
-    }
-  }
+      case 'idle':
+        return `
+          <div class="status">
+            <strong>🔒 Quyền riêng tư:</strong> Tiện ích mặc định <strong>tắt hoàn toàn</strong> thu thập dữ liệu.<br><br>
+            Nếu bạn muốn dùng lệnh <code>/df stats</code> trên Discord, bấm nút dưới để bắt đầu phiên ủy quyền.
+          </div>
+          <button class="primary" id="df-btn-start">Bắt đầu Ủy quyền</button>
+          <div class="hint">Nếu bạn chỉ nạp giftcode, không cần thực hiện bước này.</div>
+        `;
 
-  // ===== C. Submit claim → Gửi qua Service Worker để tránh CORS của trang web =====
-  function handleClaimFailure(rawError) {
-    state.status = 'error';
-    const claimErrorMap = {
-      invalid_claim_code: 'Mã claim không đúng hoặc đã hết hạn.',
-      account_linked_to_other_discord: 'Tài khoản Garena này đã liên kết với Discord khác.',
-      already_linked: 'Tài khoản này đã được liên kết trước đó.',
-    };
-    const msg = claimErrorMap[rawError] || rawError || 'Lỗi liên kết. Vui lòng thử lại sau.';
-    renderPanel();
-    const errEl = document.querySelector('#df-link-status');
-    if (errEl) {
-      errEl.textContent = '❌ ' + msg;
-      errEl.style.color = '#f44336';
-    }
-  }
+      case 'authorizing':
+        return `
+          <div class="status">
+            ⏳ Đang mở cửa sổ ủy quyền (<strong id="df-auth-timer">${state.authTimerSeconds}s</strong>)...<br><br>
+            👉 Vui lòng đăng nhập tài khoản Garena trên trang Delta Force HQ nếu chưa đăng nhập.
+          </div>
+          <button class="secondary" id="df-btn-cancel">Hủy bỏ</button>
+        `;
 
-  async function handleSubmit() {
-    const codeInput = document.querySelector('#df-link-code');
-    const statusEl = document.querySelector('#df-link-status');
+      case 'candidate_captured': {
+        const cred = state.candidate;
 
-    const code = codeInput ? codeInput.value.trim() : '';
-    if (!code || !state.candidate) {
-      if (statusEl) {
-        statusEl.textContent = '❌ Thiếu mã claim hoặc chưa đăng nhập HQ';
-        statusEl.style.color = '#f44336';
+        return `
+          <div class="status" style="border-color: #00e599; color: #a7f3d0;">
+            ✓ Đã phát hiện tài khoản Garena (ID: ${cred.openid.slice(0, 4)}****)
+          </div>
+          <input type="text" id="df-link-code" placeholder="Dán mã claim 6 ký tự từ /df link" maxlength="6" value="${state.claimCode}" />
+          <label class="consent-label">
+            <input type="checkbox" id="df-consent-cb" ${state.consentChecked ? 'checked' : ''} />
+            <span>Tôi đồng ý liên kết tài khoản này với Bot Discord để tra cứu stats và lịch sử đấu (hủy bất cứ lúc nào qua <code>/df unlink</code>).</span>
+          </label>
+          <button class="primary" id="df-link-submit" ${(!state.consentChecked || state.claimCode.length < 6) ? 'disabled' : ''}>
+            Xác nhận & Liên kết
+          </button>
+          <button class="secondary" id="df-btn-cancel">Hủy bỏ</button>
+        `;
       }
-      return;
+
+      case 'submitting':
+        return `
+          <div class="status">Đang gửi dữ liệu mã hóa tới Bot Server...</div>
+          <button class="primary" disabled>Đang xử lý...</button>
+        `;
+
+      case 'success':
+        return `
+          <div class="status" style="border-color: #00e599; color: #a7f3d0;">
+            🎉 <strong>Liên kết thành công!</strong><br>
+            Bạn có thể kiểm tra tin nhắn riêng chúc mừng trên Discord và bắt đầu dùng <code>/df stats</code>.
+          </div>
+          <button class="secondary" id="df-btn-close-final">Đóng</button>
+        `;
+
+      default:
+        return `<div class="status">Đang tải...</div>`;
     }
+  }
+
+  function bindPanelEvents(panel) {
+    const closeBtn = panel.querySelector('#df-btn-close');
+    if (closeBtn) closeBtn.addEventListener('click', () => { stopAuthorization(); panel.remove(); });
+
+    const closeFinalBtn = panel.querySelector('#df-btn-close-final');
+    if (closeFinalBtn) closeFinalBtn.addEventListener('click', () => panel.remove());
+
+    const startBtn = panel.querySelector('#df-btn-start');
+    if (startBtn) startBtn.addEventListener('click', startAuthorization);
+
+    const cancelBtn = panel.querySelector('#df-btn-cancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', () => stopAuthorization(true));
+
+    const codeInput = panel.querySelector('#df-link-code');
+    const consentCb = panel.querySelector('#df-consent-cb');
+    const submitBtn = panel.querySelector('#df-link-submit');
+
+    if (codeInput) {
+      codeInput.addEventListener('input', (e) => {
+        state.claimCode = e.target.value.trim().toUpperCase();
+        if (submitBtn) {
+          submitBtn.disabled = !state.consentChecked || state.claimCode.length < 6;
+        }
+      });
+    }
+
+    if (consentCb) {
+      consentCb.addEventListener('change', (e) => {
+        state.consentChecked = e.target.checked;
+        if (submitBtn) {
+          submitBtn.disabled = !state.consentChecked || state.claimCode.length < 6;
+        }
+      });
+    }
+
+    if (submitBtn) {
+      submitBtn.addEventListener('click', handleSubmit);
+    }
+  }
+
+  // ===== D. Submit claim tới Service Worker =====
+  async function handleSubmit() {
+    if (!state.candidate || !state.consentChecked || state.claimCode.length < 6) return;
 
     state.status = 'submitting';
     renderPanel();
 
-    const maskedOpenid = state.candidate?.openid ? `${state.candidate.openid.slice(0, 4)}***` : 'missing';
-    console.log(`[LinkContent] Submitting claim via SW: code=${code}, openid=${maskedOpenid}`);
-
     try {
-      // Gửi qua background Service Worker (chống hoàn toàn CORS vì Service Worker chạy độc lập với trang web)
+      // Lưu trữ bằng chứng đồng thuận có dấu thời gian trước khi gửi
+      await chrome.storage.local.set({
+        consent_version: 'v1.0',
+        consent_granted_at: Date.now(),
+      });
+
       chrome.runtime.sendMessage(
         {
           type: 'DF_CLAIM',
-          code,
+          code: state.claimCode,
           credential: state.candidate,
           source_endpoint: state.endpoint,
         },
         (response) => {
-          console.log('[LinkContent] Received response from SW:', response, 'lastError:', chrome.runtime.lastError);
           if (chrome.runtime.lastError || !response) {
-            const errMsg =
-              chrome.runtime.lastError?.message || 'Không thể kết nối tới Service Worker';
-            console.error('[LinkContent] SW communication error:', errMsg);
-            handleClaimFailure(errMsg);
+            state.status = 'candidate_captured';
+            state.errorMessage = chrome.runtime.lastError?.message || 'Không thể kết nối Service Worker';
+            renderPanel();
             return;
           }
 
           if (response.ok) {
-            console.log('[LinkContent] Claim completed successfully!');
             state.status = 'success';
             state.candidate = null;
             renderPanel();
           } else {
-            console.info('[LinkContent] Claim rejected by Bot Server:', response.error);
-            handleClaimFailure(response.error);
+            state.status = 'candidate_captured';
+            state.errorMessage = response.error || 'Yêu cầu bị từ chối từ Bot Server';
+            renderPanel();
           }
         },
       );
     } catch (err) {
-      console.error('[LinkContent] Internal extension error:', err);
-      handleClaimFailure(err.message || 'Lỗi kết nối nội bộ extension');
-    }
-  }
-
-  // ===== D. Listen for SW response updates (fallback) =====
-  chrome.runtime.onMessage.addListener((msg) => {
-    if (msg?.type === 'DF_LINK_SUCCESS') {
-      state.status = 'success';
+      state.status = 'candidate_captured';
+      state.errorMessage = err.message || 'Lỗi gửi yêu cầu';
       renderPanel();
     }
-    if (msg?.type === 'DF_LINK_ERROR') {
-      state.status = 'error';
-      const statusEl = document.querySelector('#df-link-status');
-      if (statusEl) {
-        statusEl.textContent = '❌ ' + msg.error;
-        statusEl.style.color = '#f44336';
-      }
-      const submitBtn = document.querySelector('#df-link-submit');
-      if (submitBtn) submitBtn.disabled = false;
-    }
-  });
-
+  }
 })();

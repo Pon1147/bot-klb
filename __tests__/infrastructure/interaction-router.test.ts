@@ -6,7 +6,6 @@
 
 import {
   routeInteraction,
-  webhookRevealedUsers,
   sendInteractionErrorFallback,
 } from '../../src/infrastructure/discord/interaction-router.js';
 import { PermissionFlagsBits, MessageFlags } from 'discord.js';
@@ -740,102 +739,6 @@ describe('Phase 7: Router Default-Deny for Unmapped Command Paths (Area D)', () 
     expect(mockConfigExecute).not.toHaveBeenCalled();
     expect(interaction.reply).toHaveBeenCalledWith({
       content: '🔒 Lệnh này chưa được cấu hình phân quyền bảo mật.',
-      flags: MessageFlags.Ephemeral,
-    });
-  });
-});
-
-describe('Phase 7: Webhook Reveal Debounce with TTL (Area C)', () => {
-  let mockClient: any;
-  const originalWebhookUrl = botConfig.dfWebhookUrl;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    webhookRevealedUsers.clear();
-    mockClient = { commands: new Map(), database: {} };
-    botConfig.dfWebhookUrl = 'https://discord.com/api/webhooks/123/mock-secret';
-  });
-
-  afterAll(() => {
-    botConfig.dfWebhookUrl = originalWebhookUrl;
-    webhookRevealedUsers.clear();
-  });
-
-  function createButtonInteraction(overrides: Record<string, any> = {}) {
-    return {
-      isButton: () => true,
-      isStringSelectMenu: () => false,
-      isModalSubmit: () => false,
-      isChatInputCommand: () => false,
-      customId: 'df_link_show_webhook',
-      user: { id: 'user-debounce-1' },
-      message: { content: 'Link prompt' },
-      reply: jest.fn().mockResolvedValue(undefined),
-      update: jest.fn().mockResolvedValue(undefined),
-      deleteReply: jest.fn().mockResolvedValue(undefined),
-      ...overrides,
-    };
-  }
-
-  it('lần bấm đầu tiên: reveal thành công webhook URL và set debounce trong store', async () => {
-    const interaction = createButtonInteraction();
-
-    await routeInteraction(mockClient, interaction as any);
-
-    expect(interaction.reply).toHaveBeenCalledWith(
-      expect.objectContaining({
-        content: expect.stringContaining(botConfig.dfWebhookUrl),
-        flags: MessageFlags.Ephemeral,
-      }),
-    );
-    expect(webhookRevealedUsers.get('user-debounce-1')).toBeDefined();
-  });
-
-  it('lần bấm thứ hai trong vòng 60s: bị chặn bởi debounce guard', async () => {
-    const interaction1 = createButtonInteraction({ user: { id: 'user-debounce-2' } });
-    await routeInteraction(mockClient, interaction1 as any);
-    expect(interaction1.reply).toHaveBeenCalledWith(
-      expect.objectContaining({
-        content: expect.stringContaining(botConfig.dfWebhookUrl),
-      }),
-    );
-
-    const interaction2 = createButtonInteraction({ user: { id: 'user-debounce-2' } });
-    await routeInteraction(mockClient, interaction2 as any);
-
-    expect(interaction2.reply).toHaveBeenCalledWith({
-      content: 'Bạn đã hiện Webhook URL rồi.',
-      flags: MessageFlags.Ephemeral,
-    });
-  });
-
-  it('sau khi TTL 60s hết hạn: user được phép reveal lại webhook URL', async () => {
-    const userId = 'user-debounce-ttl';
-    // Đặt entry đã hết hạn trong quá khứ
-    webhookRevealedUsers.set(userId, {
-      expiresAt: Date.now() - 1000,
-      revealed: true,
-    });
-
-    const interaction = createButtonInteraction({ user: { id: userId } });
-    await routeInteraction(mockClient, interaction as any);
-
-    expect(interaction.reply).toHaveBeenCalledWith(
-      expect.objectContaining({
-        content: expect.stringContaining(botConfig.dfWebhookUrl),
-        flags: MessageFlags.Ephemeral,
-      }),
-    );
-  });
-
-  it('khi webhook URL chưa cấu hình: thông báo lỗi cấu hình', async () => {
-    botConfig.dfWebhookUrl = '';
-    const interaction = createButtonInteraction({ user: { id: 'user-no-url' } });
-
-    await routeInteraction(mockClient, interaction as any);
-
-    expect(interaction.reply).toHaveBeenCalledWith({
-      content: 'Webhook URL chưa được cấu hình.',
       flags: MessageFlags.Ephemeral,
     });
   });

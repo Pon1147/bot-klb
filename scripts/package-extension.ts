@@ -39,12 +39,12 @@ export async function packageExtension(): Promise<string> {
         fs.writeFileSync(popupHtmlPath, content, 'utf8');
       }
 
-      // Đồng bộ welcome.html
+      // Đồng bộ welcome.html & welcome.js
       const welcomeHtmlPath = path.join(sourceDir, 'welcome', 'welcome.html');
       if (fs.existsSync(welcomeHtmlPath)) {
         let content = fs.readFileSync(welcomeHtmlPath, 'utf8');
         content = content.replace(
-          /(<div class="hero-badge">.+? · v)[\d.]+(<\/div>)/g,
+          /(<div class="hero-badge"[^>]*>.+? · v)[\d.]+(<\/div>)/g,
           `$1${extVersion}$2`,
         );
         content = content.replace(
@@ -52,6 +52,13 @@ export async function packageExtension(): Promise<string> {
           `$1${extVersion}$2`,
         );
         fs.writeFileSync(welcomeHtmlPath, content, 'utf8');
+      }
+
+      const welcomeJsPath = path.join(sourceDir, 'welcome', 'welcome.js');
+      if (fs.existsSync(welcomeJsPath)) {
+        let content = fs.readFileSync(welcomeJsPath, 'utf8');
+        content = content.replace(/(let extVersion = ')[^']+(';)/g, `$1${extVersion}$2`);
+        fs.writeFileSync(welcomeJsPath, content, 'utf8');
       }
 
       // Đồng bộ version.ts
@@ -164,10 +171,20 @@ export async function packageExtension(): Promise<string> {
       archive.directory(bgDir, 'background');
     }
 
-    // 3. Thư mục content
+    // 3. Thư mục content (chỉ đóng gói các script phục vụ Redeem và Link, loại trừ debug/investigator)
     const contentDir = path.join(sourceDir, 'content');
     if (fs.existsSync(contentDir)) {
-      archive.directory(contentDir, 'content');
+      const excludedContentFiles = new Set([
+        'auth-investigator.js',
+        'auth-investigator-content.js',
+        'auth-state-engine.js',
+      ]);
+      const files = fs.readdirSync(contentDir);
+      for (const file of files) {
+        if (!excludedContentFiles.has(file)) {
+          archive.file(path.join(contentDir, file), { name: `content/${file}` });
+        }
+      }
     }
 
     // 4. Thư mục popup

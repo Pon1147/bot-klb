@@ -259,14 +259,14 @@ export function revokeBinding(
   if (nonce) {
     const result = database
       .prepare(
-        "UPDATE df_account_bindings SET status = 'revoked', updated_at = CURRENT_TIMESTAMP WHERE discord_user_id = ? AND cred_nonce = ? AND status = 'active'",
+        "UPDATE df_account_bindings SET status = 'revoked', cred_ciphertext = 'PURGED', cred_nonce = 'PURGED', cred_tag = 'PURGED', updated_at = CURRENT_TIMESTAMP WHERE discord_user_id = ? AND cred_nonce = ? AND status = 'active'",
       )
       .run(discordUserId, nonce);
     changes = result.changes;
   } else {
     const result = database
       .prepare(
-        "UPDATE df_account_bindings SET status = 'revoked', updated_at = CURRENT_TIMESTAMP WHERE discord_user_id = ? AND status = 'active'",
+        "UPDATE df_account_bindings SET status = 'revoked', cred_ciphertext = 'PURGED', cred_nonce = 'PURGED', cred_tag = 'PURGED', updated_at = CURRENT_TIMESTAMP WHERE discord_user_id = ? AND status = 'active'",
       )
       .run(discordUserId);
     changes = result.changes;
@@ -319,14 +319,14 @@ export async function revokeBindingAsync(
   if (nonce) {
     const result = database
       .prepare(
-        "UPDATE df_account_bindings SET status = 'revoked', updated_at = CURRENT_TIMESTAMP WHERE discord_user_id = ? AND cred_nonce = ? AND status = 'active'",
+        "UPDATE df_account_bindings SET status = 'revoked', cred_ciphertext = 'PURGED', cred_nonce = 'PURGED', cred_tag = 'PURGED', updated_at = CURRENT_TIMESTAMP WHERE discord_user_id = ? AND cred_nonce = ? AND status = 'active'",
       )
       .run(discordUserId, nonce);
     changes = result.changes;
   } else {
     const result = database
       .prepare(
-        "UPDATE df_account_bindings SET status = 'revoked', updated_at = CURRENT_TIMESTAMP WHERE discord_user_id = ? AND status = 'active'",
+        "UPDATE df_account_bindings SET status = 'revoked', cred_ciphertext = 'PURGED', cred_nonce = 'PURGED', cred_tag = 'PURGED', updated_at = CURRENT_TIMESTAMP WHERE discord_user_id = ? AND status = 'active'",
       )
       .run(discordUserId);
     changes = result.changes;
@@ -444,7 +444,11 @@ export async function syncBindingsFromMongoToSqlite(database: Database.Database)
 
   const reconcileStmt = database.prepare(`
     UPDATE df_account_bindings
-    SET status = 'revoked', updated_at = CURRENT_TIMESTAMP
+    SET status = 'revoked',
+        cred_ciphertext = 'PURGED',
+        cred_nonce = 'PURGED',
+        cred_tag = 'PURGED',
+        updated_at = CURRENT_TIMESTAMP
     WHERE discord_user_id = ? AND cred_nonce = ? AND status = 'active'
   `);
 
@@ -473,4 +477,47 @@ export function updateLastError(
       'UPDATE df_account_bindings SET last_error = ?, updated_at = CURRENT_TIMESTAMP WHERE discord_user_id = ?',
     )
     .run(error.slice(0, 500), discordUserId);
+}
+
+/**
+ * Migration dọn sạch dữ liệu credential trên các bản ghi đã revoked cũ (Backfill Remediation).
+ * Đảm bảo 100% tuân thủ PRIVACY.md và tiêu chí bảo mật của LEGAL.md.
+ */
+export function purgeRevokedCredentialsMigration(database: Database.Database): number {
+  if (!database || ('open' in database && !database.open)) return 0;
+
+  // 1. Tẩy sạch ciphertext của các bản ghi revoked
+  const result = database
+    .prepare(
+      `UPDATE df_account_bindings 
+       SET cred_ciphertext = 'PURGED', 
+           cred_nonce = 'PURGED', 
+           cred_tag = 'PURGED', 
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE status = 'revoked' 
+         AND (
+           cred_ciphertext IS NOT 'PURGED' 
+           OR cred_nonce IS NOT 'PURGED' 
+           OR cred_tag IS NOT 'PURGED'
+         )`,
+    )
+    .run();
+
+  // 2. Dọn sạch token legacy của người dùng đã hủy liên kết (status = 'revoked')
+  // Tuyệt đối BẢO LƯU token của người dùng legacy hợp lệ (chưa từng chuyển đổi sang df_account_bindings)
+  const legacyCleaned = database
+    .prepare(
+      `DELETE FROM df_tokens 
+       WHERE discord_id IN (
+         SELECT discord_user_id FROM df_account_bindings WHERE status = 'revoked'
+       )`,
+    )
+    .run();
+
+  if (result.changes > 0 || legacyCleaned.changes > 0) {
+    logger.info(
+      `[SecurityMigration] Đã tẩy sạch credential của ${result.changes} bản ghi revoked và xóa ${legacyCleaned.changes} token legacy mồ côi`,
+    );
+  }
+  return result.changes;
 }

@@ -1,9 +1,6 @@
 import {
-  ActionRowBuilder,
   AutocompleteInteraction,
-  ButtonBuilder,
   ButtonInteraction,
-  ButtonStyle,
   ChatInputCommandInteraction,
   Client,
   MessageFlags,
@@ -50,96 +47,14 @@ import {
 } from '../../features/payment/payment-flow.js';
 import { hasPolicy, resolveCommandPolicy } from '../../config/permissions.js';
 import { getCommandPath } from '../../utils/command-path.utils.js';
-import { TTLStore, ExpiryEntry } from '../../utils/ttl-store.js';
 import { isIgnorableInteractionError } from '../../utils/discord-error.utils.js';
 
 const logger = createLogger('InteractionRouter');
-
-export interface WebhookRevealEntry extends ExpiryEntry {
-  revealed: true;
-}
-
-// Track users đã click button reveal webhook URL — chống spam (TTL 60s)
-export const webhookRevealedUsers = new TTLStore<string, WebhookRevealEntry>({
-  ttlMs: 60_000,
-  cleanupIntervalMs: 300_000,
-  name: 'WebhookRevealDebounce',
-});
 
 /**
  * Handle button interactions by delegating to specific button handlers.
  */
 async function handleButton(interaction: ButtonInteraction): Promise<void> {
-  // DF Link: reveal webhook URL (ephemeral, chỉ 1 lần/user trong 60s)
-  if (interaction.customId === 'df_link_show_webhook') {
-    // Guard: chống spam — debounce 60s mỗi user
-    if (webhookRevealedUsers.get(interaction.user.id)) {
-      await interaction
-        .reply({
-          content: 'Bạn đã hiện Webhook URL rồi.',
-          flags: MessageFlags.Ephemeral,
-        })
-        .catch(() => {});
-      return;
-    }
-
-    if (!botConfig.dfWebhookUrl) {
-      await interaction
-        .reply({
-          content: 'Webhook URL chưa được cấu hình.',
-          flags: MessageFlags.Ephemeral,
-        })
-        .catch(() => {});
-      return;
-    }
-
-    // Đánh dấu ngay với TTL 60s — trước khi reply để chống race condition
-    webhookRevealedUsers.set(interaction.user.id, {
-      expiresAt: Date.now() + 60_000,
-      revealed: true,
-    });
-
-    try {
-      await interaction.reply({
-        content: [
-          '**Webhook URL** (copy ngay — tự xóa sau 5 giây):',
-          '```',
-          botConfig.dfWebhookUrl,
-          '```',
-        ].join('\n'),
-        flags: MessageFlags.Ephemeral,
-      });
-
-      // Disable button trên message gốc (backup)
-      const disabledBtn = new ButtonBuilder()
-        .setCustomId('df_link_show_webhook')
-        .setLabel('Đã hiện URL')
-        .setStyle(ButtonStyle.Secondary)
-        .setDisabled(true);
-      const row = new ActionRowBuilder().addComponents(disabledBtn);
-      try {
-        await interaction.update({
-          content: interaction.message.content,
-          components: [row.toJSON()],
-        });
-      } catch {
-        // button đã expire hoặc đã disable
-      }
-
-      // Tự xóa ephemeral sau 5 giây
-      setTimeout(async () => {
-        try {
-          await interaction.deleteReply();
-        } catch {
-          // message đã bị xóa hoặc hết hạn
-        }
-      }, 5000);
-    } catch {
-      // interaction đã expire (10062) — bỏ qua
-    }
-    return;
-  }
-
   // Container editor buttons
   if (interaction.customId.startsWith(ContainerIds.PREFIX)) {
     try {

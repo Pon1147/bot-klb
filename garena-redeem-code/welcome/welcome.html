@@ -23,7 +23,7 @@
 
       <!-- Header Banner -->
       <header class="hero">
-        <div class="hero-badge" aria-label="Phiên bản tiện ích">🎉 CÀI ĐẶT THÀNH CÔNG · v1.6.0</div>
+        <div class="hero-badge" aria-label="Phiên bản tiện ích">🎉 CÀI ĐẶT THÀNH CÔNG · v1.9.3</div>
         <h1 class="hero-title" data-i18n="hero_title">
           Chào Mừng Bạn Đến Với <span>DF Toolbox</span>
         </h1>
@@ -91,16 +91,16 @@
                 <div class="step-body">
                   <h3 data-i18n="link_step1_title">Lấy mã liên kết trên Discord</h3>
                   <p data-i18n="link_step1_desc">
-                    Mở kênh Discord có <strong>Bot Delta</strong>, gõ lệnh dưới đây. Bot sẽ phản hồi
+                    Mở kênh Discord có <strong>Bot Delta</strong>, gõ lệnh dưới đây (hoặc <code>/df liên-kết</code> nếu Discord dùng tiếng Việt). Bot sẽ phản hồi
                     riêng (chỉ bạn nhìn thấy) kèm mã Claim 6 ký tự (ví dụ: <code>TAKCGF</code>, hiệu
                     lực 10 phút):
                   </p>
                   <div class="code-box">
-                    <code>/df link start</code>
+                    <code>/df link</code>
                     <button
                       class="copy-btn"
-                      data-copy="/df link start"
-                      aria-label="Sao chép lệnh /df link start"
+                      data-copy="/df link"
+                      aria-label="Sao chép lệnh /df link"
                       aria-live="polite"
                     >
                       Sao chép
@@ -186,30 +186,25 @@
               <li class="step-item">
                 <div class="step-num" aria-hidden="true">3</div>
                 <div class="step-body">
-                  <h3 data-i18n="link_step3_title">Nhập mã trên bảng tiện ích DF Toolbox</h3>
+                  <h3 data-i18n="link_step3_title">Ủy quyền & Nhập mã trên tiện ích DF Toolbox</h3>
                   <p data-i18n="link_step3_desc">
-                    Sau khi đăng nhập xong, bảng tiện ích <strong>DF Toolbox — Link</strong> sẽ tự
-                    động xuất hiện ở góc dưới bên phải màn hình. Bạn dán mã Claim nhận từ Discord
-                    vào ô và bấm <strong>Liên kết Discord</strong>:
+                    Bảng tiện ích <strong>DF Toolbox</strong> xuất hiện ở góc dưới bên phải màn hình. Tiện ích mặc định tắt hoàn toàn thu thập dữ liệu; bạn bấm <strong>Bắt đầu Ủy quyền</strong>, dán mã Claim, tick xác nhận đồng thuận và bấm <strong>Xác nhận & Liên kết</strong>:
                   </p>
 
-                  <!-- Visual Mockup: Extension Vertical Card (Khớp chuẩn 100% link-content.js) -->
+                  <!-- Visual Mockup: Extension Opt-In Card -->
                   <div class="mockup-frame notification-mockup" aria-hidden="true" inert>
                     <div class="df-panel-sim">
-                      <div class="df-panel-sim-title">DF Toolbox — Link</div>
+                      <div class="df-panel-sim-title">DF Toolbox — Liên kết Bot Discord</div>
                       <div class="df-panel-sim-status" data-i18n="mock_panel_status">
-                        Đã capture! OpenID: 1002•••
+                        ✓ Đã phát hiện phiên Garena (OpenID: 1002•••)
                       </div>
                       <div class="df-panel-sim-input">TAKCGF</div>
-                      <button class="df-panel-sim-btn" tabindex="-1" data-i18n="mock_panel_btn">
-                        Liên kết Discord
-                      </button>
-                      <div class="df-panel-sim-hint" data-i18n="mock_panel_hint">
-                        <strong>🛡️ An toàn:</strong> Tuyệt đối không lưu mật khẩu<br />
-                        1. Gõ <strong>/df link start</strong> trên Discord để lấy mã 6 ký tự<br />
-                        2. Dán mã vào ô phía trên<br />
-                        3. Bấm nút <strong>Liên kết Discord</strong>
+                      <div class="df-panel-sim-hint" style="font-size: 11px; color: #a1a1aa; margin: 6px 0;" data-i18n="mock_panel_consent">
+                        ☑ Tôi đồng ý gửi thông tin phiên tới Bot để tra cứu stats cho đến khi gõ /df unlink.
                       </div>
+                      <button class="df-panel-sim-btn" tabindex="-1" data-i18n="mock_panel_btn">
+                        Xác nhận & Liên kết
+                      </button>
                     </div>
                   </div>
 
@@ -230,11 +225,11 @@
                   <h3 data-i18n="link_step4_title">Kiểm tra trạng thái & Trải nghiệm</h3>
                   <p data-i18n="link_step4_desc">Quay lại Discord và gõ lệnh kiểm tra:</p>
                   <div class="code-box">
-                    <code>/df link status</code>
+                    <code>/df link</code>
                     <button
                       class="copy-btn"
-                      data-copy="/df link status"
-                      aria-label="Sao chép lệnh /df link status"
+                      data-copy="/df link"
+                      aria-label="Sao chép lệnh /df link"
                       aria-live="polite"
                     >
                       Sao chép

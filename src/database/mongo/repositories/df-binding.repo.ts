@@ -205,6 +205,11 @@ export async function revokeAccountBindingInMongo(
           status: 'revoked',
           updated_at: new Date(),
         },
+        $unset: {
+          cred_ciphertext: 1,
+          cred_nonce: 1,
+          cred_tag: 1,
+        },
       });
 
     if ((result.matchedCount ?? result.modifiedCount ?? 0) > 0 || (result.modifiedCount ?? 0) > 0) {
@@ -273,5 +278,52 @@ export async function loadAllActiveBindingsFromMongo(): Promise<AccountBindingDo
   } catch (error) {
     logger.error('Lỗi khi load all active bindings từ MongoDB:', { error });
     return null;
+  }
+}
+
+/**
+ * Migration tẩy sạch credential của các document revoked cũ trên MongoDB.
+ * Đảm bảo 100% tuân thủ PRIVACY.md và tiêu chí bảo mật của LEGAL.md.
+ */
+export async function purgeRevokedCredentialsInMongo(): Promise<number> {
+  if (!isMongoConnected()) return 0;
+  const db = getMongoDb();
+  if (!db) return 0;
+
+  try {
+    const result = await db
+      .collection<AccountBindingDocument>(MONGO_COLLECTIONS.ACCOUNT_BINDINGS)
+      .updateMany(
+        {
+          status: 'revoked',
+          $or: [
+            { cred_ciphertext: { $exists: true } },
+            { cred_nonce: { $exists: true } },
+            { cred_tag: { $exists: true } },
+          ],
+        },
+        {
+          $set: {
+            updated_at: new Date(),
+          },
+          $unset: {
+            cred_ciphertext: 1,
+            cred_nonce: 1,
+            cred_tag: 1,
+          },
+        },
+      );
+    if (result.modifiedCount > 0) {
+      logger.info(
+        `[MongoSecurityMigration] Đã tẩy sạch credential của ${result.modifiedCount} document MongoDB revoked cũ`,
+      );
+    }
+    return result.modifiedCount;
+  } catch (err) {
+    logger.warn(
+      'Lỗi khi chạy purgeRevokedCredentialsInMongo: ' +
+        (err instanceof Error ? err.message : String(err)),
+    );
+    return 0;
   }
 }

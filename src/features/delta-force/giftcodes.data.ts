@@ -1,9 +1,10 @@
 /**
- * Danh sách 204 mã Giftcode Garena Delta Force tân thủ.
+ * Danh sách 205 mã Giftcode Garena Delta Force tân thủ.
  * Tự động đồng bộ từ DEFAULT_CODES trong garena-redeem-code/popup/popup.js
  * bởi scripts/package-extension.ts.
  */
 export const STARTER_GIFT_CODES: readonly string[] = [
+  'DFCRLKAD84',
   'DFAMMO4284',
   'DFVN2Q9C7X4N',
   'dJ8qArxYTQDbjzVc2WQw',

@@ -175,8 +175,8 @@ export function buildHelpPageContainer(
         p.heading,
         '',
         locale === 'en'
-          ? '**Security & Privacy Commitment:**\n• Official Garena login only (`sso.garena.com`).\n• Zero password or OTP storage.\n• Tokens encrypted with military-grade AES-256-GCM.'
-          : '**Cam kết an toàn & bảo mật:**\n• Chỉ đăng nhập trên cổng Garena chính thức (`sso.garena.com`).\n• Bot và tiện ích **không bao giờ** hỏi hay lưu mật khẩu hay mã OTP của bạn.\n• Token xác thực được mã hóa quân sự AES-256-GCM bảo vệ danh tính.',
+          ? '**Security & Privacy Commitment:**\n• Official Delta Force HQ login only (`playdeltaforce.com`).\n• Zero password or OTP access (never runs on SSO pages).\n• Tokens encrypted with military-grade AES-256-GCM.'
+          : '**Cam kết an toàn & bảo mật:**\n• Chỉ đăng nhập trên cổng Delta Force HQ chính thức (`playdeltaforce.com`).\n• Tuyệt đối không can thiệp mật khẩu hay OTP (không chạy trên trang SSO).\n• Token xác thực được mã hóa quân sự AES-256-GCM bảo vệ danh tính.',
         '',
         p.features_title,
         p.feature_1,

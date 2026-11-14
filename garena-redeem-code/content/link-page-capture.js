@@ -1,18 +1,73 @@
 /**
- * MAIN world — capture DfTools credential candidates.
+ * MAIN world — On-Demand Credential Capture.
  *
- * Hook XHR/fetch/performance để quan sát DfTools requests.
- * KHÔNG POST claim, KHÔNG đọc claim code, KHÔNG chrome.*
+ * Chỉ được tiêm động vào trang web khi người dùng chủ động bấm "Bắt đầu Ủy quyền".
+ * Tự động hủy và khôi phục prototype gốc ngay sau khi capture thành công hoặc sau 60 giây (TTL).
+ * Có cờ isActive để hủy bỏ mọi request in-flight khi người dùng bấm Hủy.
  */
 
 (function () {
   'use strict';
 
-  console.log('[DF Toolbox] link-page-capture injected (MAIN world)');
+  console.log('[DF Toolbox] On-Demand capture activated (MAIN world)');
 
   const SOURCE = 'df-link-capture';
   const DF_TOOLS_HOST = 'sg-act.playerinfinite.com';
   const DF_TOOLS_PATH = '/DfTools/';
+
+  let isActive = true;
+
+  // Lưu trữ prototype gốc để khôi phục hoàn toàn
+  const origXhrOpen = window.XMLHttpRequest ? XMLHttpRequest.prototype.open : null;
+  const origXhrSend = window.XMLHttpRequest ? XMLHttpRequest.prototype.send : null;
+  const origFetch = window.fetch ? window.fetch : null;
+
+  /** Khôi phục prototype gốc và hủy trạng thái capture */
+  function cleanup() {
+    if (!isActive) return;
+    isActive = false;
+
+    if (autoCleanupTimer) {
+      clearTimeout(autoCleanupTimer);
+      autoCleanupTimer = null;
+    }
+
+    if (window.XMLHttpRequest && origXhrOpen && origXhrSend) {
+      XMLHttpRequest.prototype.open = origXhrOpen;
+      XMLHttpRequest.prototype.send = origXhrSend;
+    }
+
+    if (window.fetch && origFetch) {
+      window.fetch = origFetch;
+    }
+
+    // Gỡ bỏ thẻ script khỏi DOM nếu còn tồn tại
+    const scriptTag = document.getElementById('df-link-capture-script');
+    if (scriptTag) scriptTag.remove();
+
+    console.log('[DF Toolbox] On-Demand capture cleaned up, prototypes restored');
+  }
+
+  // Tự động hủy sau 60 giây (TTL) nếu người dùng không thao tác đăng nhập
+  let autoCleanupTimer = setTimeout(() => {
+    if (!isActive) return;
+    cleanup();
+    window.postMessage(
+      {
+        source: SOURCE,
+        type: 'CAPTURE_TIMEOUT',
+      },
+      window.location.origin,
+    );
+  }, 60000);
+
+  // Lắng nghe lệnh hủy bỏ từ UI
+  window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type === 'DF_STOP_CAPTURE') {
+      cleanup();
+    }
+  });
 
   /** Kiểm tra URL có phải DfTools request */
   function isDfToolsUrl(url) {
@@ -33,9 +88,6 @@
       const openid = p.get('openid');
       const token = p.get('token');
 
-      console.log('[DF Toolbox] extractCredential URL:', url);
-      console.log('[DF Toolbox] openid:', openid, 'token:', token);
-
       if (!openid || !token) return null;
 
       return {
@@ -45,7 +97,7 @@
         s: p.get('s'),
         u: p.get('u'),
         a: p.get('a'),
-        game_id: p.get('game_id'),
+        game_id: p.get('game_id') || '30150',
       };
     } catch {
       return null;
@@ -63,8 +115,10 @@
     }
   }
 
-  /** Post credential candidate lên content script */
+  /** Post credential candidate lên content script và lập tức tự dọn dẹp */
   function postCredential(credential, endpoint) {
+    if (!isActive) return;
+
     window.postMessage(
       {
         source: SOURCE,
@@ -75,147 +129,115 @@
       },
       window.location.origin,
     );
+
+    // Capture thành công: Khôi phục prototype gốc ngay lập tức, không hook thêm
+    cleanup();
   }
 
-  /** Hook XHR/fetch — gọi lại sau mỗi 500ms để bắt requests mới */
-  function setupInterceptors() {
-    // ===== Intercept XHR =====
-    if (window.XMLHttpRequest) {
-      const origXhrOpen = XMLHttpRequest.prototype.open;
-      const origXhrSend = XMLHttpRequest.prototype.send;
+  // ===== Hook XHR =====
+  if (window.XMLHttpRequest && origXhrOpen && origXhrSend) {
+    XMLHttpRequest.prototype.open = function (...args) {
+      if (!isActive) return origXhrOpen.apply(this, args);
+      this.__dfToolsUrl = args[1];
+      return origXhrOpen.apply(this, args);
+    };
 
-      XMLHttpRequest.prototype.open = function (...args) {
-        this.__dfToolsUrl = args[1];
-        return origXhrOpen.apply(this, args);
-      };
+    XMLHttpRequest.prototype.send = function (...args) {
+      if (!isActive) return origXhrSend.apply(this, args);
 
-      XMLHttpRequest.prototype.send = function (...args) {
-        const url = this.__dfToolsUrl || '';
-        if (isDfToolsUrl(url)) {
-          console.log('[DF Toolbox] XHR MATCHED:', url);
-          const credential = extractCredential(url);
-          if (credential) {
-            postCredential(credential, getEndpoint(url));
-          }
-        } else if (isAuthLoginUrl(url)) {
-          this.addEventListener('load', function () {
-            try {
-              const data = JSON.parse(this.responseText);
-              if (data && data.ret === 0 && data.openid && data.token) {
-                console.log('[DF Toolbox] Captured from XHR auth/login directly!');
-                postCredential(
-                  {
-                    openid: data.openid,
-                    token: data.token,
-                    ts: '0',
-                    s: '0',
-                    game_id: '30150',
-                  },
-                  'AuthLogin',
-                );
-              }
-            } catch {
-              /* ignore */
-            }
-          });
+      const url = this.__dfToolsUrl || '';
+      if (isDfToolsUrl(url)) {
+        const credential = extractCredential(url);
+        if (credential) {
+          postCredential(credential, getEndpoint(url));
         }
-        return origXhrSend.apply(this, args);
-      };
-    }
+      } else if (isAuthLoginUrl(url)) {
+        this.addEventListener('load', function () {
+          // In-flight guard: nếu user đã bấm hủy trong lúc request đang bay, bỏ qua kết quả
+          if (!isActive) return;
 
-    // ===== Intercept fetch =====
-    if (window.fetch) {
-      const originalFetch = window.fetch;
-      window.fetch = async function (...args) {
-        const url = args[0]?.url ?? String(args[0]);
-        if (isDfToolsUrl(url)) {
-          console.log('[DF Toolbox] Fetch MATCHED:', url);
-          const credential = extractCredential(url);
-          if (credential) {
-            postCredential(credential, getEndpoint(url));
-          }
-        }
-        const response = await originalFetch.apply(this, args);
-        if (isAuthLoginUrl(url)) {
           try {
-            const clone = response.clone();
-            clone.json().then((data) => {
-              if (data && data.ret === 0 && data.openid && data.token) {
-                console.log('[DF Toolbox] Captured from Fetch auth/login directly!');
-                postCredential(
-                  {
-                    openid: data.openid,
-                    token: data.token,
-                    ts: '0',
-                    s: '0',
-                    game_id: '30150',
-                  },
-                  'AuthLogin',
-                );
-              }
-            }).catch(() => {});
+            const data = JSON.parse(this.responseText);
+            if (data && data.ret === 0 && data.openid && data.token) {
+              postCredential(
+                {
+                  openid: String(data.openid),
+                  token: String(data.token),
+                  ts: '0',
+                  s: '0',
+                  game_id: '30150',
+                },
+                'AuthLogin',
+              );
+            }
           } catch {
             /* ignore */
           }
-        }
-        return response;
-      };
-    }
-
-    // ===== Lắng nghe message event từ popup OAuth =====
-    window.addEventListener('message', (event) => {
-      try {
-        const d = event.data;
-        if (d && typeof d === 'object') {
-          if (d.openid && d.token) {
-            console.log('[DF Toolbox] Captured from window.message!');
-            postCredential(
-              {
-                openid: d.openid,
-                token: d.token,
-                ts: d.ts || '0',
-                s: d.s || '0',
-                game_id: '30150',
-              },
-              'WindowMessage',
-            );
-          }
-        }
-      } catch {
-        /* ignore */
+        });
       }
-    });
-
-    console.log('[DF Toolbox] Interceptors setup complete');
+      return origXhrSend.apply(this, args);
+    };
   }
 
-  // ===== Hook sau khi page load xong (tránh bị HQ page override) =====
-  // Đợi DOMContentLoaded + 2s để HQ scripts load xong
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(setupInterceptors, 4000);
-    });
-  } else {
-    // Page đã load rồi
-    setTimeout(setupInterceptors, 1000);
-  }
+  // ===== Hook Fetch =====
+  if (window.fetch && origFetch) {
+    window.fetch = async function (...args) {
+      if (!isActive) return origFetch.apply(this, args);
 
-  // ===== Performance scan (fallback) =====
-  setTimeout(() => {
-    try {
-      const entries = performance.getEntriesByType('resource');
-      for (const entry of entries) {
-        if (isDfToolsUrl(entry.name)) {
-          console.log('[DF Toolbox] Performance MATCHED:', entry.name);
-          const credential = extractCredential(entry.name);
-          if (credential) {
-            postCredential(credential, getEndpoint(entry.name));
-          }
+      const url = args[0]?.url ?? String(args[0]);
+      if (isDfToolsUrl(url)) {
+        const credential = extractCredential(url);
+        if (credential) {
+          postCredential(credential, getEndpoint(url));
         }
       }
-    } catch {
-      /* ignore */
-    }
-  }, 3000);
 
+      const response = await origFetch.apply(this, args);
+
+      // In-flight guard: kiểm tra lại xem hook còn active không
+      if (!isActive) return response;
+
+      if (isAuthLoginUrl(url)) {
+        try {
+          const clone = response.clone();
+          clone.json().then((data) => {
+            if (!isActive) return;
+            if (data && data.ret === 0 && data.openid && data.token) {
+              postCredential(
+                {
+                  openid: String(data.openid),
+                  token: String(data.token),
+                  ts: '0',
+                  s: '0',
+                  game_id: '30150',
+                },
+                'AuthLogin',
+              );
+            }
+          }).catch(() => {});
+        } catch {
+          /* ignore */
+        }
+      }
+      return response;
+    };
+  }
+
+  // ===== Performance Buffer Scan (Bắt ngay phiên đăng nhập có sẵn từ lúc load trang, KHÔNG CẦN F5) =====
+  try {
+    const entries = window.performance?.getEntriesByType?.('resource') || [];
+    for (let i = entries.length - 1; i >= 0; i--) {
+      const entryName = entries[i]?.name || '';
+      if (isDfToolsUrl(entryName)) {
+        const credential = extractCredential(entryName);
+        if (credential) {
+          console.log('[DF Toolbox] Captured existing session from performance buffer (0s instant)');
+          postCredential(credential, getEndpoint(entryName));
+          break;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[DF Toolbox] Performance buffer scan error:', err);
+  }
 })();
