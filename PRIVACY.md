@@ -11,7 +11,7 @@ This Privacy Policy explains how **Delta Bot** ("the bot", "we", "our") collects
 Delta Bot collects only the minimum necessary data to provide its community and gaming features:
 
 - **Discord IDs**: User IDs, Guild (Server) IDs, Channel IDs, and Role IDs required to route messages, execute slash commands, and manage server configurations.
-- **Game Integration Tokens (Optional, On-Demand & Explicitly Consented)**: If a user voluntarily initiates account linking, the companion extension captures their authentication credentials (OpenID and active session token) on official game event web pages (`playdeltaforce.com`) solely after the user clicks **"Bắt đầu Ủy quyền" (Start Authorization)** and checks the explicit consent checkbox. The captured payload (including full token length and masked identifiers) is previewed to the user prior to transmission. Data is transmitted strictly over TLS to the bot backend API.
+- **Game Integration Tokens (Optional, On-Demand & Explicitly Consented)**: If a user voluntarily initiates account linking, the companion extension captures their authentication credentials (OpenID and active session token) on official game event web pages (`playdeltaforce.com`) solely after the user clicks **"Bắt đầu Ủy quyền" (Start Authorization)** and checks the explicit consent checkbox. The identified account (masked OpenID) is displayed to the user along with an explicit opt-in consent checkbox prior to transmission. Data is transmitted strictly over TLS to the bot backend API.
 - **Voluntary Configurations**: Server-specific settings configured by administrators (e.g., welcome channels, booster roles, schedule times).
 
 > [!IMPORTANT]
@@ -29,7 +29,7 @@ Delta Bot collects only the minimum necessary data to provide its community and 
 The **DF Toolbox** browser extension operates strictly under defined boundaries:
 
 - **Content Scripts (Code Execution)**: Content scripts execute solely on two domains: official Delta Force event pages (`https://www.playdeltaforce.com/*`) and Garena redemption pages (`https://redeem.df.garena.sg/*`).
-- **Host Permissions (Network Access)**: Network permissions are strictly limited to necessary endpoints: official redemption (`redeem.df.garena.sg`), game telemetry (`*.playerinfinite.com`), official event portal (`www.playdeltaforce.com`), and the bot backend API (`bot-klb-production.up.railway.app` / `localhost`).
+- **Host Permissions (Network Access)**: Network permissions in `manifest.json` are strictly limited to the secure bot backend API (`https://bot-klb-production.up.railway.app/*`).
 - **Zero Third-Party Tracking**: The extension contains no analytics, no third-party telemetry, and communicates solely with designated bot and official game APIs.
 
 ---

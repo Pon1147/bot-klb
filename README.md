@@ -37,7 +37,7 @@ Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và
 
 - **Auto Redeem Giftcode Garena**: Tự động hóa quá trình nhập danh sách hàng trăm mã giftcode Delta Force trên trang đổi quà Garena CDK, tự bypass CSP và nhận diện kết quả tự động.
 - **Floating Dashboard trực quan**: Gắn bảng điều khiển trực tiếp trên giao diện web đổi quà, hiển thị tiến độ, nhật ký, số mã thành công/thất bại theo thời gian thực.
-- **Ủy quyền Chủ động (On-Demand Opt-In)**: Mặc định không thu thập dữ liệu; người dùng xem trước Raw JSON (gồm độ dài token thật) và tick xác nhận đồng thuận trước khi gửi dữ liệu mã hóa TLS.
+- **Ủy quyền Chủ động (On-Demand Opt-In)**: Mặc định không thu thập dữ liệu; người dùng chủ động bấm "Bắt đầu Ủy quyền", xác nhận tài khoản (ID masked) và tick xác nhận đồng thuận trước khi gửi dữ liệu mã hóa TLS.
 - **Quản lý Mã & Phân Trang**: Popup extension hiện đại hỗ trợ lọc mã theo trạng thái (Redeemed, Dead, Retryable, Untested) và phân trang tiện lợi.
 
 ### 3. Tìm Đội Chơi Game (`/team`)
