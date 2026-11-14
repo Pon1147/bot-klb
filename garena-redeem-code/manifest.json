@@ -1,16 +1,13 @@
 {
   "manifest_version": 3,
   "name": "DF Toolbox",
-  "version": "1.9.1",
+  "version": "1.9.3",
   "description": "Delta Force HQ credential bridge + Garena redeem codes",
   "permissions": [
     "storage",
     "activeTab"
   ],
   "host_permissions": [
-    "https://redeem.df.garena.sg/*",
-    "https://*.playerinfinite.com/*",
-    "https://www.playdeltaforce.com/*",
     "https://bot-klb-production.up.railway.app/*"
   ],
   "background": {
@@ -35,7 +32,6 @@
         "https://www.playdeltaforce.com/*"
       ],
       "js": [
-        "content/link-page-capture.js",
         "content/link-content.js"
       ],
       "run_at": "document_idle"
