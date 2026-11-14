@@ -33,9 +33,6 @@
       const openid = p.get('openid');
       const token = p.get('token');
 
-      console.log('[DF Toolbox] extractCredential URL:', url);
-      console.log('[DF Toolbox] openid:', openid, 'token:', token);
-
       if (!openid || !token) return null;
 
       return {
@@ -92,7 +89,6 @@
       XMLHttpRequest.prototype.send = function (...args) {
         const url = this.__dfToolsUrl || '';
         if (isDfToolsUrl(url)) {
-          console.log('[DF Toolbox] XHR MATCHED:', url);
           const credential = extractCredential(url);
           if (credential) {
             postCredential(credential, getEndpoint(url));
@@ -102,7 +98,6 @@
             try {
               const data = JSON.parse(this.responseText);
               if (data && data.ret === 0 && data.openid && data.token) {
-                console.log('[DF Toolbox] Captured from XHR auth/login directly!');
                 postCredential(
                   {
                     openid: data.openid,
@@ -129,7 +124,6 @@
       window.fetch = async function (...args) {
         const url = args[0]?.url ?? String(args[0]);
         if (isDfToolsUrl(url)) {
-          console.log('[DF Toolbox] Fetch MATCHED:', url);
           const credential = extractCredential(url);
           if (credential) {
             postCredential(credential, getEndpoint(url));
@@ -141,7 +135,6 @@
             const clone = response.clone();
             clone.json().then((data) => {
               if (data && data.ret === 0 && data.openid && data.token) {
-                console.log('[DF Toolbox] Captured from Fetch auth/login directly!');
                 postCredential(
                   {
                     openid: data.openid,
@@ -206,7 +199,6 @@
       const entries = performance.getEntriesByType('resource');
       for (const entry of entries) {
         if (isDfToolsUrl(entry.name)) {
-          console.log('[DF Toolbox] Performance MATCHED:', entry.name);
           const credential = extractCredential(entry.name);
           if (credential) {
             postCredential(credential, getEndpoint(entry.name));

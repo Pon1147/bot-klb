@@ -198,7 +198,8 @@
     renderPanel();
 
     const maskedOpenid = state.candidate?.openid ? `${state.candidate.openid.slice(0, 4)}***` : 'missing';
-    console.log(`[LinkContent] Submitting claim via SW: code=${code}, openid=${maskedOpenid}`);
+    const maskedCode = code ? `${code.slice(0, 2)}****` : 'missing';
+    console.log(`[LinkContent] Submitting claim via SW: code=${maskedCode}, openid=${maskedOpenid}`);
 
     try {
       // Gửi qua background Service Worker (chống hoàn toàn CORS vì Service Worker chạy độc lập với trang web)

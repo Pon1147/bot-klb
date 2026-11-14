@@ -49,7 +49,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   // --- DF_CLAIM: Gửi trực tiếp lên Bot Server API ---
   if (msg?.type === 'DF_CLAIM') {
     const maskedOpenid = msg.credential?.openid ? `${msg.credential.openid.slice(0, 4)}***` : 'missing';
-    console.log(`[SW] Received DF_CLAIM: code=${msg.code}, openid=${maskedOpenid}, source=${msg.source_endpoint || 'unknown'}`);
+    const maskedCode = msg.code ? `${msg.code.slice(0, 2)}****` : 'missing';
+    console.log(`[SW] Processing claim: code=${maskedCode}, openid=${maskedOpenid}, source=${msg.source_endpoint || 'unknown'}`);
 
     (async () => {
       try {
@@ -71,7 +72,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         const targetUrl = (storageConfig.claim_api_url && typeof storageConfig.claim_api_url === 'string')
           ? storageConfig.claim_api_url.trim()
           : 'https://bot-klb-production.up.railway.app/api/v1/auth/claim';
-        console.log(`[SW] Sending claim to Bot API: ${targetUrl}`);
+        console.log('[SW] Sending claim to Bot API...');
 
         let res;
         let data = {};
@@ -89,7 +90,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
             return {};
           });
         } catch (fetchErr) {
-          console.warn(`[SW] Failed to fetch targetUrl (${targetUrl}):`, fetchErr);
+          console.warn('[SW] Primary Bot API unavailable');
         }
 
         // Auto Dev Fallback: Nếu targetUrl mặc định (Production) không tìm thấy code (401 hoặc !data.ok),

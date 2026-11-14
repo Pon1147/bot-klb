@@ -11,6 +11,7 @@ export {
   upsertAccountBindingToMongo,
   expireAccountBindingInMongo,
   revokeAccountBindingInMongo,
+  purgeRevokedCredentialsInMongo,
   touchLastOkInMongo,
   loadAllActiveBindingsFromMongo,
   type MongoNotMatchedReason,

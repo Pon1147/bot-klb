@@ -19,6 +19,7 @@ import {
 import {
   initializeAccountBindingsTable,
   syncBindingsFromMongoToSqlite,
+  purgeRevokedCredentialsMigration,
 } from '../database/df-binding.db.js';
 import { initializeCaptureEventsTable } from '../database/df-telemetry.db.js';
 import { initializeAutoPostTable } from '../database/df-autopost.db.js';
@@ -27,6 +28,7 @@ import {
   connectMongo,
   initMongoIndexes,
   syncAutoPostFromMongoToSqlite,
+  purgeRevokedCredentialsInMongo,
 } from '../database/mongo/index.js';
 import { SettingsService, setSettingsService } from '../services/settings.service.js';
 import { refreshDfMetadata } from '../services/df-metadata.service.js';
@@ -88,6 +90,7 @@ export async function bootstrap(): Promise<Client> {
   initializeClaimSessionsTable(database);
   migrateClaimSessionsToNumeric(database);
   initializeAccountBindingsTable(database);
+  purgeRevokedCredentialsMigration(database);
   initializeCaptureEventsTable(database);
   initializeAutoPostTable(database);
   initializeWeaponLoadoutsTable(database);
@@ -112,6 +115,9 @@ export async function bootstrap(): Promise<Client> {
         // Đồng bộ account bindings từ MongoDB sang SQLite
         const syncedBindings = await syncBindingsFromMongoToSqlite(database);
         logger.info(`Synced ${syncedBindings} account binding(s) from MongoDB to local SQLite`);
+
+        // Tẩy sạch dữ liệu credential của các document revoked cũ trên MongoDB
+        await purgeRevokedCredentialsInMongo();
 
         // Đồng bộ AutoPost configs và message history từ MongoDB sang SQLite
         const syncedAutoPost = await syncAutoPostFromMongoToSqlite(database);

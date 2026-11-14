@@ -13,6 +13,7 @@ const {
 
 // ===== CONSTANTS =====
 const DEFAULT_CODES = [
+  'DFCRLKAD84',
   'DFAMMO4284',
   'DFVN2Q9C7X4N',
   'dJ8qArxYTQDbjzVc2WQw',

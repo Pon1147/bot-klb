@@ -1,8 +1,8 @@
 # Privacy Policy for Delta Bot (bot-klb)
 
-_Last updated: October 8, 2026_
+_Last updated: November 14, 2026_
 
-This Privacy Policy explains how **Delta Bot** ("the bot", "we", "our") collects, uses, stores, and protects user data when operating within Discord servers.
+This Privacy Policy explains how **Delta Bot** ("the bot", "we", "our") collects, uses, stores, and protects user data when operating within Discord servers and through the companion **DF Toolbox Extension**.
 
 ---
 
@@ -11,48 +11,62 @@ This Privacy Policy explains how **Delta Bot** ("the bot", "we", "our") collects
 Delta Bot collects only the minimum necessary data to provide its community and gaming features:
 
 - **Discord IDs**: User IDs, Guild (Server) IDs, Channel IDs, and Role IDs required to route messages, execute slash commands, and manage server configurations.
-- **Game Integration Tokens (Optional)**: If a user voluntarily links their Delta Force gaming profile, their temporary authentication tokens (OpenID and access token) are transmitted securely.
+- **Game Integration Tokens (Optional & User-Initiated)**: If a user voluntarily links their Delta Force gaming profile, temporary authentication tokens (OpenID and access token) captured from official game event web pages (`playdeltaforce.com`) are transmitted over TLS directly to the bot API.
 - **Voluntary Configurations**: Server-specific settings configured by administrators (e.g., welcome channels, booster roles, schedule times).
 
-> [!NOTE]
-> Delta Bot **DOES NOT** collect, store, or log general user message contents, chat history, passwords, financial information, or personal identifying information (PII).
+> [!IMPORTANT]
+> Delta Bot and the DF Toolbox Extension **DO NOT**:
+> - Access, read, or store user passwords or OTP authentication codes.
+> - Run on or intercept traffic from standalone SSO login portals (such as `sso.garena.com`).
+> - Collect, store, or log general user message contents, chat history, or personal identifying information (PII).
+>
+> **Authentication Token Handling**:
+> For voluntary account linking, the extension observes game authentication responses (OpenID and temporary access token) initiated by the user on official Delta Force HQ pages (`playdeltaforce.com`). These tokens are encrypted at rest (AES-256-GCM) and used strictly to retrieve personal in-game stats on the user's behalf. Users can permanently purge these credentials at any time via `/df unlink`.
 
 ---
 
-## 2. How We Use the Information
+## 2. Browser Extension Scope (Least Privilege & Clear Separation)
 
-Collected information is used strictly for the following bot functionalities:
-
-1. **Community Automation**: Sending customized welcome messages to new members (`guildMemberAdd`) and thank-you announcements with assigned roles for server boosters (`guildMemberUpdate`).
-2. **Delta Force Game Utilities**: Querying in-game statistics, match history, and daily mission codes via authorized API calls.
-3. **Account Binding**: Associating a Discord User ID with their game profile to enable personalized stats lookup (`/df stats`, `/df daily`, `/df history`).
-4. **Administration & RBAC**: Verifying user permissions for administrative slash commands (`/config`).
+The **DF Toolbox** browser extension operates strictly under defined boundaries:
+- **Content Scripts (Code Execution)**: Content scripts execute solely on two domains: official Delta Force event pages (`https://www.playdeltaforce.com/*`) and Garena redemption pages (`https://redeem.df.garena.sg/*`).
+- **Host Permissions (Network Access)**: Network permissions are strictly limited to necessary endpoints: official redemption (`redeem.df.garena.sg`), game telemetry (`*.playerinfinite.com`), official event portal (`www.playdeltaforce.com`), and the bot backend API (`bot-klb-production.up.railway.app` / `localhost`).
+- **Zero Third-Party Tracking**: The extension contains no analytics, no third-party telemetry, and communicates solely with designated bot and official game APIs.
 
 ---
 
 ## 3. Data Storage and Security
 
-- **Encryption at Rest**: Sensitive authentication credentials (game tokens) are encrypted using industry-standard **AES-256-GCM** encryption before being persisted to our database.
-- **Strict Confidentiality**: We never sell, share, trade, or distribute any user or server data to third parties or advertising networks.
-- **Transient Webhook Processing**: Temporary payloads received via administrative verification channels are processed atomically and purged immediately.
+- **Encryption at Rest**: Sensitive authentication credentials (game tokens) are encrypted using industry-standard **AES-256-GCM** authenticated encryption with unique cryptographic nonces before being persisted to our database.
+- **Strict Confidentiality**: We never sell, share, trade, or distribute any user or server data to third parties, advertising networks, or external services.
+- **Atomic Claim Codes**: Verification claim codes generated by `/df link` are transient, short-lived (valid for 10 minutes), single-use only, and invalidated immediately upon consumption or user re-generation.
 
 ---
 
-## 4. User Rights and Data Deletion
+## 4. User Rights, Unlink & Permanent Data Purge
 
 Users retain complete control over their stored data at all times:
 
-- **Unlink & Data Purge**: Users can permanently remove their linked game profile and encrypted tokens at any time by running the slash command:
+- **Revocation & Credential Purge (Unlink)**: Users can permanently remove their linked game profile and encrypted credentials at any time by running:
   ```text
   /df unlink
   ```
-  Upon execution, all associated credentials and bindings are permanently deleted from both local and cloud databases.
+  Upon execution:
+  1. All encrypted ciphertext, nonces, and authentication tags are **immediately overwritten and permanently purged (`PURGED`)** across all local (SQLite) and persistent cloud (MongoDB) databases.
+  2. Any legacy token entries are destroyed.
+  3. The account association is marked as revoked and will no longer query game data.
+- **Session Expiration**: If a session expires naturally via game auth expiration, the bot ceases queries until re-authenticated. Users may unlink at any point to purge stored records.
 - **Server Data Removal**: Server administrators can reset all guild-specific configurations via `/config` or by removing the bot from their guild.
 
 ---
 
-## 5. Contact Information
+## 5. Security Vulnerability Reporting
 
-If you have questions regarding this Privacy Policy or wish to request data inspection/removal, please contact the bot developer via GitHub:
+To report a vulnerability or privacy concern responsibly, please follow our [SECURITY.md](SECURITY.md) guidelines and submit details privately via GitHub Security Advisories:
+- Security Advisories: [https://github.com/Pon1147/bot-klb/security/advisories](https://github.com/Pon1147/bot-klb/security/advisories)
 
+---
+
+## 6. Contact Information
+
+For general inquiries regarding this Privacy Policy or data subject requests, please contact:
 - Repository: [https://github.com/Pon1147/bot-klb](https://github.com/Pon1147/bot-klb)

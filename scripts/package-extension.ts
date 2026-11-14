@@ -164,10 +164,20 @@ export async function packageExtension(): Promise<string> {
       archive.directory(bgDir, 'background');
     }
 
-    // 3. Thư mục content
+    // 3. Thư mục content (chỉ đóng gói các script phục vụ Redeem và Link, loại trừ debug/investigator)
     const contentDir = path.join(sourceDir, 'content');
     if (fs.existsSync(contentDir)) {
-      archive.directory(contentDir, 'content');
+      const excludedContentFiles = new Set([
+        'auth-investigator.js',
+        'auth-investigator-content.js',
+        'auth-state-engine.js',
+      ]);
+      const files = fs.readdirSync(contentDir);
+      for (const file of files) {
+        if (!excludedContentFiles.has(file)) {
+          archive.file(path.join(contentDir, file), { name: `content/${file}` });
+        }
+      }
     }
 
     // 4. Thư mục popup
