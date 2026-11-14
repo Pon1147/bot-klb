@@ -51,7 +51,7 @@ export function syncHtmlVersions(extensionVersion: string): void {
   if (fs.existsSync(welcomeHtmlPath)) {
     let content = fs.readFileSync(welcomeHtmlPath, 'utf8');
     content = content.replace(
-      /(<div class="hero-badge">.+? · v)[\d.]+(<\/div>)/g,
+      /(<div class="hero-badge"[^>]*>.+? · v)[\d.]+(<\/div>)/g,
       `$1${extensionVersion}$2`,
     );
     content = content.replace(
@@ -59,6 +59,13 @@ export function syncHtmlVersions(extensionVersion: string): void {
       `$1${extensionVersion}$2`,
     );
     fs.writeFileSync(welcomeHtmlPath, content, 'utf8');
+  }
+
+  const welcomeJsPath = path.resolve(rootDir, 'garena-redeem-code', 'welcome', 'welcome.js');
+  if (fs.existsSync(welcomeJsPath)) {
+    let content = fs.readFileSync(welcomeJsPath, 'utf8');
+    content = content.replace(/(let extVersion = ')[^']+(';)/g, `$1${extensionVersion}$2`);
+    fs.writeFileSync(welcomeJsPath, content, 'utf8');
   }
 }
 

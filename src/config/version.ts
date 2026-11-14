@@ -3,4 +3,4 @@
  * Được tự động đồng bộ bởi scripts/bump-version.ts và scripts/package-extension.ts.
  */
 export const BOT_VERSION = '1.14.0';
-export const EXTENSION_VERSION = '1.9.1';
+export const EXTENSION_VERSION = '1.9.3';
