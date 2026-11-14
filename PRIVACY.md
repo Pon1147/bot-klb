@@ -11,23 +11,23 @@ This Privacy Policy explains how **Delta Bot** ("the bot", "we", "our") collects
 Delta Bot collects only the minimum necessary data to provide its community and gaming features:
 
 - **Discord IDs**: User IDs, Guild (Server) IDs, Channel IDs, and Role IDs required to route messages, execute slash commands, and manage server configurations.
-- **Game Integration Tokens (Optional & User-Initiated)**: If a user voluntarily links their Delta Force gaming profile, temporary authentication tokens (OpenID and access token) captured from official game event web pages (`playdeltaforce.com`) are transmitted over TLS directly to the bot API.
+- **Game Integration Tokens (Optional, On-Demand & Explicitly Consented)**: If a user voluntarily initiates account linking, the companion extension captures their authentication credentials (OpenID and active session token) on official game event web pages (`playdeltaforce.com`) solely after the user clicks **"Bắt đầu Ủy quyền" (Start Authorization)** and checks the explicit consent checkbox. The captured payload (including full token length and masked identifiers) is previewed to the user prior to transmission. Data is transmitted strictly over TLS to the bot backend API.
 - **Voluntary Configurations**: Server-specific settings configured by administrators (e.g., welcome channels, booster roles, schedule times).
 
 > [!IMPORTANT]
-> Delta Bot and the DF Toolbox Extension **DO NOT**:
-> - Access, read, or store user passwords or OTP authentication codes.
-> - Run on or intercept traffic from standalone SSO login portals (such as `sso.garena.com`).
-> - Collect, store, or log general user message contents, chat history, or personal identifying information (PII).
+> **Game Authentication & Session Credential Handling Notice**:
 >
-> **Authentication Token Handling**:
-> For voluntary account linking, the extension observes game authentication responses (OpenID and temporary access token) initiated by the user on official Delta Force HQ pages (`playdeltaforce.com`). These tokens are encrypted at rest (AES-256-GCM) and used strictly to retrieve personal in-game stats on the user's behalf. Users can permanently purge these credentials at any time via `/df unlink`.
+> - **Full Session Token Disclosure**: Garena does not provide a scoped third-party OAuth2 authorization framework for Delta Force. Therefore, the captured credential is a **Full Active Session Token**.
+> - **Retention Duration**: Stored credentials remain encrypted at rest in the bot database for the **entire duration the account is linked** (until the user explicitly executes `/df unlink`), allowing ongoing automated stats and profile lookup. They are **not** transient single-use tokens.
+> - **No Password Collection**: Delta Bot and DF Toolbox **NEVER** inspect, capture, or store account passwords or OTP codes.
+> - **Zero Background Sniffing**: The extension employs zero passive network sniffing on load; hooks are injected dynamically on-demand and self-terminate after 60 seconds or upon capture.
 
 ---
 
 ## 2. Browser Extension Scope (Least Privilege & Clear Separation)
 
 The **DF Toolbox** browser extension operates strictly under defined boundaries:
+
 - **Content Scripts (Code Execution)**: Content scripts execute solely on two domains: official Delta Force event pages (`https://www.playdeltaforce.com/*`) and Garena redemption pages (`https://redeem.df.garena.sg/*`).
 - **Host Permissions (Network Access)**: Network permissions are strictly limited to necessary endpoints: official redemption (`redeem.df.garena.sg`), game telemetry (`*.playerinfinite.com`), official event portal (`www.playdeltaforce.com`), and the bot backend API (`bot-klb-production.up.railway.app` / `localhost`).
 - **Zero Third-Party Tracking**: The extension contains no analytics, no third-party telemetry, and communicates solely with designated bot and official game APIs.
@@ -59,14 +59,26 @@ Users retain complete control over their stored data at all times:
 
 ---
 
-## 5. Security Vulnerability Reporting
+## 5. Security Incident Response & Breach Notification
+
+In the event of a confirmed or suspected security incident involving stored credentials or server compromise:
+
+1. **Immediate Revocation**: All active encrypted session tokens stored in the bot databases will be immediately and irrevocably purged (`PURGED` overwrite).
+2. **User Notification**: A transparent incident notification will be published within **48–72 hours** in the bot's official support Discord channel and repository announcements, advising users to invalidate their game sessions by logging out of official Garena portals.
+3. **Forensic Audit**: A full public post-mortem and forensic remediation report will be issued in the repository.
+
+---
+
+## 6. Security Vulnerability Reporting
 
 To report a vulnerability or privacy concern responsibly, please follow our [SECURITY.md](SECURITY.md) guidelines and submit details privately via GitHub Security Advisories:
+
 - Security Advisories: [https://github.com/Pon1147/bot-klb/security/advisories](https://github.com/Pon1147/bot-klb/security/advisories)
 
 ---
 
-## 6. Contact Information
+## 7. Contact Information
 
 For general inquiries regarding this Privacy Policy or data subject requests, please contact:
+
 - Repository: [https://github.com/Pon1147/bot-klb](https://github.com/Pon1147/bot-klb)
