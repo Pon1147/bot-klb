@@ -60,7 +60,7 @@ export const VI_LOCALE = {
         feature_1:
           '• **Đổi 200+ Giftcode Garena tự động**: Tự quét & nhận quà toàn bộ code còn hạn chỉ với 1 click.',
         feature_2:
-          '• **Trích xuất Token an toàn**: Tự động mã hóa AES-256-GCM gửi về bot để xem stats mà không lộ mật khẩu.',
+          '• **Ủy quyền On-Demand minh bạch**: Người dùng chủ động xác nhận và xem trước dữ liệu, mã hóa AES-256-GCM an toàn.',
         feature_3:
           '• **Cập nhật realtime**: Tự động đồng bộ lịch sử đấu và chiến tích sau mỗi trận rút quân.',
         install_title: '### Hướng dẫn cài đặt tiện ích (PC, hoặc Orion iOS / Kiwi Android):',

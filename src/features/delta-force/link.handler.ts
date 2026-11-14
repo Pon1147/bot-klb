@@ -70,7 +70,7 @@ export function buildLinkPayload(code: string, userId: string, locale: Supported
         '',
         '1️⃣ Open Garena event page, log in normally',
         '2️⃣ Install **DF Toolbox** extension',
-        '3️⃣ Press F5, paste code into DF Toolbox, click **Link**',
+        '3️⃣ Click **Start Authorization** on DF Toolbox, paste code and confirm',
         '',
         '> 🔒 *Bot never asks for password/OTP. Unlink anytime via `/df unlink`.*',
       ].join('\n')
@@ -80,9 +80,9 @@ export function buildLinkPayload(code: string, userId: string, locale: Supported
         '',
         '1️⃣ Mở cổng Garena, đăng nhập như bình thường',
         '2️⃣ Cài tiện ích **DF Toolbox**',
-        '3️⃣ Bấm F5, dán mã vào hộp DF Toolbox, bấm **Liên kết**',
+        '3️⃣ Bấm **Bắt đầu Ủy quyền** trên DF Toolbox, dán mã và xác nhận',
         '',
-        '> 🔒 *Bot không bao giờ hỏi mật khẩu/OTP. Hủy liên kết bất kỳ lúc nào bằng `/df unlink`.*',
+        '> 🔒 *Bot không bao giờ hỏi mật khẩu/OTP. Hủy liên kết bất kỳ lúc nào bằng `/df unlink` (hoặc `/df hủy-liên-kết`).*',
       ].join('\n');
 
   const info = buildInfoContainer(textContent);

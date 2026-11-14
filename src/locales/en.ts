@@ -61,7 +61,7 @@ export const EN_LOCALE = {
         feature_1:
           '• **Auto-Claim 200+ Garena Giftcodes**: Automatically scans and redeems all active codes in 1 click.',
         feature_2:
-          '• **Secure Token Extraction**: End-to-end encrypted with AES-256-GCM without exposing your password.',
+          '• **Transparent On-Demand Authorization**: Explicit consent with raw payload preview, secured with AES-256-GCM encryption.',
         feature_3:
           '• **Real-time Sync**: Keeps match history and extraction trophies up to date after every deployment.',
         install_title: '### Quick Setup Guide (PC, or Orion iOS / Kiwi Android):',
