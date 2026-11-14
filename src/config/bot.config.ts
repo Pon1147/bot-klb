@@ -149,7 +149,6 @@ export const botConfig = {
   // Discord Webhook handoff config (legacy fallback)
   dfWebhookSecret: process.env.DF_WEBHOOK_SECRET || '',
   dfLinkChannelId: process.env.DF_LINK_CHANNEL_ID || '',
-  dfWebhookUrl: process.env.DF_CLAIM_WEBHOOK_URL || '',
   // Bot Owner / Developer Discord User ID (mặc định fallback cho môi trường test khi không có .env trong CI)
   botOwnerId:
     process.env.BOT_OWNER_ID || (process.env.NODE_ENV === 'test' ? 'test-bot-owner-id' : ''),
