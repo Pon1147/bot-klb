@@ -479,16 +479,24 @@ export async function handleHelpButton(
       content:
         files.length > 0
           ? locale === 'en'
-            ? `**Delta Force Toolbox Installation Package (Extension v${EXTENSION_VERSION}):**\n` +
-              '> 1. Download the attached **`DF-Extension.zip`** file below to your PC.\n' +
-              '> 2. Right-click the downloaded file -> Select **Extract All...**.\n' +
-              '> 3. Open `chrome://extensions/` -> Turn on **Developer mode** -> Click **Load unpacked**.\n' +
-              '> *100% clean, runs locally on your browser and never accesses or stores your passwords.*'
-            : `**Tệp cài đặt Tiện ích mở rộng Delta Force (Extension v${EXTENSION_VERSION}):**\n` +
-              '> 1. Tải tệp **`DF-Extension.zip`** đính kèm bên dưới về máy tính.\n' +
-              '> 2. Nhấp chuột phải vào file đã tải -> Chọn **Extract All... (Giải nén)**.\n' +
-              '> 3. Mở `chrome://extensions/` -> Bật **Developer mode** -> Chọn **Load unpacked** thư mục vừa giải nén.\n' +
-              '> *Tệp cài đặt sạch 100%, chạy cục bộ trên máy và không can thiệp vào tài khoản hay mật khẩu của bạn.*'
+            ? `### 📦 DF Toolbox Extension Setup Guide (v${EXTENSION_VERSION})\n` +
+              '1️⃣ **Download & Extract**: Download the attached `DF-Extension.zip` below ➔ Extract it to a folder on your PC.\n' +
+              '2️⃣ **Install to Browser**: Open `chrome://extensions/` (or Brave, Edge) ➔ Turn on **Developer mode** ➔ Click **Load unpacked** ➔ Select the extracted folder.\n' +
+              '3️⃣ **Ready**: The extension runs entirely locally within your browser.\n\n' +
+              '> ⚠️ **Privacy Transparency & Legal Disclaimer:**\n' +
+              '> • **Independent Project**: This extension is an open-source community utility and is **not affiliated with, endorsed by, or sponsored by TiMi, Level Infinite, or Garena**.\n' +
+              '> • **On-Demand Authorization**: Background sniffing is disabled by default. The tool **never accesses or stores passwords or OTPs**. When you voluntarily click *Start Authorization* on the official Delta Force event page, your active session is encrypted (AES-256-GCM) solely for in-game stats lookup.\n' +
+              '> • **Full User Control**: You can audit the plain source code directly in the extracted folder and permanently revoke/purge your data at any time via `/df unlink`.\n' +
+              '> *For more details, see our [Privacy Policy](https://github.com/Pon1147/bot-klb/blob/main/PRIVACY.md).*'
+            : `### 📦 Hướng Dẫn Cài Đặt DF Toolbox (Extension v${EXTENSION_VERSION})\n` +
+              '1️⃣ **Tải & Giải nén**: Tải tệp `DF-Extension.zip` đính kèm bên dưới ➔ Giải nén ra thư mục trên máy tính.\n' +
+              '2️⃣ **Cài đặt Trình duyệt**: Mở `chrome://extensions/` (hoặc Cốc Cốc, Brave, Edge) ➔ Bật **Developer mode (Chế độ cho nhà phát triển)** ➔ Chọn **Load unpacked (Tải tiện ích đã giải nén)** ➔ Chọn thư mục vừa giải nén.\n' +
+              '3️⃣ **Kích hoạt & Sử dụng**: Tiện ích chạy hoàn toàn cục bộ trong trình duyệt của bạn.\n\n' +
+              '> ⚠️ **Minh bạch Dữ liệu & Miễn trừ Trách nhiệm:**\n' +
+              '> • **Dự án Độc lập**: Tiện ích là công cụ mã nguồn mở cộng đồng, **không trực thuộc hay được bảo trợ bởi TiMi, Level Infinite hay Garena**.\n' +
+              '> • **Ủy quyền Tự nguyện (On-Demand)**: Mặc định tắt thu thập dữ liệu; tiện ích **tuyệt đối không đọc hay lưu mật khẩu/OTP**. Khi bạn chủ động bấm *Bắt đầu Ủy quyền* trên trang sự kiện Delta Force, phiên đăng nhập được mã hóa (AES-256-GCM) gửi về bot để xem stats cá nhân.\n' +
+              '> • **Toàn quyền Kiểm soát**: Bạn có thể kiểm tra trực tiếp mã nguồn trong thư mục đã giải nén và hủy liên kết/xóa dữ liệu bất kỳ lúc nào bằng lệnh `/df unlink`.\n' +
+              '> *Chi tiết chính sách xem thêm tại [Chính sách Quyền riêng tư](https://github.com/Pon1147/bot-klb/blob/main/PRIVACY.md).*'
           : locale === 'en'
             ? 'Extension package `DF-Extension.zip` is not available on the server.'
             : 'Không tìm thấy tệp cài đặt `DF-Extension.zip` trên máy chủ.',
