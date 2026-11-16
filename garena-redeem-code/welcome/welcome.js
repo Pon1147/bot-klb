@@ -1,4 +1,4 @@
-let extVersion = '1.9.3';
+let extVersion = '1.9.4';
 try {
   const manifest = typeof chrome !== 'undefined' && chrome?.runtime?.getManifest ? chrome.runtime.getManifest() : null;
   if (manifest?.version) {
@@ -68,7 +68,17 @@ const TRANSLATIONS = {
     cmd_build: 'Thư viện build súng chuẩn Meta Garena, phân loại Hazard/Havoc và copy mã Gunsmith 1-chạm.',
 
     footer_p1: 'Phát triển bởi đội ngũ Bot Delta & Delta Force Community.',
-    footer_p2: 'Tiện ích tuân thủ chuẩn Chrome Manifest V3 · Cam kết an toàn: Tuyệt đối không can thiệp hay lưu trữ mật khẩu/OTP.',
+    footer_p2: 'Dự án mã nguồn mở cộng đồng độc lập, không liên kết với Garena hoặc Level Infinite · Tuyệt đối không can thiệp hay lưu trữ mật khẩu/OTP.',
+
+    legal_badge: '⚠️ MINH BẠCH PHÁP LÝ & BẢO MẬT',
+    legal_tagline: 'Minh bạch 100% · Mã nguồn mở · Tự nguyện ủy quyền',
+    legal_item1_title: 'Dự Án Độc Lập',
+    legal_item1_desc: 'Công cụ mã nguồn mở do cộng đồng phát triển, <strong>không liên kết hay được bảo trợ bởi TiMi, Level Infinite hoặc Garena</strong>.',
+    legal_item2_title: 'Không Đọc Mật Khẩu',
+    legal_item2_desc: 'Tiện ích <strong>tuyệt đối không can thiệp hay lưu mật khẩu/OTP</strong>. Chỉ mã hóa phiên (AES-256-GCM) khi bạn chủ động nhấn Bắt đầu Ủy quyền.',
+    legal_item3_title: 'Toàn Quyền Kiểm Soát',
+    legal_item3_desc: 'Chạy cục bộ, mã unpacked kiểm tra trực tiếp. Bạn có thể hủy liên kết và xóa sạch dữ liệu bất kỳ lúc nào qua lệnh <code>/df unlink</code>.',
+    legal_link: 'Xem đầy đủ Chính Sách Quyền Riêng Tư (Privacy Policy) ↗',
   },
   en: {
     page_title: 'Welcome to DF Toolbox — User Guide & Setup',
@@ -131,7 +141,17 @@ const TRANSLATIONS = {
     cmd_build: 'Garena meta weapon build library, categorized by Hazard/Havoc with 1-click Gunsmith copy.',
 
     footer_p1: 'Developed by Bot Delta Team & Delta Force Community.',
-    footer_p2: 'Compliant with Chrome Manifest V3 · Security guarantee: Zero password or OTP storage/tampering.',
+    footer_p2: 'Independent open-source community project, not affiliated with Garena or Level Infinite · Zero password or OTP storage.',
+
+    legal_badge: '⚠️ LEGAL COMPLIANCE & PRIVACY NOTICE',
+    legal_tagline: '100% Transparent · Open Source · On-Demand Opt-In',
+    legal_item1_title: 'Independent Project',
+    legal_item1_desc: 'Open-source community tool, <strong>not affiliated with, endorsed by, or sponsored by TiMi, Level Infinite, or Garena</strong>.',
+    legal_item2_title: 'Zero Password Storage',
+    legal_item2_desc: 'The tool <strong>never accesses or stores passwords or OTPs</strong>. Session is encrypted (AES-256-GCM) only when you explicitly click Start Authorization.',
+    legal_item3_title: 'Full User Control',
+    legal_item3_desc: 'Runs locally with auditable unpacked code. You can revoke and purge your linked data at any time via <code>/df unlink</code>.',
+    legal_link: 'View full Privacy Policy & Disclaimers ↗',
   }
 };
 
