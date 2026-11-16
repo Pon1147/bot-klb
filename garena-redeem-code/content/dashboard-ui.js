@@ -1,19 +1,10 @@
-/**
- * Dashboard UI — render và update Garena Redeem dashboard
- *
- * Tách khỏi content.js để giảm God Object.
- * Dependencies: computeRemaining, getCentralState, setCentralState, transition, renderLogs, getReasonLabel
- */
-
 (function () {
   'use strict';
 
-  // ===== DOM elements =====
   let panel, statusDot, statusText, statTotal, statSuccess, statFailed, statRemaining;
   let progressFill, progressText, btnStart, btnStop, logsContainer, currentCodeEl;
   let callbacks = { onStart: null, onStop: null };
 
-  // ===== STATUS CONFIG =====
   const STATUS_CONFIG = {
     NO_CODES: { dotClass: 'grd-no-codes', text: 'Chưa sẵn sàng' },
     READY: { dotClass: 'grd-ready', text: 'Sẵn sàng' },
@@ -22,7 +13,6 @@
     COMPLETED: { dotClass: 'grd-completed', text: 'Hoàn tất' },
   };
 
-  // ===== REASON LABELS =====
   const REASON_LABELS = {
     REDEEMED: 'Đã nhận thành công',
     USED: 'Đã sử dụng',
@@ -40,7 +30,6 @@
     return REASON_LABELS[reason] || reason;
   }
 
-  // ===== INIT DASHBOARD =====
   function initDashboard() {
     if (document.getElementById('garena-redeem-dashboard')) return;
     console.log('[Dashboard] Initializing...');
@@ -76,7 +65,6 @@
 
     document.documentElement.appendChild(panel);
 
-    // Cache DOM elements
     statusDot = panel.querySelector('.grd-status-dot');
     statusText = panel.querySelector('.grd-status-text');
     statTotal = panel.querySelector('.grd-stat-total');
@@ -90,17 +78,14 @@
     logsContainer = panel.querySelector('.grd-logs');
     currentCodeEl = panel.querySelector('.grd-current-code');
 
-    // Drag functionality
     initDrag(panel);
 
-    // Button listeners
     btnStart.addEventListener('click', () => callbacks.onStart?.());
     btnStop.addEventListener('click', () => callbacks.onStop?.());
     panel.querySelector('.grd-logs-clear').addEventListener('click', () => {
       logsContainer.innerHTML = '';
     });
 
-    // Subscribe to STATE_CHANGE events via EventBus
     window.EventBus.on('STATE_CHANGE', (data) => {
       console.log('[Dashboard] STATE_CHANGE received, rendering...', data?.status, data?.stats);
       if (data) render(data);
@@ -109,7 +94,6 @@
     renderFromStorage();
   }
 
-  // ===== DRAG FUNCTIONALITY =====
   function initDrag(panel) {
     let isDragging = false, startX, startY, startLeft, startTop;
     const drag = panel.querySelector('.grd-drag');
@@ -139,7 +123,6 @@
     });
   }
 
-  // ===== RENDER DASHBOARD =====
   function render(state) {
     if (!state) {
       console.warn('[Dashboard] No state to render.');
@@ -177,7 +160,6 @@
     renderLogs(state.logs);
   }
 
-  // ===== RENDER LOGS =====
   function renderLogs(logs) {
     logsContainer.innerHTML = '';
     const toRender = logs.slice(-50);
@@ -204,7 +186,6 @@
     logsContainer.scrollTop = logsContainer.scrollHeight;
   }
 
-  // ===== RENDER FROM STORAGE =====
   async function renderFromStorage() {
     console.log('[Dashboard] renderFromStorage() called...');
     let state = await getCentralState();
@@ -213,7 +194,6 @@
       return;
     }
 
-    // Auto-pause if was running (page reloaded)
     if (state.status === 'RUNNING') {
       try {
         state = transition(state, 'PAUSED');
@@ -226,7 +206,6 @@
     render(state);
   }
 
-  // ===== EXPORT =====
   window.initDashboard = initDashboard;
   window.callbacks = callbacks;
 })();

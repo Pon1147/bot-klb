@@ -1,4 +1,3 @@
-// Dynamic extension version from manifest
 let extVersion = '1.9.3';
 try {
   const manifest = typeof chrome !== 'undefined' && chrome?.runtime?.getManifest ? chrome.runtime.getManifest() : null;
@@ -7,7 +6,6 @@ try {
   }
 } catch (_) {}
 
-// Bilingual Dictionary (Tiếng Việt & English)
 const TRANSLATIONS = {
   vi: {
     page_title: 'Chào mừng cài đặt DF Toolbox — Hướng Dẫn Sử Dụng',
@@ -18,7 +16,6 @@ const TRANSLATIONS = {
     tab_redeem: '2. Tự Động Nhập Giftcode',
     tab_commands: '3. Danh Sách Lệnh Hot',
 
-    // Tab 1: Link Guide
     link_step1_title: 'Lấy mã liên kết trên Discord',
     link_step1_desc: 'Mở kênh Discord có <strong>Bot Delta</strong>, gõ lệnh <code>/df link</code> (hoặc <code>/df liên-kết</code> nếu Discord dùng tiếng Việt). Bot sẽ phản hồi riêng (chỉ bạn nhìn thấy) kèm mã Claim 6 ký tự (ví dụ: <code>TAKCGF</code>, hiệu lực 10 phút):',
     copy_btn: 'Sao chép',
@@ -48,7 +45,6 @@ const TRANSLATIONS = {
     link_step4_desc: 'Quay lại Discord và gõ lại <code>/df link</code> để kiểm tra trạng thái:',
     link_success_note: '✅ Khi đã liên kết thành công, bạn sẽ xem được đầy đủ thống kê K/D, lịch sử trận đấu, sảnh đồ đỏ và bảng giá chợ Garena đồng bộ từ máy chủ Garena!',
 
-    // Tab 2: Auto Redeem
     redeem_step1_title: 'Ghim tiện ích lên thanh trình duyệt',
     redeem_step1_desc: 'Nhấp vào biểu tượng <strong>Mảnh ghép (Extensions)</strong> ở góc trên bên phải Chrome, tìm <strong>DF Toolbox</strong> và bấm biểu tượng chiếc <strong>Ghim (Pin)</strong> để tiện sử dụng.',
     redeem_step2_title: 'Lấy mã code hằng ngày từ Bot',
@@ -64,7 +60,6 @@ const TRANSLATIONS = {
     mock_redeem_pending: 'Đang tự động xử lý...',
     mock_redeem_btn: '▶ Bắt Đầu Tự Động Nhập (3/3)',
 
-    // Tab 3: Hot Commands
     cmd_market: 'Tra cứu bàn chế tác, chi phí, nguyên liệu và giá chợ thị trường realtime (tự động phân biệt Garena/Global).',
     cmd_stats: 'Xem thông số chiến đấu tổng quan: K/D, số giờ chơi, tỷ lệ rút quân an toàn & chuyển đổi mùa giải độc quyền.',
     cmd_history: 'Xem lịch sử các trận chiến gần nhất, chiến lợi phẩm loot mang ra & thông số K/D từng trận.',
@@ -72,7 +67,6 @@ const TRANSLATIONS = {
     cmd_map: 'Mô phỏng bản đồ 3D tương tác: vị trí két sắt, điểm loot tài nguyên & lối thoát hiểm an toàn.',
     cmd_build: 'Thư viện build súng chuẩn Meta Garena, phân loại Hazard/Havoc và copy mã Gunsmith 1-chạm.',
 
-    // Footer
     footer_p1: 'Phát triển bởi đội ngũ Bot Delta & Delta Force Community.',
     footer_p2: 'Tiện ích tuân thủ chuẩn Chrome Manifest V3 · Cam kết an toàn: Tuyệt đối không can thiệp hay lưu trữ mật khẩu/OTP.',
   },
@@ -85,7 +79,6 @@ const TRANSLATIONS = {
     tab_redeem: '2. Auto Redeem Giftcode',
     tab_commands: '3. Hot Commands List',
 
-    // Tab 1: Link Guide
     link_step1_title: 'Get authentication link code on Discord',
     link_step1_desc: 'Open any Discord channel with <strong>Bot Delta</strong> and run <code>/df link</code>. The bot will send an ephemeral message (only visible to you) with a 6-character Claim code (e.g. <code>TAKCGF</code>, valid for 10 minutes):',
     copy_btn: 'Copy',
@@ -115,7 +108,6 @@ const TRANSLATIONS = {
     link_step4_desc: 'Return to Discord and run <code>/df link</code> to verify status:',
     link_success_note: '✅ Once linked successfully, you can view your full K/D stats, match history, red vault showcase, and live Garena market prices synchronized from Garena servers!',
 
-    // Tab 2: Auto Redeem
     redeem_step1_title: 'Pin extension to browser toolbar',
     redeem_step1_desc: 'Click the <strong>Puzzle icon (Extensions)</strong> at the top right of Chrome, find <strong>DF Toolbox</strong>, and click the <strong>Pin</strong> icon for easy access.',
     redeem_step2_title: 'Get daily codes from Bot',
@@ -131,7 +123,6 @@ const TRANSLATIONS = {
     mock_redeem_pending: 'Processing automatically...',
     mock_redeem_btn: '▶ Start Auto-Redeem (3/3)',
 
-    // Tab 3: Hot Commands
     cmd_market: 'Look up crafting bench recipes, costs, materials, and real-time market prices (auto Garena/Global).',
     cmd_stats: 'View overall combat identity: K/D, playtime, extraction rate, and exclusive season switcher.',
     cmd_history: 'View recent match history, extracted loot value, and per-match combat K/D.',
@@ -139,7 +130,6 @@ const TRANSLATIONS = {
     cmd_map: 'Interactive 3D map simulator: safe vault locations, resource loot spots, and extraction points.',
     cmd_build: 'Garena meta weapon build library, categorized by Hazard/Havoc with 1-click Gunsmith copy.',
 
-    // Footer
     footer_p1: 'Developed by Bot Delta Team & Delta Force Community.',
     footer_p2: 'Compliant with Chrome Manifest V3 · Security guarantee: Zero password or OTP storage/tampering.',
   }
@@ -154,7 +144,6 @@ function setLanguage(lang) {
   document.documentElement.lang = currentLang;
   document.title = t.page_title;
 
-  // Cập nhật hero badge
   const badgeEl = document.querySelector('.hero-badge');
   if (badgeEl) {
     const versionMatch = badgeEl.textContent.match(/v[\d.]+/);
@@ -162,7 +151,6 @@ function setLanguage(lang) {
     badgeEl.textContent = `${t.badge_prefix}${ver}`;
   }
 
-  // Cập nhật toàn bộ các phần tử có data-i18n
   document.querySelectorAll('[data-i18n]').forEach((el) => {
     const key = el.dataset.i18n;
     if (t[key]) {
@@ -170,7 +158,6 @@ function setLanguage(lang) {
     }
   });
 
-  // Cập nhật text của copy buttons
   document.querySelectorAll('.copy-btn').forEach((btn) => {
     btn.dataset.originalText = t.copy_btn;
     if (!btn.classList.contains('copied')) {
@@ -179,7 +166,6 @@ function setLanguage(lang) {
     btn.setAttribute('aria-label', `${t.copy_btn} ${btn.dataset.copy || ''}`);
   });
 
-  // Cập nhật trạng thái active của buttons chuyển đổi ngôn ngữ
   document.querySelectorAll('.lang-btn').forEach((btn) => {
     const isActive = btn.dataset.lang === currentLang;
     btn.classList.toggle('active', isActive);
@@ -191,7 +177,6 @@ function setLanguage(lang) {
   } catch (_) {}
 }
 
-// Khởi tạo ngôn ngữ đã lưu hoặc mặc định
 try {
   const saved = localStorage.getItem('df_welcome_lang');
   if (saved === 'en' || saved === 'vi') {
@@ -199,7 +184,6 @@ try {
   }
 } catch (_) {}
 
-// Gán sự kiện click cho các nút chuyển ngôn ngữ
 document.querySelectorAll('.lang-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     const lang = btn.dataset.lang;
@@ -209,10 +193,8 @@ document.querySelectorAll('.lang-btn').forEach((btn) => {
   });
 });
 
-// Chạy setLanguage lần đầu khi load DOM
 setLanguage(currentLang);
 
-// Tab switching logic with full WAI-ARIA and roving tabindex
 const tabs = Array.from(document.querySelectorAll('.tab-btn'));
 const panels = Array.from(document.querySelectorAll('.tab-content'));
 
@@ -245,7 +227,6 @@ tabs.forEach((btn, index) => {
     activateTab(btn);
   });
 
-  // Arrow key navigation (automatic activation)
   btn.addEventListener('keydown', (e) => {
     let targetIndex = null;
 
@@ -266,7 +247,6 @@ tabs.forEach((btn, index) => {
   });
 });
 
-// Robust Copy to Clipboard with timer tracking and no text-stuck bug
 document.querySelectorAll('.copy-btn').forEach((btn) => {
   if (!btn.dataset.originalText) {
     btn.dataset.originalText = btn.textContent.trim();
@@ -276,7 +256,6 @@ document.querySelectorAll('.copy-btn').forEach((btn) => {
     const textToCopy = btn.dataset.copy;
     if (!textToCopy) return;
 
-    // Clear any pending timeout from previous rapid clicks
     if (btn._copyTimeout) {
       clearTimeout(btn._copyTimeout);
       btn._copyTimeout = null;
@@ -288,7 +267,6 @@ document.querySelectorAll('.copy-btn').forEach((btn) => {
       if (navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(textToCopy);
       } else {
-        // Fallback for non-secure / restricted environments
         const tempInput = document.createElement('textarea');
         tempInput.value = textToCopy;
         tempInput.setAttribute('readonly', '');

@@ -1,10 +1,6 @@
-// Service Worker - Extension lifecycle + Claim forwarding to Bot API
-
-// ===== CONSTANTS =====
 const DF_CLAIM_PROCESSING_KEY = 'df_claim_processing';
 const PRODUCTION_CLAIM_API_URL = 'https://bot-klb-production.up.railway.app/api/v1/auth/claim';
 
-// ===== DF_CLAIM deduplication: cleanup processing lock =====
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes[DF_CLAIM_PROCESSING_KEY]) {
@@ -12,16 +8,13 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 
-// ===== Lifecycle: init storage + onboarding =====
 chrome.runtime.onInstalled.addListener((details) => {
-  // Init redeem state
   chrome.storage.local.get('centralState', (result) => {
     if (!result.centralState) {
       chrome.storage.local.set({ centralState: defaultState });
     }
   });
 
-  // First-run: mở trang onboarding hướng dẫn liên kết & redeem code
   if (details.reason === 'install') {
     chrome.tabs.create({ url: 'welcome/welcome.html' });
   }
@@ -38,12 +31,10 @@ const defaultState = {
   codeStates: [],
 };
 
-// ===== MESSAGE HANDLER: DF_CLAIM =====
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'DF_CLAIM') {
     (async () => {
       try {
-        // Kiểm tra bằng chứng đồng thuận từ storage (bảo đảm người dùng đã chủ động xác nhận)
         const storageData = await chrome.storage.local.get(['consent_version', 'consent_granted_at']);
         const { consent_version, consent_granted_at } = storageData || {};
 
@@ -56,7 +47,6 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           return;
         }
 
-        // Kiểm tra thời hạn hiệu lực của sự đồng thuận (10 phút)
         const TEN_MINUTES_MS = 10 * 60 * 1000;
         if (Date.now() - consent_granted_at > TEN_MINUTES_MS) {
           console.warn('[SW] Claim rejected: Consent expired');
@@ -99,7 +89,6 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         }
 
         const isSuccess = Boolean(res?.ok && data?.ok);
-        // Xóa consent sau khi hoàn tất thành công hoặc bị từ chối dứt điểm (401/409)
         if (isSuccess || res?.status === 401 || res?.status === 409) {
           await chrome.storage.local.remove(['consent_granted_at']);
         }
@@ -114,6 +103,6 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       }
     })();
 
-    return true; // async sendResponse
+    return true;
   }
 });

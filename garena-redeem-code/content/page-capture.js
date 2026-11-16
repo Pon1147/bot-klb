@@ -1,12 +1,8 @@
-// Runs in PAGE CONTEXT — can intercept page XHR/fetch requests.
-// Posts captured responses back to content script via postMessage.
-// Format: normalized NetworkEvent với requestId correlation.
 (() => {
   'use strict';
 
   const CAPTURE_SOURCE = 'garena-redeem-capture';
 
-  // ===== Utility: tạo requestId duy nhất =====
   function generateRequestId() {
     return `req_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   }
@@ -22,7 +18,6 @@
     return data && typeof data === 'object' && 'code' in data;
   }
 
-  // ===== Tạo normalized NetworkEvent =====
   function createNetworkEvent(requestId, url, method, status, data) {
     return {
       source: CAPTURE_SOURCE,
@@ -39,7 +34,6 @@
     };
   }
 
-  // ===== Intercept XHR =====
   if (window.XMLHttpRequest) {
     const origXhrOpen = XMLHttpRequest.prototype.open;
     const origXhrSend = XMLHttpRequest.prototype.send;
@@ -62,7 +56,6 @@
             if (typeof this.responseText === 'string' && this.responseText.trim()) {
               const data = JSON.parse(this.responseText);
               if (isValidResponse(data)) {
-                // Gửi normalized event với requestId
                 window.postMessage(
                   createNetworkEvent(requestId, url, method, this.status, data),
                   window.location.origin
@@ -77,7 +70,6 @@
     };
   }
 
-  // ===== Intercept fetch =====
   const originalFetch = window.fetch;
   window.fetch = async function (...args) {
     const url = args[0] instanceof Request ? args[0].url : String(args[0]);
@@ -92,7 +84,6 @@
         try {
           const jsonData = JSON.parse(text);
           if (isValidResponse(jsonData)) {
-            // Gửi normalized event với requestId
             window.postMessage(
               createNetworkEvent(requestId, url, method, response.status, jsonData),
               window.location.origin

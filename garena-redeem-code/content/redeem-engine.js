@@ -1,20 +1,8 @@
-/**
- * Redeem Engine — Queue management, retry logic, state
- *
- * Tách khỏi content.js để giảm God Object.
- * Receives dependencies via constructor.
- */
-
 (function () {
   'use strict';
 
-  /**
-   * RedeemEngine class
-   * @param {Object} deps — Dependencies injected from content.js
-   */
   class RedeemEngine {
     constructor(deps) {
-      // Dependencies
       this.capture = deps.capture;
       this.CONFIG = deps.CONFIG;
       this.CODE_STATES = deps.CODE_STATES;
@@ -35,12 +23,10 @@
       this.appendLog = deps.appendLog;
       this.generateId = deps.generateId;
 
-      // Runtime state
       this.isRunning = false;
       this.abortFlag = false;
     }
 
-    // ===== Start redeem queue =====
     async start() {
       if (this.isRunning) return;
       let state = await this.getCentralState();
@@ -60,7 +46,6 @@
       await this.processQueue(state);
     }
 
-    // ===== Pause redeem queue =====
     async pause() {
       this.abortFlag = true;
       const state = await this.getCentralState();
@@ -74,7 +59,6 @@
       }
     }
 
-    // ===== Resume redeem queue =====
     async resume() {
       let state = await this.getCentralState();
       if (!state || state.status !== 'PAUSED') return;
@@ -93,10 +77,8 @@
       await this.processQueue(state);
     }
 
-    // ===== Process queue loop =====
     async processQueue(state) {
       while (!this.abortFlag) {
-        // Always read fresh state each iteration
         state = await this.getCentralState();
         if (!state) return;
 
@@ -126,7 +108,6 @@
       this.isRunning = false;
     }
 
-    // ===== Find next pending code =====
     findNextPending(state) {
       for (let i = state.currentIndex; i < state.codes.length; i++) {
         if (state.codeStates[i].status === this.CODE_STATES.PENDING) return i;
@@ -137,7 +118,6 @@
       return -1;
     }
 
-    // ===== Process single code with retry =====
     async processCode(code, index, total) {
       const maxRetries = this.CONFIG.maxRetries + 1;
       for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -146,7 +126,6 @@
         try {
           const result = await this.redeemSingle(code);
 
-          // TIMEOUT không retry — là state riêng
           if (result.result === this.CODE_STATES.TIMEOUT) {
             return result;
           }
@@ -168,7 +147,6 @@
       return { result: this.CODE_STATES.FAILED, reason: 'TEMP_ERROR' };
     }
 
-    // ===== Redeem single code =====
     async redeemSingle(code) {
       this.capture.resetCapture(code);
       console.log('[RedeemEngine] Starting redeem for code:', code);
@@ -184,7 +162,6 @@
       this.setValue(input, code);
       await this.sleep(80);
 
-      // Register waiter BEFORE click để không bỏ lỡ response nhanh
       const waiter = this.waitForCapturedResponse(this.CONFIG.timeoutMs);
       let clicked = false;
 
@@ -196,14 +173,13 @@
         this.clickRedeem(submitBtn);
         clicked = true;
 
-        // Kiểm tra response đã có chưa (trường hợp response quá nhanh)
         const existing = this.capture.getLastResponse();
         if (existing) {
           console.log('[RedeemEngine] Response captured during click delay');
           break;
         }
 
-        await this.sleep(200); // small delay to let page process
+        await this.sleep(200);
       }
 
       if (!clicked) {
@@ -222,7 +198,6 @@
       return this.parseRedeemResponse(response);
     }
 
-    // ===== Wait for captured response =====
     waitForCapturedResponse(timeout) {
       return new Promise((resolve) => {
         const start = Date.now();
@@ -251,9 +226,7 @@
       });
     }
 
-    // ===== Handle response and update state =====
     async handleResponse(state, parsed, index) {
-      // Always read latest state from storage before updating
       state = await this.getCentralState();
       if (!state) return;
 
@@ -277,9 +250,7 @@
           result: this.CODE_STATES.TIMEOUT,
           reason: parsed.reason,
         });
-        // TIMEOUT không tính vào failed stat
       }
-      // CANCELLED — giữ nguyên status (user pause)
 
       const log = {
         id: this.generateId(),
@@ -298,6 +269,5 @@
     }
   }
 
-  // ===== Export =====
   window.RedeemEngine = RedeemEngine;
 })();

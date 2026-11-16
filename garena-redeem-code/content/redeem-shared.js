@@ -1,13 +1,6 @@
-/**
- * Redeem Shared Utilities — dùng chung cho content.js và redeem-engine.js
- *
- * Chứa: RESPONSE_CODE_MAP, CODE_STATES, CONFIG, state helpers, storage, parser, capture, utils
- */
-
 (function () {
   'use strict';
 
-  // ===== Redeem response code mapping =====
   window.RESPONSE_CODE_MAP = {
     0: { result: 'SUCCESS', reason: 'REDEEMED', label: 'Thành công' },
     400001: { result: 'FAILED', reason: 'INVALID', label: 'Code không hợp lệ' },
@@ -21,7 +14,6 @@
     400073: { result: 'FAILED', reason: 'VERIFY', label: 'Cần xác minh' },
   };
 
-  // ===== Redeem code states (enum) =====
   window.CODE_STATES = Object.freeze({
     PENDING: 'PENDING',
     PROCESSING: 'PROCESSING',
@@ -31,7 +23,6 @@
     CANCELLED: 'CANCELLED',
   });
 
-  // ===== Config =====
   window.CONFIG = {
     maxRetries: 2,
     delayBetweenCodesMs: 1300,
@@ -39,7 +30,6 @@
     submitConfirmMs: 400,
   };
 
-  // ===== State helpers =====
   const VALID_TRANSITIONS = {
     NO_CODES: ['READY'],
     READY: ['RUNNING'],
@@ -115,7 +105,6 @@
     return { ...state, status: 'COMPLETED' };
   }
 
-  // Export state helpers
   window.createInitialState = createInitialState;
   window.transition = transition;
   window.computeRemaining = computeRemaining;
@@ -126,7 +115,6 @@
   window.appendLog = appendLog;
   window.completeState = completeState;
 
-  // ===== Storage =====
   function getCentralState() {
     return new Promise((resolve) => {
       chrome.storage.local.get('centralState', (result) => resolve(result.centralState || null));
@@ -140,7 +128,6 @@
           reject(chrome.runtime.lastError);
           return;
         }
-        // Emit STATE_CHANGE event cho EventBus
         window.EventBus.emit('STATE_CHANGE', state);
         resolve();
       });
@@ -150,7 +137,6 @@
   window.getCentralState = getCentralState;
   window.setCentralState = setCentralState;
 
-  // ===== Parser =====
   function parseRedeemResponse(rawResponse) {
     if (!rawResponse || typeof rawResponse !== 'object') {
       return {
@@ -189,7 +175,6 @@
 
   window.parseRedeemResponse = parseRedeemResponse;
 
-  // ===== Capture =====
   const capture = { responses: [], initialized: false, _currentCode: null, requestMap: new Map() };
 
   function initCapture() {
@@ -199,11 +184,9 @@
     capture.requestMap = new Map();
 
     window.addEventListener('message', (e) => {
-      // Security: only accept messages from our own window
       if (e.source !== window) return;
       if (e.data?.source !== 'garena-redeem-capture') return;
 
-      // Handle normalized NetworkEvent format
       const event = e.data.event;
       const data = e.data.data;
 
@@ -212,7 +195,6 @@
 
       const { requestId, timestamp, status } = event;
 
-      // Store response with requestId for correlation
       capture.responses.push({
         requestId,
         code: capture._currentCode || 'unknown',
@@ -221,7 +203,6 @@
         time: timestamp || Date.now(),
       });
 
-      // Map requestId → response for quick lookup
       capture.requestMap.set(requestId, {
         code: capture._currentCode || 'unknown',
         data: data,
@@ -247,13 +228,11 @@
     capture._currentCode = code || null;
   }
 
-  // Export capture
   window.capture = capture;
   window.initCapture = initCapture;
   window.getLastResponse = getLastResponse;
   window.resetCapture = resetCapture;
 
-  // ===== Utils =====
   function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
   }
@@ -272,7 +251,6 @@
   window.generateId = generateId;
   window.visible = visible;
 
-  // ===== classifyCodes =====
   const DEAD_REASONS = new Set(['EXPIRED', 'USED', 'INVALID', 'LIMIT_REACHED', 'VERIFY', 'PRESENT_ERROR']);
   const RETRYABLE_REASONS = new Set(['TEMP_ERROR']);
 
@@ -306,7 +284,6 @@
         continue;
       }
 
-      // TIMEOUT/CANCELLED/unknown — đưa vào untested
       untested.push(code);
     }
 

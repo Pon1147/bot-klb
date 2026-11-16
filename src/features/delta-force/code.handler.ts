@@ -63,7 +63,6 @@ export async function execute(
       try {
         codes = await fetchDailyCodes();
       } catch (scrapeError: unknown) {
-        // Log lỗi chi tiết để debug (Puppeteer thiếu deps, timeout, network fail...)
         logger.error(`Scrape daily codes failed: ${(scrapeError as Error).message}`);
         codes = null;
       }

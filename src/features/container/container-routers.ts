@@ -221,5 +221,3 @@ async function updateModalEditorPreview(
     logger.error('Lỗi khi cập nhật preview sau modal: ' + errMsg);
   }
 }
-
-// Pencil button handler đã bị loại bỏ — workflow chuẩn: /container edit command

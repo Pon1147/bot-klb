@@ -1,19 +1,10 @@
-/**
- * Isolated content script — Opt-In & Transparent Authorization Bridge cho tab Link trên HQ.
- *
- * MẶC ĐỊNH KHÔNG HOOK, KHÔNG BẮT TOKEN.
- * Chỉ khi người dùng bấm "Bắt đầu Ủy quyền", script mới tiêm động link-page-capture.js vào DOM.
- * Bắt buộc hiển thị Raw JSON preview (gồm độ dài token thật) và Checkbox đồng thuận trước khi gửi.
- */
-
 (function () {
   'use strict';
 
   console.log('[DF Toolbox] link-content.js loaded (isolated world)');
 
-  // ===== STATE =====
   let state = {
-    status: 'idle', // idle | authorizing | candidate_captured | submitting | success | error
+    status: 'idle',
     candidate: null,
     endpoint: null,
     claimCode: '',
@@ -23,7 +14,6 @@
     errorMessage: null,
   };
 
-  // ===== A. Lắng nghe candidate từ MAIN world =====
   window.addEventListener('message', (event) => {
     if (event.origin !== window.location.origin) return;
     if (event.source !== window) return;
@@ -44,7 +34,6 @@
     if (d.type !== 'CREDENTIAL_CANDIDATE') return;
     if (!d.credential?.openid || !d.credential?.token) return;
 
-    // Strict validation: openid phải là chuỗi số (Garena ID), token >= 32 ký tự, endpoint hợp lệ
     const cred = d.credential;
     if (!/^\d+$/.test(cred.openid)) return;
     if (typeof cred.token !== 'string' || cred.token.length < 32) return;
@@ -68,7 +57,6 @@
 
     console.log(`[LinkContent] Captured credentials from ${d.endpoint}: openid=${d.credential.openid.slice(0, 4)}***`);
 
-    // Dừng timer đếm ngược
     if (state.timerInterval) {
       clearInterval(state.timerInterval);
       state.timerInterval = null;
@@ -82,10 +70,8 @@
     renderPanel();
   });
 
-  // Khởi động giao diện mặc định
   renderPanel();
 
-  // ===== B. Tiêm & Dọn dẹp On-Demand Script =====
   function extractFromPerformance() {
     try {
       const entries = window.performance?.getEntriesByType?.('resource') || [];
@@ -120,7 +106,6 @@
   }
 
   function startAuthorization() {
-    // 1. Quét tức thì Performance Resource Buffer: Nếu đã có phiên thì nhận diện ngay 0s
     const existing = extractFromPerformance();
     if (existing) {
       console.log(`[LinkContent] Instant session found in performance buffer: openid=${existing.credential.openid.slice(0, 4)}*** from ${existing.endpoint}`);
@@ -132,12 +117,10 @@
       return;
     }
 
-    // 2. Nếu chưa có phiên (chưa đăng nhập), mở cửa sổ đếm ngược 60s và tiêm script đón đầu
     state.status = 'authorizing';
     state.authTimerSeconds = 60;
     state.errorMessage = null;
 
-    // Tiêm link-page-capture.js vào DOM MAIN world
     const existingScript = document.getElementById('df-link-capture-script');
     if (existingScript) existingScript.remove();
 
@@ -146,7 +129,6 @@
     script.src = chrome.runtime.getURL('content/link-page-capture.js');
     (document.head || document.documentElement).appendChild(script);
 
-    // Bắt đầu đếm ngược 60s
     if (state.timerInterval) clearInterval(state.timerInterval);
     state.timerInterval = setInterval(() => {
       state.authTimerSeconds--;
@@ -169,7 +151,6 @@
       state.timerInterval = null;
     }
 
-    // Phát tín hiệu dừng tới capture script
     window.postMessage({ type: 'DF_STOP_CAPTURE' }, window.location.origin);
 
     const script = document.getElementById('df-link-capture-script');
@@ -183,7 +164,6 @@
     }
   }
 
-  // ===== C. Inject panel UI =====
   function renderPanel() {
     const oldPanel = document.getElementById('df-toolbox-panel');
     if (oldPanel) oldPanel.remove();
@@ -446,7 +426,6 @@
     }
   }
 
-  // ===== D. Submit claim tới Service Worker =====
   async function handleSubmit() {
     if (!state.candidate || !state.consentChecked || state.claimCode.length < 6) return;
 
@@ -454,7 +433,6 @@
     renderPanel();
 
     try {
-      // Lưu trữ bằng chứng đồng thuận có dấu thời gian trước khi gửi
       await chrome.storage.local.set({
         consent_version: 'v1.0',
         consent_granted_at: Date.now(),

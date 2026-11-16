@@ -3,15 +3,11 @@
 
   console.log('[Garena Redeem] Content script loaded');
 
-  // ===== INJECT DASHBOARD CSS =====
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = chrome.runtime.getURL('content/dashboard.css');
   document.head.appendChild(link);
 
-  // ===== INJECT PAGE-CONTEXT CAPTURE SCRIPT =====
-  // Content script runs in isolated world — cannot intercept page XHR/fetch.
-  // Inject a <script> tag so the interceptor runs in page context.
   (function injectPageCapture() {
     const script = document.createElement('script');
     script.src = chrome.runtime.getURL('content/page-capture.js');
@@ -21,7 +17,6 @@
     (document.head || document.documentElement).appendChild(script);
   })();
 
-  // ===== Redeem response code mapping =====
   const RESPONSE_CODE_MAP = {
     0: { result: 'SUCCESS', reason: 'REDEEMED', label: 'Thành công' },
     400001: { result: 'FAILED', reason: 'INVALID', label: 'Code không hợp lệ' },
@@ -35,7 +30,6 @@
     400073: { result: 'FAILED', reason: 'VERIFY', label: 'Cần xác minh' },
   };
 
-  // ===== Redeem code states (enum) =====
   const CODE_STATES = Object.freeze({
     PENDING: 'PENDING',
     PROCESSING: 'PROCESSING',
@@ -52,7 +46,6 @@
     submitConfirmMs: 400,
   };
 
-  // ===== STATE HELPERS =====
   const VALID_TRANSITIONS = {
     NO_CODES: ['READY'],
     READY: ['RUNNING'],
@@ -119,7 +112,6 @@
     return { ...state, status: 'COMPLETED' };
   }
 
-  // ===== STORAGE =====
   function getCentralState() {
     return new Promise((resolve) => {
       chrome.storage.local.get('centralState', (result) => resolve(result.centralState || null));
@@ -135,7 +127,6 @@
     });
   }
 
-  // ===== PARSER =====
   function parseRedeemResponse(rawResponse) {
     if (!rawResponse || typeof rawResponse !== 'object') {
       return {
@@ -168,21 +159,19 @@
     };
   }
 
-  // ===== CAPTURE (page-context via postMessage) =====
   const capture = { responses: [], initialized: false, _currentCode: null };
 
   function initCapture() {
     if (capture.initialized) return;
     capture.initialized = true;
     capture.responses = [];
-    capture.requestMap = new Map(); // requestId → { code, requestId, ... }
+    capture.requestMap = new Map();
 
     window.addEventListener('message', (e) => {
       if (e.origin !== window.location.origin) return;
       if (e.source !== window) return;
       if (e.data?.source !== 'garena-redeem-capture') return;
 
-      // Handle normalized NetworkEvent format
       const event = e.data.event;
       const data = e.data.data;
 
@@ -191,7 +180,6 @@
 
       const { requestId, timestamp, status } = event;
 
-      // Store response with requestId for correlation
       capture.responses.push({
         requestId,
         code: capture._currentCode || 'unknown',
@@ -200,7 +188,6 @@
         time: timestamp || Date.now(),
       });
 
-      // Map requestId → response for quick lookup
       capture.requestMap.set(requestId, {
         code: capture._currentCode || 'unknown',
         data: data,
@@ -225,7 +212,6 @@
     capture._currentCode = code || null;
   }
 
-  // ===== UTILS =====
   function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
   }
@@ -238,7 +224,6 @@
     return s.display !== 'none' && s.visibility !== 'hidden' && el.offsetParent !== null;
   }
 
-  // ===== Phân loại codeStates thành 4 nhóm =====
   function classifyCodes(state) {
     if (!state || !Array.isArray(state.codeStates)) {
       return {
@@ -287,7 +272,6 @@
         continue;
       }
 
-      // TIMEOUT/CANCELLED/unknown — đưa vào untested để user xem xét
       untested.push(code);
     }
 
@@ -299,7 +283,6 @@
     };
   }
 
-  // ===== DASHBOARD =====
   let panel, statusDot, statusText, statTotal, statSuccess, statFailed, statRemaining;
   let progressFill, progressText, btnStart, btnStop, logsContainer, currentCodeEl;
   let callbacks = { onStart: null, onStop: null };
@@ -352,7 +335,6 @@
     logsContainer = panel.querySelector('.grd-logs');
     currentCodeEl = panel.querySelector('.grd-current-code');
 
-    // Drag
     let isDragging = false,
       startX,
       startY,
@@ -387,7 +369,6 @@
       logsContainer.innerHTML = '';
     });
 
-    // Subscribe — dùng chrome.storage.onChanged (chỉ hoạt động trong content script)
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area === 'local' && changes.centralState) {
         const newState = changes.centralState.newValue;
@@ -504,7 +485,6 @@
     render(state);
   }
 
-  // ===== REDEEM CONTROLLER =====
   let controller = null;
 
   class RedeemController {
@@ -606,7 +586,6 @@
         if (this.abortFlag) return { result: CODE_STATES.CANCELLED, reason: 'CANCELLED' };
         try {
           const result = await this.redeemSingle(code);
-          // TIMEOUT không retry — là state riêng
           if (result.result === CODE_STATES.TIMEOUT) {
             return result;
           }
@@ -644,8 +623,6 @@
       setValue(input, code);
       await sleep(80);
 
-      // Click the button — waitForCapturedResponse handles the full wait (up to timeoutMs)
-      // Register waiter BEFORE click để không bỏ lỡ response nhanh
       const waiter = this.waitForCapturedResponse(CONFIG.timeoutMs);
       let clicked = false;
 
@@ -655,13 +632,12 @@
         console.log('[Redeem] Click attempt', submitTry);
         clickRedeem(submitBtn);
         clicked = true;
-        // Kiểm tra response đã có chưa (trường hợp response quá nhanh)
         const existing = getLastResponse();
         if (existing) {
           console.log('[Redeem] Response captured during click delay');
           break;
         }
-        await sleep(200); // small delay to let page process before response arrives
+        await sleep(200);
       }
 
       if (!clicked) {
@@ -728,9 +704,7 @@
           result: CODE_STATES.TIMEOUT,
           reason: parsed.reason,
         });
-        // TIMEOUT không tính vào failed stat
       } else if (parsed.result === CODE_STATES.CANCELLED) {
-        // CANCELLED — giữ nguyên status (user pause)
       }
       const log = {
         id: generateId(),
@@ -775,8 +749,6 @@
     const href = button.getAttribute('href');
     const isJsUrl = href && href.toLowerCase().startsWith('javascript:');
 
-    // Nếu button là thẻ <a> có href="javascript:...", gỡ tạm href trước khi dispatch
-    // để tránh browser cố chạy JavaScript navigation vi phạm Extension CSP
     if (isJsUrl) {
       button.removeAttribute('href');
     }
@@ -800,7 +772,6 @@
     };
   }
 
-  // ===== BOOTSTRAP =====
   initDashboard();
   initRedeemController();
   console.log('[Garena Redeem] Dashboard + RedeemController initialized.');

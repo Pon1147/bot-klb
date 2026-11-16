@@ -1,4 +1,3 @@
-// ===== Pure Helper Functions =====
 function escapeHtml(s) {
   if (s == null) return '';
   return String(s)
@@ -37,7 +36,6 @@ function classifyCodes(state) {
   return { redeemed, dead, retryable, untested };
 }
 
-// ===== CONSTANTS =====
 const DEFAULT_CODES = [
   'DFCRLKAD84',
   'DFAMMO4284',
@@ -260,7 +258,6 @@ const CODE_STATUSES = Object.freeze({
   FAILED: 'FAILED',
 });
 
-// ===== STORAGE HELPERS =====
 function setCentralState(state) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.set({ centralState: state }, () => {
@@ -302,7 +299,6 @@ function createInitialState(codes) {
   };
 }
 
-// ===== UI =====
 const $ = (sel) => document.querySelector(sel);
 const codesInput = $('#codesInput');
 const btnSave = $('#btnSave');
@@ -311,14 +307,13 @@ const codeCounter = $('#codeCounter');
 const statusDot = $('#statusDot');
 const statusLabel = $('#statusLabel');
 
-// ===== PAGINATION & VIEW MODE ELEMENTS =====
 const PAGE_SIZE = 6;
-let currentViewMode = 'paged'; // 'paged' | 'raw'
+let currentViewMode = 'paged';
 let currentPage = 1;
 let currentCodes = [];
 let searchQuery = '';
 let statusFilter = 'ALL';
-const codeStatesMap = new Map(); // code -> { status, reason }
+const codeStatesMap = new Map();
 
 const codesSubtitle = $('#codesSubtitle');
 const btnModePaged = $('#btnModePaged');
@@ -439,7 +434,6 @@ function renderPaginatedCodes() {
     })
     .join('');
 
-  // Copy click handler
   codeCardsList.querySelectorAll('.code-copy-btn').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -458,7 +452,6 @@ function renderPaginatedCodes() {
     });
   });
 
-  // Update bottom pagination bar
   if (paginationInfo) {
     paginationInfo.textContent = `${start + 1} - ${end} / ${totalItems} mã`;
   }
@@ -491,7 +484,6 @@ function switchViewMode(mode) {
   }
 }
 
-// Event listeners for view mode & pagination
 btnModePaged?.addEventListener('click', () => switchViewMode('paged'));
 btnModeRaw?.addEventListener('click', () => switchViewMode('raw'));
 
@@ -530,10 +522,6 @@ codesFilterStatus?.addEventListener('change', (e) => {
   renderPaginatedCodes();
 });
 
-// ===== SITE DETECTION =====
-/**
- * Detect website hiện tại từ active tab URL → trả về 'playdeltaforce' | 'garena' | null
- */
 function detectSiteFromUrl(url) {
   if (!url) return null;
   if (url.includes('playdeltaforce.com')) return 'playdeltaforce';
@@ -541,10 +529,6 @@ function detectSiteFromUrl(url) {
   return null;
 }
 
-/**
- * Hiển thị/ẩn sections dựa trên site detected.
- * Chỉ show section phù hợp với website hiện tại.
- */
 function showSectionForSite(site) {
   const sections = document.querySelectorAll('[data-site]');
   sections.forEach((section) => {
@@ -557,9 +541,6 @@ function showSectionForSite(site) {
   });
 }
 
-/**
- * Load URL của tab đang active → detect site → show/hide sections.
- */
 async function initDynamicUI() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -575,14 +556,12 @@ async function initDynamicUI() {
   }
 }
 
-
-// ===== Render redeem summary =====
 function renderRedeemSummary() {
   chrome.storage.local.get('centralState', (result) => {
     const state = result.centralState;
     if (!state || !Array.isArray(state.codeStates)) {
       renderPaginatedCodes();
-      return; // chưa có redeem run
+      return;
     }
 
     updateCodeStatesMap(state);
@@ -596,7 +575,6 @@ function renderRedeemSummary() {
     document.getElementById('summaryRetryable').textContent = retryable.length;
     document.getElementById('summaryUntested').textContent = untested.length;
 
-    // Show code lists
     const redeemedSection = document.getElementById('redeemedCodesSection');
     const deadSection = document.getElementById('deadCodesSection');
     const retryableSection = document.getElementById('retryableCodesSection');
@@ -625,15 +603,12 @@ function renderRedeemSummary() {
       retryableSection.style.display = 'none';
     }
 
-    // Update status header
     updateStatusHeader();
   });
 }
 
-// ===== INIT: load từ storage + detect site =====
 initDynamicUI();
 chrome.storage.local.get(['redeem_codes'], (result) => {
-  // Load codes
   const storedCodes = Array.isArray(result.redeem_codes) ? result.redeem_codes : [];
   const mergedCodes = [...new Set([...DEFAULT_CODES, ...storedCodes])];
   const codes = mergedCodes;
@@ -646,14 +621,12 @@ chrome.storage.local.get(['redeem_codes'], (result) => {
   } else {
     codesInput.value = DEFAULT_CODES.join('\n');
   }
-  // Render redeem summary & pagination
   renderRedeemSummary();
   renderPaginatedCodes();
   updateCodeCounter();
   updateStatusHeader();
 });
 
-// ===== CODE COUNTER =====
 codesInput.addEventListener('input', updateCodeCounter);
 
 function updateCodeCounter() {
@@ -665,7 +638,6 @@ function updateCodeCounter() {
   codeCounter.textContent = lines.length + (lines.length === 1 ? ' code' : ' codes');
 }
 
-// ===== STATUS HEADER =====
 function updateStatusHeader() {
   chrome.storage.local.get('centralState', (result) => {
     if (!statusDot || !statusLabel) return;
@@ -688,7 +660,6 @@ function updateStatusHeader() {
   });
 }
 
-// ===== SAVE CODES =====
 btnSave.addEventListener('click', async () => {
   const raw = codesInput.value.trim();
   if (!raw) {
@@ -709,17 +680,14 @@ btnSave.addEventListener('click', async () => {
     return;
   }
 
-  // Save codes to redeem_codes key
   await saveCodes(codes);
   currentCodes = codes;
   console.log('[Popup] Codes saved:', codes.length);
 
-  // Reset session: new sessionId, reset stats/logs, status = READY
   const newState = createInitialState(codes);
   await setCentralState(newState);
   console.log('[Popup] CentralState set, status:', newState.status, 'total:', newState.stats.total);
 
-  // Re-render summary & pagination
   renderRedeemSummary();
   renderPaginatedCodes();
   updateCodeCounter();
@@ -732,7 +700,6 @@ btnSave.addEventListener('click', async () => {
   }, 1500);
 });
 
-// Shortcut: Ctrl+S / Cmd+S để lưu nhanh codes trong textarea
 codesInput.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
     e.preventDefault();
@@ -740,7 +707,6 @@ codesInput.addEventListener('keydown', (e) => {
   }
 });
 
-// ===== RESET TO DEFAULT (KHÔNG auto-save) =====
 btnReset.addEventListener('click', () => {
   if (!confirm('Reset về codes mặc định?')) return;
   currentCodes = [...DEFAULT_CODES];
@@ -753,7 +719,6 @@ btnReset.addEventListener('click', () => {
   }, 1500);
 });
 
-// ===== HƯỚNG DẪN / GUIDE BUTTON =====
 document.getElementById('openWelcomeBtn')?.addEventListener('click', (e) => {
   e.preventDefault();
   e.stopPropagation();
