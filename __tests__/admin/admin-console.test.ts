@@ -8,9 +8,20 @@ import {
 import {
   buildAdminConsoleContainer,
   buildAdminConsoleFooterRow,
+  buildAdminEditorColorModal,
+  buildAdminEditorHeaderModal,
+  buildAdminEditorLinesModal,
+  buildAdminEditorMediaModal,
   buildChannelConfigView,
+  buildContainerEditorView,
+  buildNoticesHubView,
   buildRolesConfigView,
 } from '../../src/features/admin/admin-console.builder.js';
+import {
+  getAdminEditorSession,
+  setAdminEditorSession,
+  deleteAdminEditorSession,
+} from '../../src/features/admin/admin-console.session.js';
 import {
   handleAdminConsoleButton,
   handleAdminConsoleSelect,
@@ -136,13 +147,13 @@ describe('Admin Console V2 (Dashboard)', () => {
       expect(statusText).toContain('🟢 Đang Bật');
       expect(statusText).toContain('MB • 0987654321');
 
-      // Toggle button đang ở trạng thái Bật
-      const toggleSection = inner.find(
-        (s: any) => s.accessory?.custom_id?.startsWith('admin_console:welcome_toggle'),
+      // Section Hub Thông Báo Tự Động (gộp welcome, leave, booster)
+      const noticesSection = inner.find(
+        (s: any) => s.accessory?.custom_id?.startsWith('admin_console:notices_hub'),
       );
-      expect(toggleSection).toBeDefined();
-      expect(toggleSection.accessory.label).toContain('Đang Bật');
-      expect(toggleSection.accessory.style).toBe(ButtonStyle.Success);
+      expect(noticesSection).toBeDefined();
+      expect(noticesSection.accessory.label).toContain('Cấu Hình Hub');
+      expect(noticesSection.accessory.style).toBe(ButtonStyle.Secondary);
     });
 
     it('Render chính xác khi tắt welcome và chưa cấu hình role/vietqr', () => {
@@ -162,11 +173,11 @@ describe('Admin Console V2 (Dashboard)', () => {
       expect(statusText).toContain('Chưa đặt kênh');
       expect(statusText).toContain('Chưa cài đặt');
 
-      const toggleSection = inner.find(
-        (s: any) => s.accessory?.custom_id?.startsWith('admin_console:welcome_toggle'),
+      const noticesSection = inner.find(
+        (s: any) => s.accessory?.custom_id?.startsWith('admin_console:notices_hub'),
       );
-      expect(toggleSection.accessory.label).toContain('Đang Tắt');
-      expect(toggleSection.accessory.style).toBe(ButtonStyle.Secondary);
+      expect(noticesSection).toBeDefined();
+      expect(noticesSection.accessory.style).toBe(ButtonStyle.Secondary);
     });
 
     it('Triệt tiêu lỗi @vai-trò-chưa-rõ khi role hoặc channel bị xóa khỏi máy chủ', () => {
@@ -199,11 +210,11 @@ describe('Admin Console V2 (Dashboard)', () => {
 
       // Section 0 là Refresh (Secondary)
       expect(sections[0].accessory.style).toBe(ButtonStyle.Secondary);
-      // Các Section cấu hình: Roles, DF Codes, Welcome Channel, VietQR (đều Secondary)
+      // Các Section cấu hình: Roles, DF Codes, Notices Hub, VietQR (đều Secondary)
       const configSections = sections.filter((s: any) =>
         s.accessory?.custom_id?.startsWith('admin_console:roles:') ||
         s.accessory?.custom_id?.startsWith('admin_console:code_channel:') ||
-        s.accessory?.custom_id?.startsWith('admin_console:welcome_channel:') ||
+        s.accessory?.custom_id?.startsWith('admin_console:notices_hub:') ||
         s.accessory?.custom_id?.startsWith('admin_console:vietqr:'),
       );
       expect(configSections).toHaveLength(4);
@@ -223,13 +234,27 @@ describe('Admin Console V2 (Dashboard)', () => {
   });
 
   describe('Builder: buildAdminConsoleFooterRow', () => {
-    it('Tạo ActionRow footer với 3 nút chức năng', () => {
+    it('Tạo ActionRow footer với các nút chức năng (không trùng custom_id với Container)', () => {
       const row = buildAdminConsoleFooterRow('caller-1', 'vi');
       const components = row.components;
-      expect(components).toHaveLength(3);
+      expect(components).toHaveLength(2);
       expect(components[0].data.label).toContain('/df help');
-      expect(components[1].data.label).toContain('Thử Nghiệm');
-      expect(components[2].data.style).toBe(ButtonStyle.Link);
+      expect(components[1].data.style).toBe(ButtonStyle.Link);
+
+      // Đảm bảo không trùng bất kỳ custom_id nào với Container chính
+      const containerResult = buildAdminConsoleContainer(mockGuild, mockSettings, 'caller-1', 'vi');
+      const containerJson = containerResult.toJSON() as any[];
+      const containerCustomIds = containerJson[0].components
+        .map((c: any) => c.accessory?.custom_id)
+        .filter(Boolean);
+
+      const footerCustomIds = components
+        .map((c: any) => c.data?.custom_id)
+        .filter(Boolean);
+
+      for (const id of footerCustomIds) {
+        expect(containerCustomIds).not.toContain(id);
+      }
     });
   });
 
@@ -576,6 +601,278 @@ describe('Admin Console V2 (Dashboard)', () => {
           flags: MessageFlags.Ephemeral,
         }),
       );
+    });
+
+    it('Cập nhật thuộc tính lines từ Modal editor_lines và update live preview', async () => {
+      const interaction: any = {
+        customId: 'admin_console_modal:editor_lines:welcome:user-caller',
+        guild: mockGuild,
+        user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(false) },
+        fields: {
+          getTextInputValue: jest.fn().mockReturnValue('Dòng mới 1\nDòng mới 2'),
+        },
+        isFromMessage: jest.fn().mockReturnValue(true),
+        update: jest.fn().mockResolvedValue({}),
+      };
+
+      const res = await handleAdminConsoleModal(interaction);
+      expect(res.handled).toBe(true);
+      expect(interaction.update).toHaveBeenCalled();
+      const session = getAdminEditorSession('user-caller');
+      expect(session?.draft.contentLines).toEqual(['Dòng mới 1', 'Dòng mới 2']);
+    });
+
+    it('Cập nhật header template từ Modal editor_header', async () => {
+      const interaction: any = {
+        customId: 'admin_console_modal:editor_header:welcome:user-caller',
+        guild: mockGuild,
+        user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(false) },
+        fields: {
+          getTextInputValue: jest.fn().mockReturnValue('Header Mới {user}'),
+        },
+        isFromMessage: jest.fn().mockReturnValue(true),
+        update: jest.fn().mockResolvedValue({}),
+      };
+
+      const res = await handleAdminConsoleModal(interaction);
+      expect(res.handled).toBe(true);
+      const session = getAdminEditorSession('user-caller');
+      expect(session?.draft.headerTemplate).toBe('Header Mới {user}');
+    });
+
+    it('Cập nhật màu viền từ Modal editor_color', async () => {
+      const interaction: any = {
+        customId: 'admin_console_modal:editor_color:welcome:user-caller',
+        guild: mockGuild,
+        user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(false) },
+        fields: {
+          getTextInputValue: jest.fn().mockReturnValue('#FF00AA'),
+        },
+        isFromMessage: jest.fn().mockReturnValue(true),
+        update: jest.fn().mockResolvedValue({}),
+      };
+
+      const res = await handleAdminConsoleModal(interaction);
+      expect(res.handled).toBe(true);
+      const session = getAdminEditorSession('user-caller');
+      expect(session?.draft.accentColor).toBe(0xff00aa);
+    });
+
+    it('Cập nhật media URL và mô tả từ Modal editor_media', async () => {
+      const interaction: any = {
+        customId: 'admin_console_modal:editor_media:welcome:user-caller',
+        guild: mockGuild,
+        user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(false) },
+        fields: {
+          getTextInputValue: jest.fn((id: string) => {
+            if (id === 'media_url') return 'https://example.com/image.png';
+            if (id === 'media_description') return 'Ảnh đại diện máy chủ';
+            return '';
+          }),
+        },
+        isFromMessage: jest.fn().mockReturnValue(true),
+        update: jest.fn().mockResolvedValue({}),
+      };
+
+      const res = await handleAdminConsoleModal(interaction);
+      expect(res.handled).toBe(true);
+      const session = getAdminEditorSession('user-caller');
+      expect(session?.draft.mediaUrl).toBe('https://example.com/image.png');
+      expect(session?.draft.mediaDescription).toBe('Ảnh đại diện máy chủ');
+    });
+  });
+
+  describe('Builder & Handlers: Automated Notices Hub & Live Preview Editor', () => {
+    it('buildNoticesHubView: tạo giao diện quản lý thông báo Tab welcome đầy đủ', () => {
+      const view = buildNoticesHubView(mockGuild, mockSettings, 'welcome', 'user-caller', 'vi');
+      expect(view.flags).toBe(MessageFlags.IsComponentsV2);
+      expect(view.components).toHaveLength(5); // Container + Tabs + ChannelSelect + RoleSelect + ActionRow
+
+      const tabsRow = view.components[1];
+      expect(tabsRow.components).toHaveLength(3);
+      expect(tabsRow.components[0].style).toBe(ButtonStyle.Primary); // Tab active
+      expect(tabsRow.components[1].style).toBe(ButtonStyle.Secondary);
+      expect(tabsRow.components[2].style).toBe(ButtonStyle.Secondary);
+
+      // RoleSelectMenu có mặt cho tab welcome
+      const roleSelectRow = view.components[3];
+      expect(roleSelectRow.components[0].custom_id).toBe('admin_console_select:notice_role_welcome:user-caller');
+
+      // ActionRow chứa 5 nút
+      const actionRow = view.components[4];
+      expect(actionRow.components).toHaveLength(5);
+    });
+
+    it('buildNoticesHubView: tạo giao diện Tab leave (không có RoleSelectMenu)', () => {
+      const view = buildNoticesHubView(mockGuild, mockSettings, 'leave', 'user-caller', 'vi');
+      expect(view.components).toHaveLength(4); // Container + Tabs + ChannelSelect + ActionRow (không có RoleSelect)
+      const actionRow = view.components[3];
+      expect(actionRow.components).toHaveLength(5);
+    });
+
+    it('buildContainerEditorView: tạo giao diện Live Preview kèm các nút công cụ', () => {
+      const draft = mockSettings.welcome.container;
+      const editorView = buildContainerEditorView(draft, 'welcome', 'user-caller', 'vi');
+      expect(editorView.flags).toBe(MessageFlags.IsComponentsV2);
+      expect(editorView.components.length).toBeGreaterThanOrEqual(3); // Preview Container + PropsRow + ActionsRow
+    });
+
+    it('Xây dựng các Modal builder cho Container editor', () => {
+      const linesModal = buildAdminEditorLinesModal('welcome', 'user-caller', ['Line 1', 'Line 2']);
+      expect(linesModal.data.title).toContain('welcome');
+
+      const headerModal = buildAdminEditorHeaderModal('welcome', 'user-caller', 'Header text');
+      expect(headerModal.data.title).toContain('welcome');
+
+      const colorModal = buildAdminEditorColorModal('welcome', 'user-caller', 0x5865f2);
+      expect(colorModal.data.title).toContain('welcome');
+
+      const mediaModal = buildAdminEditorMediaModal('welcome', 'user-caller', 'https://example.com/pic.png', 'Alt text');
+      expect(mediaModal.data.title).toContain('welcome');
+    });
+
+    it('Handler Button: Mở Hub thông báo (notices_hub) và chuyển tab', async () => {
+      const interaction: any = {
+        customId: 'admin_console:notices_hub:user-caller',
+        guild: mockGuild,
+        user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(false) },
+        update: jest.fn().mockResolvedValue({}),
+      };
+
+      const res = await handleAdminConsoleButton(interaction);
+      expect(res.handled).toBe(true);
+      expect(interaction.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          flags: MessageFlags.IsComponentsV2,
+        }),
+      );
+
+      // Chuyển sang tab leave
+      interaction.customId = 'admin_console:tab_leave:user-caller';
+      const resLeave = await handleAdminConsoleButton(interaction);
+      expect(resLeave.handled).toBe(true);
+    });
+
+    it('Handler Button: Toggle trạng thái thông báo và gỡ kênh', async () => {
+      const interaction: any = {
+        customId: 'admin_console:toggle_notice_welcome:user-caller',
+        guild: mockGuild,
+        user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(false) },
+        update: jest.fn().mockResolvedValue({}),
+      };
+
+      const resToggle = await handleAdminConsoleButton(interaction);
+      expect(resToggle.handled).toBe(true);
+      expect(interaction.update).toHaveBeenCalled();
+
+      // Gỡ kênh
+      interaction.customId = 'admin_console:reset_notice_chan_welcome:user-caller';
+      const resReset = await handleAdminConsoleButton(interaction);
+      expect(resReset.handled).toBe(true);
+      expect(interaction.update).toHaveBeenCalled();
+    });
+
+    it('Handler Button: Khởi tạo Live Preview Editor (edit_container_welcome)', async () => {
+      const interaction: any = {
+        customId: 'admin_console:edit_container_welcome:user-caller',
+        guild: mockGuild,
+        user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(false) },
+        update: jest.fn().mockResolvedValue({}),
+      };
+
+      const res = await handleAdminConsoleButton(interaction);
+      expect(res.handled).toBe(true);
+      expect(interaction.update).toHaveBeenCalled();
+      const session = getAdminEditorSession('user-caller');
+      expect(session).toBeDefined();
+      expect(session?.type).toBe('welcome');
+    });
+
+    it('Handler Button: Thao tác Editor (bật tắt separator, reset default, save, cancel)', async () => {
+      setAdminEditorSession('user-caller', {
+        guildId: 'guild-123',
+        type: 'welcome',
+        draft: { ...mockSettings.welcome.container, showSeparator: false },
+        lastInteractionAt: Date.now(),
+      });
+
+      const interaction: any = {
+        customId: 'admin_console:editor_sep:welcome:user-caller',
+        guild: mockGuild,
+        user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(false) },
+        update: jest.fn().mockResolvedValue({}),
+      };
+
+      // Toggle separator
+      await handleAdminConsoleButton(interaction);
+      expect(getAdminEditorSession('user-caller')?.draft.showSeparator).toBe(true);
+
+      // Reset default
+      interaction.customId = 'admin_console:editor_reset:welcome:user-caller';
+      await handleAdminConsoleButton(interaction);
+      expect(interaction.update).toHaveBeenCalled();
+
+      // Save
+      interaction.customId = 'admin_console:editor_save:welcome:user-caller';
+      await handleAdminConsoleButton(interaction);
+      expect(getAdminEditorSession('user-caller')).toBeUndefined(); // Session đã xóa sau save
+
+      // Cancel
+      setAdminEditorSession('user-caller', {
+        guildId: 'guild-123',
+        type: 'welcome',
+        draft: { ...mockSettings.welcome.container },
+        lastInteractionAt: Date.now(),
+      });
+      interaction.customId = 'admin_console:editor_cancel:welcome:user-caller';
+      await handleAdminConsoleButton(interaction);
+      expect(getAdminEditorSession('user-caller')).toBeUndefined();
+    });
+
+    it('Handler Select: Chọn kênh thông báo và chọn vai trò tự động gán', async () => {
+      const chanInteraction: any = {
+        customId: 'admin_console_select:notice_chan_welcome:user-caller',
+        guild: mockGuild,
+        user: { id: 'user-caller' },
+        values: ['123456789012345678'],
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(false) },
+        update: jest.fn().mockResolvedValue({}),
+      };
+
+      const resChan = await handleAdminConsoleSelect(chanInteraction);
+      expect(resChan.handled).toBe(true);
+      expect(chanInteraction.update).toHaveBeenCalled();
+
+      const roleInteraction: any = {
+        customId: 'admin_console_select:notice_role_welcome:user-caller',
+        guild: mockGuild,
+        user: { id: 'user-caller' },
+        values: ['111111111111111111'],
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(false) },
+        update: jest.fn().mockResolvedValue({}),
+      };
+
+      const resRole = await handleAdminConsoleSelect(roleInteraction);
+      expect(resRole.handled).toBe(true);
+      expect(roleInteraction.update).toHaveBeenCalled();
     });
   });
 });

@@ -37,6 +37,9 @@ function classifyCodes(state) {
 }
 
 const DEFAULT_CODES = [
+  'DFWKLUCK95',
+  'DFTRBS1294',
+  'DFVNL5T8M2K9',
   'DFCRLKAD84',
   'DFAMMO4284',
   'DFVN2Q9C7X4N',
