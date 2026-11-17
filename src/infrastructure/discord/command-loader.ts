@@ -1,5 +1,12 @@
 import type { APIApplicationCommand, ChatInputCommandInteraction } from 'discord.js';
-import { Collection, REST, Routes, SlashCommandBuilder } from 'discord.js';
+import {
+  ApplicationIntegrationType,
+  Collection,
+  InteractionContextType,
+  REST,
+  Routes,
+  SlashCommandBuilder,
+} from 'discord.js';
 import { readdirSync, statSync } from 'fs';
 import path from 'path';
 import { botConfig } from '../../config/bot.config.js';
@@ -204,6 +211,10 @@ export function formatCommandForEnvironment(
     commandData && typeof (commandData as { toJSON?: () => unknown }).toJSON === 'function'
       ? ((commandData as { toJSON: () => unknown }).toJSON() as Record<string, unknown>)
       : (JSON.parse(JSON.stringify(commandData)) as Record<string, unknown>);
+
+  // Khóa cứng phạm vi: Chỉ cho phép cài vào Guild (GuildInstall), cấm UserInstall vào profile cá nhân
+  raw.integration_types = [ApplicationIntegrationType.GuildInstall];
+  raw.contexts = [InteractionContextType.Guild];
 
   if (!isDev) return raw;
 
@@ -428,7 +439,7 @@ export async function deployCommands(
       skipped: diff.unchanged,
     });
 
-    // Nếu deploy Global và có guildId cấu hình, dọn dẹp các Guild commands cũ để tránh lỗi duplicate commands
+    // Tự động dọn dẹp phạm vi đối nghịch để chống vĩnh viễn lỗi duplicate commands
     if (isGlobal && botConfig.guildId && botConfig.guildId !== '000000000000000000') {
       try {
         const guildRoute = Routes.applicationGuildCommands(botConfig.clientId, botConfig.guildId);
@@ -438,6 +449,21 @@ export async function deployCommands(
         );
       } catch (cleanError) {
         logger.debug('Không cần dọn dẹp hoặc không có quyền dọn guild commands:', {
+          error: cleanError,
+        });
+      }
+    } else if (!isGlobal) {
+      try {
+        const globalRoute = Routes.applicationCommands(botConfig.clientId);
+        const existingGlobal = (await rest.get(globalRoute)) as APIApplicationCommand[];
+        if (existingGlobal.length > 0) {
+          await rest.put(globalRoute, { body: [] });
+          logger.info(
+            `✓ Đã dọn dẹp ${existingGlobal.length} global commands cũ của Bot để chống duplicate với Guild commands.`,
+          );
+        }
+      } catch (cleanError) {
+        logger.debug('Không cần dọn dẹp hoặc không có quyền dọn global commands:', {
           error: cleanError,
         });
       }
