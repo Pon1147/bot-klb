@@ -494,7 +494,7 @@ describe('Admin Console V2 (Dashboard)', () => {
       expect(interaction.showModal).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            custom_id: 'admin_console_modal:vietqr:user-caller',
+            custom_id: 'admin_console_modal:vietqr:guild-123:user-caller',
           }),
         }),
       );

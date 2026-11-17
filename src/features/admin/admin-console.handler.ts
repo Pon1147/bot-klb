@@ -458,7 +458,7 @@ export async function handleAdminConsoleButton(
   if (action === 'vietqr') {
     const currentSettings = settingsService.get(guild.id);
     const modal = new ModalBuilder()
-      .setCustomId(`admin_console_modal:vietqr:${callerUserId}`)
+      .setCustomId(`admin_console_modal:vietqr:${guild.id}:${callerUserId}`)
       .setTitle(isEn ? 'Configure VietQR Banking' : 'Cài Đặt Nhận Tiền VietQR');
 
     const bankInput = new TextInputBuilder()
