@@ -1,4 +1,5 @@
 import {
+  AnySelectMenuInteraction,
   AutocompleteInteraction,
   ButtonInteraction,
   ChatInputCommandInteraction,
@@ -36,6 +37,11 @@ import {
 import { handleMarketAutocomplete } from '../../features/delta-force/market.handler.js';
 import { handleHelpSelect } from '../../features/delta-force/help.handler.js';
 import {
+  handleAdminConsoleButton,
+  handleAdminConsoleSelect,
+  handleAdminConsoleModal,
+} from '../../features/admin/admin-console.handler.js';
+import {
   isPaymentButton,
   isPaymentModal,
   isFeedbackRateButton,
@@ -67,6 +73,9 @@ async function handleButton(interaction: ButtonInteraction): Promise<void> {
     }
     return;
   }
+
+  // Admin Console buttons
+  if ((await handleAdminConsoleButton(interaction, interaction.client?.database)).handled) return;
 
   // Team-find buttons (map/mode/done/join)
   if ((await handleTeamFindButton(interaction)).handled) return;
@@ -116,6 +125,13 @@ async function handleStringSelectMenu(
  * Handle modal submit interactions.
  */
 async function handleModalSubmit(interaction: ModalSubmitInteraction): Promise<void> {
+  // Admin Console modals (VietQR, etc.)
+  if (
+    (await handleAdminConsoleModal(interaction, (interaction.client as Client)?.database)).handled
+  ) {
+    return;
+  }
+
   if (interaction.customId.startsWith(ContainerModalPrefix)) {
     await handleContainerEditorModalSubmit(interaction);
     return;
@@ -147,7 +163,7 @@ async function handleModalSubmit(interaction: ModalSubmitInteraction): Promise<v
 export async function sendInteractionErrorFallback(
   interaction:
     | ButtonInteraction
-    | StringSelectMenuInteraction
+    | AnySelectMenuInteraction
     | ChatInputCommandInteraction
     | ModalSubmitInteraction,
   message = 'Đã xảy ra lỗi khi xử lý tương tác này.',
@@ -362,7 +378,7 @@ export async function routeInteraction(
   client: Client,
   interaction:
     | ButtonInteraction
-    | StringSelectMenuInteraction
+    | AnySelectMenuInteraction
     | ChatInputCommandInteraction
     | ModalSubmitInteraction,
 ): Promise<void> {
@@ -405,9 +421,25 @@ export async function routeInteraction(
       return;
     }
 
-    // ── 1b. String Select Menu Interactions ──
-    if (interaction.isStringSelectMenu()) {
-      await handleStringSelectMenu(client, interaction);
+    // ── 1b. Select Menu Interactions (Any: String, Channel, Role, etc.) ──
+    const isAnySelect =
+      typeof interaction.isAnySelectMenu === 'function'
+        ? interaction.isAnySelectMenu()
+        : typeof (interaction as any).isStringSelectMenu === 'function' &&
+          (interaction as any).isStringSelectMenu();
+
+    if (isAnySelect) {
+      if (
+        (await handleAdminConsoleSelect(interaction as AnySelectMenuInteraction, client.database))
+          .handled
+      )
+        return;
+      if (
+        typeof (interaction as any).isStringSelectMenu === 'function' &&
+        (interaction as any).isStringSelectMenu()
+      ) {
+        await handleStringSelectMenu(client, interaction as StringSelectMenuInteraction);
+      }
       return;
     }
 

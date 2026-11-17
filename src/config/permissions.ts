@@ -185,6 +185,7 @@ export const Policy = {
 // ─── Command Path → Policy Mapping (PHASE 4) ──────────────────────
 
 export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
+  admin: Policy.MANAGE_CONFIG,
   'config.roles.set': Policy.MANAGE_RBAC,
   'config.roles.view': Policy.MANAGE_RBAC,
   'config.bot.guilds': Policy.BOT_OWNER,
