@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { data as configData } from '../src/features/admin/config.command.js';
+import { data as adminData } from '../src/features/admin/admin.command.js';
 import { data as dfData } from '../src/features/delta-force/df.command.js';
 import { data as payData } from '../src/features/payment/pay.command.js';
 import { data as donateData } from '../src/features/payment/donate.command.js';
@@ -12,7 +13,7 @@ import { BOT_VERSION, EXTENSION_VERSION } from '../src/config/version.js';
 import { COMMAND_PATH_POLICIES } from '../src/config/permissions.js';
 
 export function generateCommandCatalogMarkdown(): string {
-  const allBuilders = [configData, dfData, payData, donateData, teamData];
+  const allBuilders = [configData, adminData, dfData, payData, donateData, teamData];
   const parsedCommands = extractCommandPathsFromBuilders(allBuilders);
 
   const lines: string[] = [

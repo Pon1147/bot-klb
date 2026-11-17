@@ -1,11 +1,11 @@
 # Danh Mục Lệnh Chuẩn — Bot Delta (Ground Truth Command Catalog)
 
-> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v1.14.0**
+> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v1.14.1**
 > *Mọi AI Assistant và lập trình viên bắt buộc tuân theo tài liệu này. Không tự suy diễn cú pháp hay tham số.*
 
 ## 1. Thống Kê Tổng Quan
 
-- **Tổng số lệnh thực thi**: `55` subcommands.
+- **Tổng số lệnh thực thi**: `56` subcommands.
 - **Nhóm lệnh**: `/df`, `/team`, `/pay`, `/donate`, `/config`.
 
 ## 2. Bảng Tra Cứu Lệnh Chi Tiết
@@ -40,6 +40,7 @@
 | `/config vietqr status` | Xem thông tin tài khoản nhận tiền VietQR hiện tại của máy chủ. | View current receiving bank account details and payment status. | `MANAGE_CONFIG` | *Không có* |
 | `/config vietqr preview` | Tạo mã QR thanh toán thử nghiệm để quét kiểm tra số tài khoản. | Generate a sample VietQR code to preview and test bank scanning. | `MANAGE_CONFIG` | `amount` |
 | `/config vietqr reset` | Gỡ bỏ và xóa toàn bộ thông tin tài khoản ngân hàng VietQR của máy chủ. | Remove and reset all VietQR banking account configuration. | `GUILD_OWNER` | *Không có* |
+| `/admin` | Mở Bảng Điều Khiển Server (Admin Console V2) tương tác 1-chạm. | *(Admin / Internal)* | `MANAGE_CONFIG` | *Không có* |
 | `/df link` | Liên kết tài khoản Delta Force HQ và nhận tiện ích mở rộng DF Toolbox. | Link your Delta Force HQ account and get DF Toolbox extension. | `DF_ACCESS` | *Không có* |
 | `/df stats` | Xuất thẻ căn cước chiến binh (K/D, tỉ lệ rút quân, cấp bậc, số trận) & menu đổi mùa giải. | Display combat identity card (K/D, extraction rate, rank tier, matches) & season selector. | `DF_ACCESS` | *Không có* |
 | `/df daily` | Báo cáo tổng hợp hiệu suất tác chiến trong ngày hôm nay. | Comprehensive summary report of your combat performance today. | `DF_ACCESS` | *Không có* |
