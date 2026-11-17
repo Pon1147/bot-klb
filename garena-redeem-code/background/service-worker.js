@@ -35,14 +35,18 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'DF_CLAIM') {
     (async () => {
       try {
-        const storageData = await chrome.storage.local.get(['consent_version', 'consent_granted_at']);
+        const storageData = await chrome.storage.local.get([
+          'consent_version',
+          'consent_granted_at',
+        ]);
         const { consent_version, consent_granted_at } = storageData || {};
 
         if (!consent_granted_at || consent_version !== 'v1.0') {
           console.warn('[SW] Claim rejected: Missing user consent');
           sendResponse({
             ok: false,
-            error: 'Chưa có sự đồng thuận ủy quyền từ người dùng. Vui lòng xác nhận trước khi tiếp tục.',
+            error:
+              'Chưa có sự đồng thuận ủy quyền từ người dùng. Vui lòng xác nhận trước khi tiếp tục.',
           });
           return;
         }
@@ -53,13 +57,18 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           await chrome.storage.local.remove(['consent_granted_at']);
           sendResponse({
             ok: false,
-            error: 'Phiên đồng thuận đã hết hạn (quá 10 phút). Vui lòng xác nhận lại sự đồng thuận.',
+            error:
+              'Phiên đồng thuận đã hết hạn (quá 10 phút). Vui lòng xác nhận lại sự đồng thuận.',
           });
           return;
         }
 
-        const maskedOpenid = msg.credential?.openid ? `${msg.credential.openid.slice(0, 4)}***` : 'missing';
-        console.log(`[SW] Processing authorized claim: code=${msg.code ? msg.code.slice(0, 2) + '****' : 'missing'}, openid=${maskedOpenid}`);
+        const maskedOpenid = msg.credential?.openid
+          ? `${msg.credential.openid.slice(0, 4)}***`
+          : 'missing';
+        console.log(
+          `[SW] Processing authorized claim: code=${msg.code ? msg.code.slice(0, 2) + '****' : 'missing'}, openid=${maskedOpenid}`,
+        );
 
         const credential = msg.credential || {};
         const payload = {
@@ -99,7 +108,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         });
       } catch (e) {
         console.error('[SW] Error during authorized claim flow:', e);
-        sendResponse({ ok: false, error: 'Mạng không ổn định hoặc Bot API chưa sẵn sàng. Thử lại sau.' });
+        sendResponse({
+          ok: false,
+          error: 'Mạng không ổn định hoặc Bot API chưa sẵn sàng. Thử lại sau.',
+        });
       }
     })();
 

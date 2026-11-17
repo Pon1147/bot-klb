@@ -3,13 +3,8 @@
   "name": "DF Toolbox",
   "version": "1.9.4",
   "description": "Delta Force HQ credential bridge + Garena redeem codes",
-  "permissions": [
-    "storage",
-    "activeTab"
-  ],
-  "host_permissions": [
-    "https://bot-klb-production.up.railway.app/*"
-  ],
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["https://bot-klb-production.up.railway.app/*"],
   "background": {
     "service_worker": "background/service-worker.js"
   },
@@ -19,21 +14,13 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://redeem.df.garena.sg/*"
-      ],
-      "js": [
-        "content/content.js"
-      ],
+      "matches": ["https://redeem.df.garena.sg/*"],
+      "js": ["content/content.js"],
       "run_at": "document_idle"
     },
     {
-      "matches": [
-        "https://www.playdeltaforce.com/*"
-      ],
-      "js": [
-        "content/link-content.js"
-      ],
+      "matches": ["https://www.playdeltaforce.com/*"],
+      "js": ["content/link-content.js"],
       "run_at": "document_idle"
     }
   ],
@@ -44,22 +31,12 @@
   },
   "web_accessible_resources": [
     {
-      "resources": [
-        "content/dashboard.css",
-        "content/page-capture.js"
-      ],
-      "matches": [
-        "https://redeem.df.garena.sg/*"
-      ]
+      "resources": ["content/dashboard.css", "content/page-capture.js"],
+      "matches": ["https://redeem.df.garena.sg/*"]
     },
     {
-      "resources": [
-        "content/link-page-capture.js",
-        "content/dashboard.css"
-      ],
-      "matches": [
-        "https://www.playdeltaforce.com/*"
-      ]
+      "resources": ["content/link-page-capture.js", "content/dashboard.css"],
+      "matches": ["https://www.playdeltaforce.com/*"]
     }
   ]
 }

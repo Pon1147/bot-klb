@@ -1,6 +1,9 @@
 let extVersion = '1.9.4';
 try {
-  const manifest = typeof chrome !== 'undefined' && chrome?.runtime?.getManifest ? chrome.runtime.getManifest() : null;
+  const manifest =
+    typeof chrome !== 'undefined' && chrome?.runtime?.getManifest
+      ? chrome.runtime.getManifest()
+      : null;
   if (manifest?.version) {
     extVersion = manifest.version;
   }
@@ -11,13 +14,15 @@ const TRANSLATIONS = {
     page_title: 'Chào mừng cài đặt DF Toolbox — Hướng Dẫn Sử Dụng',
     badge_prefix: '🎉 CÀI ĐẶT THÀNH CÔNG · v',
     hero_title: 'Chào Mừng Bạn Đến Với <span>DF Toolbox</span>',
-    hero_desc: 'Tiện ích hỗ trợ tự động hóa Delta Force: Cầu nối liên kết tài khoản Discord, tra cứu thị trường thời gian thực và tự động nhập giftcode Garena siêu tốc.',
+    hero_desc:
+      'Tiện ích hỗ trợ tự động hóa Delta Force: Cầu nối liên kết tài khoản Discord, tra cứu thị trường thời gian thực và tự động nhập giftcode Garena siêu tốc.',
     tab_link: '1. Liên Kết Tài Khoản Bot',
     tab_redeem: '2. Tự Động Nhập Giftcode',
     tab_commands: '3. Danh Sách Lệnh Hot',
 
     link_step1_title: 'Lấy mã liên kết trên Discord',
-    link_step1_desc: 'Mở kênh Discord có <strong>Bot Delta</strong>, gõ lệnh <code>/df link</code> (hoặc <code>/df liên-kết</code> nếu Discord dùng tiếng Việt). Bot sẽ phản hồi riêng (chỉ bạn nhìn thấy) kèm mã Claim 6 ký tự (ví dụ: <code>TAKCGF</code>, hiệu lực 10 phút):',
+    link_step1_desc:
+      'Mở kênh Discord có <strong>Bot Delta</strong>, gõ lệnh <code>/df link</code> (hoặc <code>/df liên-kết</code> nếu Discord dùng tiếng Việt). Bot sẽ phản hồi riêng (chỉ bạn nhìn thấy) kèm mã Claim 6 ký tự (ví dụ: <code>TAKCGF</code>, hiệu lực 10 phút):',
     copy_btn: 'Sao chép',
     copied_btn: '✓ Đã chép!',
     copy_err: 'Lỗi copy!',
@@ -29,30 +34,39 @@ const TRANSLATIONS = {
     mock_embed_hint: 'Hãy mở trang web Delta Force HQ và nhập mã trên để hoàn tất.',
 
     link_step2_title: 'Đăng nhập trang sự kiện Delta Force HQ',
-    link_step2_desc: 'Truy cập trang web Delta Force HQ chính thức và tiến hành đăng nhập tài khoản Garena của bạn:',
+    link_step2_desc:
+      'Truy cập trang web Delta Force HQ chính thức và tiến hành đăng nhập tài khoản Garena của bạn:',
     link_step2_btn: 'Mở Delta Force HQ (Garena) ↗',
     mock_hq_login: '👤 Đăng Nhập Garena ✓',
 
     link_step3_title: 'Ủy quyền & Nhập mã trên tiện ích DF Toolbox',
-    link_step3_desc: 'Bảng tiện ích <strong>DF Toolbox</strong> sẽ hiển thị ở góc dưới bên phải màn hình. Tiện ích mặc định tắt hoàn toàn thu thập dữ liệu; bạn bấm <strong>Bắt đầu Ủy quyền</strong>, dán mã Claim, tick xác nhận đồng thuận và bấm <strong>Xác nhận & Liên kết</strong>:',
+    link_step3_desc:
+      'Bảng tiện ích <strong>DF Toolbox</strong> sẽ hiển thị ở góc dưới bên phải màn hình. Tiện ích mặc định tắt hoàn toàn thu thập dữ liệu; bạn bấm <strong>Bắt đầu Ủy quyền</strong>, dán mã Claim, tick xác nhận đồng thuận và bấm <strong>Xác nhận & Liên kết</strong>:',
     mock_panel_status: '✓ Đã phát hiện phiên Garena (OpenID: 1002•••)',
     mock_panel_btn: 'Xác nhận & Liên kết',
-    mock_panel_consent: '☑ Tôi đồng ý gửi thông tin phiên tới Bot để tra cứu stats cho đến khi gõ /df unlink.',
-    mock_panel_hint: '<strong>🛡️ An toàn & Minh bạch:</strong> Tuyệt đối không lưu mật khẩu. Token lưu trữ mã hóa AES-256-GCM và có thể hủy bất kỳ lúc nào qua /df unlink.',
-    tip_manual_link: '💡 <em>Mẹo: Bạn cũng có thể mở icon DF Toolbox trên thanh tiện ích Chrome để dán mã Claim thủ công bất cứ lúc nào.</em>',
+    mock_panel_consent:
+      '☑ Tôi đồng ý gửi thông tin phiên tới Bot để tra cứu stats cho đến khi gõ /df unlink.',
+    mock_panel_hint:
+      '<strong>🛡️ An toàn & Minh bạch:</strong> Tuyệt đối không lưu mật khẩu. Token lưu trữ mã hóa AES-256-GCM và có thể hủy bất kỳ lúc nào qua /df unlink.',
+    tip_manual_link:
+      '💡 <em>Mẹo: Bạn cũng có thể mở icon DF Toolbox trên thanh tiện ích Chrome để dán mã Claim thủ công bất cứ lúc nào.</em>',
 
     link_step4_title: 'Kiểm tra trạng thái & Trải nghiệm',
     link_step4_desc: 'Quay lại Discord và gõ lại <code>/df link</code> để kiểm tra trạng thái:',
-    link_success_note: '✅ Khi đã liên kết thành công, bạn sẽ xem được đầy đủ thống kê K/D, lịch sử trận đấu, sảnh đồ đỏ và bảng giá chợ Garena đồng bộ từ máy chủ Garena!',
+    link_success_note:
+      '✅ Khi đã liên kết thành công, bạn sẽ xem được đầy đủ thống kê K/D, lịch sử trận đấu, sảnh đồ đỏ và bảng giá chợ Garena đồng bộ từ máy chủ Garena!',
 
     redeem_step1_title: 'Ghim tiện ích lên thanh trình duyệt',
-    redeem_step1_desc: 'Nhấp vào biểu tượng <strong>Mảnh ghép (Extensions)</strong> ở góc trên bên phải Chrome, tìm <strong>DF Toolbox</strong> và bấm biểu tượng chiếc <strong>Ghim (Pin)</strong> để tiện sử dụng.',
+    redeem_step1_desc:
+      'Nhấp vào biểu tượng <strong>Mảnh ghép (Extensions)</strong> ở góc trên bên phải Chrome, tìm <strong>DF Toolbox</strong> và bấm biểu tượng chiếc <strong>Ghim (Pin)</strong> để tiện sử dụng.',
     redeem_step2_title: 'Lấy mã code hằng ngày từ Bot',
-    redeem_step2_desc: 'Bot tự động cào và cập nhật mật khẩu, mã code két sắt map mỗi sáng. Hãy dùng lệnh:',
+    redeem_step2_desc:
+      'Bot tự động cào và cập nhật mật khẩu, mã code két sắt map mỗi sáng. Hãy dùng lệnh:',
     redeem_step3_title: 'Mở trang nhập code & Bấm tự động',
     redeem_step3_desc1: 'Truy cập trang đổi mã quà tặng chính thức của Garena:',
     redeem_step3_btn: 'Mở Trang Đổi Code Garena ↗',
-    redeem_step3_desc2: 'Mở popup <strong>DF Toolbox</strong>, dán danh sách mã code vào ô văn bản và bấm <strong>Bắt đầu tự động nhập</strong>. Tiện ích sẽ xử lý từng mã và báo cáo trạng thái thành công/thất bại theo thời gian thực:',
+    redeem_step3_desc2:
+      'Mở popup <strong>DF Toolbox</strong>, dán danh sách mã code vào ô văn bản và bấm <strong>Bắt đầu tự động nhập</strong>. Tiện ích sẽ xử lý từng mã và báo cáo trạng thái thành công/thất bại theo thời gian thực:',
     mock_redeem_header: 'Tiện ích DF Toolbox — Auto Redeem',
     mock_redeem_status: '✓ Sẵn Sàng',
     mock_redeem_success1: 'Đã nhận quà thành công',
@@ -60,37 +74,49 @@ const TRANSLATIONS = {
     mock_redeem_pending: 'Đang tự động xử lý...',
     mock_redeem_btn: '▶ Bắt Đầu Tự Động Nhập (3/3)',
 
-    cmd_market: 'Tra cứu bàn chế tác, chi phí, nguyên liệu và giá chợ thị trường realtime (tự động phân biệt Garena/Global).',
-    cmd_stats: 'Xem thông số chiến đấu tổng quan: K/D, số giờ chơi, tỷ lệ rút quân an toàn & chuyển đổi mùa giải độc quyền.',
-    cmd_history: 'Xem lịch sử các trận chiến gần nhất, chiến lợi phẩm loot mang ra & thông số K/D từng trận.',
-    cmd_vault: 'Sảnh Triển Lãm Đồ Đỏ: Thống kê kho báu giá trị cao nhất, tổng tài sản Coin và bộ sưu tập đồ đỏ.',
-    cmd_map: 'Mô phỏng bản đồ 3D tương tác: vị trí két sắt, điểm loot tài nguyên & lối thoát hiểm an toàn.',
-    cmd_build: 'Thư viện build súng chuẩn Meta Garena, phân loại Hazard/Havoc và copy mã Gunsmith 1-chạm.',
+    cmd_market:
+      'Tra cứu bàn chế tác, chi phí, nguyên liệu và giá chợ thị trường realtime (tự động phân biệt Garena/Global).',
+    cmd_stats:
+      'Xem thông số chiến đấu tổng quan: K/D, số giờ chơi, tỷ lệ rút quân an toàn & chuyển đổi mùa giải độc quyền.',
+    cmd_history:
+      'Xem lịch sử các trận chiến gần nhất, chiến lợi phẩm loot mang ra & thông số K/D từng trận.',
+    cmd_vault:
+      'Sảnh Triển Lãm Đồ Đỏ: Thống kê kho báu giá trị cao nhất, tổng tài sản Coin và bộ sưu tập đồ đỏ.',
+    cmd_map:
+      'Mô phỏng bản đồ 3D tương tác: vị trí két sắt, điểm loot tài nguyên & lối thoát hiểm an toàn.',
+    cmd_build:
+      'Thư viện build súng chuẩn Meta Garena, phân loại Hazard/Havoc và copy mã Gunsmith 1-chạm.',
 
     footer_p1: 'Phát triển bởi đội ngũ Bot Delta & Delta Force Community.',
-    footer_p2: 'Dự án mã nguồn mở cộng đồng độc lập, không liên kết với Garena hoặc Level Infinite · Tuyệt đối không can thiệp hay lưu trữ mật khẩu/OTP.',
+    footer_p2:
+      'Dự án mã nguồn mở cộng đồng độc lập, không liên kết với Garena hoặc Level Infinite · Tuyệt đối không can thiệp hay lưu trữ mật khẩu/OTP.',
 
     legal_badge: '⚠️ MINH BẠCH PHÁP LÝ & BẢO MẬT',
     legal_tagline: 'Minh bạch 100% · Mã nguồn mở · Tự nguyện ủy quyền',
     legal_item1_title: 'Dự Án Độc Lập',
-    legal_item1_desc: 'Công cụ mã nguồn mở do cộng đồng phát triển, <strong>không liên kết hay được bảo trợ bởi TiMi, Level Infinite hoặc Garena</strong>.',
+    legal_item1_desc:
+      'Công cụ mã nguồn mở do cộng đồng phát triển, <strong>không liên kết hay được bảo trợ bởi TiMi, Level Infinite hoặc Garena</strong>.',
     legal_item2_title: 'Không Đọc Mật Khẩu',
-    legal_item2_desc: 'Tiện ích <strong>tuyệt đối không can thiệp hay lưu mật khẩu/OTP</strong>. Chỉ mã hóa phiên (AES-256-GCM) khi bạn chủ động nhấn Bắt đầu Ủy quyền.',
+    legal_item2_desc:
+      'Tiện ích <strong>tuyệt đối không can thiệp hay lưu mật khẩu/OTP</strong>. Chỉ mã hóa phiên (AES-256-GCM) khi bạn chủ động nhấn Bắt đầu Ủy quyền.',
     legal_item3_title: 'Toàn Quyền Kiểm Soát',
-    legal_item3_desc: 'Chạy cục bộ, mã unpacked kiểm tra trực tiếp. Bạn có thể hủy liên kết và xóa sạch dữ liệu bất kỳ lúc nào qua lệnh <code>/df unlink</code>.',
+    legal_item3_desc:
+      'Chạy cục bộ, mã unpacked kiểm tra trực tiếp. Bạn có thể hủy liên kết và xóa sạch dữ liệu bất kỳ lúc nào qua lệnh <code>/df unlink</code>.',
     legal_link: 'Xem đầy đủ Chính Sách Quyền Riêng Tư (Privacy Policy) ↗',
   },
   en: {
     page_title: 'Welcome to DF Toolbox — User Guide & Setup',
     badge_prefix: '🎉 INSTALLATION SUCCESSFUL · v',
     hero_title: 'Welcome to <span>DF Toolbox</span>',
-    hero_desc: 'Delta Force automation utility: Discord account link bridge, real-time market tracker, and high-speed Garena gift code auto-redeemer.',
+    hero_desc:
+      'Delta Force automation utility: Discord account link bridge, real-time market tracker, and high-speed Garena gift code auto-redeemer.',
     tab_link: '1. Link Bot Account',
     tab_redeem: '2. Auto Redeem Giftcode',
     tab_commands: '3. Hot Commands List',
 
     link_step1_title: 'Get authentication link code on Discord',
-    link_step1_desc: 'Open any Discord channel with <strong>Bot Delta</strong> and run <code>/df link</code>. The bot will send an ephemeral message (only visible to you) with a 6-character Claim code (e.g. <code>TAKCGF</code>, valid for 10 minutes):',
+    link_step1_desc:
+      'Open any Discord channel with <strong>Bot Delta</strong> and run <code>/df link</code>. The bot will send an ephemeral message (only visible to you) with a 6-character Claim code (e.g. <code>TAKCGF</code>, valid for 10 minutes):',
     copy_btn: 'Copy',
     copied_btn: '✓ Copied!',
     copy_err: 'Copy error!',
@@ -107,25 +133,33 @@ const TRANSLATIONS = {
     mock_hq_login: '👤 Garena Login ✓',
 
     link_step3_title: 'Authorize & Enter code in DF Toolbox extension',
-    link_step3_desc: 'The <strong>DF Toolbox</strong> panel appears in the bottom-right corner. All collection is disabled by default; click <strong>Start Authorization</strong>, paste your Claim code, check explicit consent, and click <strong>Confirm & Link</strong>:',
+    link_step3_desc:
+      'The <strong>DF Toolbox</strong> panel appears in the bottom-right corner. All collection is disabled by default; click <strong>Start Authorization</strong>, paste your Claim code, check explicit consent, and click <strong>Confirm & Link</strong>:',
     mock_panel_status: '✓ Garena session detected (OpenID: 1002•••)',
     mock_panel_btn: 'Confirm & Link',
-    mock_panel_consent: '☑ I agree to send session info to Bot for stats lookup until I run /df unlink.',
-    mock_panel_hint: '<strong>🛡️ Secure & Transparent:</strong> Zero password storage. Tokens are AES-256-GCM encrypted and revokable anytime via /df unlink.',
-    tip_manual_link: '💡 <em>Tip: You can also click the DF Toolbox icon in Chrome toolbar to paste your Claim code manually anytime.</em>',
+    mock_panel_consent:
+      '☑ I agree to send session info to Bot for stats lookup until I run /df unlink.',
+    mock_panel_hint:
+      '<strong>🛡️ Secure & Transparent:</strong> Zero password storage. Tokens are AES-256-GCM encrypted and revokable anytime via /df unlink.',
+    tip_manual_link:
+      '💡 <em>Tip: You can also click the DF Toolbox icon in Chrome toolbar to paste your Claim code manually anytime.</em>',
 
     link_step4_title: 'Verify Status & Enjoy',
     link_step4_desc: 'Return to Discord and run <code>/df link</code> to verify status:',
-    link_success_note: '✅ Once linked successfully, you can view your full K/D stats, match history, red vault showcase, and live Garena market prices synchronized from Garena servers!',
+    link_success_note:
+      '✅ Once linked successfully, you can view your full K/D stats, match history, red vault showcase, and live Garena market prices synchronized from Garena servers!',
 
     redeem_step1_title: 'Pin extension to browser toolbar',
-    redeem_step1_desc: 'Click the <strong>Puzzle icon (Extensions)</strong> at the top right of Chrome, find <strong>DF Toolbox</strong>, and click the <strong>Pin</strong> icon for easy access.',
+    redeem_step1_desc:
+      'Click the <strong>Puzzle icon (Extensions)</strong> at the top right of Chrome, find <strong>DF Toolbox</strong>, and click the <strong>Pin</strong> icon for easy access.',
     redeem_step2_title: 'Get daily codes from Bot',
-    redeem_step2_desc: 'The bot automatically scrapes and updates daily safe vault passwords every morning. Use command:',
+    redeem_step2_desc:
+      'The bot automatically scrapes and updates daily safe vault passwords every morning. Use command:',
     redeem_step3_title: 'Open redemption page & Click auto-redeem',
     redeem_step3_desc1: 'Visit the official Garena gift code redemption page:',
     redeem_step3_btn: 'Open Garena Redeem Page ↗',
-    redeem_step3_desc2: 'Open <strong>DF Toolbox</strong> popup, paste your list of codes into the text area, and click <strong>Start Auto-Redeem</strong>. The extension processes each code and reports real-time success/failure status:',
+    redeem_step3_desc2:
+      'Open <strong>DF Toolbox</strong> popup, paste your list of codes into the text area, and click <strong>Start Auto-Redeem</strong>. The extension processes each code and reports real-time success/failure status:',
     mock_redeem_header: 'DF Toolbox Extension — Auto Redeem',
     mock_redeem_status: '✓ Ready',
     mock_redeem_success1: 'Reward redeemed successfully',
@@ -133,26 +167,35 @@ const TRANSLATIONS = {
     mock_redeem_pending: 'Processing automatically...',
     mock_redeem_btn: '▶ Start Auto-Redeem (3/3)',
 
-    cmd_market: 'Look up crafting bench recipes, costs, materials, and real-time market prices (auto Garena/Global).',
-    cmd_stats: 'View overall combat identity: K/D, playtime, extraction rate, and exclusive season switcher.',
+    cmd_market:
+      'Look up crafting bench recipes, costs, materials, and real-time market prices (auto Garena/Global).',
+    cmd_stats:
+      'View overall combat identity: K/D, playtime, extraction rate, and exclusive season switcher.',
     cmd_history: 'View recent match history, extracted loot value, and per-match combat K/D.',
-    cmd_vault: 'Red Vault Showcase: High-value treasure collection, total Coin valuation, and red item showcase.',
-    cmd_map: 'Interactive 3D map simulator: safe vault locations, resource loot spots, and extraction points.',
-    cmd_build: 'Garena meta weapon build library, categorized by Hazard/Havoc with 1-click Gunsmith copy.',
+    cmd_vault:
+      'Red Vault Showcase: High-value treasure collection, total Coin valuation, and red item showcase.',
+    cmd_map:
+      'Interactive 3D map simulator: safe vault locations, resource loot spots, and extraction points.',
+    cmd_build:
+      'Garena meta weapon build library, categorized by Hazard/Havoc with 1-click Gunsmith copy.',
 
     footer_p1: 'Developed by Bot Delta Team & Delta Force Community.',
-    footer_p2: 'Independent open-source community project, not affiliated with Garena or Level Infinite · Zero password or OTP storage.',
+    footer_p2:
+      'Independent open-source community project, not affiliated with Garena or Level Infinite · Zero password or OTP storage.',
 
     legal_badge: '⚠️ LEGAL COMPLIANCE & PRIVACY NOTICE',
     legal_tagline: '100% Transparent · Open Source · On-Demand Opt-In',
     legal_item1_title: 'Independent Project',
-    legal_item1_desc: 'Open-source community tool, <strong>not affiliated with, endorsed by, or sponsored by TiMi, Level Infinite, or Garena</strong>.',
+    legal_item1_desc:
+      'Open-source community tool, <strong>not affiliated with, endorsed by, or sponsored by TiMi, Level Infinite, or Garena</strong>.',
     legal_item2_title: 'Zero Password Storage',
-    legal_item2_desc: 'The tool <strong>never accesses or stores passwords or OTPs</strong>. Session is encrypted (AES-256-GCM) only when you explicitly click Start Authorization.',
+    legal_item2_desc:
+      'The tool <strong>never accesses or stores passwords or OTPs</strong>. Session is encrypted (AES-256-GCM) only when you explicitly click Start Authorization.',
     legal_item3_title: 'Full User Control',
-    legal_item3_desc: 'Runs locally with auditable unpacked code. You can revoke and purge your linked data at any time via <code>/df unlink</code>.',
+    legal_item3_desc:
+      'Runs locally with auditable unpacked code. You can revoke and purge your linked data at any time via <code>/df unlink</code>.',
     legal_link: 'View full Privacy Policy & Disclaimers ↗',
-  }
+  },
 };
 
 let currentLang = 'vi';
