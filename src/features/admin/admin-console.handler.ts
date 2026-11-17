@@ -667,12 +667,13 @@ export async function handleAdminConsoleModal(
     const existingVietQr = settingsService.get(guild.id).vietqr;
     settingsService.update(guild.id, {
       vietqr: {
+        ...existingVietQr,
         enabled: true,
         bankId,
         accountNo,
-        accountName: accountName ?? null,
+        accountName: accountName ?? existingVietQr?.accountName ?? null,
         prefix: existingVietQr?.prefix ?? 'NAP',
-        template: existingVietQr?.template ?? 'compact',
+        template: existingVietQr?.template ?? 'compact2',
       },
     });
 

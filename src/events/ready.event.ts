@@ -83,10 +83,10 @@ export async function execute(client: Client): Promise<void> {
     );
   }
 
-  // Tự động dọn dẹp các guild mồ côi không còn kết nối với bot
-  if (process.env.NODE_ENV !== 'test') {
-    pruneOrphanGuilds(client);
-  }
+  // TUYỆT ĐỐI KHÔNG tự động xóa guild trên startup:
+  // Discord gateway kết nối bất đồng bộ và guild cache có thể chưa tải xong hoặc shard đang delay.
+  // Việc tự động xóa trên startup sẽ làm mất vĩnh viễn cấu hình máy chủ (đặc biệt khi dev/prod chạy song song hoặc restart container).
+  // Việc dọn dẹp cấu hình chỉ kích hoạt khi bot nhận event rời máy chủ thực tế (guildDelete.event.ts).
 
   logger.divider();
 }
