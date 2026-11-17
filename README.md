@@ -1,12 +1,12 @@
 # Delta Bot (`bot-klb`) — Discord Bot
 
-[![Version](https://img.shields.io/badge/version-1.14.1-informational.svg)](#)
+[![Version](https://img.shields.io/badge/version-1.15.0-informational.svg)](#)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D22.12.0-brightgreen.svg)](https://nodejs.org/)
 [![Discord.js](https://img.shields.io/badge/discord.js-v14-blue.svg)](https://discord.js.org/)
 [![Architecture](https://img.shields.io/badge/architecture-vertical--slice-orange.svg)](#kiến-trúc-dự-án)
 [![TypeScript](https://img.shields.io/badge/typescript-5.x-blue.svg)](https://www.typescriptlang.org/)
 
-Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và quản trị máy chủ Discord, tích hợp **Discord Components V2**, **Hỗ trợ Song ngữ Tự động (i18n: Tiếng Việt ⟷ English)**, cào mật khẩu hằng ngày tự động, dashboard thống kê đồ họa chất lượng cao, thư viện Gunsmith meta, bản đồ 3D tương tác, tiện ích **DF Toolbox Extension (v1.9.4)** tự động nhập giftcode Garena, thanh toán hóa đơn VietQR động & cổng quyên góp PayOS, cùng cơ chế liên kết tài khoản game bảo mật bằng AES-256-GCM.
+Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và quản trị máy chủ Discord, tích hợp **Discord Components V2**, **Hỗ trợ Song ngữ Tự động (i18n: Tiếng Việt ⟷ English)**, cào mật khẩu hằng ngày tự động, dashboard thống kê đồ họa chất lượng cao, thư viện Gunsmith meta, bản đồ 3D tương tác, tiện ích **DF Toolbox Extension (v1.10.0)** tự động nhập giftcode Garena, thanh toán hóa đơn VietQR động & cổng quyên góp PayOS, cùng cơ chế liên kết tài khoản game bảo mật bằng AES-256-GCM.
 
 ---
 
@@ -33,7 +33,7 @@ Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và
   - Người dùng có thể hủy liên kết và xóa dữ liệu bất kỳ lúc nào qua `/df unlink`.
 - **Trung Tâm Trợ Giúp Đa Ngữ (`/df help`)**: Bảng cẩm nang 6 trang tích hợp điều hướng Components V2, tự động thích ứng ngôn ngữ client (`vi` hoặc `en`), kèm nút tải tiện ích mở rộng **DF Toolbox Extension**.
 
-### 2. Tiện Ích Trình Duyệt: DF Toolbox Extension (v1.9.4)
+### 2. Tiện Ích Trình Duyệt: DF Toolbox Extension (v1.10.0)
 
 - **Auto Redeem Giftcode Garena**: Tự động hóa quá trình nhập danh sách hàng trăm mã giftcode Delta Force trên trang đổi quà Garena CDK, tự bypass CSP và nhận diện kết quả tự động.
 - **Floating Dashboard trực quan**: Gắn bảng điều khiển trực tiếp trên giao diện web đổi quà, hiển thị tiến độ, nhật ký, số mã thành công/thất bại theo thời gian thực.
@@ -50,7 +50,14 @@ Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và
 - **Lịch sử & BXH Chi tiêu (`/pay history` & `/pay top`)**: Tra cứu lịch sử thanh toán cá nhân và vinh danh Top người ủng hộ server.
 - **Quyên góp Duy trì Bot (`/donate`)**: Tạo link thanh toán PayOS ủng hộ chi phí vận hành máy chủ bot một cách minh bạch.
 
-### 5. Quản trị Server Tập trung (`/config`)
+### 5. Bảng Điều Khiển Server Tập Trung (`/admin`)
+
+- **Giao diện Dashboard 1-chạm (Discord Components V2)**: Quản lý toàn bộ tính năng bot trên một tin nhắn duy nhất, loại bỏ hoàn toàn việc phải gõ các lệnh rườm rà.
+- **In-Place Transition mượt mà**: Chuyển đổi linh hoạt giữa Dashboard chính và các màn hình con cấu hình (Gán quyền RBAC, Đặt kênh chào mừng, Đặt kênh mật mã DF, Cài VietQR) trực tiếp bằng Select Menu và Button.
+- **Bảo mật & Phân quyền RBAC**: Cơ chế User Isolation bảo vệ chống thao tác chéo; phân cấp rõ ràng giữa Bot Admin (toàn quyền) và Moderator (quản lý mật mã & duyệt đơn).
+- **Công tắc thông minh**: Bật/tắt các luồng thông báo tự động chỉ bằng 1 nút bấm mà không làm mất cấu hình đã lưu.
+
+### 6. Quản trị Cấu hình Nâng cao (`/config`)
 
 - **RBAC per-guild (`/config roles`)**: Thiết lập phân quyền chi tiết cho Bot Admin, Moderator và Member theo từng server.
 - **Cấu hình VietQR & Workflow (`/config vietqr`)**: Thiết lập số tài khoản ngân hàng nhận tiền, role nhân viên duyệt đơn, và kênh gửi đánh giá dịch vụ.
@@ -71,6 +78,7 @@ Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và
 
 | Lệnh (Slash Command) | Quyền hạn | Mô tả chức năng |
 | :--- | :--- | :--- |
+| `/admin` | Server Owner / Admin | Mở Bảng Điều Khiển Server (Admin Console V2) tương tác 1-chạm. |
 | `/config roles set` | Server Owner / Admin | Thiết lập vai trò quản trị phân quyền RBAC (Admin, Mod, Member). |
 | `/config roles view` | Server Owner / Admin | Xem cấu hình phân quyền vai trò hiện tại của máy chủ. |
 | `/config welcome setchannel` | Quản trị viên | Chọn kênh gửi tin nhắn chào mừng thành viên mới. |

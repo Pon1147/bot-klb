@@ -1,6 +1,6 @@
 {
   "name": "discord-bot-klb",
-  "version": "1.14.1",
+  "version": "1.15.0",
   "description": "Discord Bot - Exclusive Server Bot",
   "main": "dist/index.js",
   "scripts": {
@@ -21,6 +21,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "deploy:guild": "tsx scripts/deploy-commands.ts",
+    "deploy:global": "tsx scripts/deploy-commands.ts --global",
     "docs:generate": "tsx scripts/generate-command-docs.ts",
     "test:mongo": "tsx scripts/test-mongo.ts",
     "package:extension": "tsx scripts/package-extension.ts",

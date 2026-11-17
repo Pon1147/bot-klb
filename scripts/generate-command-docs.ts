@@ -25,7 +25,7 @@ export function generateCommandCatalogMarkdown(): string {
     '## 1. Thống Kê Tổng Quan',
     '',
     `- **Tổng số lệnh thực thi**: \`${parsedCommands.length}\` subcommands.`,
-    `- **Nhóm lệnh**: \`/df\`, \`/team\`, \`/pay\`, \`/donate\`, \`/config\`.`,
+    `- **Nhóm lệnh**: \`/admin\`, \`/df\`, \`/team\`, \`/pay\`, \`/donate\`, \`/config\`.`,
     '',
     '## 2. Bảng Tra Cứu Lệnh Chi Tiết',
     '',
@@ -59,7 +59,7 @@ export function generateCommandCatalogMarkdown(): string {
 }
 
 export function generateReadmeCommandsTable(): string {
-  const allBuilders = [configData, dfData, payData, donateData, teamData];
+  const allBuilders = [adminData, configData, dfData, payData, donateData, teamData];
   const parsedCommands = extractCommandPathsFromBuilders(allBuilders);
 
   const lines: string[] = [
@@ -77,7 +77,7 @@ export function generateReadmeCommandsTable(): string {
       cmd.path.startsWith('config.qr-server.')
     ) {
       policyLabel = 'Bot Owner';
-    } else if (policy === 'MANAGE_RBAC') {
+    } else if (policy === 'MANAGE_RBAC' || cmd.path === 'admin') {
       policyLabel = 'Server Owner / Admin';
     } else if (policy === 'MANAGE_CONFIG' || policy === 'MANAGE_DF_CODE') {
       policyLabel = 'Quản trị viên';

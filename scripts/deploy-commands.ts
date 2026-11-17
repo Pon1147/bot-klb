@@ -10,11 +10,16 @@ import { createLogger } from '../src/utils/logger.js';
 const logger = createLogger('DeployScript');
 
 async function main() {
+  const isGlobalFlag = process.argv.includes('--global') || process.env.COMMAND_SCOPE === 'global';
+  if (isGlobalFlag) {
+    botConfig.commandScope = 'global';
+  }
+
   const targetGuildId = botConfig.isDev
     ? (botConfig.devGuildId || botConfig.guildId)
     : botConfig.guildId;
   logger.info(`Starting command deployment...`);
-  logger.info(`Target Guild ID: ${targetGuildId}`);
+  logger.info(`Target Guild ID: ${isGlobalFlag ? 'N/A (Global)' : targetGuildId}`);
   logger.info(`Command Scope: ${botConfig.commandScope}`);
 
   const commands = new Collection<string, CommandModule>();
