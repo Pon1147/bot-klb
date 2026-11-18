@@ -18,6 +18,7 @@ import {
   buildKeoVipRolesView,
   buildNoticesHubView,
   buildRolesConfigView,
+  buildVietQrWorkflowView,
 } from '../../src/features/admin/admin-console.builder.js';
 import {
   getAdminEditorSession,
@@ -313,7 +314,18 @@ describe('Admin Console V2 (Dashboard)', () => {
       // Button row
       expect(view.components[4].components[0].custom_id).toBe('admin_console:back:user-caller');
       expect(view.components[4].components[1].custom_id).toBe('admin_console:keo_vip:user-caller');
-      expect(view.components[4].components[2].custom_id).toBe('admin_console:reset_keo:user-caller');
+      expect(view.components[4].components[2].custom_id).toBe('admin_console:vietqr_workflow:user-caller');
+      expect(view.components[4].components[3].custom_id).toBe('admin_console:reset_keo:user-caller');
+    });
+
+    it('buildVietQrWorkflowView: tạo giao diện cài đặt VietQR Payment Workflow và Feedback', () => {
+      const view = buildVietQrWorkflowView(mockGuild, mockSettings, 'user-caller', 'vi');
+      expect(view.flags).toBe(MessageFlags.IsComponentsV2);
+      expect(view.components).toHaveLength(4);
+      expect(view.components[0].components[0].content).toContain('Quy Trình Thanh Toán & Đánh Giá VietQR');
+      expect(view.components[1].components[0].custom_id).toBe('admin_console_select:vietqr_feedback:user-caller');
+      expect(view.components[2].components[0].custom_id).toBe('admin_console_select:vietqr_staff:user-caller');
+      expect(view.components[3].components[0].custom_id).toBe('admin_console:keo:user-caller');
     });
 
     it('buildKeoVipRolesView: tạo giao diện cài đặt Role Lão Bản 3 cấp độ VIP', () => {

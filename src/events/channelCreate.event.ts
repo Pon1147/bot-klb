@@ -20,8 +20,16 @@ export async function execute(_client: Client, channel: GuildChannel): Promise<v
   const settings = settingsService.get(guild.id);
   const keoConfig = settings.keo;
 
+  const channelName = channel.name.toLowerCase();
+
   // Nếu chưa cấu hình category ticket hoặc channel không thuộc category đó -> bỏ qua
-  if (!keoConfig?.ticketCategoryId || channel.parentId !== keoConfig.ticketCategoryId) {
+  // Guard: Phải có chữ 'ticket' trong tên kênh và không trùng kênh bắn đơn
+  if (
+    !keoConfig?.ticketCategoryId ||
+    channel.parentId !== keoConfig.ticketCategoryId ||
+    !channelName.includes('ticket') ||
+    channel.id === keoConfig.dispatchChannelId
+  ) {
     return;
   }
 

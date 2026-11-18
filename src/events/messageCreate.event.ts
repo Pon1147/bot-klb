@@ -24,7 +24,17 @@ export async function execute(client: Client, message: Message): Promise<void> {
       try {
         const settingsService = getSettingsService();
         const settings = settingsService.get(message.guild.id);
-        if (settings.keo?.ticketCategoryId === parentId) {
+        const keoConfig = settings.keo;
+        const channelName =
+          'name' in message.channel ? (message.channel.name as string).toLowerCase() : '';
+
+        // Guard: Chỉ gửi nếu thuộc ticketCategoryId, tên kênh có chứa 'ticket' và KHÔNG phải kênh bắn đơn
+        if (
+          keoConfig?.ticketCategoryId &&
+          keoConfig.ticketCategoryId === parentId &&
+          channelName.includes('ticket') &&
+          message.channelId !== keoConfig.dispatchChannelId
+        ) {
           const db = client.database;
           if (db) {
             const existingOrder = getActiveKeoOrderByTicket(db, message.channelId);

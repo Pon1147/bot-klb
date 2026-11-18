@@ -815,25 +815,44 @@ export function buildKeoConfigView(
   const t2Tag = resolveRoleTag(guild, keo?.tier2RoleId, isEn);
   const t3Tag = resolveRoleTag(guild, keo?.tier3RoleId, isEn);
 
+  const hasVietQr = Boolean(settings.vietqr?.bankId && settings.vietqr?.accountNo);
+  const hasDispatch = Boolean(keo?.dispatchChannelId);
+  const hasWorker = Boolean(keo?.workerRoleId);
+  const hasCategory = Boolean(keo?.ticketCategoryId);
+
+  const checklistText = isEn
+    ? `### 📋 Setup Workflow Checklist\n` +
+      `> ${hasVietQr ? '🟢' : '🔴'} **Step 1: VietQR Banking**: ${hasVietQr ? 'Configured' : '*Missing (Needed for payments)*'}\n` +
+      `> ${hasDispatch ? '🟢' : '🔴'} **Step 2: Dispatch Channel**: ${dispatchTag}\n` +
+      `> ${hasWorker ? '🟢' : '🔴'} **Step 3: Worker Role**: ${workerRoleTag}\n` +
+      `> ${hasCategory ? '🟢' : '🟡'} **Step 4: Ticket Category**: ${categoryTag}\n` +
+      `> 💡 **Step 5: Ticket Naming**: Configure ticket bot naming as \`ticket-%username%\``
+    : `### 📋 Quy Trình Thiết Lập (Workflow Checklist)\n` +
+      `> ${hasVietQr ? '🟢' : '🔴'} **Bước 1: Tài khoản VietQR**: ${hasVietQr ? 'Đã cài đặt' : '*Chưa cài (Cần để xuất mã QR thanh toán)*'}\n` +
+      `> ${hasDispatch ? '🟢' : '🔴'} **Bước 2: Kênh Bắn Kèo**: ${dispatchTag}\n` +
+      `> ${hasWorker ? '🟢' : '🔴'} **Bước 3: Vai Trò Thợ Kéo**: ${workerRoleTag}\n` +
+      `> ${hasCategory ? '🟢' : '🟡'} **Bước 4: Nhóm Category Ticket**: ${categoryTag}\n` +
+      `> 💡 **Bước 5: Định Dạng Kênh Ticket**: Cấu hình ticket bot định dạng \`ticket-%username%\``;
+
   const title = isEn ? '# 💎 Delta Force Carry Service Setup' : '# 💎 Cấu Hình Dịch Vụ Kéo Lão Bản';
 
   const desc = isEn
-    ? `> **🎯 Dispatch Channel (Required)**: ${dispatchTag}\n` +
+    ? `${checklistText}\n\n` +
+      `> **🎯 Dispatch Channel (Required)**: ${dispatchTag}\n` +
       `> *Channel where available carry orders are posted for workers to claim.*\n` +
       `> **📁 Ticket Category (Filter)**: ${categoryTag}\n` +
       `> *Only tickets created under this category trigger carry dispatch cards.*\n` +
       `> **🛠️ Worker Role (Required)**: ${workerRoleTag}\n` +
       `> *Members with this role are authorized to claim orders.*\n` +
-      `> **👑 VIP Roles (Optional)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}\n\n` +
-      `> 💡 *Note: Set ticket naming to \`ticket-%username%\` in your ticket bot to accurately detect customers.*`
-    : `> **🎯 Kênh Bắn Kèo (Bắt buộc)**: ${dispatchTag}\n` +
+      `> **👑 VIP Roles (Optional)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}`
+    : `${checklistText}\n\n` +
+      `> **🎯 Kênh Bắn Kèo (Bắt buộc)**: ${dispatchTag}\n` +
       `> *Kênh bot hiển thị thẻ đơn kéo để thợ theo dõi và bấm nhận.*\n` +
       `> **📁 Nhóm Kênh Ticket (Lọc)**: ${categoryTag}\n` +
       `> *Chỉ ticket tạo trong nhóm này mới kích hoạt hiển thị đơn kéo.*\n` +
       `> **🛠️ Vai Trò Thợ Kéo (Bắt buộc)**: ${workerRoleTag}\n` +
       `> *Thành viên có vai trò này mới được quyền bấm nhận đơn.*\n` +
-      `> **👑 Role Lão Bản VIP (Tùy chọn)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}\n\n` +
-      `> 💡 *Lưu ý: Hãy cấu hình ticket bot định dạng tên kênh là \`ticket-%username%\` để bot nhận diện chuẩn Lão Bản.*`;
+      `> **👑 Role Lão Bản VIP (Tùy chọn)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}`;
 
   const containerJson = {
     type: ComponentType.Container,
@@ -898,7 +917,11 @@ export function buildKeoConfigView(
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId(`admin_console:keo_vip:${callerUserId}`)
-      .setLabel(isEn ? '👑 Configure VIP Roles' : '👑 Cài Role Lão Bản (VIP)')
+      .setLabel(isEn ? '👑 VIP Roles' : '👑 Role Lão Bản (VIP)')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`admin_console:vietqr_workflow:${callerUserId}`)
+      .setLabel(isEn ? '⭐ Feedback Channel' : '⭐ Kênh Đánh Giá 5 Sao')
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId(`admin_console:reset_keo:${callerUserId}`)
@@ -1021,6 +1044,127 @@ export function buildKeoVipRolesView(
       t1SelectRow.toJSON(),
       t2SelectRow.toJSON(),
       t3SelectRow.toJSON(),
+      buttonRow.toJSON(),
+    ],
+    flags: MessageFlags.IsComponentsV2,
+  };
+}
+
+/**
+ * Xây dựng màn hình cài đặt VietQR Payment Workflow & Feedback 5 sao (In-Place Transition).
+ */
+export function buildVietQrWorkflowView(
+  guild: Guild,
+  settings: GuildSettings,
+  callerUserId: string,
+  locale: SupportedLocale = 'vi',
+): { components: any[]; flags: number } {
+  const isEn = locale === 'en';
+  const vqr = settings.vietqr;
+
+  const feedbackChanTag =
+    resolveChannelTag(guild, vqr?.feedbackChannelId) ??
+    (isEn ? '*Not configured (private reply only)*' : '*Chưa đặt kênh (chỉ gửi riêng cho khách)*');
+  const staffRoleTag = resolveRoleTag(guild, vqr?.staffRoleId, isEn);
+  const ratingStatus =
+    vqr?.enableRating !== false
+      ? isEn
+        ? '🟢 Enabled'
+        : '🟢 Đang Bật'
+      : isEn
+        ? '🔴 Disabled'
+        : '🔴 Đang Tắt';
+
+  const title = isEn
+    ? '# ⚙️ VietQR Workflow & Feedback Setup'
+    : '# ⚙️ Quy Trình Thanh Toán & Đánh Giá VietQR';
+
+  const desc = isEn
+    ? `> **⭐ Feedback Channel**: ${feedbackChanTag}\n` +
+      `> *Channel where 1–5 star customer reviews and thank-you notes are posted publicly.*\n` +
+      `> **🛡️ Staff Role (Approver)**: ${staffRoleTag}\n` +
+      `> *Authorized staff role to confirm/cancel payments in addition to Server Owner.*\n` +
+      `> **⭐ Star Ratings**: ${ratingStatus}\n` +
+      `> *Show 1–5 star rating buttons after order completion.*`
+    : `> **⭐ Kênh Nhận Đánh Giá 5 Sao**: ${feedbackChanTag}\n` +
+      `> *Kênh bot tự động gửi thông báo cảm ơn và vinh danh đánh giá sao từ khách.*\n` +
+      `> **🛡️ Vai Trò Nhân Viên Duyệt Đơn**: ${staffRoleTag}\n` +
+      `> *Vai trò nhân viên/thợ được quyền duyệt tiền và hủy đơn ngoài Chủ Server.*\n` +
+      `> **⭐ Đánh Giá 1–5 Sao**: ${ratingStatus}\n` +
+      `> *Hiển thị 5 nút đánh giá sao cho khách sau khi hoàn tất đơn.*`;
+
+  const containerJson = {
+    type: ComponentType.Container,
+    components: [
+      {
+        type: ComponentType.TextDisplay,
+        content: title,
+      },
+      {
+        type: ComponentType.Separator,
+        accentColor: COLORS.DF,
+      },
+      {
+        type: ComponentType.TextDisplay,
+        content: desc,
+      },
+    ],
+  };
+
+  const feedbackSelectRow = new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(
+    new ChannelSelectMenuBuilder()
+      .setCustomId(`admin_console_select:vietqr_feedback:${callerUserId}`)
+      .setPlaceholder(
+        isEn
+          ? '⭐ Select channel to receive 5-star customer feedback...'
+          : '⭐ Chọn kênh nhận tin nhắn đánh giá 5 sao từ khách...',
+      )
+      .setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+      .setMinValues(1)
+      .setMaxValues(1),
+  );
+
+  const staffSelectRow = new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(
+    new RoleSelectMenuBuilder()
+      .setCustomId(`admin_console_select:vietqr_staff:${callerUserId}`)
+      .setPlaceholder(
+        isEn
+          ? '🛡️ Select Staff role authorized to approve/cancel orders...'
+          : '🛡️ Chọn vai trò Nhân Viên được quyền duyệt tiền/hủy đơn...',
+      )
+      .setMinValues(1)
+      .setMaxValues(1),
+  );
+
+  const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`admin_console:keo:${callerUserId}`)
+      .setLabel(isEn ? '◀ Back to Carry Setup' : '◀ Quay Lại Cài Đặt Kéo')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`admin_console:vietqr_toggle_rating:${callerUserId}`)
+      .setLabel(
+        vqr?.enableRating !== false
+          ? isEn
+            ? '⭐ Disable Ratings'
+            : '⭐ Tắt Đánh Giá'
+          : isEn
+            ? '⭐ Enable Ratings'
+            : '⭐ Bật Đánh Giá',
+      )
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`admin_console:reset_vietqr_workflow:${callerUserId}`)
+      .setLabel(isEn ? '🗑️ Reset Workflow' : '🗑️ Gỡ Cấu Hình')
+      .setStyle(ButtonStyle.Danger)
+      .setDisabled(!vqr?.feedbackChannelId && !vqr?.staffRoleId),
+  );
+
+  return {
+    components: [
+      containerJson,
+      feedbackSelectRow.toJSON(),
+      staffSelectRow.toJSON(),
       buttonRow.toJSON(),
     ],
     flags: MessageFlags.IsComponentsV2,

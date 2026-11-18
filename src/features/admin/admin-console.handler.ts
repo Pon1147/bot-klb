@@ -25,6 +25,7 @@ import {
   buildKeoVipRolesView,
   buildNoticesHubView,
   buildRolesConfigView,
+  buildVietQrWorkflowView,
   NoticeType,
 } from './admin-console.builder.js';
 import {
@@ -251,6 +252,36 @@ export async function handleAdminConsoleButton(
   if (action === 'keo_vip') {
     const currentSettings = settingsService.get(guild.id);
     const view = buildKeoVipRolesView(guild, currentSettings, callerUserId, locale);
+    await interaction.update(view);
+    return { handled: true };
+  }
+
+  // 1.6. Nhóm Cấu Hình VietQR Workflow & Feedback 5 sao
+  if (action === 'vietqr_workflow') {
+    const currentSettings = settingsService.get(guild.id);
+    const view = buildVietQrWorkflowView(guild, currentSettings, callerUserId, locale);
+    await interaction.update(view);
+    return { handled: true };
+  }
+
+  if (action === 'vietqr_toggle_rating') {
+    const currentSettings = settingsService.get(guild.id);
+    const currentVal = currentSettings.vietqr?.enableRating !== false;
+    settingsService.update(guild.id, {
+      vietqr: { enableRating: !currentVal },
+    });
+    const freshSettings = settingsService.get(guild.id);
+    const view = buildVietQrWorkflowView(guild, freshSettings, callerUserId, locale);
+    await interaction.update(view);
+    return { handled: true };
+  }
+
+  if (action === 'reset_vietqr_workflow') {
+    settingsService.update(guild.id, {
+      vietqr: { feedbackChannelId: null, staffRoleId: null },
+    });
+    const freshSettings = settingsService.get(guild.id);
+    const view = buildVietQrWorkflowView(guild, freshSettings, callerUserId, locale);
     await interaction.update(view);
     return { handled: true };
   }
@@ -689,6 +720,27 @@ export async function handleAdminConsoleSelect(
       });
       const freshSettings = settingsService.get(guild.id);
       const view = buildKeoVipRolesView(guild, freshSettings, callerUserId, locale);
+      await interaction.update(view);
+      return { handled: true };
+    }
+
+    // ─── Nhóm Cấu Hình VietQR Workflow & Feedback ───
+    case 'vietqr_feedback': {
+      settingsService.update(guild.id, {
+        vietqr: { feedbackChannelId: selectedValue },
+      });
+      const freshSettings = settingsService.get(guild.id);
+      const view = buildVietQrWorkflowView(guild, freshSettings, callerUserId, locale);
+      await interaction.update(view);
+      return { handled: true };
+    }
+
+    case 'vietqr_staff': {
+      settingsService.update(guild.id, {
+        vietqr: { staffRoleId: selectedValue },
+      });
+      const freshSettings = settingsService.get(guild.id);
+      const view = buildVietQrWorkflowView(guild, freshSettings, callerUserId, locale);
       await interaction.update(view);
       return { handled: true };
     }
