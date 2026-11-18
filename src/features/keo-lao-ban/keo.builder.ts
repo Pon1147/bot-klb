@@ -205,12 +205,19 @@ export function buildDispatchCard(
   };
 }
 
+export interface KeoBankDetails {
+  bankId: string;
+  accountNo: string;
+  accountName?: string | null;
+}
+
 /**
  * Thẻ trạng thái sống trong Kênh Ticket kèm mã VietQR và các nút quản lý.
  */
 export function buildTicketOrderCard(
   order: KeoOrderRecord,
-  qrImageUrl?: string | null,
+  bankInfo?: KeoBankDetails | null,
+  hasQrAttachment = false,
 ): { components: any[]; flags: number } {
   const containerComponents: any[] = [
     {
@@ -232,25 +239,39 @@ export function buildTicketOrderCard(
     },
   ];
 
-  // Nếu đã nhận kèo và chưa thanh toán -> chèn hình ảnh mã VietQR và các nút Section
+  // Nếu đã nhận kèo và chưa thanh toán -> chèn thông tin tài khoản và hình ảnh mã VietQR
   if (order.status === 'CLAIMED') {
-    if (qrImageUrl) {
-      containerComponents.push(
-        {
-          type: ComponentType.Separator,
-        },
-        {
-          type: ComponentType.MediaGallery,
-          items: [
-            {
-              media: {
-                url: qrImageUrl,
-              },
-              description: 'Mã QR chuyển khoản ngân hàng VietQR',
+    if (bankInfo) {
+      const memoCode = `KEO ${order.id.slice(-6)}`;
+      containerComponents.push({
+        type: ComponentType.Separator,
+      });
+
+      containerComponents.push({
+        type: ComponentType.TextDisplay,
+        content:
+          `### 💳 Thông Tin Chuyển Khoản Ngân Hàng\n` +
+          `> 🏦 **Ngân hàng**: **${bankInfo.bankId.toUpperCase()}**\n` +
+          `> 💳 **Số tài khoản**: \`${bankInfo.accountNo}\` *(Chạm để chép STK)*\n` +
+          (bankInfo.accountName ? `> 👤 **Chủ tài khoản**: **${bankInfo.accountName}**\n` : '') +
+          `> 💰 **Số tiền**: **${formatVnd(order.amount)}**\n` +
+          `> 📝 **Nội dung chuyển khoản**: \`${memoCode}\` *(Chạm để chép)*\n` +
+          `> ⚠️ *Quý khách vui lòng chuyển khoản đúng số tiền và nội dung trên.*`,
+      });
+    }
+
+    if (hasQrAttachment) {
+      containerComponents.push({
+        type: ComponentType.MediaGallery,
+        items: [
+          {
+            media: {
+              url: 'attachment://vietqr.png',
             },
-          ],
-        },
-      );
+            description: 'Mã QR chuyển khoản ngân hàng VietQR',
+          },
+        ],
+      });
     }
 
     containerComponents.push({

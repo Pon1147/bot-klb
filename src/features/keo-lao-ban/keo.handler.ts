@@ -1,4 +1,5 @@
 import {
+  AttachmentBuilder,
   ButtonInteraction,
   Guild,
   GuildMember,
@@ -24,7 +25,7 @@ import {
   buildRatingCard,
   buildTicketOrderCard,
 } from './keo.builder.js';
-import { buildVietQrImageUrl } from '../../utils/vietqr.utils.js';
+import { fetchVietQrImageBuffer } from '../../utils/vietqr.utils.js';
 import { createPayment, saveFeedback } from '../payment/payment.service.js';
 import { createLogger } from '../../utils/logger.js';
 
@@ -254,6 +255,16 @@ export async function handleKeoButton(
       return { handled: true };
     }
 
+    // Guard: Bắt buộc server phải có cấu hình VietQR trước khi Thợ nhận đơn
+    if (!settings.vietqr?.bankId || !settings.vietqr?.accountNo) {
+      await interaction.reply({
+        content:
+          '❌ Máy chủ chưa cấu hình tài khoản nhận tiền VietQR. Vui lòng báo Chủ Server dùng `/admin` để cài đặt trước khi nhận kèo.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
+
     const claimed = claimKeoOrder(db, order.id, interaction.user.id);
     if (!claimed) {
       await interaction.reply({
@@ -267,21 +278,26 @@ export async function handleKeoButton(
     order.status = 'CLAIMED';
     order.worker_id = interaction.user.id;
 
-    // Sinh link mã VietQR
-    let qrUrl: string | null = null;
-    if (settings.vietqr?.bankId && settings.vietqr?.accountNo) {
-      qrUrl = buildVietQrImageUrl({
-        bankId: settings.vietqr.bankId,
-        accountNo: settings.vietqr.accountNo,
-        accountName: settings.vietqr.accountName ?? '',
-        amount: order.amount,
-        addInfo: `KEO ${order.id.slice(-6)}`,
-        template: settings.vietqr.template ?? 'compact2',
-      });
-    }
+    // Tải buffer ảnh VietQR để gửi file đính kèm (tránh vỡ ảnh trong Discord Components V2)
+    const qrBuffer = await fetchVietQrImageBuffer({
+      bankId: settings.vietqr.bankId,
+      accountNo: settings.vietqr.accountNo,
+      accountName: settings.vietqr.accountName ?? '',
+      amount: order.amount,
+      addInfo: `KEO ${order.id.slice(-6)}`,
+      template: settings.vietqr.template ?? 'compact2',
+    });
+
+    const qrAttachment = qrBuffer ? [new AttachmentBuilder(qrBuffer, { name: 'vietqr.png' })] : [];
+
+    const bankDetails = {
+      bankId: settings.vietqr.bankId,
+      accountNo: settings.vietqr.accountNo,
+      accountName: settings.vietqr.accountName,
+    };
 
     // Cập nhật thẻ ở Kênh Bắn Đơn
-    await interaction.update(buildDispatchCard(order));
+    await interaction.update(buildDispatchCard(order, keoConfig?.workerRoleId));
 
     // Cập nhật thẻ ở Kênh Ticket
     const ticketChannel = guild.channels.cache.get(order.ticket_channel_id) as TextChannel;
@@ -289,7 +305,10 @@ export async function handleKeoButton(
       try {
         const ticketMsg = await ticketChannel.messages.fetch(order.ticket_message_id);
         if (ticketMsg) {
-          await ticketMsg.edit(buildTicketOrderCard(order, qrUrl));
+          await ticketMsg.edit({
+            ...buildTicketOrderCard(order, bankDetails, qrAttachment.length > 0),
+            files: qrAttachment,
+          });
         }
       } catch (err) {
         logger.warn('Không thể sửa message ticket khi thợ nhận:', { error: String(err) });
@@ -332,8 +351,11 @@ export async function handleKeoButton(
       account_name: settings.vietqr?.accountName,
     });
 
-    // Cập nhật thẻ Ticket (ẩn QR và chuyển sang trạng thái đang kéo)
-    await interaction.update(buildTicketOrderCard(order, null));
+    // Cập nhật thẻ Ticket (ẩn QR, gỡ file đính kèm và chuyển sang trạng thái đang kéo)
+    await interaction.update({
+      ...buildTicketOrderCard(order, null, false),
+      files: [],
+    });
 
     // Cập nhật thẻ Kênh Bắn Đơn
     if (keoConfig?.dispatchChannelId && order.dispatch_message_id) {

@@ -34,13 +34,14 @@ import { defaultGuildSettings } from '../../src/config/default.settings.js';
 
 describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
   let db: Database.Database;
+  let mockSettingsService: any;
 
   beforeEach(() => {
     db = new Database(':memory:');
     initializeKeoTable(db);
     initializePaymentTables(db);
 
-    const mockSettingsService = {
+    mockSettingsService = {
       get: jest.fn().mockReturnValue({
         ...defaultGuildSettings,
         vietqr: {
@@ -62,9 +63,9 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
         },
       }),
       update: jest.fn(),
-    } as unknown as SettingsService;
+    };
 
-    setSettingsService(mockSettingsService);
+    setSettingsService(mockSettingsService as unknown as SettingsService);
   });
 
   afterEach(() => {
@@ -164,7 +165,7 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
       expect(claimedCard.components[0].components[0].accessory.label).toContain('Báo Cáo Xong');
     });
 
-    it('buildTicketOrderCard: hiển thị nút Duyệt Tiền cho Owner khi CLAIMED', () => {
+    it('buildTicketOrderCard: hiển thị thông tin ngân hàng và nút Duyệt Tiền cho Owner khi CLAIMED', () => {
       const order: KeoOrderRecord = {
         id: 'ORDER888',
         guild_id: 'guild-1',
@@ -181,10 +182,24 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
         updated_at: 1000,
       };
 
-      const card = buildTicketOrderCard(order, 'https://vietqr.net/image.png');
+      const card = buildTicketOrderCard(
+        order,
+        { bankId: 'VCB', accountNo: '1234567890', accountName: 'NGUYEN VAN A' },
+        true,
+      );
       expect(card.components).toHaveLength(1);
       const inner = card.components[0].components;
-      const confirmSection = inner.find((c: any) => c.accessory?.custom_id?.startsWith('keo:confirm_pay:'));
+      const bankSection = inner.find((c: any) =>
+        c.content?.includes('Thông Tin Chuyển Khoản Ngân Hàng'),
+      );
+      expect(bankSection).toBeDefined();
+      expect(bankSection.content).toContain('VCB');
+      expect(bankSection.content).toContain('1234567890');
+      expect(bankSection.content).toContain('KEO DER888');
+
+      const confirmSection = inner.find((c: any) =>
+        c.accessory?.custom_id?.startsWith('keo:confirm_pay:'),
+      );
       expect(confirmSection).toBeDefined();
       expect(confirmSection.accessory.label).toContain('Đã Nhận Tiền');
     });
@@ -249,6 +264,51 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: expect.stringContaining('Chỉ người sở hữu vai trò Thợ Kéo'),
+          flags: MessageFlags.Ephemeral,
+        }),
+      );
+    });
+
+    it('handleKeoButton claim: Từ chối khi server chưa cấu hình VietQR', async () => {
+      const order: KeoOrderRecord = {
+        id: 'ORD_NO_QR',
+        guild_id: 'guild-no-qr',
+        ticket_channel_id: 'ticket-1',
+        customer_id: 'cust-1',
+        package_name: 'Gói 1',
+        amount: 100000,
+        note: null,
+        worker_id: null,
+        status: 'OPEN',
+        dispatch_message_id: null,
+        ticket_message_id: null,
+        created_at: 1000,
+        updated_at: 1000,
+      };
+      createKeoOrder(db, order);
+      mockSettingsService.get.mockReturnValueOnce({
+        ...defaultGuildSettings,
+        vietqr: { bankId: null, accountNo: null },
+      });
+
+      const interaction: any = {
+        customId: 'keo:claim:ORD_NO_QR',
+        guild: { id: 'guild-no-qr', ownerId: 'owner-1' },
+        user: { id: 'worker-1' },
+        member: {
+          id: 'worker-1',
+          guild: { id: 'guild-no-qr', ownerId: 'owner-1' },
+          roles: { cache: new Map() },
+          permissions: { has: jest.fn().mockReturnValue(true) },
+        },
+        reply: jest.fn().mockResolvedValue({}),
+      };
+
+      const res = await handleKeoButton(interaction, db);
+      expect(res.handled).toBe(true);
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('chưa cấu hình tài khoản nhận tiền VietQR'),
           flags: MessageFlags.Ephemeral,
         }),
       );
