@@ -51,23 +51,27 @@ export function buildTicketWelcomeCard(ticketChannelId: string): {
         accentColor: COLORS.DF,
       },
       {
-        type: ComponentType.TextDisplay,
-        content:
-          '> 👑 **Chào mừng quý khách đến với dịch vụ Kéo Lão Bản!**\n' +
-          '> ⚙️ Quản Lý hoặc Thợ Kéo vui lòng bấm nút bên dưới để tạo đơn và thiết lập giá dịch vụ.',
+        type: ComponentType.Section,
+        components: [
+          {
+            type: ComponentType.TextDisplay,
+            content:
+              '> 👑 **Chào mừng quý khách đến với dịch vụ Kéo Lão Bản!**\n' +
+              '> ⚙️ Quản Lý hoặc Thợ Kéo vui lòng bấm nút bên cạnh để mở đơn và thiết lập giá dịch vụ.',
+          },
+        ],
+        accessory: {
+          type: ComponentType.Button,
+          custom_id: `keo:open_modal:${ticketChannelId}`,
+          label: '📋 Mở Đơn Kéo',
+          style: ButtonStyle.Primary,
+        },
       },
     ],
   };
 
-  const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`keo:open_modal:${ticketChannelId}`)
-      .setLabel('📋 Mở Đơn Kéo')
-      .setStyle(ButtonStyle.Primary),
-  );
-
   return {
-    components: [containerJson, buttonRow.toJSON()],
+    components: [containerJson],
     flags: MessageFlags.IsComponentsV2,
   };
 }
@@ -114,14 +118,52 @@ export function buildOpenOrderModal(ticketChannelId: string, customerId: string)
  * Thẻ bắn sang Kênh Bắn Đơn (#đơn-đang-mở).
  */
 export function buildDispatchCard(order: KeoOrderRecord): { components: any[]; flags: number } {
-  const isDone = order.status === 'COMPLETED' || order.status === 'CANCELLED';
+  let accessoryButton: any = null;
+
+  if (order.status === 'OPEN') {
+    accessoryButton = {
+      type: ComponentType.Button,
+      custom_id: `keo:claim:${order.id}`,
+      label: '🎯 Nhận Kèo Ngay',
+      style: ButtonStyle.Success,
+    };
+  } else if (order.status === 'CLAIMED' || order.status === 'PAID') {
+    accessoryButton = {
+      type: ComponentType.Button,
+      custom_id: `keo:worker_done:${order.id}`,
+      label: '✅ Báo Cáo Xong',
+      style: ButtonStyle.Primary,
+    };
+  } else if (order.status === 'WORKER_DONE') {
+    accessoryButton = {
+      type: ComponentType.Button,
+      custom_id: `keo_disabled_1:${order.id}`,
+      label: '⏳ Chờ Duyệt',
+      style: ButtonStyle.Secondary,
+      disabled: true,
+    };
+  } else {
+    accessoryButton = {
+      type: ComponentType.Button,
+      custom_id: `keo_disabled_2:${order.id}`,
+      label: '✨ Hoàn Thành',
+      style: ButtonStyle.Secondary,
+      disabled: true,
+    };
+  }
 
   const containerJson = {
     type: ComponentType.Container,
     components: [
       {
-        type: ComponentType.TextDisplay,
-        content: `## 🎯 ĐƠN KÉO MỚI #${order.id.slice(-6)}`,
+        type: ComponentType.Section,
+        components: [
+          {
+            type: ComponentType.TextDisplay,
+            content: `## 🎯 ĐƠN KÉO MỚI #${order.id.slice(-6)}`,
+          },
+        ],
+        ...(accessoryButton ? { accessory: accessoryButton } : {}),
       },
       {
         type: ComponentType.Separator,
@@ -140,42 +182,8 @@ export function buildDispatchCard(order: KeoOrderRecord): { components: any[]; f
     ],
   };
 
-  const buttonRow = new ActionRowBuilder<ButtonBuilder>();
-
-  if (order.status === 'OPEN') {
-    buttonRow.addComponents(
-      new ButtonBuilder()
-        .setCustomId(`keo:claim:${order.id}`)
-        .setLabel('🎯 Nhận Kèo Ngay')
-        .setStyle(ButtonStyle.Success),
-    );
-  } else if (order.status === 'CLAIMED' || order.status === 'PAID') {
-    buttonRow.addComponents(
-      new ButtonBuilder()
-        .setCustomId(`keo:worker_done:${order.id}`)
-        .setLabel('✅ Báo Cáo Xong Đơn')
-        .setStyle(ButtonStyle.Primary),
-    );
-  } else if (order.status === 'WORKER_DONE') {
-    buttonRow.addComponents(
-      new ButtonBuilder()
-        .setCustomId(`keo_disabled_1:${order.id}`)
-        .setLabel('⏳ Chờ Nghiệm Thu')
-        .setStyle(ButtonStyle.Secondary)
-        .setDisabled(true),
-    );
-  } else if (isDone) {
-    buttonRow.addComponents(
-      new ButtonBuilder()
-        .setCustomId(`keo_disabled_2:${order.id}`)
-        .setLabel('✨ Đã Hoàn Thành')
-        .setStyle(ButtonStyle.Secondary)
-        .setDisabled(true),
-    );
-  }
-
   return {
-    components: [containerJson, buttonRow.toJSON()],
+    components: [containerJson],
     flags: MessageFlags.IsComponentsV2,
   };
 }
@@ -207,24 +215,76 @@ export function buildTicketOrderCard(
     },
   ];
 
-  // Nếu đã nhận kèo và chưa thanh toán -> chèn hình ảnh mã VietQR
-  if (order.status === 'CLAIMED' && qrImageUrl) {
-    containerComponents.push(
-      {
-        type: ComponentType.Separator,
-      },
-      {
-        type: ComponentType.MediaGallery,
-        items: [
-          {
-            media: {
-              url: qrImageUrl,
+  // Nếu đã nhận kèo và chưa thanh toán -> chèn hình ảnh mã VietQR và các nút Section
+  if (order.status === 'CLAIMED') {
+    if (qrImageUrl) {
+      containerComponents.push(
+        {
+          type: ComponentType.Separator,
+        },
+        {
+          type: ComponentType.MediaGallery,
+          items: [
+            {
+              media: {
+                url: qrImageUrl,
+              },
+              description: 'Mã QR chuyển khoản ngân hàng VietQR',
             },
-            description: 'Mã QR chuyển khoản ngân hàng VietQR',
-          },
-        ],
+          ],
+        },
+      );
+    }
+
+    containerComponents.push({
+      type: ComponentType.Section,
+      components: [
+        {
+          type: ComponentType.TextDisplay,
+          content:
+            '💳 **Xác Nhận Tiền**\n> Chủ Server bấm nút bên cạnh sau khi kiểm tra tài khoản.',
+        },
+      ],
+      accessory: {
+        type: ComponentType.Button,
+        custom_id: `keo:confirm_pay:${order.id}`,
+        label: '✅ Đã Nhận Tiền (Chỉ Owner)',
+        style: ButtonStyle.Success,
       },
-    );
+    });
+
+    containerComponents.push({
+      type: ComponentType.Section,
+      components: [
+        {
+          type: ComponentType.TextDisplay,
+          content: '❌ **Hủy Kèo**\n> Hủy bỏ đơn kéo này.',
+        },
+      ],
+      accessory: {
+        type: ComponentType.Button,
+        custom_id: `keo:cancel:${order.id}`,
+        label: 'Hủy Đơn',
+        style: ButtonStyle.Danger,
+      },
+    });
+  } else if (order.status === 'WORKER_DONE') {
+    containerComponents.push({
+      type: ComponentType.Section,
+      components: [
+        {
+          type: ComponentType.TextDisplay,
+          content:
+            '🏁 **Nghiệm Thu**\n> Quản lý/Chủ Server bấm nút bên cạnh sau khi xác nhận với khách.',
+        },
+      ],
+      accessory: {
+        type: ComponentType.Button,
+        custom_id: `keo:complete:${order.id}`,
+        label: '🏁 Nghiệm Thu & Hoàn Tất',
+        style: ButtonStyle.Success,
+      },
+    });
   }
 
   const containerJson = {
@@ -232,38 +292,8 @@ export function buildTicketOrderCard(
     components: containerComponents,
   };
 
-  const actionRows: any[] = [];
-
-  if (order.status === 'CLAIMED') {
-    actionRows.push(
-      new ActionRowBuilder<ButtonBuilder>()
-        .addComponents(
-          new ButtonBuilder()
-            .setCustomId(`keo:confirm_pay:${order.id}`)
-            .setLabel('✅ Xác Nhận Đã Nhận Tiền (Chỉ Owner)')
-            .setStyle(ButtonStyle.Success),
-          new ButtonBuilder()
-            .setCustomId(`keo:cancel:${order.id}`)
-            .setLabel('❌ Hủy Đơn')
-            .setStyle(ButtonStyle.Danger),
-        )
-        .toJSON(),
-    );
-  } else if (order.status === 'WORKER_DONE') {
-    actionRows.push(
-      new ActionRowBuilder<ButtonBuilder>()
-        .addComponents(
-          new ButtonBuilder()
-            .setCustomId(`keo:complete:${order.id}`)
-            .setLabel('🏁 Nghiệm Thu & Hoàn Tất')
-            .setStyle(ButtonStyle.Success),
-        )
-        .toJSON(),
-    );
-  }
-
   return {
-    components: [containerJson, ...actionRows],
+    components: [containerJson],
     flags: MessageFlags.IsComponentsV2,
   };
 }

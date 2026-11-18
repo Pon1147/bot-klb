@@ -26,11 +26,16 @@ export async function execute(_client: Client, channel: GuildChannel): Promise<v
   }
 
   logger.info(
-    `Phát hiện ticket mới tại #${channel.name} (${channel.id}). Gửi thẻ chào mừng Kéo Lão Bản...`,
+    `Phát hiện ticket mới tại #${channel.name} (${channel.id}). Chờ 2.5s để ticket bot setup...`,
   );
 
+  // Đợi 2.5 giây để Ticket Bot hoàn tất gán quyền channel và gửi tin nhắn chào ban đầu
+  await new Promise((resolve) => setTimeout(resolve, 2500));
+
   try {
-    const textChannel = channel as TextChannel;
+    const textChannel = (guild.channels?.cache?.get(channel.id) ?? channel) as TextChannel;
+    if (typeof textChannel.isTextBased === 'function' && !textChannel.isTextBased()) return;
+
     const card = buildTicketWelcomeCard(channel.id);
     await textChannel.send(card);
     logger.info(`Đã gửi thẻ Chào Mừng Kéo Lão Bản vào #${channel.name}`);

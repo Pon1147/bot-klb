@@ -122,11 +122,11 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
     it('buildTicketWelcomeCard: tạo thẻ chào mừng trong ticket với nút Mở Đơn Kéo', () => {
       const card = buildTicketWelcomeCard('ticket-999');
       expect(card.flags).toBe(MessageFlags.IsComponentsV2);
-      expect(card.components).toHaveLength(2);
+      expect(card.components).toHaveLength(1);
       expect(card.components[0].type).toBe(ComponentType.Container);
       expect(card.components[0].components[0].content).toContain('Dịch Vụ Kéo Delta Force');
-      expect(card.components[1].components[0].custom_id).toBe('keo:open_modal:ticket-999');
-      expect(card.components[1].components[0].style).toBe(ButtonStyle.Primary);
+      expect(card.components[0].components[2].accessory.custom_id).toBe('keo:open_modal:ticket-999');
+      expect(card.components[0].components[2].accessory.style).toBe(ButtonStyle.Primary);
     });
 
     it('buildOpenOrderModal: tạo modal nhập gói kéo và số tiền', () => {
@@ -154,12 +154,14 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
       };
 
       const openCard = buildDispatchCard(baseOrder);
-      expect(openCard.components[1].components[0].custom_id).toBe('keo:claim:ORDER999');
-      expect(openCard.components[1].components[0].label).toContain('Nhận Kèo');
+      expect(openCard.components).toHaveLength(1);
+      expect(openCard.components[0].components[0].accessory.custom_id).toBe('keo:claim:ORDER999');
+      expect(openCard.components[0].components[0].accessory.label).toContain('Nhận Kèo');
 
       const claimedCard = buildDispatchCard({ ...baseOrder, status: 'CLAIMED', worker_id: 'worker-1' });
-      expect(claimedCard.components[1].components[0].custom_id).toBe('keo:worker_done:ORDER999');
-      expect(claimedCard.components[1].components[0].label).toContain('Báo Cáo Xong');
+      expect(claimedCard.components).toHaveLength(1);
+      expect(claimedCard.components[0].components[0].accessory.custom_id).toBe('keo:worker_done:ORDER999');
+      expect(claimedCard.components[0].components[0].accessory.label).toContain('Báo Cáo Xong');
     });
 
     it('buildTicketOrderCard: hiển thị nút Duyệt Tiền cho Owner khi CLAIMED', () => {
@@ -180,9 +182,11 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
       };
 
       const card = buildTicketOrderCard(order, 'https://vietqr.net/image.png');
-      expect(card.components).toHaveLength(2);
-      expect(card.components[1].components[0].custom_id).toBe('keo:confirm_pay:ORDER888');
-      expect(card.components[1].components[0].label).toContain('Xác Nhận Đã Nhận Tiền');
+      expect(card.components).toHaveLength(1);
+      const inner = card.components[0].components;
+      const confirmSection = inner.find((c: any) => c.accessory?.custom_id?.startsWith('keo:confirm_pay:'));
+      expect(confirmSection).toBeDefined();
+      expect(confirmSection.accessory.label).toContain('Đã Nhận Tiền');
     });
 
     it('buildRatingCard: tạo 5 nút đánh giá sao cho khách', () => {
