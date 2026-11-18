@@ -824,14 +824,16 @@ export function buildKeoConfigView(
       `> *Only tickets created under this category trigger carry dispatch cards.*\n` +
       `> **🛠️ Worker Role (Required)**: ${workerRoleTag}\n` +
       `> *Members with this role are authorized to claim orders.*\n` +
-      `> **👑 VIP Roles (Optional)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}`
+      `> **👑 VIP Roles (Optional)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}\n\n` +
+      `> 💡 *Note: Set ticket naming to \`ticket-%username%\` in your ticket bot to accurately detect customers.*`
     : `> **🎯 Kênh Bắn Kèo (Bắt buộc)**: ${dispatchTag}\n` +
       `> *Kênh bot hiển thị thẻ đơn kéo để thợ theo dõi và bấm nhận.*\n` +
       `> **📁 Nhóm Kênh Ticket (Lọc)**: ${categoryTag}\n` +
       `> *Chỉ ticket tạo trong nhóm này mới kích hoạt hiển thị đơn kéo.*\n` +
       `> **🛠️ Vai Trò Thợ Kéo (Bắt buộc)**: ${workerRoleTag}\n` +
       `> *Thành viên có vai trò này mới được quyền bấm nhận đơn.*\n` +
-      `> **👑 Role Lão Bản VIP (Tùy chọn)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}`;
+      `> **👑 Role Lão Bản VIP (Tùy chọn)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}\n\n` +
+      `> 💡 *Lưu ý: Hãy cấu hình ticket bot định dạng tên kênh là \`ticket-%username%\` để bot nhận diện chuẩn Lão Bản.*`;
 
   const containerJson = {
     type: ComponentType.Container,

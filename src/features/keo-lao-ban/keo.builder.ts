@@ -77,35 +77,48 @@ export function buildTicketWelcomeCard(ticketChannelId: string): {
 }
 
 /**
- * Modal thiết lập đơn kéo (Tên gói, Số tiền, Ghi chú).
+ * Modal thiết lập đơn kéo (Khách hàng, Tên gói, Số tiền, Ghi chú).
  */
-export function buildOpenOrderModal(ticketChannelId: string, customerId: string): ModalBuilder {
+export function buildOpenOrderModal(
+  ticketChannelId: string,
+  customerId: string,
+  customerDisplay?: string,
+): ModalBuilder {
   const modal = new ModalBuilder()
     .setCustomId(`keo_modal:create:${ticketChannelId}:${customerId}`)
     .setTitle('Thiết Lập Đơn Kéo Lão Bản');
 
+  const customerInput = new TextInputBuilder()
+    .setCustomId('customer_input')
+    .setLabel('👤 ID hoặc Username Khách (Lão Bản)')
+    .setStyle(TextInputStyle.Short)
+    .setValue(customerDisplay || customerId)
+    .setPlaceholder('Nhập Discord ID hoặc username của khách')
+    .setRequired(true);
+
   const pkgInput = new TextInputBuilder()
     .setCustomId('package_name')
-    .setLabel('Tên gói / Nhiệm vụ kéo')
+    .setLabel('📦 Tên gói / Nhiệm vụ kéo')
     .setStyle(TextInputStyle.Short)
     .setPlaceholder('VD: Space City 2h, Tháp Zero, Két sắt...')
     .setRequired(true);
 
   const amountInput = new TextInputBuilder()
     .setCustomId('amount')
-    .setLabel('Số tiền thanh toán (VNĐ)')
+    .setLabel('💰 Số tiền thanh toán (VNĐ)')
     .setStyle(TextInputStyle.Short)
     .setPlaceholder('VD: 300000')
     .setRequired(true);
 
   const noteInput = new TextInputBuilder()
     .setCustomId('note')
-    .setLabel('Ghi chú thêm (Tùy chọn)')
+    .setLabel('📝 Ghi chú thêm (Tùy chọn)')
     .setStyle(TextInputStyle.Paragraph)
     .setPlaceholder('Yêu cầu đặc biệt, khung giờ kéo, v.v...')
     .setRequired(false);
 
   modal.addComponents(
+    new ActionRowBuilder<TextInputBuilder>().addComponents(customerInput),
     new ActionRowBuilder<TextInputBuilder>().addComponents(pkgInput),
     new ActionRowBuilder<TextInputBuilder>().addComponents(amountInput),
     new ActionRowBuilder<TextInputBuilder>().addComponents(noteInput),
@@ -117,7 +130,10 @@ export function buildOpenOrderModal(ticketChannelId: string, customerId: string)
 /**
  * Thẻ bắn sang Kênh Bắn Đơn (#đơn-đang-mở).
  */
-export function buildDispatchCard(order: KeoOrderRecord): { components: any[]; flags: number } {
+export function buildDispatchCard(
+  order: KeoOrderRecord,
+  workerRoleId?: string | null,
+): { components: any[]; flags: number } {
   let accessoryButton: any = null;
 
   if (order.status === 'OPEN') {
@@ -172,6 +188,7 @@ export function buildDispatchCard(order: KeoOrderRecord): { components: any[]; f
       {
         type: ComponentType.TextDisplay,
         content:
+          (workerRoleId ? `> 📢 **Dành cho**: <@&${workerRoleId}>\n` : '') +
           `> 📦 **Gói dịch vụ**: **${order.package_name}**\n` +
           `> 💰 **Thù lao**: **${formatVnd(order.amount)}**\n` +
           `> 👤 **Khách hàng**: <@${order.customer_id}>\n` +

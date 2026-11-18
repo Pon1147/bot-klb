@@ -130,10 +130,10 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
     });
 
     it('buildOpenOrderModal: tạo modal nhập gói kéo và số tiền', () => {
-      const modal = buildOpenOrderModal('ticket-999', 'cust-888');
+      const modal = buildOpenOrderModal('ticket-999', 'cust-888', 'Dona');
       expect(modal.data.custom_id).toBe('keo_modal:create:ticket-999:cust-888');
       expect(modal.data.title).toBe('Thiết Lập Đơn Kéo Lão Bản');
-      expect(modal.components).toHaveLength(3);
+      expect(modal.components).toHaveLength(4);
     });
 
     it('buildDispatchCard: hiển thị nút [Nhận Kèo] khi OPEN và nút [Báo Cáo Xong] khi CLAIMED', () => {
@@ -332,13 +332,15 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
         },
         fields: {
           getTextInputValue: jest.fn().mockImplementation((id: string) => {
+            if (id === 'customer_input') return 'cust-777';
             if (id === 'package_name') return 'Space City 2h';
             if (id === 'amount') return '300.000';
             if (id === 'note') return 'Kéo rank cao';
             return '';
           }),
         },
-        reply: jest.fn().mockResolvedValue({ id: 'msg-ticket-1' }),
+        reply: jest.fn().mockResolvedValue({}),
+        fetchReply: jest.fn().mockResolvedValue({ id: 'msg-ticket-1' }),
       };
 
       const res = await handleKeoModal(interaction, db);
@@ -351,6 +353,44 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
       expect(active?.amount).toBe(300000);
       expect(active?.dispatch_message_id).toBe('msg-dispatch-1');
       expect(active?.ticket_message_id).toBe('msg-ticket-1');
+    });
+
+    it('handleKeoModal: Tự động phân giải username Lão Bản nhập trong Modal', async () => {
+      const mockDispatchChannel: any = {
+        id: 'chan-dispatch-456',
+        send: jest.fn().mockResolvedValue({ id: 'msg-dispatch-2' }),
+      };
+
+      const interaction: any = {
+        customId: 'keo_modal:create:ticket-456:unknown-user',
+        guild: {
+          id: 'guild-1',
+          channels: {
+            cache: new Map([['chan-dispatch-456', mockDispatchChannel]]),
+          },
+          members: {
+            cache: new Map([
+              ['member-dona-id', { id: 'member-dona-id', user: { username: 'dona' } }],
+            ]),
+          },
+        },
+        fields: {
+          getTextInputValue: jest.fn().mockImplementation((id: string) => {
+            if (id === 'customer_input') return 'Dona';
+            if (id === 'package_name') return 'Tháp Zero';
+            if (id === 'amount') return '500000';
+            return '';
+          }),
+        },
+        reply: jest.fn().mockResolvedValue({}),
+        fetchReply: jest.fn().mockResolvedValue({ id: 'msg-ticket-2' }),
+      };
+
+      const res = await handleKeoModal(interaction, db);
+      expect(res.handled).toBe(true);
+
+      const active = getActiveKeoOrderByTicket(db, 'ticket-456');
+      expect(active?.customer_id).toBe('member-dona-id');
     });
   });
 

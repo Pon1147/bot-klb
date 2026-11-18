@@ -1,8 +1,10 @@
 import {
   ButtonInteraction,
+  Guild,
   GuildMember,
   MessageFlags,
   ModalSubmitInteraction,
+  OverwriteType,
   PermissionFlagsBits,
   TextChannel,
 } from 'discord.js';
@@ -94,6 +96,90 @@ async function checkAndApplyVipTier(
 }
 
 /**
+ * Tự động phát hiện khách hàng (Lão Bản) của Ticket:
+ * 1. Quét channel.permissionOverwrites tìm Member thường (không phải bot, không phải thợ/staff bấm mở).
+ * 2. Quét tên kênh theo định dạng ticket-%username%.
+ * 3. Quét ID trong channel.topic.
+ */
+async function resolveCustomer(
+  channel: TextChannel | undefined,
+  guild: Guild,
+  staffMember: GuildMember,
+): Promise<{ id: string; display: string }> {
+  if (!channel) {
+    return { id: staffMember.id, display: staffMember.user.username };
+  }
+
+  // 1. Quét Permission Overwrites
+  if (channel.permissionOverwrites?.cache) {
+    for (const [id, overwrite] of channel.permissionOverwrites.cache) {
+      if (
+        overwrite.type === OverwriteType.Member &&
+        id !== guild.client.user?.id &&
+        id !== staffMember.id
+      ) {
+        const targetMember =
+          guild.members.cache.get(id) ?? (await guild.members.fetch(id).catch(() => null));
+        if (targetMember && !targetMember.user.bot) {
+          return { id: targetMember.id, display: targetMember.user.username };
+        }
+      }
+    }
+  }
+
+  // 2. Quét tên kênh theo pattern ticket-{username}
+  const match = channel.name.match(/^ticket-(.+)$/i);
+  if (match) {
+    const rawUsername = match[1].toLowerCase();
+    const members = guild.members?.cache;
+    let foundMember: GuildMember | undefined = undefined;
+    if (members) {
+      if (typeof (members as any).find === 'function') {
+        foundMember = (members as any).find(
+          (m: any) => m.user?.username?.toLowerCase() === rawUsername,
+        );
+      } else {
+        for (const m of (members as any).values()) {
+          if (m.user?.username?.toLowerCase() === rawUsername) {
+            foundMember = m;
+            break;
+          }
+        }
+      }
+    }
+    if (foundMember) {
+      return { id: foundMember.id, display: foundMember.user.username };
+    }
+    if (typeof guild.members?.search === 'function') {
+      try {
+        const searched = await guild.members.search({ query: rawUsername, limit: 1 });
+        const first = searched.first();
+        if (first && first.user.username.toLowerCase() === rawUsername) {
+          return { id: first.id, display: first.user.username };
+        }
+      } catch {
+        // bỏ qua lỗi search
+      }
+    }
+    return { id: staffMember.id, display: rawUsername };
+  }
+
+  // 3. Quét channel topic (nếu có lưu ID dạng số)
+  if (channel.topic) {
+    const matchId = channel.topic.match(/\d{17,20}/);
+    if (matchId) {
+      const member =
+        guild.members.cache.get(matchId[0]) ??
+        (await guild.members.fetch(matchId[0]).catch(() => null));
+      if (member) return { id: member.id, display: member.user.username };
+      return { id: matchId[0], display: matchId[0] };
+    }
+  }
+
+  return { id: staffMember.id, display: staffMember.user.username };
+}
+
+/**
  * Xử lý các Button tương tác thuộc dịch vụ Kéo Lão Bản (keo:*).
  */
 export async function handleKeoButton(
@@ -135,15 +221,11 @@ export async function handleKeoButton(
       return { handled: true };
     }
 
-    // Xác định khách hàng mở ticket
+    // Tự động phát hiện khách hàng mở ticket
     const channel = guild.channels.cache.get(ticketChannelId) as TextChannel;
-    let customerId = interaction.user.id;
-    if (channel && channel.topic) {
-      const match = channel.topic.match(/\d{17,20}/);
-      if (match) customerId = match[0];
-    }
+    const resolved = await resolveCustomer(channel, guild, member);
 
-    const modal = buildOpenOrderModal(ticketChannelId, customerId);
+    const modal = buildOpenOrderModal(ticketChannelId, resolved.id, resolved.display);
     await interaction.showModal(modal);
     return { handled: true };
   }
@@ -239,7 +321,7 @@ export async function handleKeoButton(
       id: `KEO_${order.id}`,
       guild_id: guild.id,
       buyer_id: order.customer_id,
-      seller_id: interaction.user.id,
+      seller_id: order.worker_id ?? interaction.user.id,
       amount: order.amount,
       description: `Dịch vụ kéo: ${order.package_name}`,
       status: 'confirmed',
@@ -442,6 +524,36 @@ export async function handleKeoModal(
     return { handled: true };
   }
 
+  // Xử lý xác định Lão Bản từ ô nhập trong Modal
+  let finalCustomerId = customerId;
+  const customerInput = interaction.fields.getTextInputValue('customer_input')?.trim();
+  if (customerInput) {
+    if (/^\d{17,20}$/.test(customerInput)) {
+      finalCustomerId = customerInput;
+    } else {
+      const cleanUsername = customerInput.replace(/^@/, '').toLowerCase();
+      const members = guild.members?.cache;
+      let matched: GuildMember | undefined = undefined;
+      if (members) {
+        if (typeof (members as any).find === 'function') {
+          matched = (members as any).find(
+            (m: any) => m.user?.username?.toLowerCase() === cleanUsername,
+          );
+        } else {
+          for (const m of (members as any).values()) {
+            if (m.user?.username?.toLowerCase() === cleanUsername) {
+              matched = m;
+              break;
+            }
+          }
+        }
+      }
+      if (matched) {
+        finalCustomerId = matched.id;
+      }
+    }
+  }
+
   const packageName = interaction.fields.getTextInputValue('package_name').trim();
   const rawAmount = interaction.fields.getTextInputValue('amount').replace(/[^\d]/g, '');
   const note = interaction.fields.getTextInputValue('note')?.trim() || null;
@@ -463,7 +575,7 @@ export async function handleKeoModal(
     id: orderId,
     guild_id: guild.id,
     ticket_channel_id: ticketChannelId,
-    customer_id: customerId,
+    customer_id: finalCustomerId,
     package_name: packageName,
     amount,
     note,
@@ -482,23 +594,31 @@ export async function handleKeoModal(
   const dispatchChannel = guild.channels.cache.get(keoConfig.dispatchChannelId) as TextChannel;
   if (dispatchChannel) {
     try {
-      const pingText = keoConfig.workerRoleId ? `<@&${keoConfig.workerRoleId}> ` : '';
-      const dispatchMsg = await dispatchChannel.send({
-        content: `${pingText}🎯 **Có đơn kéo mới cần thợ nhận ngay!**`,
-        ...buildDispatchCard(newOrder),
-      });
+      // Gửi thông báo ping vai trò Thợ Kéo (tin nhắn riêng để kích hoạt âm thanh / thông báo push)
+      if (keoConfig.workerRoleId) {
+        await dispatchChannel
+          .send({
+            content: `<@&${keoConfig.workerRoleId}> 🎯 **Có đơn kéo mới cần thợ nhận ngay!**`,
+          })
+          .catch((err) =>
+            logger.warn('Không thể gửi tin nhắn ping thợ kéo:', { error: String(err) }),
+          );
+      }
+
+      // Thẻ V2 thuần túy không chứa trường content (tránh DiscordAPIError 50035)
+      const dispatchMsg = await dispatchChannel.send(
+        buildDispatchCard(newOrder, keoConfig.workerRoleId),
+      );
       dispatchMsgId = dispatchMsg.id;
     } catch (err) {
       logger.error('Không thể gửi thẻ vào Kênh Bắn Đơn:', { error: String(err) });
     }
   }
 
-  // 2. Phản hồi vào Kênh Ticket tạo Living Order Card
+  // 2. Phản hồi vào Kênh Ticket tạo Living Order Card (không dùng fetchReply: true đã deprecated)
   const ticketCard = buildTicketOrderCard(newOrder);
-  const ticketMsg = await interaction.reply({
-    ...ticketCard,
-    fetchReply: true,
-  });
+  await interaction.reply(ticketCard);
+  const ticketMsg = await interaction.fetchReply();
 
   // Lưu message IDs vào DB
   updateKeoMessageIds(db, orderId, dispatchMsgId, ticketMsg.id);

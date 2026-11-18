@@ -36,6 +36,16 @@ export async function execute(_client: Client, channel: GuildChannel): Promise<v
     const textChannel = (guild.channels?.cache?.get(channel.id) ?? channel) as TextChannel;
     if (typeof textChannel.isTextBased === 'function' && !textChannel.isTextBased()) return;
 
+    // Tránh gửi đúp: kiểm tra xem đã có tin nhắn chào mừng từ bot chưa (do fallback messageCreate gửi trước)
+    if (typeof textChannel.messages?.fetch === 'function') {
+      const recentMessages = await textChannel.messages.fetch({ limit: 5 }).catch(() => null);
+      const alreadySent = recentMessages?.some((m) => m.author.id === guild.client.user?.id);
+      if (alreadySent) {
+        logger.debug(`Thẻ chào mừng đã được gửi trước đó vào #${channel.name}, bỏ qua.`);
+        return;
+      }
+    }
+
     const card = buildTicketWelcomeCard(channel.id);
     await textChannel.send(card);
     logger.info(`Đã gửi thẻ Chào Mừng Kéo Lão Bản vào #${channel.name}`);
