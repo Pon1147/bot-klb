@@ -30,8 +30,8 @@ const logger = createLogger('SettingsService');
 type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends Array<infer U>
     ? Array<DeepPartial<U>>
-    : T[P] extends object
-      ? DeepPartial<T[P]>
+    : NonNullable<T[P]> extends object
+      ? DeepPartial<NonNullable<T[P]>>
       : T[P];
 };
 

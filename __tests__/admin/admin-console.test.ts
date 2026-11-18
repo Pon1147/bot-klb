@@ -14,6 +14,8 @@ import {
   buildAdminEditorMediaModal,
   buildChannelConfigView,
   buildContainerEditorView,
+  buildKeoConfigView,
+  buildKeoVipRolesView,
   buildNoticesHubView,
   buildRolesConfigView,
 } from '../../src/features/admin/admin-console.builder.js';
@@ -152,7 +154,7 @@ describe('Admin Console V2 (Dashboard)', () => {
         (s: any) => s.accessory?.custom_id?.startsWith('admin_console:notices_hub'),
       );
       expect(noticesSection).toBeDefined();
-      expect(noticesSection.accessory.label).toContain('Cấu Hình Hub');
+      expect(noticesSection.accessory.label).toContain('Cài Đặt');
       expect(noticesSection.accessory.style).toBe(ButtonStyle.Secondary);
     });
 
@@ -210,14 +212,15 @@ describe('Admin Console V2 (Dashboard)', () => {
 
       // Section 0 là Refresh (Secondary)
       expect(sections[0].accessory.style).toBe(ButtonStyle.Secondary);
-      // Các Section cấu hình: Roles, DF Codes, Notices Hub, VietQR (đều Secondary)
+      // Các Section cấu hình: Roles, DF Codes, Notices Hub, VietQR, Keo (đều Secondary)
       const configSections = sections.filter((s: any) =>
         s.accessory?.custom_id?.startsWith('admin_console:roles:') ||
         s.accessory?.custom_id?.startsWith('admin_console:code_channel:') ||
         s.accessory?.custom_id?.startsWith('admin_console:notices_hub:') ||
-        s.accessory?.custom_id?.startsWith('admin_console:vietqr:'),
+        s.accessory?.custom_id?.startsWith('admin_console:vietqr:') ||
+        s.accessory?.custom_id?.startsWith('admin_console:keo:'),
       );
-      expect(configSections).toHaveLength(4);
+      expect(configSections).toHaveLength(5);
       configSections.forEach((s: any) => {
         expect(s.accessory.style).toBe(ButtonStyle.Secondary);
       });
@@ -291,6 +294,44 @@ describe('Admin Console V2 (Dashboard)', () => {
       expect(view.components[3].components[0].custom_id).toBe('admin_console:back:user-caller');
       expect(view.components[3].components[1].custom_id).toBe('admin_console:reset_role_admin:user-caller');
       expect(view.components[3].components[2].custom_id).toBe('admin_console:reset_role_mod:user-caller');
+    });
+
+    it('buildKeoConfigView: tạo giao diện cài đặt dịch vụ Kéo Lão Bản với 3 Select Menu và Nút bấm', () => {
+      const view = buildKeoConfigView(mockGuild, mockSettings, 'user-caller', 'vi');
+      expect(view.flags).toBe(MessageFlags.IsComponentsV2);
+      expect(view.components).toHaveLength(5);
+
+      // Container Header
+      expect(view.components[0].type).toBe(ComponentType.Container);
+      expect(view.components[0].components[0].content).toContain('Dịch Vụ Kéo Lão Bản');
+
+      // Select menus: Dispatch, Category, Worker
+      expect(view.components[1].components[0].custom_id).toBe('admin_console_select:keo_dispatch:user-caller');
+      expect(view.components[2].components[0].custom_id).toBe('admin_console_select:keo_category:user-caller');
+      expect(view.components[3].components[0].custom_id).toBe('admin_console_select:keo_worker:user-caller');
+
+      // Button row
+      expect(view.components[4].components[0].custom_id).toBe('admin_console:back:user-caller');
+      expect(view.components[4].components[1].custom_id).toBe('admin_console:keo_vip:user-caller');
+      expect(view.components[4].components[2].custom_id).toBe('admin_console:reset_keo:user-caller');
+    });
+
+    it('buildKeoVipRolesView: tạo giao diện cài đặt Role Lão Bản 3 cấp độ VIP', () => {
+      const view = buildKeoVipRolesView(mockGuild, mockSettings, 'user-caller', 'vi');
+      expect(view.flags).toBe(MessageFlags.IsComponentsV2);
+      expect(view.components).toHaveLength(5);
+
+      // Container Header
+      expect(view.components[0].components[0].content).toContain('Phân Hạng Role Lão Bản');
+
+      // Role Select menus: Tier 1, 2, 3
+      expect(view.components[1].components[0].custom_id).toBe('admin_console_select:keo_tier1:user-caller');
+      expect(view.components[2].components[0].custom_id).toBe('admin_console_select:keo_tier2:user-caller');
+      expect(view.components[3].components[0].custom_id).toBe('admin_console_select:keo_tier3:user-caller');
+
+      // Button row
+      expect(view.components[4].components[0].custom_id).toBe('admin_console:keo:user-caller');
+      expect(view.components[4].components[1].custom_id).toBe('admin_console:reset_keo_vip:user-caller');
     });
   });
 
@@ -422,8 +463,8 @@ describe('Admin Console V2 (Dashboard)', () => {
       expect(interaction.update).toHaveBeenCalled();
     });
 
-    it('Xử lý các nút mở cấu hình tương tác In-Place (roles, code_channel, welcome_channel, back)', async () => {
-      const inPlaceActions = ['roles', 'code_channel', 'welcome_channel', 'back'];
+    it('Xử lý các nút mở cấu hình tương tác In-Place (roles, code_channel, welcome_channel, keo, keo_vip, back)', async () => {
+      const inPlaceActions = ['roles', 'code_channel', 'welcome_channel', 'keo', 'keo_vip', 'back'];
 
       for (const act of inPlaceActions) {
         const interaction: any = {
@@ -441,8 +482,8 @@ describe('Admin Console V2 (Dashboard)', () => {
       }
     });
 
-    it('Xử lý các nút reset cấu hình (reset_code_channel, reset_role_admin)', async () => {
-      const resetActions = ['reset_code_channel', 'reset_role_admin'];
+    it('Xử lý các nút reset cấu hình (reset_code_channel, reset_role_admin, reset_keo, reset_keo_vip)', async () => {
+      const resetActions = ['reset_code_channel', 'reset_role_admin', 'reset_keo', 'reset_keo_vip'];
 
       for (const act of resetActions) {
         const interaction: any = {
@@ -565,6 +606,31 @@ describe('Admin Console V2 (Dashboard)', () => {
           components: expect.any(Array),
         }),
       );
+    });
+
+    it('Xử lý chọn cấu hình Kéo Lão Bản (keo_dispatch, keo_category, keo_worker, keo_tier1): cập nhật DB và update UI', async () => {
+      const selectCases = [
+        { action: 'keo_dispatch', val: '876543210987654321' },
+        { action: 'keo_category', val: '123456789012345678' },
+        { action: 'keo_worker', val: '111111111111111111' },
+        { action: 'keo_tier1', val: '222222222222222222' },
+      ];
+
+      for (const item of selectCases) {
+        const interaction: any = {
+          customId: `admin_console_select:${item.action}:user-caller`,
+          guild: mockGuild,
+          user: { id: 'user-caller' },
+          values: [item.val],
+          locale: 'vi',
+          memberPermissions: { has: jest.fn().mockReturnValue(false) },
+          update: jest.fn().mockResolvedValue({}),
+        };
+
+        const res = await handleAdminConsoleSelect(interaction);
+        expect(res.handled).toBe(true);
+        expect(interaction.update).toHaveBeenCalled();
+      }
     });
   });
 

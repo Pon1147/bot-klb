@@ -18,6 +18,7 @@ import { COLORS } from '../../config/container.variables.js';
 import { SupportedLocale } from '../../infrastructure/i18n/locale-resolver.js';
 import { buildLivePreviewContainer } from '../container/container-builders.js';
 import { MAX_CONTAINER_TEXT_LENGTH, MEDIA_URL_PLACEHOLDER } from '../../config/app.constants.js';
+import { BOT_VERSION } from '../../config/version.js';
 
 export type NoticeType = 'welcome' | 'leave' | 'booster';
 
@@ -93,18 +94,24 @@ export function buildAdminConsoleContainer(
         ? '*Not configured*'
         : '*Chưa cài đặt*';
 
-  // Khối tóm tắt trạng thái hệ thống dạng Blockquote sạch sẽ
+  const keoConfig = settings.keo;
+  const keoDispatchTag = resolveChannelTag(guild, keoConfig?.dispatchChannelId);
+  const keoWorkerRoleTag = resolveRoleTag(guild, keoConfig?.workerRoleId, isEn);
+  const keoStatus =
+    keoConfig?.dispatchChannelId && keoConfig?.workerRoleId
+      ? isEn
+        ? `Dispatch: ${keoDispatchTag} • Worker: ${keoWorkerRoleTag}`
+        : `Kèo: ${keoDispatchTag} • Thợ: ${keoWorkerRoleTag}`
+      : isEn
+        ? '*Not configured*'
+        : '*Chưa thiết lập*';
+
+  // Khối tóm tắt trạng thái hệ thống: Thu gọn 2 dòng, không lặp lại chi tiết các mục bên dưới
   const statusSummary = isEn
-    ? `> **👑 Server Owner**: <@${guild.ownerId}>\n` +
-      `> **🛡️ Admin**: ${adminRole} • **Mod**: ${modRole}\n` +
-      `> **🔔 Notices**: 🎉 ${welcomeText} • 👋 ${leaveText} • 💎 ${boosterText}\n` +
-      `> **🎁 Vault Codes**: ${codeStatus}\n` +
-      `> **💳 VietQR**: ${vietqrInfo}`
-    : `> **👑 Chủ Server**: <@${guild.ownerId}>\n` +
-      `> **🛡️ Admin**: ${adminRole} • **Mod**: ${modRole}\n` +
-      `> **🔔 Thông Báo**: 🎉 ${welcomeText} • 👋 ${leaveText} • 💎 ${boosterText}\n` +
-      `> **🎁 Mật Mã DF**: ${codeStatus}\n` +
-      `> **💳 Nhận Tiền VietQR**: ${vietqrInfo}`;
+    ? `> 👑 **Server Owner:** <@${guild.ownerId}> • **Bot Version:** \`v${BOT_VERSION}\`\n` +
+      `> ⚙️ **Quick Status:** Admin: ${adminRole} • Welcome: ${welcomeText} • VietQR: ${vietqrInfo}`
+    : `> 👑 **Chủ Server:** <@${guild.ownerId}> • **Phiên Bản:** \`v${BOT_VERSION}\`\n` +
+      `> ⚙️ **Tổng Quan:** Admin: ${adminRole} • Chào mừng: ${welcomeText} • VietQR: ${vietqrInfo}`;
 
   const containerInner: unknown[] = [
     // 1. Header Section với nút Làm Mới góc trên bên phải
@@ -113,7 +120,7 @@ export function buildAdminConsoleContainer(
       components: [
         {
           type: ComponentType.TextDisplay,
-          content: isEn ? '# ⚙️ Server Control Center' : '# ⚙️ Bảng Điều Khiển Máy Chủ',
+          content: isEn ? '## ⚙️ Server Control Center' : '## ⚙️ Bảng Điều Khiển Máy Chủ',
         },
       ],
       accessory: {
@@ -148,14 +155,14 @@ export function buildAdminConsoleContainer(
         {
           type: ComponentType.TextDisplay,
           content: isEn
-            ? '🛡️ **Bot Management Permissions** — Grant bot setup & moderation access to roles'
-            : '🛡️ **Phân Quyền Quản Trị Bot** — Chỉ định vai trò được toàn quyền cấu hình hoặc điều hành bot',
+            ? `🛡️ **Staff & Permissions**\nAdmin: ${adminRole} • Mod: ${modRole}`
+            : `🛡️ **Phân Quyền Quản Trị**\nAdmin: ${adminRole} • Mod: ${modRole}`,
         },
       ],
       accessory: {
         type: ComponentType.Button,
         custom_id: `admin_console:roles:${callerUserId}`,
-        label: isEn ? 'Assign Roles' : 'Gán Quyền',
+        label: isEn ? 'Configure' : 'Cài Đặt',
         style: ButtonStyle.Secondary,
       },
     },
@@ -167,14 +174,14 @@ export function buildAdminConsoleContainer(
         {
           type: ComponentType.TextDisplay,
           content: isEn
-            ? '🎁 **Daily Vault Codes** — Auto-post 6 maps at 08:00 AM'
-            : '🎁 **Mật Mã Két Sắt DF** — Tự động cập nhật 6 map lúc 08:00 sáng',
+            ? `🎁 **Daily Vault Codes**\n${codeStatus}`
+            : `🎁 **Mật Mã Két Sắt DF**\n${codeStatus}`,
         },
       ],
       accessory: {
         type: ComponentType.Button,
         custom_id: `admin_console:code_channel:${callerUserId}`,
-        label: isEn ? 'Set Channel' : 'Đặt Kênh',
+        label: isEn ? 'Configure' : 'Cài Đặt',
         style: ButtonStyle.Secondary,
       },
     },
@@ -186,14 +193,14 @@ export function buildAdminConsoleContainer(
         {
           type: ComponentType.TextDisplay,
           content: isEn
-            ? '🔔 **Automated Lifecycle Notices** — Welcome, Leave & Booster Cards V2'
-            : '🔔 **Thông Báo Tự Động** — Cấu hình thiệp Chào Mừng, Tạm Biệt & Server Booster',
+            ? `🔔 **Automated Notices**\n• Welcome: ${welcomeText}\n• Leave: ${leaveText}\n• Booster: ${boosterText}`
+            : `🔔 **Thông Báo Tự Động**\n• Chào mừng: ${welcomeText}\n• Tạm biệt: ${leaveText}\n• Booster: ${boosterText}`,
         },
       ],
       accessory: {
         type: ComponentType.Button,
         custom_id: `admin_console:notices_hub:${callerUserId}`,
-        label: isEn ? 'Notices Hub' : 'Cấu Hình Hub',
+        label: isEn ? 'Configure' : 'Cài Đặt',
         style: ButtonStyle.Secondary,
       },
     },
@@ -205,14 +212,33 @@ export function buildAdminConsoleContainer(
         {
           type: ComponentType.TextDisplay,
           content: isEn
-            ? '💳 **VietQR Transfer** — Setup receiving bank account'
-            : '💳 **Tài Khoản VietQR** — Cài số tài khoản ngân hàng nhận tiền',
+            ? `💳 **VietQR Transfer**\n${vietqrInfo}`
+            : `💳 **Tài Khoản VietQR**\n${vietqrInfo}`,
         },
       ],
       accessory: {
         type: ComponentType.Button,
         custom_id: `admin_console:vietqr:${callerUserId}`,
-        label: isEn ? 'Config VietQR' : 'Cài VietQR',
+        label: isEn ? 'Configure' : 'Cài Đặt',
+        style: ButtonStyle.Secondary,
+      },
+    },
+
+    // 9. Section: Dịch vụ Kéo Lão Bản (Delta Force Carry Service)
+    {
+      type: ComponentType.Section,
+      components: [
+        {
+          type: ComponentType.TextDisplay,
+          content: isEn
+            ? `💎 **Carry Service (Lão Bản)**\n${keoStatus}`
+            : `💎 **Dịch Vụ Kéo Lão Bản**\n${keoStatus}`,
+        },
+      ],
+      accessory: {
+        type: ComponentType.Button,
+        custom_id: `admin_console:keo:${callerUserId}`,
+        label: isEn ? 'Configure' : 'Cài Đặt',
         style: ButtonStyle.Secondary,
       },
     },
@@ -757,6 +783,244 @@ export function buildRolesConfigView(
 
   return {
     components: [containerJson, adminSelectRow.toJSON(), modSelectRow.toJSON(), buttonRow.toJSON()],
+    flags: MessageFlags.IsComponentsV2,
+  };
+}
+
+/**
+ * Xây dựng màn hình cài đặt Dịch Vụ Kéo Lão Bản (In-Place Transition trên cùng Message).
+ */
+export function buildKeoConfigView(
+  guild: Guild,
+  settings: GuildSettings,
+  callerUserId: string,
+  locale: SupportedLocale = 'vi',
+): { components: any[]; flags: number } {
+  const isEn = locale === 'en';
+  const keo = settings.keo;
+
+  const dispatchTag =
+    resolveChannelTag(guild, keo?.dispatchChannelId) ??
+    (isEn ? '*Not configured*' : '*Chưa đặt kênh*');
+  const categoryTag = keo?.ticketCategoryId
+    ? guild.channels.cache.get(keo.ticketCategoryId)?.name
+      ? `📁 ${guild.channels.cache.get(keo.ticketCategoryId)!.name}`
+      : `<#${keo.ticketCategoryId}>`
+    : isEn
+      ? '*All categories / Not set*'
+      : '*Tất cả hoặc chưa chọn*';
+  const workerRoleTag = resolveRoleTag(guild, keo?.workerRoleId, isEn);
+
+  const t1Tag = resolveRoleTag(guild, keo?.tier1RoleId, isEn);
+  const t2Tag = resolveRoleTag(guild, keo?.tier2RoleId, isEn);
+  const t3Tag = resolveRoleTag(guild, keo?.tier3RoleId, isEn);
+
+  const title = isEn ? '# 💎 Delta Force Carry Service Setup' : '# 💎 Cấu Hình Dịch Vụ Kéo Lão Bản';
+
+  const desc = isEn
+    ? `> **🎯 Dispatch Channel (Required)**: ${dispatchTag}\n` +
+      `> *Channel where available carry orders are posted for workers to claim.*\n` +
+      `> **📁 Ticket Category (Filter)**: ${categoryTag}\n` +
+      `> *Only tickets created under this category trigger carry dispatch cards.*\n` +
+      `> **🛠️ Worker Role (Required)**: ${workerRoleTag}\n` +
+      `> *Members with this role are authorized to claim orders.*\n` +
+      `> **👑 VIP Roles (Optional)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}`
+    : `> **🎯 Kênh Bắn Kèo (Bắt buộc)**: ${dispatchTag}\n` +
+      `> *Kênh bot hiển thị thẻ đơn kéo để thợ theo dõi và bấm nhận.*\n` +
+      `> **📁 Nhóm Kênh Ticket (Lọc)**: ${categoryTag}\n` +
+      `> *Chỉ ticket tạo trong nhóm này mới kích hoạt hiển thị đơn kéo.*\n` +
+      `> **🛠️ Vai Trò Thợ Kéo (Bắt buộc)**: ${workerRoleTag}\n` +
+      `> *Thành viên có vai trò này mới được quyền bấm nhận đơn.*\n` +
+      `> **👑 Role Lão Bản VIP (Tùy chọn)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}`;
+
+  const containerJson = {
+    type: ComponentType.Container,
+    components: [
+      {
+        type: ComponentType.TextDisplay,
+        content: title,
+      },
+      {
+        type: ComponentType.Separator,
+        accentColor: COLORS.DF,
+      },
+      {
+        type: ComponentType.TextDisplay,
+        content: desc,
+      },
+    ],
+  };
+
+  const dispatchSelectRow = new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(
+    new ChannelSelectMenuBuilder()
+      .setCustomId(`admin_console_select:keo_dispatch:${callerUserId}`)
+      .setPlaceholder(
+        isEn
+          ? '🎯 Select dispatch channel for carry orders...'
+          : '🎯 Chọn kênh thông báo đơn kéo cho thợ nhận...',
+      )
+      .setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+      .setMinValues(1)
+      .setMaxValues(1),
+  );
+
+  const categorySelectRow = new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(
+    new ChannelSelectMenuBuilder()
+      .setCustomId(`admin_console_select:keo_category:${callerUserId}`)
+      .setPlaceholder(
+        isEn
+          ? '📁 Select ticket category to listen for new orders...'
+          : '📁 Chọn nhóm Category chứa ticket mở đơn...',
+      )
+      .setChannelTypes(ChannelType.GuildCategory)
+      .setMinValues(1)
+      .setMaxValues(1),
+  );
+
+  const workerSelectRow = new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(
+    new RoleSelectMenuBuilder()
+      .setCustomId(`admin_console_select:keo_worker:${callerUserId}`)
+      .setPlaceholder(
+        isEn
+          ? '🛠️ Select Worker role authorized to claim orders...'
+          : '🛠️ Chọn vai trò Thợ Kéo được phép nhận đơn...',
+      )
+      .setMinValues(1)
+      .setMaxValues(1),
+  );
+
+  const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`admin_console:back:${callerUserId}`)
+      .setLabel(isEn ? '◀ Back to Console' : '◀ Quay Lại Bảng Điều Khiển')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`admin_console:keo_vip:${callerUserId}`)
+      .setLabel(isEn ? '👑 Configure VIP Roles' : '👑 Cài Role Lão Bản (VIP)')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`admin_console:reset_keo:${callerUserId}`)
+      .setLabel(isEn ? '🗑️ Reset Carry Config' : '🗑️ Gỡ Cấu Hình')
+      .setStyle(ButtonStyle.Danger)
+      .setDisabled(!keo?.dispatchChannelId && !keo?.workerRoleId && !keo?.ticketCategoryId),
+  );
+
+  return {
+    components: [
+      containerJson,
+      dispatchSelectRow.toJSON(),
+      categorySelectRow.toJSON(),
+      workerSelectRow.toJSON(),
+      buttonRow.toJSON(),
+    ],
+    flags: MessageFlags.IsComponentsV2,
+  };
+}
+
+/**
+ * Xây dựng màn hình cài đặt Role Lão Bản VIP (Tùy chọn - không bắt buộc).
+ */
+export function buildKeoVipRolesView(
+  guild: Guild,
+  settings: GuildSettings,
+  callerUserId: string,
+  locale: SupportedLocale = 'vi',
+): { components: any[]; flags: number } {
+  const isEn = locale === 'en';
+  const keo = settings.keo;
+
+  const t1Tag = resolveRoleTag(guild, keo?.tier1RoleId, isEn);
+  const t2Tag = resolveRoleTag(guild, keo?.tier2RoleId, isEn);
+  const t3Tag = resolveRoleTag(guild, keo?.tier3RoleId, isEn);
+
+  const title = isEn
+    ? '# 👑 VIP Customer Roles (Lão Bản Tiers)'
+    : '# 👑 Phân Hạng Role Lão Bản (VIP Tùy Chọn)';
+
+  const desc = isEn
+    ? `> **🥉 Tier 1 (Lv1 >= 500k)**: ${t1Tag}\n` +
+      `> **🥈 Tier 2 (Lv2 >= 3,000k)**: ${t2Tag}\n` +
+      `> **🥇 Tier 3 (Lv3 >= 10,000k)**: ${t3Tag}\n` +
+      `> 💡 *Automatic tier upgrade when spending thresholds are met. Optional: if not set, spending is still tracked with 0 errors.*`
+    : `> **🥉 Hạng 1 (Lão Bản Lv1 >= 500k)**: ${t1Tag}\n` +
+      `> **🥈 Hạng 2 (Lão Bản Lv2 >= 3.000k)**: ${t2Tag}\n` +
+      `> **🥇 Hạng 3 (Lão Bản Lv3 >= 10.000k)**: ${t3Tag}\n` +
+      `> 💡 *Hệ thống tự động thăng hạng vai trò khi khách tích lũy đủ chi tiêu. Tùy chọn: nếu không gán role, bot vẫn cộng dồn chi tiêu bình thường.*`;
+
+  const containerJson = {
+    type: ComponentType.Container,
+    components: [
+      {
+        type: ComponentType.TextDisplay,
+        content: title,
+      },
+      {
+        type: ComponentType.Separator,
+        accentColor: COLORS.DF,
+      },
+      {
+        type: ComponentType.TextDisplay,
+        content: desc,
+      },
+    ],
+  };
+
+  const t1SelectRow = new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(
+    new RoleSelectMenuBuilder()
+      .setCustomId(`admin_console_select:keo_tier1:${callerUserId}`)
+      .setPlaceholder(
+        isEn
+          ? '🥉 Select role for Tier 1 (>= 500k)...'
+          : '🥉 Chọn vai trò cho Lão Bản Lv1 (>= 500k)...',
+      )
+      .setMinValues(1)
+      .setMaxValues(1),
+  );
+
+  const t2SelectRow = new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(
+    new RoleSelectMenuBuilder()
+      .setCustomId(`admin_console_select:keo_tier2:${callerUserId}`)
+      .setPlaceholder(
+        isEn
+          ? '🥈 Select role for Tier 2 (>= 3,000k)...'
+          : '🥈 Chọn vai trò cho Lão Bản Lv2 (>= 3.000k)...',
+      )
+      .setMinValues(1)
+      .setMaxValues(1),
+  );
+
+  const t3SelectRow = new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(
+    new RoleSelectMenuBuilder()
+      .setCustomId(`admin_console_select:keo_tier3:${callerUserId}`)
+      .setPlaceholder(
+        isEn
+          ? '🥇 Select role for Tier 3 (>= 10,000k)...'
+          : '🥇 Chọn vai trò cho Lão Bản Lv3 (>= 10.000k)...',
+      )
+      .setMinValues(1)
+      .setMaxValues(1),
+  );
+
+  const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`admin_console:keo:${callerUserId}`)
+      .setLabel(isEn ? '◀ Back to Carry Setup' : '◀ Quay Lại Cài Đặt Kéo')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(`admin_console:reset_keo_vip:${callerUserId}`)
+      .setLabel(isEn ? '🗑️ Clear VIP Roles' : '🗑️ Gỡ Hết Role VIP')
+      .setStyle(ButtonStyle.Danger)
+      .setDisabled(!keo?.tier1RoleId && !keo?.tier2RoleId && !keo?.tier3RoleId),
+  );
+
+  return {
+    components: [
+      containerJson,
+      t1SelectRow.toJSON(),
+      t2SelectRow.toJSON(),
+      t3SelectRow.toJSON(),
+      buttonRow.toJSON(),
+    ],
     flags: MessageFlags.IsComponentsV2,
   };
 }

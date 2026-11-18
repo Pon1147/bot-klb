@@ -86,6 +86,15 @@ export const defaultGuildSettings: GuildSettings = {
     enableRating: true,
     thanksMessage: null,
   },
+  keo: {
+    enabled: true,
+    ticketCategoryId: null,
+    dispatchChannelId: null,
+    workerRoleId: null,
+    tier1RoleId: null,
+    tier2RoleId: null,
+    tier3RoleId: null,
+  },
 };
 
 /**

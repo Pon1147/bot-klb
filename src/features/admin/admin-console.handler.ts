@@ -21,6 +21,8 @@ import {
   buildAdminEditorMediaModal,
   buildChannelConfigView,
   buildContainerEditorView,
+  buildKeoConfigView,
+  buildKeoVipRolesView,
   buildNoticesHubView,
   buildRolesConfigView,
   NoticeType,
@@ -234,6 +236,21 @@ export async function handleAdminConsoleButton(
       callerUserId,
       locale,
     );
+    await interaction.update(view);
+    return { handled: true };
+  }
+
+  // 1.5. Nhóm Dịch Vụ Kéo Lão Bản (Delta Force Carry Service)
+  if (action === 'keo') {
+    const currentSettings = settingsService.get(guild.id);
+    const view = buildKeoConfigView(guild, currentSettings, callerUserId, locale);
+    await interaction.update(view);
+    return { handled: true };
+  }
+
+  if (action === 'keo_vip') {
+    const currentSettings = settingsService.get(guild.id);
+    const view = buildKeoVipRolesView(guild, currentSettings, callerUserId, locale);
     await interaction.update(view);
     return { handled: true };
   }
@@ -455,6 +472,34 @@ export async function handleAdminConsoleButton(
     return { handled: true };
   }
 
+  if (action === 'reset_keo') {
+    settingsService.update(guild.id, {
+      keo: {
+        ticketCategoryId: null,
+        dispatchChannelId: null,
+        workerRoleId: null,
+      },
+    });
+    const freshSettings = settingsService.get(guild.id);
+    const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale);
+    await interaction.update(view);
+    return { handled: true };
+  }
+
+  if (action === 'reset_keo_vip') {
+    settingsService.update(guild.id, {
+      keo: {
+        tier1RoleId: null,
+        tier2RoleId: null,
+        tier3RoleId: null,
+      },
+    });
+    const freshSettings = settingsService.get(guild.id);
+    const view = buildKeoVipRolesView(guild, freshSettings, callerUserId, locale);
+    await interaction.update(view);
+    return { handled: true };
+  }
+
   if (action === 'vietqr') {
     const currentSettings = settingsService.get(guild.id);
     const modal = new ModalBuilder()
@@ -584,6 +629,67 @@ export async function handleAdminConsoleSelect(
       await interaction.update({
         components: [...container.toJSON(), footerRow.toJSON()],
       });
+      return { handled: true };
+    }
+
+    // ─── Nhóm Cấu Hình Dịch Vụ Kéo Lão Bản ───
+    case 'keo_dispatch': {
+      settingsService.update(guild.id, {
+        keo: { dispatchChannelId: selectedValue, enabled: true },
+      });
+      const freshSettings = settingsService.get(guild.id);
+      const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale);
+      await interaction.update(view);
+      return { handled: true };
+    }
+
+    case 'keo_category': {
+      settingsService.update(guild.id, {
+        keo: { ticketCategoryId: selectedValue, enabled: true },
+      });
+      const freshSettings = settingsService.get(guild.id);
+      const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale);
+      await interaction.update(view);
+      return { handled: true };
+    }
+
+    case 'keo_worker': {
+      settingsService.update(guild.id, {
+        keo: { workerRoleId: selectedValue, enabled: true },
+      });
+      const freshSettings = settingsService.get(guild.id);
+      const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale);
+      await interaction.update(view);
+      return { handled: true };
+    }
+
+    case 'keo_tier1': {
+      settingsService.update(guild.id, {
+        keo: { tier1RoleId: selectedValue },
+      });
+      const freshSettings = settingsService.get(guild.id);
+      const view = buildKeoVipRolesView(guild, freshSettings, callerUserId, locale);
+      await interaction.update(view);
+      return { handled: true };
+    }
+
+    case 'keo_tier2': {
+      settingsService.update(guild.id, {
+        keo: { tier2RoleId: selectedValue },
+      });
+      const freshSettings = settingsService.get(guild.id);
+      const view = buildKeoVipRolesView(guild, freshSettings, callerUserId, locale);
+      await interaction.update(view);
+      return { handled: true };
+    }
+
+    case 'keo_tier3': {
+      settingsService.update(guild.id, {
+        keo: { tier3RoleId: selectedValue },
+      });
+      const freshSettings = settingsService.get(guild.id);
+      const view = buildKeoVipRolesView(guild, freshSettings, callerUserId, locale);
+      await interaction.update(view);
       return { handled: true };
     }
 

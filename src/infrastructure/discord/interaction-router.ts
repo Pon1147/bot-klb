@@ -41,6 +41,7 @@ import {
   handleAdminConsoleSelect,
   handleAdminConsoleModal,
 } from '../../features/admin/admin-console.handler.js';
+import { handleKeoButton, handleKeoModal } from '../../features/keo-lao-ban/keo.handler.js';
 import {
   isPaymentButton,
   isPaymentModal,
@@ -76,6 +77,9 @@ async function handleButton(interaction: ButtonInteraction): Promise<void> {
 
   // Admin Console buttons
   if ((await handleAdminConsoleButton(interaction, interaction.client?.database)).handled) return;
+
+  // Dịch vụ Kéo Lão Bản buttons
+  if ((await handleKeoButton(interaction, interaction.client?.database)).handled) return;
 
   // Team-find buttons (map/mode/done/join)
   if ((await handleTeamFindButton(interaction)).handled) return;
@@ -129,6 +133,11 @@ async function handleModalSubmit(interaction: ModalSubmitInteraction): Promise<v
   if (
     (await handleAdminConsoleModal(interaction, (interaction.client as Client)?.database)).handled
   ) {
+    return;
+  }
+
+  // Dịch vụ Kéo Lão Bản modals
+  if ((await handleKeoModal(interaction, (interaction.client as Client)?.database)).handled) {
     return;
   }
 

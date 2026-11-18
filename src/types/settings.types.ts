@@ -111,6 +111,19 @@ export interface VietQrSettings {
 }
 
 /**
+ * Cấu hình dịch vụ Kéo Lão Bản (Delta Force Carry Service).
+ */
+export interface KeoSettings {
+  enabled: boolean;
+  ticketCategoryId: string | null; // ID Category chứa ticket khách mở
+  dispatchChannelId: string | null; // ID Kênh bắn kèo/popup đơn
+  workerRoleId: string | null; // ID Role Thợ Kéo (bắt buộc để nhận đơn)
+  tier1RoleId?: string | null; // ID Role VIP Lão Bản Lv1 (tùy chọn)
+  tier2RoleId?: string | null; // ID Role VIP Lão Bản Lv2 (tùy chọn)
+  tier3RoleId?: string | null; // ID Role VIP Lão Bản Lv3 (tùy chọn)
+}
+
+/**
  * Toàn bộ settings của 1 guild.
  * Thêm feature mới chỉ cần add key vào interface này + default.
  */
@@ -123,6 +136,7 @@ export interface GuildSettings {
   botAnnounce: BotAnnounceSettings;
   qrServer?: QrServerSettings;
   vietqr?: VietQrSettings;
+  keo?: KeoSettings;
 }
 
 /**
