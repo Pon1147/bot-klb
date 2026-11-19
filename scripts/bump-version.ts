@@ -124,7 +124,7 @@ async function run(): Promise<void> {
 
   // Tự động đồng bộ Catalog tài liệu và bảng lệnh trong README.md
   try {
-    writeCatalogFile();
+    writeCatalogFile(newBotVersion, newExtVersion);
     console.log('✓ Tự động đồng bộ COMMANDS_CATALOG.md và README.md thành công!');
   } catch (err) {
     console.warn('⚠ Không thể tự động đồng bộ tài liệu lệnh:', err);

@@ -12,14 +12,15 @@ import { EN_LOCALE } from '../src/locales/en.js';
 import { BOT_VERSION, EXTENSION_VERSION } from '../src/config/version.js';
 import { COMMAND_PATH_POLICIES } from '../src/config/permissions.js';
 
-export function generateCommandCatalogMarkdown(): string {
+export function generateCommandCatalogMarkdown(botVersion?: string): string {
   const allBuilders = [configData, adminData, dfData, payData, donateData, teamData];
   const parsedCommands = extractCommandPathsFromBuilders(allBuilders);
+  const activeBotVersion = botVersion || BOT_VERSION;
 
   const lines: string[] = [
     '# Danh Mục Lệnh Chuẩn — Bot Delta (Ground Truth Command Catalog)',
     '',
-    `> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v${BOT_VERSION}**`,
+    `> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v${activeBotVersion}**`,
     '> *Mọi AI Assistant và lập trình viên bắt buộc tuân theo tài liệu này. Không tự suy diễn cú pháp hay tham số.*',
     '',
     '## 1. Thống Kê Tổng Quan',
@@ -93,22 +94,25 @@ export function generateReadmeCommandsTable(): string {
   return lines.join('\n');
 }
 
-export function updateReadmeFile(): string {
+export function updateReadmeFile(botVersion?: string, extVersion?: string): string {
   const readmePath = path.resolve(process.cwd(), 'README.md');
   if (!fs.existsSync(readmePath)) return '';
+
+  const activeBotVersion = botVersion || BOT_VERSION;
+  const activeExtVersion = extVersion || EXTENSION_VERSION;
 
   let content = fs.readFileSync(readmePath, 'utf8');
 
   // 1. Cập nhật Badge version
   content = content.replace(
     /(\[!\[Version\]\(https:\/\/img\.shields\.io\/badge\/version-)[^)]+(-informational\.svg\)\])/g,
-    `$1${BOT_VERSION}$2`,
+    `$1${activeBotVersion}$2`,
   );
 
   // 2. Cập nhật version extension trong phần giới thiệu
   content = content.replace(
     /(DF Toolbox Extension \(v)[\d.]+(\))/g,
-    `$1${EXTENSION_VERSION}$2`,
+    `$1${activeExtVersion}$2`,
   );
 
   // 3. Inject bảng lệnh tự động vào giữa cặp thẻ
@@ -122,11 +126,11 @@ export function updateReadmeFile(): string {
   return readmePath;
 }
 
-export function writeCatalogFile(): string {
-  const catalogContent = generateCommandCatalogMarkdown();
+export function writeCatalogFile(botVersion?: string, extVersion?: string): string {
+  const catalogContent = generateCommandCatalogMarkdown(botVersion);
   const targetPath = path.resolve(process.cwd(), 'docs', 'COMMANDS_CATALOG.md');
   fs.writeFileSync(targetPath, catalogContent, 'utf8');
-  updateReadmeFile();
+  updateReadmeFile(botVersion, extVersion);
   return targetPath;
 }
 
