@@ -1,10 +1,7 @@
-import { Client, Message, TextChannel } from 'discord.js';
+import { Client, Message } from 'discord.js';
 import { botConfig } from '../config/bot.config.js';
 import { handleClaim } from '../features/delta-force/index.js';
 import { createLogger } from '../utils/logger.js';
-import { getSettingsService } from '../services/settings.service.js';
-import { buildTicketWelcomeCard } from '../features/keo-lao-ban/keo.builder.js';
-import { getActiveKeoOrderByTicket } from '../database/keo.db.js';
 
 const logger = createLogger('MessageCreate');
 
@@ -17,46 +14,6 @@ const logger = createLogger('MessageCreate');
  * Arg đầu tiên luôn là `client` (được bind từ event handler).
  */
 export async function execute(client: Client, message: Message): Promise<void> {
-  // Fallback: Tự động gửi thẻ chào mừng Kéo Lão Bản nếu phát hiện tin nhắn trong Ticket thuộc Category đã cấu hình
-  if (message.guild && message.channel && 'parentId' in message.channel) {
-    const parentId = (message.channel as { parentId?: string | null }).parentId;
-    if (parentId) {
-      try {
-        const settingsService = getSettingsService();
-        const settings = settingsService.get(message.guild.id);
-        const keoConfig = settings.keo;
-        const channelName =
-          'name' in message.channel ? (message.channel.name as string).toLowerCase() : '';
-
-        // Guard: Chỉ gửi nếu thuộc ticketCategoryId, tên kênh có chứa 'ticket' và KHÔNG phải kênh bắn đơn
-        if (
-          keoConfig?.ticketCategoryId &&
-          keoConfig.ticketCategoryId === parentId &&
-          channelName.includes('ticket') &&
-          message.channelId !== keoConfig.dispatchChannelId
-        ) {
-          const db = client.database;
-          if (db) {
-            const existingOrder = getActiveKeoOrderByTicket(db, message.channelId);
-            if (!existingOrder && message.author.id !== client.user?.id) {
-              const messages = await message.channel.messages.fetch({ limit: 5 }).catch(() => null);
-              const alreadySent = messages?.some((m) => m.author.id === client.user?.id);
-              if (!alreadySent) {
-                const card = buildTicketWelcomeCard(message.channelId);
-                await (message.channel as TextChannel).send(card);
-                logger.info(
-                  `Fallback: Đã gửi thẻ chào mừng Kéo Lão Bản vào ticket #${(message.channel as TextChannel).name}`,
-                );
-              }
-            }
-          }
-        }
-      } catch (err) {
-        logger.warn('Lỗi fallback gửi thẻ ticket:', { error: String(err) });
-      }
-    }
-  }
-
   // Guard: chỉ xử lý message từ channel cấu hình
   if (!botConfig.dfLinkChannelId || message.channelId !== botConfig.dfLinkChannelId) {
     return;

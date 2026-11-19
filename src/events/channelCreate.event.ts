@@ -5,6 +5,9 @@ import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('ChannelCreateEvent');
 
+// Set lưu các channelId đã hoặc đang được xử lý để triệt tiêu hoàn toàn race condition
+export const welcomedChannels = new Set<string>();
+
 export async function execute(_client: Client, channel: GuildChannel): Promise<void> {
   // Chỉ kiểm tra các kênh text trong Guild
   if (channel.type !== ChannelType.GuildText) {
@@ -33,6 +36,16 @@ export async function execute(_client: Client, channel: GuildChannel): Promise<v
     return;
   }
 
+  // Khóa đồng bộ ngay lập tức trước khi await để chặn mọi race condition
+  if (welcomedChannels.has(channel.id)) {
+    return;
+  }
+  welcomedChannels.add(channel.id);
+  if (welcomedChannels.size > 1000) {
+    const first = welcomedChannels.values().next().value;
+    if (first) welcomedChannels.delete(first);
+  }
+
   logger.info(
     `Phát hiện ticket mới tại #${channel.name} (${channel.id}). Chờ 2.5s để ticket bot setup...`,
   );
@@ -58,6 +71,7 @@ export async function execute(_client: Client, channel: GuildChannel): Promise<v
     await textChannel.send(card);
     logger.info(`Đã gửi thẻ Chào Mừng Kéo Lão Bản vào #${channel.name}`);
   } catch (err) {
+    welcomedChannels.delete(channel.id);
     logger.error(`Không thể gửi thẻ chào mừng vào #${channel.name}:`, {
       error: err instanceof Error ? err.message : String(err),
     });

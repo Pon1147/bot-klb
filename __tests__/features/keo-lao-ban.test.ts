@@ -27,7 +27,7 @@ import {
   handleKeoButton,
   handleKeoModal,
 } from '../../src/features/keo-lao-ban/keo.handler.js';
-import { execute as handleChannelCreate } from '../../src/events/channelCreate.event.js';
+import { execute as handleChannelCreate, welcomedChannels } from '../../src/events/channelCreate.event.js';
 import { initializePaymentTables } from '../../src/database/payment.db.js';
 import { SettingsService, setSettingsService } from '../../src/services/settings.service.js';
 import { defaultGuildSettings } from '../../src/config/default.settings.js';
@@ -37,6 +37,7 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
   let mockSettingsService: any;
 
   beforeEach(() => {
+    welcomedChannels.clear();
     db = new Database(':memory:');
     initializeKeoTable(db);
     initializePaymentTables(db);
@@ -485,6 +486,23 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
 
       await handleChannelCreate({} as any, mockChannel);
       expect(mockChannel.send).not.toHaveBeenCalled();
+    });
+
+    it('Chống trùng lặp (Idempotent): Không gửi đúp nếu channelCreate được kích hoạt nhiều lần cùng lúc', async () => {
+      const mockChannel: any = {
+        id: 'ticket-dup-1',
+        name: 'ticket-dup',
+        type: ChannelType.GuildText,
+        parentId: 'cat-123',
+        guild: { id: 'guild-1' },
+        send: jest.fn().mockResolvedValue({}),
+      };
+
+      await Promise.all([
+        handleChannelCreate({} as any, mockChannel),
+        handleChannelCreate({} as any, mockChannel),
+      ]);
+      expect(mockChannel.send).toHaveBeenCalledTimes(1);
     });
   });
 });
