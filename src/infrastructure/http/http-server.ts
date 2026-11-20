@@ -165,7 +165,8 @@ export function createRequestHandler(client: Client): http.RequestListener {
     const isCorsAllowed = setCorsHeaders(req, res);
 
     const parsedUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
-    const pathname = parsedUrl.pathname;
+    const rawPath = parsedUrl.pathname;
+    const pathname = rawPath.length > 1 && rawPath.endsWith('/') ? rawPath.slice(0, -1) : rawPath;
     const origin = req.headers.origin || 'none';
 
     // Xử lý Preflight OPTIONS request từ trình duyệt

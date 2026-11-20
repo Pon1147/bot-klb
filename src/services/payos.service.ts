@@ -56,13 +56,17 @@ export function isPayosConfigured(): boolean {
 
 /**
  * Sắp xếp các key theo alphabet và tạo chuỗi query key=value&key=value...
+ * Theo chuẩn PayOS SDK: null được chuyển thành chuỗi rỗng '', chỉ loại bỏ undefined.
  * Sau đó tính HMAC SHA-256 bằng checksumKey.
  */
 export function generatePayosSignature(data: Record<string, unknown>, checksumKey: string): string {
   const sortedKeys = Object.keys(data).sort();
   const pairs = sortedKeys
-    .filter((k) => data[k] !== undefined && data[k] !== null)
-    .map((k) => `${k}=${data[k]}`);
+    .filter((k) => data[k] !== undefined)
+    .map((k) => {
+      const val = data[k] === null ? '' : data[k];
+      return `${k}=${val}`;
+    });
   const dataStr = pairs.join('&');
   return crypto.createHmac('sha256', checksumKey).update(dataStr).digest('hex');
 }

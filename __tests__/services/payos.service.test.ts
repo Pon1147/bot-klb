@@ -57,6 +57,43 @@ describe('payos.service', () => {
       expect(isValid).toBe(true);
     });
 
+    it('xác thực thành công payload chứa các trường null (chuyển thành chuỗi rỗng theo chuẩn PayOS)', () => {
+      const data = {
+        orderCode: 123,
+        amount: 3000,
+        description: 'VQRIO123',
+        accountNumber: '12345678',
+        reference: 'TF230204212323',
+        transactionDateTime: '2023-02-04 18:25:00',
+        currency: 'VND',
+        paymentLinkId: '124c33293c43417ab7879e14c8d9eb18',
+        code: '00',
+        desc: 'Thành công',
+        counterAccountBankId: null,
+        counterAccountBankName: null,
+      };
+
+      // Chuỗi PayOS SDK hash: key=value với null -> key=
+      const expectedStr =
+        'accountNumber=12345678&amount=3000&code=00&counterAccountBankId=&counterAccountBankName=&currency=VND&desc=Thành công&description=VQRIO123&orderCode=123&paymentLinkId=124c33293c43417ab7879e14c8d9eb18&reference=TF230204212323&transactionDateTime=2023-02-04 18:25:00';
+      const expectedHmac = crypto
+        .createHmac('sha256', testChecksumKey)
+        .update(expectedStr)
+        .digest('hex');
+
+      const signature = generatePayosSignature(data, testChecksumKey);
+      expect(signature).toBe(expectedHmac);
+
+      const payload: PayosWebhookPayload = {
+        code: '00',
+        desc: 'success',
+        data: data as any,
+        signature,
+      };
+
+      expect(verifyPayosWebhook(payload, testChecksumKey)).toBe(true);
+    });
+
     it('từ chối payload webhook khi dữ liệu bị giả mạo hoặc chữ ký sai', () => {
       const data = {
         orderCode: 123456,
