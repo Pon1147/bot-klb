@@ -7,6 +7,9 @@
  */
 
 import Database from 'better-sqlite3';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('DfClaimDb');
 
 /**
  * Khởi tạo bảng df_claim_sessions.
@@ -69,8 +72,8 @@ export function migrateClaimSessionsToNumeric(database: Database.Database): void
     }
   })();
 
-  console.log(
-    `[ClaimSessions] Migrated ${stringRows.length} string + ${msRows.length} ms rows to numeric expires_at`,
+  logger.info(
+    `Migrated ${stringRows.length} string + ${msRows.length} ms rows to numeric expires_at`,
   );
 }
 

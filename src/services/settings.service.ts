@@ -104,7 +104,7 @@ export class SettingsService {
         this.cache.set(guildId, settings);
       }
     } catch (err) {
-      console.error('[SettingsService] Lỗi khi đồng bộ guild settings từ MongoDB:', err);
+      logger.error('Lỗi khi đồng bộ guild settings từ MongoDB', { error: err });
     }
   }
 
@@ -118,10 +118,7 @@ export class SettingsService {
     this.cache.set(guildId, merged);
     if (isMongoConnected()) {
       void saveGuildSettingsToMongo(guildId, merged).catch((err: unknown) => {
-        console.error(
-          `[SettingsService] Lỗi khi async sync guild settings sang Mongo (${guildId}):`,
-          err,
-        );
+        logger.error(`Lỗi khi async sync guild settings sang Mongo (${guildId})`, { error: err });
       });
     }
     return merged;
@@ -135,10 +132,7 @@ export class SettingsService {
     this.cache.set(guildId, settings);
     if (isMongoConnected()) {
       void saveGuildSettingsToMongo(guildId, settings).catch((err: unknown) => {
-        console.error(
-          `[SettingsService] Lỗi khi async sync guild settings sang Mongo (${guildId}):`,
-          err,
-        );
+        logger.error(`Lỗi khi async sync guild settings sang Mongo (${guildId})`, { error: err });
       });
     }
   }

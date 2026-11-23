@@ -360,7 +360,7 @@ export async function extractToken(
       const token = await tokenPromise;
       return token;
     } catch (e) {
-      console.warn('[Scraper] Không tìm thấy token:', (e as Error).message);
+      logger.warn('Không tìm thấy token', { error: (e as Error).message });
       return null;
     }
   } finally {
