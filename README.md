@@ -1,12 +1,34 @@
 # Delta Bot (`bot-klb`) — Discord Bot
 
-[![Version](https://img.shields.io/badge/version-1.19.0-informational.svg)](#)
+[![Version](https://img.shields.io/badge/version-1.19.1-informational.svg)](#)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D22.12.0-brightgreen.svg)](https://nodejs.org/)
 [![Discord.js](https://img.shields.io/badge/discord.js-v14-blue.svg)](https://discord.js.org/)
 [![Architecture](https://img.shields.io/badge/architecture-vertical--slice-orange.svg)](#kiến-trúc-dự-án)
 [![TypeScript](https://img.shields.io/badge/typescript-5.x-blue.svg)](https://www.typescriptlang.org/)
 
 Discord Bot chuyên biệt cho cộng đồng người chơi **Delta Force** và quản trị máy chủ Discord, tích hợp **Discord Components V2**, **Hỗ trợ Song ngữ Tự động (i18n: Tiếng Việt ⟷ English)**, cào mật khẩu hằng ngày tự động, dashboard thống kê đồ họa chất lượng cao, thư viện Gunsmith meta, bản đồ 3D tương tác, tiện ích **DF Toolbox Extension (v1.14.1)** tự động nhập giftcode Garena, thanh toán hóa đơn VietQR động & cổng quyên góp PayOS, cùng cơ chế liên kết tài khoản game bảo mật bằng AES-256-GCM.
+
+---
+
+## 🚀 Bắt Đầu Nhanh (Dành Cho Người Dùng & Quản Trị Viên)
+
+Hệ thống được thiết kế tối giản cho người dùng không rành kỹ thuật (Non-tech Friendly) với 2 lệnh cửa ngõ duy nhất:
+
+### 🎮 Dành Cho Thành Viên & Game Thủ (Member)
+> **Gõ lệnh: `/help`** *(hoặc `/df help`)*
+- Mở **Trung tâm Trợ giúp V2** trực quan với các nút bấm tương tác.
+- Tra cứu chỉ số game (`/df stats`), xem mật khẩu két sắt hôm nay (`/df code`), tìm đồng đội chơi game (`/team find`), và nhận danh sách giftcode (`/df giftcode`).
+- Hoàn toàn tự động, có hướng dẫn từng bước và hỗ trợ song ngữ (Tiếng Việt ⟷ English).
+
+### 🛠️ Dành Cho Chủ Server & Quản Trị Viên (Server Owner & Mod)
+> **Gõ lệnh: `/setup`** *(hoặc `/admin`)*
+- Mở **Bảng Điều Khiển Cài Đặt 1-Chạm (Admin Console V2)**.
+- Chỉ cần click chọn kênh và role trực tiếp trên menu tương tác (không cần nhớ cú pháp lệnh rườm rà):
+  1. Cài đặt kênh nhận mật mã Delta Force tự động hàng ngày.
+  2. Bật/tắt thông báo chào mừng thành viên mới và cấp role tự động.
+  3. Phân quyền vai trò quản trị (RBAC: Admin / Moderator).
+  4. Cấu hình cổng thanh toán VietQR cho server (nếu có đăng ký).
+- *Lưu ý bảo mật:* Lệnh này được bảo vệ nghiêm ngặt bởi hệ thống phân quyền RBAC (`MANAGE_CONFIG`), chỉ Server Owner hoặc Admin/Mod được phân quyền mới có thể kích hoạt.
 
 ---
 

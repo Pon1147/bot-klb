@@ -7,7 +7,9 @@
 
 import { data as configData } from '../../src/features/admin/config.command.js';
 import { data as adminData } from '../../src/features/admin/admin.command.js';
+import { data as setupData } from '../../src/features/admin/setup.command.js';
 import { data as dfData } from '../../src/features/delta-force/df.command.js';
+import { data as helpData } from '../../src/features/delta-force/help.command.js';
 import { data as payData } from '../../src/features/payment/pay.command.js';
 import { data as donateData } from '../../src/features/payment/donate.command.js';
 import { data as teamData } from '../../src/features/team-find/team.command.js';
@@ -15,7 +17,16 @@ import { extractCommandPathsFromBuilders } from '../../src/infrastructure/regist
 import { COMMAND_PATH_POLICIES, resolveCommandPolicy } from '../../src/config/permissions.js';
 
 describe('CI Security Guard — Command RBAC Policy Mapping', () => {
-  const allBuilders = [configData, adminData, dfData, payData, donateData, teamData];
+  const allBuilders = [
+    configData,
+    adminData,
+    setupData,
+    dfData,
+    helpData,
+    payData,
+    donateData,
+    teamData,
+  ];
   const parsedCommands = extractCommandPathsFromBuilders(allBuilders);
 
   test('Tất cả command paths trích xuất từ SlashCommandBuilders phải có policy hợp lệ', () => {

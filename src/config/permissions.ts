@@ -186,6 +186,8 @@ export const Policy = {
 
 export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   admin: Policy.MANAGE_CONFIG,
+  setup: Policy.MANAGE_CONFIG,
+  help: Policy.DF_ACCESS,
   'config.roles.set': Policy.MANAGE_RBAC,
   'config.roles.view': Policy.MANAGE_RBAC,
   'config.bot.guilds': Policy.BOT_OWNER,
