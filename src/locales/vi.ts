@@ -9,7 +9,7 @@ export const VI_LOCALE = {
     title: 'Trung Tâm Trợ Giúp — Bot Delta',
     page_indicator: 'Trang {current} / {total}',
     footer:
-      '> **Bot Delta v{botVersion}** • **DF Toolbox v{extVersion}** • Tác giả: **Pon1147** • [Hỗ trợ](https://discord.gg/vz6w6c3Xe3)',
+      '> **Bot Delta v{botVersion}** • **DF Toolbox v{extVersion}** • Tác giả: **Pon1147** • [Hỗ trợ]({supportUrl})',
     user_isolation_error: 'Bạn không thể điều khiển menu trợ giúp của người khác.',
 
     // Option Labels for Select Menu

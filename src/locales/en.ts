@@ -9,7 +9,7 @@ export const EN_LOCALE = {
     title: 'Help Center — Bot Delta',
     page_indicator: 'Page {current} / {total}',
     footer:
-      '> **Bot Delta v{botVersion}** • **DF Toolbox v{extVersion}** • Author: **Pon1147** • [Support](https://discord.gg/vz6w6c3Xe3)',
+      '> **Bot Delta v{botVersion}** • **DF Toolbox v{extVersion}** • Author: **Pon1147** • [Support]({supportUrl})',
     user_isolation_error: 'You cannot interact with another user’s help session.',
 
     // Option Labels for Select Menu

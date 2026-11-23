@@ -7,6 +7,7 @@ import {
   MessageFlags,
 } from 'discord.js';
 import { botConfig } from '../config/bot.config.js';
+import { SUPPORT_DISCORD_INVITE } from '../config/branding.config.js';
 import { COLORS } from '../config/container.variables.js';
 import { makeResult, BuildContainerResult, buildErrorContainer } from './container.utils.js';
 
@@ -457,7 +458,7 @@ export function buildQrPremiumLockedResponse(customMessage?: string): Interactio
     new ButtonBuilder()
       .setLabel('Máy Chủ Hỗ Trợ')
       .setStyle(ButtonStyle.Link)
-      .setURL('https://discord.gg/vz6w6c3Xe3')
+      .setURL(SUPPORT_DISCORD_INVITE)
       .setEmoji('💬'),
   );
 

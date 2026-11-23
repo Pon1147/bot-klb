@@ -19,6 +19,7 @@ import { SupportedLocale } from '../../infrastructure/i18n/locale-resolver.js';
 import { buildLivePreviewContainer } from '../container/container-builders.js';
 import { MAX_CONTAINER_TEXT_LENGTH, MEDIA_URL_PLACEHOLDER } from '../../config/app.constants.js';
 import { BOT_VERSION } from '../../config/version.js';
+import { SUPPORT_DISCORD_INVITE } from '../../config/branding.config.js';
 
 export type NoticeType = 'welcome' | 'leave' | 'booster';
 
@@ -273,7 +274,7 @@ export function buildAdminConsoleFooterRow(
     new ButtonBuilder()
       .setLabel(isEn ? '💬 Support Server' : '💬 Hỗ Trợ Server')
       .setStyle(ButtonStyle.Link)
-      .setURL('https://discord.gg/vz6w6c3Xe3'),
+      .setURL(SUPPORT_DISCORD_INVITE),
   );
 }
 

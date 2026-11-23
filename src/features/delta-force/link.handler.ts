@@ -24,6 +24,7 @@ import { sendReply } from '../../utils/reply.utils.js';
 import { maskString } from '../../utils/string.utils.js';
 import { resolveUserLocale, SupportedLocale } from '../../infrastructure/i18n/locale-resolver.js';
 import { TTLStore } from '../../utils/ttl-store.js';
+import { SUPPORT_DISCORD_INVITE } from '../../config/branding.config.js';
 
 /** Cooldown store: giới hạn bấm làm mới mã tối thiểu 5s/lần để chống spam Discord API */
 const refreshCooldownStore = new TTLStore<string, { expiresAt: number }>({
@@ -116,7 +117,7 @@ export function buildLinkPayload(code: string, userId: string, locale: Supported
     new ButtonBuilder()
       .setStyle(ButtonStyle.Link)
       .setLabel(isEn ? '💬 Support' : '💬 Hỗ Trợ')
-      .setURL('https://discord.gg/vz6w6c3Xe3'),
+      .setURL(SUPPORT_DISCORD_INVITE),
   );
 
   return [...info.toJSON(), mainRow.toJSON(), subRow.toJSON()];

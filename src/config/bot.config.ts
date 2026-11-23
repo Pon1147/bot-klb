@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import { SUPPORT_DISCORD_INVITE } from './branding.config.js';
 
 dotenv.config();
 
@@ -155,6 +156,8 @@ export const botConfig = {
   // HTTP Server Configuration
   port: parseInt(process.env.PORT || '8080', 10),
   botPublicApiUrl: resolvePublicApiUrl(currentEnv),
+  // Support Server Discord Invite
+  supportDiscordInvite: SUPPORT_DISCORD_INVITE,
   // DeltaForceTools Weapon Loadouts API Token
   weaponLoadoutsToken: process.env.WEAPON_LOADOUTS_TOKEN || '',
   // PayOS Integration for Bot Donations / Buy Me a Coffee

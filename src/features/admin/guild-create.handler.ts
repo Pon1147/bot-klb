@@ -13,6 +13,7 @@ import {
 } from 'discord.js';
 import { COLORS } from '../../config/container.variables.js';
 import { BOT_VERSION } from '../../config/version.js';
+import { SUPPORT_DISCORD_INVITE } from '../../config/branding.config.js';
 import { makeResult, BuildContainerResult } from '../../utils/container.utils.js';
 import { createLogger } from '../../utils/logger.js';
 import { claimGuildWelcome, updateGuildWelcomeResult } from '../../database/guild.settings.db.js';
@@ -29,7 +30,7 @@ export function buildGuildWelcomeContainer(guildName: string): BuildContainerRes
     '',
     '> **Hãy gõ lệnh `/df help` để bắt đầu khám phá ngay!**',
     '',
-    `> **Bot Delta v${BOT_VERSION}** • Tác giả: **Pon1147** • Hỗ trợ: [KLB Community](https://discord.gg/vz6w6c3Xe3)`,
+    `> **Bot Delta v${BOT_VERSION}** • Tác giả: **Pon1147** • Hỗ trợ: [KLB Community](${SUPPORT_DISCORD_INVITE})`,
   ].join('\n');
 
   return makeResult(
