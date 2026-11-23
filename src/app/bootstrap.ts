@@ -12,6 +12,7 @@ import { initializeDatabase } from '../database/welcome.database.js';
 import { initializeSettingsTable } from '../database/guild.settings.db.js';
 import { initializePaymentTables } from '../database/payment.db.js';
 import { initializeKeoTable } from '../database/keo.db.js';
+import { initializeSubscriptionTables } from '../database/subscription.db.js';
 import { initializeDfTokensTable } from '../database/df.token.db.js';
 import {
   initializeClaimSessionsTable,
@@ -80,7 +81,8 @@ export async function bootstrap(): Promise<Client> {
   initializeSettingsTable(database);
   initializePaymentTables(database);
   initializeKeoTable(database);
-  logger.info('Guild settings, payment & carry service tables ready');
+  initializeSubscriptionTables(database);
+  logger.info('Guild settings, payment, carry & subscription tables ready');
 
   // Step 2b: Initialize DeltaForce tokens table (legacy, keep for migration)
   logger.info('Initializing DeltaForce tokens table...');
