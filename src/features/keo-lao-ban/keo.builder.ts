@@ -10,6 +10,7 @@ import {
 } from 'discord.js';
 import { KeoOrderRecord, KeoOrderStatus } from '../../database/keo.db.js';
 import { COLORS } from '../../config/container.variables.js';
+import { BOT_BRANDING } from '../../config/branding.config.js';
 
 export function formatVnd(amount: number): string {
   return `${amount.toLocaleString('vi-VN')} đ`;
@@ -66,6 +67,13 @@ export function buildTicketWelcomeCard(ticketChannelId: string): {
           label: '📋 Mở Đơn Kéo',
           style: ButtonStyle.Primary,
         },
+      },
+      {
+        type: ComponentType.Separator,
+      },
+      {
+        type: ComponentType.TextDisplay,
+        content: `*${BOT_BRANDING.watermarkText}*`,
       },
     ],
   };
@@ -324,6 +332,16 @@ export function buildTicketOrderCard(
       },
     });
   }
+
+  containerComponents.push(
+    {
+      type: ComponentType.Separator,
+    },
+    {
+      type: ComponentType.TextDisplay,
+      content: `*${BOT_BRANDING.watermarkText}*`,
+    },
+  );
 
   const containerJson = {
     type: ComponentType.Container,
