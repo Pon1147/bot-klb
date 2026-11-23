@@ -37,6 +37,8 @@ function classifyCodes(state) {
 }
 
 const DEFAULT_CODES = [
+  'AnkhHZxYCg4UzdB9wmMx',
+  'tgGkL8xY2jX7uqzP3v8P',
   'DFWKLUCK95',
   'DFTRBS1294',
   'DFVNL5T8M2K9',

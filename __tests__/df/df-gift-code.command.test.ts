@@ -29,8 +29,10 @@ describe('/df gift-code command', () => {
     db.close();
   });
 
-  test('STARTER_GIFT_CODES chứa đúng 208 mã', () => {
-    expect(STARTER_GIFT_CODES.length).toBe(208);
+  test('STARTER_GIFT_CODES chứa đúng 210 mã', () => {
+    expect(STARTER_GIFT_CODES.length).toBe(210);
+    expect(STARTER_GIFT_CODES).toContain('AnkhHZxYCg4UzdB9wmMx');
+    expect(STARTER_GIFT_CODES).toContain('tgGkL8xY2jX7uqzP3v8P');
     expect(STARTER_GIFT_CODES).toContain('DFAMMO4284');
     expect(STARTER_GIFT_CODES).toContain('WELCOMEDFMY');
   });
