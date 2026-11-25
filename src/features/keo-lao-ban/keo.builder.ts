@@ -11,6 +11,7 @@ import {
 import { KeoOrderRecord, KeoOrderStatus } from '../../database/keo.db.js';
 import { COLORS } from '../../config/container.variables.js';
 import { BOT_BRANDING } from '../../config/branding.config.js';
+import { t } from '../../infrastructure/i18n/i18n.service.js';
 
 export function formatVnd(amount: number): string {
   return `${amount.toLocaleString('vi-VN')} đ`;
@@ -420,7 +421,7 @@ export function buildSubscriptionExpiredNoticeCard(): {
     components: [
       {
         type: ComponentType.TextDisplay,
-        content: '## ⚠️ Dịch Vụ Kéo Lão Bản Tạm Khóa • Hết Hạn Bản Quyền',
+        content: t('keo.expired_title'),
       },
       {
         type: ComponentType.Separator,
@@ -428,10 +429,7 @@ export function buildSubscriptionExpiredNoticeCard(): {
       },
       {
         type: ComponentType.TextDisplay,
-        content:
-          '> 🔒 **Tính năng Kéo Lão Bản trên máy chủ này hiện đang tạm dừng do hết hạn bản quyền.**\n' +
-          '> ⚙️ Ban Quản Trị hoặc Chủ Server vui lòng dùng lệnh **/setup** để kích hoạt dùng thử 3 ngày hoặc gia hạn gói dịch vụ.\n' +
-          '> 💬 Sau khi gia hạn thành công, toàn bộ quy trình mở đơn và thanh toán sẽ tự động hoạt động trở lại.',
+        content: t('keo.expired_body'),
       },
       {
         type: ComponentType.Separator,

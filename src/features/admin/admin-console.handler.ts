@@ -1,6 +1,7 @@
 import {
   ActionRowBuilder,
   AnySelectMenuInteraction,
+  AttachmentBuilder,
   ButtonInteraction,
   Guild,
   MessageFlags,
@@ -48,6 +49,7 @@ import {
 import { cloneDefaultSettings } from '../../config/default.settings.js';
 import { cloneContainerSettings } from '../container/container-session.js';
 import { resolveUserLocale } from '../../infrastructure/i18n/locale-resolver.js';
+import { t } from '../../infrastructure/i18n/i18n.service.js';
 import { buildContainer } from '../../utils/container.utils.js';
 import { createLogger } from '../../utils/logger.js';
 
@@ -285,7 +287,7 @@ export async function handleAdminConsoleButton(
     const pkg = KEO_PACKAGES[packageType];
     if (!pkg) {
       await interaction.reply({
-        content: isEn ? '❌ Invalid package selected.' : '❌ Gói dịch vụ không hợp lệ.',
+        content: t('sub.invalid_pkg', undefined, locale),
         flags: MessageFlags.Ephemeral,
       });
       return { handled: true };
@@ -314,9 +316,7 @@ export async function handleAdminConsoleButton(
 
       if (!payosRes.success) {
         await interaction.followUp({
-          content: isEn
-            ? `❌ Failed to create PayOS payment link: ${payosRes.error || 'Unknown error'}. Please try again later.`
-            : `❌ Không thể tạo liên kết thanh toán PayOS (${payosRes.error || 'lỗi kết nối'}). Vui lòng thử lại sau.`,
+          content: t('sub.payos_create_failed', { error: payosRes.error || 'network' }, locale),
           flags: MessageFlags.Ephemeral,
         });
         return { handled: true };
@@ -335,8 +335,28 @@ export async function handleAdminConsoleButton(
       });
     }
 
-    const view = buildSubscriptionOrderView(order, callerUserId, locale);
-    await interaction.editReply(view);
+    // Tải ảnh QR trực tiếp từ chuỗi EMVCo để hiển thị trong Discord (ẩn mọi râu ria)
+    const files: AttachmentBuilder[] = [];
+    if (order.qr_code) {
+      try {
+        const qrRes = await fetch(
+          `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(order.qr_code)}`,
+          { signal: AbortSignal.timeout(4000) },
+        ).catch(() => null);
+        if (qrRes && qrRes.ok) {
+          const qrBuffer = Buffer.from(await qrRes.arrayBuffer());
+          files.push(new AttachmentBuilder(qrBuffer, { name: 'sub_qr.png' }));
+        }
+      } catch {
+        // Fallback sang URL trực tiếp nếu fetch buffer thất bại
+      }
+    }
+
+    const view = buildSubscriptionOrderView(order, callerUserId, locale, files.length > 0);
+    await interaction.editReply({
+      ...view,
+      files,
+    });
     return { handled: true };
   }
 
@@ -346,9 +366,7 @@ export async function handleAdminConsoleButton(
     if (res.success) {
       const expiry = Math.floor(res.expiresAt! / 1000);
       await interaction.reply({
-        content: isEn
-          ? `🎉 **3-Day Free Trial Activated!**\n> Expiration: <t:${expiry}:f> (<t:${expiry}:R>).`
-          : `🎉 **Đã kích hoạt 3 ngày dùng thử miễn phí thành công!**\n> Hạn sử dụng: <t:${expiry}:f> (<t:${expiry}:R>).`,
+        content: t('sub.trial_activated', { expiry }, locale),
         flags: MessageFlags.Ephemeral,
       });
       const freshSettings = settingsService.get(guild.id);
@@ -356,9 +374,7 @@ export async function handleAdminConsoleButton(
       await interaction.message.edit(view);
     } else {
       await interaction.reply({
-        content: isEn
-          ? '❌ This server has already used its 3-day free trial.'
-          : '❌ Máy chủ này đã từng kích hoạt dùng thử 3 ngày trước đây. Vui lòng chọn gia hạn gói bản quyền.',
+        content: t('sub.trial_already_used', undefined, locale),
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -972,9 +988,7 @@ export async function handleAdminConsoleModal(
     if (recentFailures.length >= MAX_KEY_FAILURES) {
       keyFailuresByGuild.set(guild.id, recentFailures);
       await interaction.reply({
-        content: isEn
-          ? '🔒 **Too many failed key attempts.** Please wait 15 minutes before trying again.'
-          : '🔒 **Bạn đã nhập sai mã bản quyền quá 5 lần.** Vui lòng đợi 15 phút rồi thử lại.',
+        content: t('sub.key_rate_limited', undefined, locale),
         flags: MessageFlags.Ephemeral,
       });
       return { handled: true };
@@ -988,9 +1002,7 @@ export async function handleAdminConsoleModal(
       keyFailuresByGuild.delete(guild.id);
       const expiry = Math.floor(res.newExpiry! / 1000);
       await interaction.reply({
-        content: isEn
-          ? `🎉 **Key redeemed successfully!**\n> Added: **+${res.durationDays} days**\n> New expiry: <t:${expiry}:f> (<t:${expiry}:R>).`
-          : `🎉 **Kích hoạt mã bản quyền thành công!**\n> Đã cộng thêm: **+${res.durationDays} ngày**\n> Hạn dùng mới: <t:${expiry}:f> (<t:${expiry}:R>).`,
+        content: t('sub.key_redeemed', { days: res.durationDays!, expiry }, locale),
         flags: MessageFlags.Ephemeral,
       });
       try {
@@ -1001,15 +1013,15 @@ export async function handleAdminConsoleModal(
     } else {
       recentFailures.push(now);
       keyFailuresByGuild.set(guild.id, recentFailures);
-      let errText = isEn ? 'Invalid license key' : 'Mã bản quyền không hợp lệ';
-      if (res.reason === 'already_used') {
-        errText = isEn ? 'Key has already been used' : 'Mã key đã được sử dụng trước đó';
-      } else if (res.reason === 'expired') {
-        errText = isEn ? 'Key has expired' : 'Mã key đã quá hạn kích hoạt';
-      }
+      const errKey =
+        res.reason === 'already_used'
+          ? 'sub.key_used'
+          : res.reason === 'expired'
+            ? 'sub.key_expired'
+            : 'sub.key_invalid';
 
       await interaction.reply({
-        content: `❌ **${errText}**\n> Vui lòng kiểm tra lại chuỗi ký tự hoặc liên hệ Bot Owner.`,
+        content: t(errKey, undefined, locale),
         flags: MessageFlags.Ephemeral,
       });
     }

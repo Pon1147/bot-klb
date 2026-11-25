@@ -322,4 +322,58 @@ export const EN_LOCALE = {
       example: '/df autopost run type:map',
     },
   },
+
+  // ─── Subscription & VietQR Billing ───
+  sub: {
+    btn_buy: 'Extend Plan',
+    btn_trial: '3-Day Free Trial',
+    btn_trial_used: 'Trial Used',
+    btn_key: 'Redeem Key',
+    packages_title: '## Choose a subscription plan',
+    packages_body:
+      '• **1 Month (30 days):** 149,000 VND\n' +
+      '• **3 Months (90 days):** 399,000 VND (save 10%)\n' +
+      '• **6 Months (180 days):** 699,000 VND (save 22%)\n\n' +
+      'Scan the VietQR code to transfer; your plan activates automatically.',
+    pkg_1m: '1 Month (149k)',
+    pkg_3m: '3 Months (399k)',
+    pkg_6m: '6 Months (699k)',
+    btn_back: 'Back',
+    qr_title: '## Scan VietQR to pay',
+    qr_meta: '**{amount} VND** ({days} days) • Expires <t:{expiry}:R>',
+    qr_waiting: 'Waiting for bank transfer... (#{orderCode})',
+    btn_recheck: 'Re-check',
+    btn_open_checkout: 'Open checkout',
+    key_modal_title: 'Redeem License Key',
+    key_modal_label: 'License Key (KLB-XXXX-XXXX-XXXX-XXXX)',
+    invalid_pkg: 'Invalid subscription package.',
+    payos_create_failed: 'Could not create payment link ({error}). Please try again later.',
+    trial_activated: '3-day free trial activated.\nExpires: <t:{expiry}:f> (<t:{expiry}:R>).',
+    trial_already_used: 'This server has already used its 3-day free trial.',
+    key_rate_limited: 'Too many failed key attempts. Please wait 15 minutes before trying again.',
+    key_redeemed: 'Key redeemed (+{days} days).\nNew expiry: <t:{expiry}:f> (<t:{expiry}:R>).',
+    key_invalid: 'Invalid license key. Please check and try again.',
+    key_used: 'This key has already been used.',
+    key_expired: 'This key has expired.',
+    recheck_invalid: 'Invalid order code.',
+    recheck_paid:
+      'Payment confirmed for order #{orderCode} (+{days} days).\nNew expiry: <t:{expiry}:f> (<t:{expiry}:R>).',
+    recheck_already: 'Order #{orderCode} was already activated.',
+    recheck_pending:
+      'Order #{orderCode} is still waiting for bank confirmation. Please wait 30 seconds and check again.',
+    recheck_cancelled:
+      'Order #{orderCode} expired or was cancelled. Please create a new order in /setup.',
+    recheck_error:
+      'Could not verify the order right now ({error}). The system will retry automatically.',
+  },
+
+  // ─── Carry Service ───
+  keo: {
+    expired_title: '## Carry Service Paused',
+    expired_body:
+      'Automated order creation is paused because this server subscription expired.\n' +
+      'Server admins can run `/setup` to activate a trial or renew.',
+    entitlement_blocked:
+      'Carry service subscription has expired on this server. Admins can renew via `/setup`.',
+  },
 } as const;

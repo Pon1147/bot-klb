@@ -16,6 +16,7 @@ import { ContainerSettings, GuildSettings } from '../../types/settings.types.js'
 import { BuildContainerResult, makeResult } from '../../utils/container.utils.js';
 import { COLORS } from '../../config/container.variables.js';
 import { SupportedLocale } from '../../infrastructure/i18n/locale-resolver.js';
+import { t } from '../../infrastructure/i18n/i18n.service.js';
 import { buildLivePreviewContainer } from '../container/container-builders.js';
 import { MAX_CONTAINER_TEXT_LENGTH, MEDIA_URL_PLACEHOLDER } from '../../config/app.constants.js';
 import { BOT_VERSION } from '../../config/version.js';
@@ -955,16 +956,16 @@ export function buildKeoConfigView(
   const subButtonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`admin_console:sub_buy:${callerUserId}`)
-      .setLabel(isEn ? '💎 Upgrade Package (PayOS)' : '💎 Gia Hạn Gói (PayOS)')
+      .setLabel(t('sub.btn_buy', undefined, locale))
       .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
       .setCustomId(`admin_console:sub_trial:${callerUserId}`)
-      .setLabel(isEn ? '🎁 3-Day Free Trial' : '🎁 Dùng Thử 3 Ngày')
+      .setLabel(t(trialUsed ? 'sub.btn_trial_used' : 'sub.btn_trial', undefined, locale))
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(trialUsed),
     new ButtonBuilder()
       .setCustomId(`admin_console:sub_key:${callerUserId}`)
-      .setLabel(isEn ? '🔑 Redeem License Key' : '🔑 Nhập Key Bản Quyền')
+      .setLabel(t('sub.btn_key', undefined, locale))
       .setStyle(ButtonStyle.Secondary),
   );
 
@@ -1218,15 +1219,12 @@ export function buildSubscriptionPackagesView(
   callerUserId: string,
   locale: SupportedLocale = 'vi',
 ): { components: any[]; flags: number } {
-  const isEn = locale === 'en';
   const containerJson = {
     type: ComponentType.Container,
     components: [
       {
         type: ComponentType.TextDisplay,
-        content: isEn
-          ? '## 💎 Choose Subscription Package'
-          : '## 💎 Chọn Gói Bản Quyền Kéo Lão Bản',
+        content: t('sub.packages_title', undefined, locale),
       },
       {
         type: ComponentType.Separator,
@@ -1234,15 +1232,7 @@ export function buildSubscriptionPackagesView(
       },
       {
         type: ComponentType.TextDisplay,
-        content: isEn
-          ? `> 📦 **1 Month (30 days)**: **149,000 đ**\n` +
-            `> 📦 **3 Months (90 days)**: **399,000 đ** *(Save ~10%)*\n` +
-            `> 📦 **6 Months (180 days)**: **699,000 đ** *(Save ~22%)*\n\n` +
-            `> ⚡ Dynamic VietQR PayOS payment: Instant automatic activation upon bank transfer.`
-          : `> 📦 **Gói 1 Tháng (30 ngày)**: **149.000 đ**\n` +
-            `> 📦 **Gói 3 Tháng (90 ngày)**: **399.000 đ** *(Tiết kiệm ~10%)*\n` +
-            `> 📦 **Gói 6 Tháng (180 ngày)**: **699.000 đ** *(Tiết kiệm ~22%)*\n\n` +
-            `> ⚡ Tích hợp cổng VietQR PayOS tự động: Quét mã chuyển khoản là bot tự gia hạn ngay lập tức.`,
+        content: t('sub.packages_body', undefined, locale),
       },
       {
         type: ComponentType.Separator,
@@ -1257,19 +1247,19 @@ export function buildSubscriptionPackagesView(
   const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`admin_console:sub_create:1_MONTH:${callerUserId}`)
-      .setLabel(isEn ? '1 Month (149k)' : '1 Tháng (149k)')
+      .setLabel(t('sub.pkg_1m', undefined, locale))
       .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
       .setCustomId(`admin_console:sub_create:3_MONTHS:${callerUserId}`)
-      .setLabel(isEn ? '3 Months (399k)' : '3 Tháng (399k)')
+      .setLabel(t('sub.pkg_3m', undefined, locale))
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
       .setCustomId(`admin_console:sub_create:6_MONTHS:${callerUserId}`)
-      .setLabel(isEn ? '6 Months (699k)' : '6 Tháng (699k)')
+      .setLabel(t('sub.pkg_6m', undefined, locale))
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
       .setCustomId(`admin_console:keo:${callerUserId}`)
-      .setLabel(isEn ? '◀ Back' : '◀ Quay Lại')
+      .setLabel(t('sub.btn_back', undefined, locale))
       .setStyle(ButtonStyle.Secondary),
   );
 
@@ -1286,48 +1276,54 @@ export function buildSubscriptionOrderView(
   order: SubscriptionOrderRecord,
   callerUserId: string,
   locale: SupportedLocale = 'vi',
+  hasQrAttachment = false,
 ): { components: any[]; flags: number } {
-  const isEn = locale === 'en';
   const expiryTimestamp = Math.floor(order.expires_at / 1000);
+  const qrUrl = hasQrAttachment
+    ? 'attachment://sub_qr.png'
+    : order.qr_code
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(order.qr_code)}`
+      : null;
+
   const containerComponents: any[] = [
     {
       type: ComponentType.TextDisplay,
-      content: isEn
-        ? `## 💳 Subscription Invoice #${order.order_code}`
-        : `## 💳 Hóa Đơn Thanh Toán Bản Quyền #${order.order_code}`,
-    },
-    {
-      type: ComponentType.Separator,
-      accentColor: COLORS.DF,
-    },
-    {
-      type: ComponentType.TextDisplay,
-      content: isEn
-        ? `> 📦 **Package**: **${order.package_type}** (+${order.duration_days} days)\n` +
-          `> 💰 **Amount**: **${order.amount.toLocaleString('vi-VN')} VNĐ**\n` +
-          `> ⏱️ **Order Code**: \`#${order.order_code}\`\n` +
-          `> ⏳ **QR Expires**: <t:${expiryTimestamp}:R> (<t:${expiryTimestamp}:T>)\n\n` +
-          `> ℹ️ *Please scan the QR code via banking app or click Open Checkout below. After transfer, click Re-check.*`
-        : `> 📦 **Gói dịch vụ**: **${order.package_type}** (+${order.duration_days} ngày)\n` +
-          `> 💰 **Số tiền**: **${order.amount.toLocaleString('vi-VN')} VNĐ**\n` +
-          `> ⏱️ **Mã đơn**: \`#${order.order_code}\`\n` +
-          `> ⏳ **Mã QR hết hạn**: <t:${expiryTimestamp}:R> (<t:${expiryTimestamp}:T>)\n\n` +
-          `> ℹ️ *Vui lòng quét mã VietQR hoặc bấm [Mở Trang Thanh Toán PayOS] bên dưới. Sau khi chuyển khoản, bấm nút [Kiểm Tra Lại].*`,
-    },
-    {
-      type: ComponentType.Separator,
-    },
-    {
-      type: ComponentType.TextDisplay,
-      content: `*${BOT_BRANDING.watermarkText}*`,
+      content:
+        `${t('sub.qr_title', undefined, locale)}\n` +
+        t(
+          'sub.qr_meta',
+          {
+            amount: order.amount.toLocaleString('vi-VN'),
+            days: order.duration_days,
+            expiry: expiryTimestamp,
+          },
+          locale,
+        ),
     },
   ];
 
+  if (qrUrl) {
+    containerComponents.push({
+      type: ComponentType.MediaGallery,
+      items: [
+        {
+          media: { url: qrUrl },
+          description: 'VietQR',
+        },
+      ],
+    });
+  }
+
+  containerComponents.push({
+    type: ComponentType.TextDisplay,
+    content: t('sub.qr_waiting', { orderCode: order.order_code }, locale),
+  });
+
   const buttonRow = new ActionRowBuilder<ButtonBuilder>();
-  if (order.checkout_url) {
+  if (!qrUrl && order.checkout_url) {
     buttonRow.addComponents(
       new ButtonBuilder()
-        .setLabel(isEn ? '🔗 Open PayOS Checkout' : '🔗 Mở Trang Thanh Toán PayOS')
+        .setLabel(t('sub.btn_open_checkout', undefined, locale))
         .setStyle(ButtonStyle.Link)
         .setURL(order.checkout_url),
     );
@@ -1336,11 +1332,11 @@ export function buildSubscriptionOrderView(
   buttonRow.addComponents(
     new ButtonBuilder()
       .setCustomId(`keo:sub_recheck:${order.order_code}`)
-      .setLabel(isEn ? '🔄 Re-check Payment' : '🔄 Kiểm Tra Lại')
+      .setLabel(t('sub.btn_recheck', undefined, locale))
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
       .setCustomId(`admin_console:keo:${callerUserId}`)
-      .setLabel(isEn ? '◀ Back' : '◀ Quay Lại')
+      .setLabel(t('sub.btn_back', undefined, locale))
       .setStyle(ButtonStyle.Secondary),
   );
 
@@ -1360,19 +1356,14 @@ export function buildKeyRedemptionModal(
   callerUserId: string,
   locale: SupportedLocale = 'vi',
 ): ModalBuilder {
-  const isEn = locale === 'en';
   return new ModalBuilder()
     .setCustomId(`admin_console_modal:sub_key:${callerUserId}`)
-    .setTitle(isEn ? 'Redeem Subscription Key' : 'Nhập Mã Bản Quyền')
+    .setTitle(t('sub.key_modal_title', undefined, locale))
     .addComponents(
       new ActionRowBuilder<TextInputBuilder>().addComponents(
         new TextInputBuilder()
           .setCustomId('key_input')
-          .setLabel(
-            isEn
-              ? 'License Key (KLB-XXXX-XXXX-XXXX-XXXX)'
-              : 'Mã bản quyền (KLB-XXXX-XXXX-XXXX-XXXX)',
-          )
+          .setLabel(t('sub.key_modal_label', undefined, locale))
           .setStyle(TextInputStyle.Short)
           .setPlaceholder('KLB-ABCD-1234-EF56-7890')
           .setMinLength(15)
