@@ -330,6 +330,9 @@ export async function handleKeoButton(
       return { handled: true };
     }
 
+    // Defer update trước khi tải ảnh QR từ API bên ngoài để tránh timeout 3s
+    await interaction.deferUpdate();
+
     // Cập nhật lại đối tượng order
     order.status = 'CLAIMED';
     order.worker_id = interaction.user.id;
@@ -353,7 +356,7 @@ export async function handleKeoButton(
     };
 
     // Cập nhật thẻ ở Kênh Bắn Đơn
-    await interaction.update(buildDispatchCard(order, keoConfig?.workerRoleId));
+    await interaction.editReply(buildDispatchCard(order, keoConfig?.workerRoleId));
 
     // Cập nhật thẻ ở Kênh Ticket
     const ticketChannel = guild.channels.cache.get(order.ticket_channel_id) as TextChannel;
@@ -383,6 +386,14 @@ export async function handleKeoButton(
     if (!isOwnerOrAdmin(member, settings.rbac?.botAdminRoleId)) {
       await interaction.reply({
         content: '🔒 Chỉ Chủ Server (hoặc Quản Trị Bot) mới có quyền bấm xác nhận nhận tiền.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
+
+    if (order.status !== 'CLAIMED') {
+      await interaction.reply({
+        content: '⚠️ Đơn hàng này chưa có thợ nhận hoặc đã được xác nhận thanh toán trước đó.',
         flags: MessageFlags.Ephemeral,
       });
       return { handled: true };
@@ -445,6 +456,14 @@ export async function handleKeoButton(
       return { handled: true };
     }
 
+    if (order.status !== 'PAID') {
+      await interaction.reply({
+        content: '⚠️ Đơn hàng chưa được xác nhận thanh toán hoặc đã hoàn tất trước đó.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
+
     updateKeoOrderStatus(db, order.id, 'WORKER_DONE');
     order.status = 'WORKER_DONE';
 
@@ -479,6 +498,15 @@ export async function handleKeoButton(
       return { handled: true };
     }
 
+    if (order.status === 'COMPLETED' || order.status === 'CANCELLED') {
+      await interaction.reply({
+        content: '⚠️ Đơn hàng này đã được nghiệm thu hoặc hủy trước đó.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
+
+    await interaction.deferUpdate();
     updateKeoOrderStatus(db, order.id, 'COMPLETED');
     order.status = 'COMPLETED';
 
@@ -493,7 +521,7 @@ export async function handleKeoButton(
     }
 
     // Cập nhật thẻ Ticket
-    await interaction.update(buildTicketOrderCard(order));
+    await interaction.editReply(buildTicketOrderCard(order));
 
     // Gửi thiệp cảm ơn kèm 5 nút đánh giá sao cho khách
     const ratingCard = buildRatingCard(order);
@@ -517,13 +545,21 @@ export async function handleKeoButton(
   // 6. Đánh giá ⭐ từ khách hàng
   if (action === 'rate') {
     const stars = parseInt(parts[3] ?? '5', 10);
-    saveFeedback(db, {
+    const saved = saveFeedback(db, {
       tx_id: `KEO_${order.id}`,
       guild_id: guild.id,
       buyer_id: interaction.user.id,
       rating: stars,
       created_at: Date.now(),
     });
+
+    if (!saved) {
+      await interaction.reply({
+        content: 'ℹ️ Đơn hàng này đã được đánh giá trước đó rồi.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
 
     // Bắn tin nhắn vào Kênh Nhận Đánh Giá 5 Sao (nếu server đã cấu hình feedbackChannelId)
     const feedbackChannelId = settings.vietqr?.feedbackChannelId;
@@ -558,6 +594,14 @@ export async function handleKeoButton(
     if (!isStaffOrMod(member, settings.rbac?.botAdminRoleId, settings.rbac?.moderatorRoleId)) {
       await interaction.reply({
         content: '🔒 Không có quyền hủy đơn.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
+
+    if (order.status === 'COMPLETED' || order.status === 'CANCELLED') {
+      await interaction.reply({
+        content: '⚠️ Không thể hủy đơn hàng đã hoàn tất hoặc đã hủy trước đó.',
         flags: MessageFlags.Ephemeral,
       });
       return { handled: true };

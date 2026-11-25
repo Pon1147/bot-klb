@@ -312,6 +312,16 @@ export async function handleAdminConsoleButton(
         description: `Sub ${pkg.durationDays}d`,
       });
 
+      if (!payosRes.success) {
+        await interaction.followUp({
+          content: isEn
+            ? `❌ Failed to create PayOS payment link: ${payosRes.error || 'Unknown error'}. Please try again later.`
+            : `❌ Không thể tạo liên kết thanh toán PayOS (${payosRes.error || 'lỗi kết nối'}). Vui lòng thử lại sau.`,
+          flags: MessageFlags.Ephemeral,
+        });
+        return { handled: true };
+      }
+
       order = createSubscriptionOrder(db, {
         orderCode,
         guildId: guild.id,
@@ -319,8 +329,8 @@ export async function handleAdminConsoleButton(
         packageType,
         durationDays: pkg.durationDays,
         amount: pkg.amount,
-        checkoutUrl: payosRes.success ? payosRes.data?.checkoutUrl : null,
-        qrCode: payosRes.success ? payosRes.data?.qrCode : null,
+        checkoutUrl: payosRes.data?.checkoutUrl ?? null,
+        qrCode: payosRes.data?.qrCode ?? null,
         expiresAt,
       });
     }
@@ -617,7 +627,8 @@ export async function handleAdminConsoleButton(
       },
     });
     const freshSettings = settingsService.get(guild.id);
-    const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale);
+    const db = (database ?? interaction.client?.database) as Database.Database;
+    const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale, db);
     await interaction.update(view);
     return { handled: true };
   }
@@ -774,7 +785,8 @@ export async function handleAdminConsoleSelect(
         keo: { dispatchChannelId: selectedValue, enabled: true },
       });
       const freshSettings = settingsService.get(guild.id);
-      const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale);
+      const db = (database ?? interaction.client?.database) as Database.Database;
+      const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale, db);
       await interaction.update(view);
       return { handled: true };
     }
@@ -784,7 +796,8 @@ export async function handleAdminConsoleSelect(
         keo: { ticketCategoryId: selectedValue, enabled: true },
       });
       const freshSettings = settingsService.get(guild.id);
-      const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale);
+      const db = (database ?? interaction.client?.database) as Database.Database;
+      const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale, db);
       await interaction.update(view);
       return { handled: true };
     }
@@ -794,7 +807,8 @@ export async function handleAdminConsoleSelect(
         keo: { workerRoleId: selectedValue, enabled: true },
       });
       const freshSettings = settingsService.get(guild.id);
-      const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale);
+      const db = (database ?? interaction.client?.database) as Database.Database;
+      const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale, db);
       await interaction.update(view);
       return { handled: true };
     }
