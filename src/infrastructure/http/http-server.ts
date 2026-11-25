@@ -14,7 +14,11 @@ import { Client, EmbedBuilder } from 'discord.js';
 import { botConfig } from '../../config/bot.config.js';
 import { BOT_VERSION, EXTENSION_VERSION } from '../../config/version.js';
 import { handleClaim } from '../../services/df-claim-handler.js';
-import { verifyPayosWebhook, PayosWebhookPayload } from '../../services/payos.service.js';
+import {
+  verifyPayosWebhook,
+  parsePayosDateTime,
+  PayosWebhookPayload,
+} from '../../services/payos.service.js';
 import {
   getDonationByOrderCode,
   updateDonationStatus,
@@ -344,14 +348,11 @@ export function createRequestHandler(client: Client): http.RequestListener {
           // ─── A. Kiểm tra Đơn Subscription Bản quyền Kéo Lão Bản ───
           const subOrder = getSubscriptionOrderByCode(client.database, orderCode);
           if (subOrder) {
-            const txTime = webhookData.transactionDateTime
-              ? new Date(webhookData.transactionDateTime).getTime()
-              : Date.now();
             const result = fulfillPayment(client.database, {
               orderCode,
               actualAmount: webhookData.amount,
               paymentReference: webhookData.reference || `PAYOS-${orderCode}`,
-              transactionTime: isNaN(txTime) ? Date.now() : txTime,
+              transactionTime: parsePayosDateTime(webhookData.transactionDateTime),
             });
 
             if (result.success) {

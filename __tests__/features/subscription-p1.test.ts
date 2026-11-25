@@ -95,7 +95,7 @@ describe('Subscription Phase P1 — Reconciliation & Entitlement Guard', () => {
               amount: 149_000,
               accountNumber: '123456789',
               description: 'KLB 1002',
-              transactionDateTime: '2026-11-25 08:30:00',
+              transactionDateTime: new Date().toISOString(),
             },
           ],
         },

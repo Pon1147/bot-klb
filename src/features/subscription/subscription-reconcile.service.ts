@@ -5,7 +5,7 @@
 
 import Database from 'better-sqlite3';
 import { Client, EmbedBuilder, TextChannel } from 'discord.js';
-import { getPayosPaymentInfo } from '../../services/payos.service.js';
+import { getPayosPaymentInfo, parsePayosDateTime } from '../../services/payos.service.js';
 import {
   fulfillPayment,
   getSubscriptionOrderByCode,
@@ -159,7 +159,7 @@ export async function reconcileSubscriptionOrder(
     const tx = data.transactions?.[0];
     const actualAmount = data.amountPaid || data.amount;
     const paymentReference = tx?.reference || data.id || `PAYOS-${orderCode}`;
-    const transactionTime = tx ? new Date(tx.transactionDateTime).getTime() : now;
+    const transactionTime = tx ? parsePayosDateTime(tx.transactionDateTime) : now;
 
     const fulfillRes = fulfillPayment(db, {
       orderCode,
