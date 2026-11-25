@@ -654,10 +654,18 @@ export async function handleFeedbackModal(
           .fetch(session.sourceMessageId)
           .catch(() => null);
         if (sourceMessage) {
+          const prevComponents = sourceMessage.components.map((c: any) =>
+            typeof c.toJSON === 'function' ? c.toJSON() : c,
+          );
+          const updatedRow = buildRatingButtons(
+            session.txId,
+            session.buyerId,
+            session.rating,
+          ).toJSON() as any;
+          const nextComponents =
+            prevComponents.length > 1 ? [...prevComponents.slice(0, -1), updatedRow] : [updatedRow];
           await sourceMessage.edit({
-            components: [
-              buildRatingButtons(session.txId, session.buyerId, session.rating).toJSON() as any,
-            ],
+            components: nextComponents,
           });
         }
       }

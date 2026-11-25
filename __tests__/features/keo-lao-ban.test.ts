@@ -236,7 +236,9 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
 
       const ratingCard = buildRatingCard(order);
       expect(ratingCard.components[1].components).toHaveLength(5);
-      expect(ratingCard.components[1].components[4].custom_id).toBe('keo:rate:ORDER777:5');
+      expect(ratingCard.components[1].components[4].custom_id).toBe(
+        'feedback_rate_5_KEO_ORDER777_cust-1',
+      );
     });
   });
 

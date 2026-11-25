@@ -25,7 +25,10 @@ import {
   buildRatingCard,
   buildTicketOrderCard,
 } from './keo.builder.js';
-import { fetchVietQrImageBuffer } from '../../utils/vietqr.utils.js';
+import {
+  buildCustomerFeedbackContainer,
+  fetchVietQrImageBuffer,
+} from '../../utils/vietqr.utils.js';
 import { createPayment, saveFeedback } from '../payment/payment.service.js';
 import { checkSubscriptionEntitlement } from '../subscription/subscription.service.js';
 import { t } from '../../infrastructure/i18n/i18n.service.js';
@@ -551,8 +554,10 @@ export async function handleKeoButton(
     return { handled: true };
   }
 
-  // 6. Đánh giá ⭐ từ khách hàng
+  // 6. Đánh giá ⭐ từ khách hàng (legacy fallback cho card cũ)
   if (action === 'rate') {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     const stars = parseInt(parts[3] ?? '5', 10);
     const saved = saveFeedback(db, {
       tx_id: `KEO_${order.id}`,
@@ -563,27 +568,31 @@ export async function handleKeoButton(
     });
 
     if (!saved) {
-      await interaction.reply({
-        content: 'ℹ️ Đơn hàng này đã được đánh giá trước đó rồi.',
-        flags: MessageFlags.Ephemeral,
+      await interaction.editReply({
+        content: 'Đơn hàng này đã được đánh giá trước đó rồi.',
       });
       return { handled: true };
     }
 
-    // Bắn tin nhắn vào Kênh Nhận Đánh Giá 5 Sao (nếu server đã cấu hình feedbackChannelId)
+    // Bắn thẻ Components V2 vào Kênh Nhận Đánh Giá (nếu server đã cấu hình feedbackChannelId)
     const feedbackChannelId = settings.vietqr?.feedbackChannelId;
     if (feedbackChannelId) {
       try {
         const fbChan = guild.channels.cache.get(feedbackChannelId) as TextChannel;
         if (fbChan) {
-          const starsText = '⭐'.repeat(stars);
+          const buyerName =
+            member.displayName || interaction.user.globalName || interaction.user.username;
+          const feedbackContainer = buildCustomerFeedbackContainer({
+            buyerName,
+            rating: stars,
+            serviceName: order.package_name,
+            comment: null,
+            txId: `KEO_${order.id}`,
+            timestamp: Date.now(),
+          });
           await fbChan.send({
-            content:
-              `🎉 **Đánh Giá Dịch Vụ Mới!**\n` +
-              `> 👤 **Khách hàng:** <@${interaction.user.id}>\n` +
-              `> 🛠️ **Thợ Kéo:** ${order.worker_id ? `<@${order.worker_id}>` : '*Không rõ*'}\n` +
-              `> 📦 **Gói dịch vụ:** **${order.package_name}**\n` +
-              `> ⭐ **Đánh giá:** ${starsText} (${stars}/5 sao)`,
+            components: feedbackContainer.toJSON() as any,
+            flags: MessageFlags.IsComponentsV2,
           });
         }
       } catch (fbErr) {
@@ -591,9 +600,8 @@ export async function handleKeoButton(
       }
     }
 
-    await interaction.reply({
-      content: `⭐ Cảm ơn bạn đã đánh giá **${stars} sao** cho dịch vụ! Chúc bạn chơi game vui vẻ.`,
-      flags: MessageFlags.Ephemeral,
+    await interaction.editReply({
+      content: `Cảm ơn bạn đã đánh giá ${stars} sao cho dịch vụ.`,
     });
     return { handled: true };
   }
