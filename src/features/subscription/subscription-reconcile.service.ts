@@ -32,11 +32,15 @@ export async function sendSubscriptionReceiptNotification(
   if (!result.success) return;
 
   const expiryTimestamp = Math.floor(result.newExpiry / 1000);
+  const guildName = client.guilds?.cache?.get(order.guild_id)?.name;
+  const guildDisplay = guildName
+    ? `**${guildName}** (\`${order.guild_id}\`)`
+    : `\`${order.guild_id}\``;
   const receiptEmbed = new EmbedBuilder()
     .setTitle('💎 Kích Hoạt Bản Quyền Kéo Lão Bản Thành Công!')
     .setColor(0x2ecc71)
     .setDescription(
-      `Cảm ơn bạn đã nâng cấp dịch vụ Kéo Lão Bản!\nHệ thống đã tự động gia hạn bản quyền cho máy chủ **<#${order.guild_id}>** (${order.guild_id}).`,
+      `Cảm ơn bạn đã nâng cấp dịch vụ Kéo Lão Bản!\nHệ thống đã tự động gia hạn bản quyền cho máy chủ ${guildDisplay}.`,
     )
     .addFields(
       { name: 'Mã đơn hàng', value: `\`#${order.order_code}\``, inline: true },

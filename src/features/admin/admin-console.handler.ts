@@ -26,8 +26,19 @@ import {
   buildNoticesHubView,
   buildRolesConfigView,
   buildVietQrWorkflowView,
+  buildSubscriptionPackagesView,
+  buildSubscriptionOrderView,
+  buildKeyRedemptionModal,
   NoticeType,
 } from './admin-console.builder.js';
+import {
+  KEO_PACKAGES,
+  getPendingOrderForGuild,
+  createSubscriptionOrder,
+  activateTrial,
+  consumeLicenseKey,
+} from '../subscription/subscription.service.js';
+import { createPayosPaymentLink } from '../../services/payos.service.js';
 import {
   deleteAdminEditorSession,
   getAdminEditorSession,
@@ -41,6 +52,11 @@ import { buildContainer } from '../../utils/container.utils.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('AdminConsoleHandler');
+
+// Bộ đếm chống brute-force mã bản quyền: tối đa 5 lần nhập sai / 15 phút / Guild
+const KEY_FAIL_WINDOW_MS = 15 * 60_000;
+const MAX_KEY_FAILURES = 5;
+const keyFailuresByGuild = new Map<string, number[]>();
 
 /**
  * Kiểm tra quyền thao tác trên bảng điều khiển:
@@ -244,7 +260,8 @@ export async function handleAdminConsoleButton(
   // 1.5. Nhóm Dịch Vụ Kéo Lão Bản (Delta Force Carry Service)
   if (action === 'keo') {
     const currentSettings = settingsService.get(guild.id);
-    const view = buildKeoConfigView(guild, currentSettings, callerUserId, locale);
+    const db = (database ?? interaction.client?.database) as Database.Database;
+    const view = buildKeoConfigView(guild, currentSettings, callerUserId, locale, db);
     await interaction.update(view);
     return { handled: true };
   }
@@ -253,6 +270,94 @@ export async function handleAdminConsoleButton(
     const currentSettings = settingsService.get(guild.id);
     const view = buildKeoVipRolesView(guild, currentSettings, callerUserId, locale);
     await interaction.update(view);
+    return { handled: true };
+  }
+
+  // 1.5.1. Nhóm Bản Quyền Dịch Vụ Subscription (Phase P2)
+  if (action === 'sub_buy') {
+    const view = buildSubscriptionPackagesView(guild, callerUserId, locale);
+    await interaction.update(view);
+    return { handled: true };
+  }
+
+  if (action === 'sub_create') {
+    const packageType = parts[2] as '1_MONTH' | '3_MONTHS' | '6_MONTHS';
+    const pkg = KEO_PACKAGES[packageType];
+    if (!pkg) {
+      await interaction.reply({
+        content: isEn ? '❌ Invalid package selected.' : '❌ Gói dịch vụ không hợp lệ.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
+
+    // Defer update ngay lập tức để tránh interaction timeout (>3s) do gọi API PayOS
+    await interaction.deferUpdate();
+
+    const db = (database ?? interaction.client?.database) as Database.Database;
+
+    // Tái sử dụng đơn pending còn hạn (< 15p) nếu có
+    let order = getPendingOrderForGuild(db, guild.id, packageType);
+    if (!order) {
+      // Mã đơn hàng 12 số: 8 số cuối của timestamp + 4 số ngẫu nhiên (chống collision, an toàn trong Number.MAX_SAFE_INTEGER)
+      const orderCode = Number(
+        `${Date.now().toString().slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`,
+      );
+      const expiresAt = Date.now() + 15 * 60 * 1000;
+
+      // Tạo payment link PayOS
+      const payosRes = await createPayosPaymentLink({
+        orderCode,
+        amount: pkg.amount,
+        description: `Sub ${pkg.durationDays}d`,
+      });
+
+      order = createSubscriptionOrder(db, {
+        orderCode,
+        guildId: guild.id,
+        userId: interaction.user.id,
+        packageType,
+        durationDays: pkg.durationDays,
+        amount: pkg.amount,
+        checkoutUrl: payosRes.success ? payosRes.data?.checkoutUrl : null,
+        qrCode: payosRes.success ? payosRes.data?.qrCode : null,
+        expiresAt,
+      });
+    }
+
+    const view = buildSubscriptionOrderView(order, callerUserId, locale);
+    await interaction.editReply(view);
+    return { handled: true };
+  }
+
+  if (action === 'sub_trial') {
+    const db = (database ?? interaction.client?.database) as Database.Database;
+    const res = activateTrial(db, guild.id);
+    if (res.success) {
+      const expiry = Math.floor(res.expiresAt! / 1000);
+      await interaction.reply({
+        content: isEn
+          ? `🎉 **3-Day Free Trial Activated!**\n> Expiration: <t:${expiry}:f> (<t:${expiry}:R>).`
+          : `🎉 **Đã kích hoạt 3 ngày dùng thử miễn phí thành công!**\n> Hạn sử dụng: <t:${expiry}:f> (<t:${expiry}:R>).`,
+        flags: MessageFlags.Ephemeral,
+      });
+      const freshSettings = settingsService.get(guild.id);
+      const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale, db);
+      await interaction.message.edit(view);
+    } else {
+      await interaction.reply({
+        content: isEn
+          ? '❌ This server has already used its 3-day free trial.'
+          : '❌ Máy chủ này đã từng kích hoạt dùng thử 3 ngày trước đây. Vui lòng chọn gia hạn gói bản quyền.',
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+    return { handled: true };
+  }
+
+  if (action === 'sub_key') {
+    const modal = buildKeyRedemptionModal(callerUserId, locale);
+    await interaction.showModal(modal);
     return { handled: true };
   }
 
@@ -841,6 +946,59 @@ export async function handleAdminConsoleModal(
         : `✅ Đã lưu cấu hình nhận tiền VietQR: **${bankId} • ${accountNo}**${accountName ? ` (${accountName})` : ''}!\nBấm **[ Làm Mới ]** trên Bảng Điều Khiển để xem cập nhật.`,
       flags: MessageFlags.Ephemeral,
     });
+    return { handled: true };
+  }
+
+  // 1.5. Modal nhập mã bản quyền (Key Redemption)
+  if (action === 'sub_key') {
+    const now = Date.now();
+    const recentFailures = (keyFailuresByGuild.get(guild.id) || []).filter(
+      (ts) => now - ts < KEY_FAIL_WINDOW_MS,
+    );
+    if (recentFailures.length >= MAX_KEY_FAILURES) {
+      keyFailuresByGuild.set(guild.id, recentFailures);
+      await interaction.reply({
+        content: isEn
+          ? '🔒 **Too many failed key attempts.** Please wait 15 minutes before trying again.'
+          : '🔒 **Bạn đã nhập sai mã bản quyền quá 5 lần.** Vui lòng đợi 15 phút rồi thử lại.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
+
+    const key = interaction.fields.getTextInputValue('key_input');
+    const db = (database ?? interaction.client?.database) as Database.Database;
+    const res = consumeLicenseKey(db, key, guild.id, interaction.user.id);
+
+    if (res.success) {
+      keyFailuresByGuild.delete(guild.id);
+      const expiry = Math.floor(res.newExpiry! / 1000);
+      await interaction.reply({
+        content: isEn
+          ? `🎉 **Key redeemed successfully!**\n> Added: **+${res.durationDays} days**\n> New expiry: <t:${expiry}:f> (<t:${expiry}:R>).`
+          : `🎉 **Kích hoạt mã bản quyền thành công!**\n> Đã cộng thêm: **+${res.durationDays} ngày**\n> Hạn dùng mới: <t:${expiry}:f> (<t:${expiry}:R>).`,
+        flags: MessageFlags.Ephemeral,
+      });
+      try {
+        const freshSettings = settingsService.get(guild.id);
+        const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale, db);
+        await interaction.message?.edit(view);
+      } catch {}
+    } else {
+      recentFailures.push(now);
+      keyFailuresByGuild.set(guild.id, recentFailures);
+      let errText = isEn ? 'Invalid license key' : 'Mã bản quyền không hợp lệ';
+      if (res.reason === 'already_used') {
+        errText = isEn ? 'Key has already been used' : 'Mã key đã được sử dụng trước đó';
+      } else if (res.reason === 'expired') {
+        errText = isEn ? 'Key has expired' : 'Mã key đã quá hạn kích hoạt';
+      }
+
+      await interaction.reply({
+        content: `❌ **${errText}**\n> Vui lòng kiểm tra lại chuỗi ký tự hoặc liên hệ Bot Owner.`,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
     return { handled: true };
   }
 

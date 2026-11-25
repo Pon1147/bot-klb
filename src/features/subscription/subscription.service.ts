@@ -470,6 +470,13 @@ export function getSubscriptionOrderByCode(
   db: Database.Database,
   orderCode: number,
 ): SubscriptionOrderRecord | undefined {
-  return db.prepare('SELECT * FROM subscription_orders WHERE order_code = ?').get(orderCode) as
-    SubscriptionOrderRecord | undefined;
+  try {
+    return db.prepare('SELECT * FROM subscription_orders WHERE order_code = ?').get(orderCode) as
+      SubscriptionOrderRecord | undefined;
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes('no such table')) {
+      return undefined;
+    }
+    throw err;
+  }
 }
