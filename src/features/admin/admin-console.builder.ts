@@ -1286,48 +1286,49 @@ export function buildSubscriptionOrderView(
   order: SubscriptionOrderRecord,
   callerUserId: string,
   locale: SupportedLocale = 'vi',
+  hasQrAttachment = false,
 ): { components: any[]; flags: number } {
   const isEn = locale === 'en';
   const expiryTimestamp = Math.floor(order.expires_at / 1000);
+  const qrUrl = hasQrAttachment
+    ? 'attachment://sub_qr.png'
+    : order.qr_code
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(order.qr_code)}`
+      : null;
+
   const containerComponents: any[] = [
     {
       type: ComponentType.TextDisplay,
       content: isEn
-        ? `## 💳 Subscription Invoice #${order.order_code}`
-        : `## 💳 Hóa Đơn Thanh Toán Bản Quyền #${order.order_code}`,
-    },
-    {
-      type: ComponentType.Separator,
-      accentColor: COLORS.DF,
-    },
-    {
-      type: ComponentType.TextDisplay,
-      content: isEn
-        ? `> 📦 **Package**: **${order.package_type}** (+${order.duration_days} days)\n` +
-          `> 💰 **Amount**: **${order.amount.toLocaleString('vi-VN')} VNĐ**\n` +
-          `> ⏱️ **Order Code**: \`#${order.order_code}\`\n` +
-          `> ⏳ **QR Expires**: <t:${expiryTimestamp}:R> (<t:${expiryTimestamp}:T>)\n\n` +
-          `> ℹ️ *Please scan the QR code via banking app or click Open Checkout below. After transfer, click Re-check.*`
-        : `> 📦 **Gói dịch vụ**: **${order.package_type}** (+${order.duration_days} ngày)\n` +
-          `> 💰 **Số tiền**: **${order.amount.toLocaleString('vi-VN')} VNĐ**\n` +
-          `> ⏱️ **Mã đơn**: \`#${order.order_code}\`\n` +
-          `> ⏳ **Mã QR hết hạn**: <t:${expiryTimestamp}:R> (<t:${expiryTimestamp}:T>)\n\n` +
-          `> ℹ️ *Vui lòng quét mã VietQR hoặc bấm [Mở Trang Thanh Toán PayOS] bên dưới. Sau khi chuyển khoản, bấm nút [Kiểm Tra Lại].*`,
-    },
-    {
-      type: ComponentType.Separator,
-    },
-    {
-      type: ComponentType.TextDisplay,
-      content: `*${BOT_BRANDING.watermarkText}*`,
+        ? `## Scan VietQR to pay\n**${order.amount.toLocaleString('vi-VN')} VND** (${order.duration_days} days) • Expires <t:${expiryTimestamp}:R>`
+        : `## Quét VietQR thanh toán\n**${order.amount.toLocaleString('vi-VN')} đ** (${order.duration_days} ngày) • Hết hạn <t:${expiryTimestamp}:R>`,
     },
   ];
 
+  if (qrUrl) {
+    containerComponents.push({
+      type: ComponentType.MediaGallery,
+      items: [
+        {
+          media: { url: qrUrl },
+          description: isEn ? 'VietQR Payment Code' : 'Mã QR chuyển khoản VietQR',
+        },
+      ],
+    });
+  }
+
+  containerComponents.push({
+    type: ComponentType.TextDisplay,
+    content: isEn
+      ? `Waiting for bank transfer... (#${order.order_code})`
+      : `Đang lắng nghe chuyển khoản từ ngân hàng... (#${order.order_code})`,
+  });
+
   const buttonRow = new ActionRowBuilder<ButtonBuilder>();
-  if (order.checkout_url) {
+  if (!qrUrl && order.checkout_url) {
     buttonRow.addComponents(
       new ButtonBuilder()
-        .setLabel(isEn ? '🔗 Open PayOS Checkout' : '🔗 Mở Trang Thanh Toán PayOS')
+        .setLabel(isEn ? 'Open checkout' : 'Mở trang thanh toán')
         .setStyle(ButtonStyle.Link)
         .setURL(order.checkout_url),
     );
@@ -1336,11 +1337,11 @@ export function buildSubscriptionOrderView(
   buttonRow.addComponents(
     new ButtonBuilder()
       .setCustomId(`keo:sub_recheck:${order.order_code}`)
-      .setLabel(isEn ? '🔄 Re-check Payment' : '🔄 Kiểm Tra Lại')
+      .setLabel(isEn ? 'Re-check' : 'Kiểm tra lại')
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
       .setCustomId(`admin_console:keo:${callerUserId}`)
-      .setLabel(isEn ? '◀ Back' : '◀ Quay Lại')
+      .setLabel(isEn ? 'Back' : 'Quay lại')
       .setStyle(ButtonStyle.Secondary),
   );
 

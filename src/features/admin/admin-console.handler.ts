@@ -1,6 +1,7 @@
 import {
   ActionRowBuilder,
   AnySelectMenuInteraction,
+  AttachmentBuilder,
   ButtonInteraction,
   Guild,
   MessageFlags,
@@ -335,8 +336,28 @@ export async function handleAdminConsoleButton(
       });
     }
 
-    const view = buildSubscriptionOrderView(order, callerUserId, locale);
-    await interaction.editReply(view);
+    // Tải ảnh QR trực tiếp từ chuỗi EMVCo để hiển thị trong Discord (ẩn mọi râu ria)
+    const files: AttachmentBuilder[] = [];
+    if (order.qr_code) {
+      try {
+        const qrRes = await fetch(
+          `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(order.qr_code)}`,
+          { signal: AbortSignal.timeout(4000) },
+        ).catch(() => null);
+        if (qrRes && qrRes.ok) {
+          const qrBuffer = Buffer.from(await qrRes.arrayBuffer());
+          files.push(new AttachmentBuilder(qrBuffer, { name: 'sub_qr.png' }));
+        }
+      } catch {
+        // Fallback sang URL trực tiếp nếu fetch buffer thất bại
+      }
+    }
+
+    const view = buildSubscriptionOrderView(order, callerUserId, locale, files.length > 0);
+    await interaction.editReply({
+      ...view,
+      files,
+    });
     return { handled: true };
   }
 
