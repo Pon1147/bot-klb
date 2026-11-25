@@ -350,7 +350,7 @@ export function checkSubscriptionEntitlement(
     };
   } catch (err: unknown) {
     // Fallback an toàn nếu database chưa chạy migration tạo bảng guild_subscriptions
-    if (err instanceof Error && err.message.includes('no such table')) {
+    if (String(err).includes('no such table')) {
       return {
         isEntitled: true,
         expiresAt: null,
@@ -474,7 +474,7 @@ export function getSubscriptionOrderByCode(
     return db.prepare('SELECT * FROM subscription_orders WHERE order_code = ?').get(orderCode) as
       SubscriptionOrderRecord | undefined;
   } catch (err: unknown) {
-    if (err instanceof Error && err.message.includes('no such table')) {
+    if (String(err).includes('no such table')) {
       return undefined;
     }
     throw err;
