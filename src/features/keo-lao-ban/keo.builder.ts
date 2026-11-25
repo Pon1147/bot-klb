@@ -10,6 +10,7 @@ import {
 } from 'discord.js';
 import { KeoOrderRecord, KeoOrderStatus } from '../../database/keo.db.js';
 import { COLORS } from '../../config/container.variables.js';
+import { BOT_BRANDING } from '../../config/branding.config.js';
 
 export function formatVnd(amount: number): string {
   return `${amount.toLocaleString('vi-VN')} đ`;
@@ -66,6 +67,13 @@ export function buildTicketWelcomeCard(ticketChannelId: string): {
           label: '📋 Mở Đơn Kéo',
           style: ButtonStyle.Primary,
         },
+      },
+      {
+        type: ComponentType.Separator,
+      },
+      {
+        type: ComponentType.TextDisplay,
+        content: `*${BOT_BRANDING.watermarkText}*`,
       },
     ],
   };
@@ -325,6 +333,16 @@ export function buildTicketOrderCard(
     });
   }
 
+  containerComponents.push(
+    {
+      type: ComponentType.Separator,
+    },
+    {
+      type: ComponentType.TextDisplay,
+      content: `*${BOT_BRANDING.watermarkText}*`,
+    },
+  );
+
   const containerJson = {
     type: ComponentType.Container,
     components: containerComponents,
@@ -385,6 +403,48 @@ export function buildRatingCard(order: KeoOrderRecord): { components: any[]; fla
 
   return {
     components: [containerJson, ratingRow.toJSON()],
+    flags: MessageFlags.IsComponentsV2,
+  };
+}
+
+/**
+ * Thẻ thông báo Dịch Vụ Kéo Lão Bản tạm khóa do hết hạn bản quyền (Components V2).
+ * Gửi vào kênh Ticket mới thay cho Thẻ Chào Mừng để thông báo cho khách và Admin.
+ */
+export function buildSubscriptionExpiredNoticeCard(): {
+  components: any[];
+  flags: number;
+} {
+  const containerJson = {
+    type: ComponentType.Container,
+    components: [
+      {
+        type: ComponentType.TextDisplay,
+        content: '## ⚠️ Dịch Vụ Kéo Lão Bản Tạm Khóa • Hết Hạn Bản Quyền',
+      },
+      {
+        type: ComponentType.Separator,
+        accentColor: COLORS.DF,
+      },
+      {
+        type: ComponentType.TextDisplay,
+        content:
+          '> 🔒 **Tính năng Kéo Lão Bản trên máy chủ này hiện đang tạm dừng do hết hạn bản quyền.**\n' +
+          '> ⚙️ Ban Quản Trị hoặc Chủ Server vui lòng dùng lệnh **/setup** để kích hoạt dùng thử 3 ngày hoặc gia hạn gói dịch vụ.\n' +
+          '> 💬 Sau khi gia hạn thành công, toàn bộ quy trình mở đơn và thanh toán sẽ tự động hoạt động trở lại.',
+      },
+      {
+        type: ComponentType.Separator,
+      },
+      {
+        type: ComponentType.TextDisplay,
+        content: `*${BOT_BRANDING.watermarkText}*`,
+      },
+    ],
+  };
+
+  return {
+    components: [containerJson],
     flags: MessageFlags.IsComponentsV2,
   };
 }

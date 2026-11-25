@@ -25,6 +25,7 @@ import { getExtensionZipPath } from './extension.utils.js';
 import { isIgnorableInteractionError } from '../../utils/discord-error.utils.js';
 import { resolveUserLocale, SupportedLocale } from '../../infrastructure/i18n/locale-resolver.js';
 import { getLocaleDictionary, t } from '../../infrastructure/i18n/i18n.service.js';
+import { BOT_BRANDING, SUPPORT_DISCORD_INVITE } from '../../config/branding.config.js';
 
 export const TOTAL_HELP_PAGES = 6;
 
@@ -92,11 +93,15 @@ export function buildHelpPageContainer(
   const dict = getLocaleDictionary(locale);
   let content = '';
 
-  const footer = t(
+  const footer = `${t(
     'help.footer',
-    { botVersion: BOT_VERSION, extVersion: EXTENSION_VERSION },
+    {
+      botVersion: BOT_VERSION,
+      extVersion: EXTENSION_VERSION,
+      supportUrl: SUPPORT_DISCORD_INVITE,
+    },
     locale,
-  );
+  )}\n*${BOT_BRANDING.watermarkText}*`;
 
   switch (safePage) {
     case 1: {
@@ -324,7 +329,7 @@ export function buildHelpButtonsRow(
   const supportBtn = new ButtonBuilder()
     .setStyle(ButtonStyle.Link)
     .setLabel(locale === 'en' ? 'Support' : 'Hỗ trợ')
-    .setURL('https://discord.gg/vz6w6c3Xe3');
+    .setURL(SUPPORT_DISCORD_INVITE);
 
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     prevBtn,

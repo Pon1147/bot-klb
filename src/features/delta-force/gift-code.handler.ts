@@ -17,6 +17,7 @@ import { requireGuild } from '../../utils/df-guards.js';
 import { sendReply } from '../../utils/reply.utils.js';
 import { resolveUserLocale } from '../../infrastructure/i18n/locale-resolver.js';
 import { STARTER_GIFT_CODES } from './giftcodes.data.js';
+import { SUPPORT_DISCORD_INVITE } from '../../config/branding.config.js';
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
@@ -71,7 +72,7 @@ export async function execute(
       .setEmoji('📦'),
     new ButtonBuilder()
       .setLabel(isEn ? '1-on-1 Support' : 'Hỗ Trợ 1:1 (Discord)')
-      .setURL('https://discord.gg/vz6w6c3Xe3')
+      .setURL(SUPPORT_DISCORD_INVITE)
       .setStyle(ButtonStyle.Link)
       .setEmoji('💬'),
   );

@@ -568,8 +568,8 @@ describe('PHASE 1 — Permission / Policy Model', () => {
 
   // ─── 7. PHASE 4: Command Path Policy Mapping ──────────────────────
   describe('PHASE 4 — Command Path Policy Mapping', () => {
-    it('COMMAND_PATH_POLICIES chứa đúng 61 canonical command paths (bao gồm alias tương thích ngược)', () => {
-      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(61);
+    it('COMMAND_PATH_POLICIES chứa đúng 64 canonical command paths (bao gồm alias tương thích ngược)', () => {
+      expect(Object.keys(COMMAND_PATH_POLICIES)).toHaveLength(64);
     });
 
     it('Policy mapping cho admin, setup và help', () => {

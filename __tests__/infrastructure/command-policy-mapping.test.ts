@@ -13,6 +13,7 @@ import { data as helpData } from '../../src/features/delta-force/help.command.js
 import { data as payData } from '../../src/features/payment/pay.command.js';
 import { data as donateData } from '../../src/features/payment/donate.command.js';
 import { data as teamData } from '../../src/features/team-find/team.command.js';
+import { data as adminKeyData } from '../../src/features/admin/admin-key.command.js';
 import { extractCommandPathsFromBuilders } from '../../src/infrastructure/registry/command-parser.js';
 import { COMMAND_PATH_POLICIES, resolveCommandPolicy } from '../../src/config/permissions.js';
 
@@ -26,6 +27,7 @@ describe('CI Security Guard — Command RBAC Policy Mapping', () => {
     payData,
     donateData,
     teamData,
+    adminKeyData,
   ];
   const parsedCommands = extractCommandPathsFromBuilders(allBuilders);
 

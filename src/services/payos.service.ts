@@ -188,3 +188,72 @@ export async function createPayosPaymentLink(
     };
   }
 }
+
+export interface PayosPaymentInfo {
+  id: string;
+  orderCode: number;
+  amount: number;
+  amountPaid: number;
+  amountRemaining: number;
+  status: 'PENDING' | 'PAID' | 'CANCELLED';
+  createdAt: string;
+  transactions?: Array<{
+    reference: string;
+    amount: number;
+    accountNumber: string;
+    description: string;
+    transactionDateTime: string;
+  }>;
+}
+
+/**
+ * Truy vấn trạng thái chi tiết của đơn thanh toán từ PayOS API phục vụ đối soát.
+ * GET https://api-merchant.payos.vn/v2/payment-requests/{id}
+ */
+export async function getPayosPaymentInfo(
+  orderCode: number,
+): Promise<{ success: boolean; data?: PayosPaymentInfo; error?: string }> {
+  if (!isPayosConfigured()) {
+    return {
+      success: false,
+      error: 'PayOS chưa được cấu hình đầy đủ trong biến môi trường (.env).',
+    };
+  }
+
+  try {
+    const response = await fetch(`https://api-merchant.payos.vn/v2/payment-requests/${orderCode}`, {
+      method: 'GET',
+      headers: {
+        'x-client-id': botConfig.payosClientId,
+        'x-api-key': botConfig.payosApiKey,
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    const result = (await response.json()) as {
+      code: string;
+      desc: string;
+      data?: PayosPaymentInfo;
+    };
+
+    if (result.code === '00' && result.data) {
+      return {
+        success: true,
+        data: result.data,
+      };
+    }
+
+    return {
+      success: false,
+      error: result.desc || `Lỗi PayOS mã: ${result.code}`,
+    };
+  } catch (error) {
+    logger.error(`Lỗi truy vấn PayOS cho đơn #${orderCode}:`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Không thể kết nối đến PayOS API.',
+    };
+  }
+}

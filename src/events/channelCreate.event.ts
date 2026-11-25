@@ -1,6 +1,10 @@
 import { ChannelType, Client, Events, GuildChannel, TextChannel } from 'discord.js';
 import { getSettingsService } from '../services/settings.service.js';
-import { buildTicketWelcomeCard } from '../features/keo-lao-ban/keo.builder.js';
+import {
+  buildTicketWelcomeCard,
+  buildSubscriptionExpiredNoticeCard,
+} from '../features/keo-lao-ban/keo.builder.js';
+import { checkSubscriptionEntitlement } from '../features/subscription/subscription.service.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('ChannelCreateEvent');
@@ -63,6 +67,20 @@ export async function execute(_client: Client, channel: GuildChannel): Promise<v
       const alreadySent = recentMessages?.some((m) => m.author.id === guild.client.user?.id);
       if (alreadySent) {
         logger.debug(`Thẻ chào mừng đã được gửi trước đó vào #${channel.name}, bỏ qua.`);
+        return;
+      }
+    }
+
+    // Kiểm tra bản quyền Subscription Kéo Lão Bản của Máy chủ
+    const db = (_client as any)?.database ?? (guild as any)?.client?.database;
+    if (db) {
+      const entitlement = checkSubscriptionEntitlement(db, guild.id);
+      if (!entitlement.isEntitled) {
+        logger.warn(
+          `[ChannelCreateEvent] Máy chủ ${guild.name ?? guild.id} (${guild.id}) đã hết hạn bản quyền Kéo Lão Bản. Gửi thông báo tạm dừng.`,
+        );
+        const expiredNotice = buildSubscriptionExpiredNoticeCard();
+        await textChannel.send(expiredNotice);
         return;
       }
     }

@@ -1,3 +1,5 @@
+import Database from 'better-sqlite3';
+import { initializeSubscriptionTables } from '../../src/database/subscription.db.js';
 import {
   ButtonStyle,
   ComponentType,
@@ -300,22 +302,25 @@ describe('Admin Console V2 (Dashboard)', () => {
     it('buildKeoConfigView: tạo giao diện cài đặt dịch vụ Kéo Lão Bản với 3 Select Menu và Nút bấm', () => {
       const view = buildKeoConfigView(mockGuild, mockSettings, 'user-caller', 'vi');
       expect(view.flags).toBe(MessageFlags.IsComponentsV2);
-      expect(view.components).toHaveLength(5);
+      expect(view.components).toHaveLength(6);
 
       // Container Header
       expect(view.components[0].type).toBe(ComponentType.Container);
       expect(view.components[0].components[0].content).toContain('Dịch Vụ Kéo Lão Bản');
 
+      // Subscription Action Row
+      expect(view.components[1].components[0].custom_id).toBe('admin_console:sub_buy:user-caller');
+
       // Select menus: Dispatch, Category, Worker
-      expect(view.components[1].components[0].custom_id).toBe('admin_console_select:keo_dispatch:user-caller');
-      expect(view.components[2].components[0].custom_id).toBe('admin_console_select:keo_category:user-caller');
-      expect(view.components[3].components[0].custom_id).toBe('admin_console_select:keo_worker:user-caller');
+      expect(view.components[2].components[0].custom_id).toBe('admin_console_select:keo_dispatch:user-caller');
+      expect(view.components[3].components[0].custom_id).toBe('admin_console_select:keo_category:user-caller');
+      expect(view.components[4].components[0].custom_id).toBe('admin_console_select:keo_worker:user-caller');
 
       // Button row
-      expect(view.components[4].components[0].custom_id).toBe('admin_console:back:user-caller');
-      expect(view.components[4].components[1].custom_id).toBe('admin_console:keo_vip:user-caller');
-      expect(view.components[4].components[2].custom_id).toBe('admin_console:vietqr_workflow:user-caller');
-      expect(view.components[4].components[3].custom_id).toBe('admin_console:reset_keo:user-caller');
+      expect(view.components[5].components[0].custom_id).toBe('admin_console:back:user-caller');
+      expect(view.components[5].components[1].custom_id).toBe('admin_console:keo_vip:user-caller');
+      expect(view.components[5].components[2].custom_id).toBe('admin_console:vietqr_workflow:user-caller');
+      expect(view.components[5].components[3].custom_id).toBe('admin_console:reset_keo:user-caller');
     });
 
     it('buildVietQrWorkflowView: tạo giao diện cài đặt VietQR Payment Workflow và Feedback', () => {
@@ -951,6 +956,39 @@ describe('Admin Console V2 (Dashboard)', () => {
       const resRole = await handleAdminConsoleSelect(roleInteraction);
       expect(resRole.handled).toBe(true);
       expect(roleInteraction.update).toHaveBeenCalled();
+    });
+
+    it('Handler Modal sub_key: Khóa tạm thời sau 5 lần nhập sai mã bản quyền liên tiếp', async () => {
+      const testDb = new Database(':memory:');
+      initializeSubscriptionTables(testDb);
+
+      const modalInteraction: any = {
+        customId: 'admin_console_modal:sub_key:user-caller',
+        guild: { ...mockGuild, id: 'guild-rate-limit-test' },
+        user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(true) },
+        fields: { getTextInputValue: jest.fn().mockReturnValue('KLB-FAKE-0000-0000-0000') },
+        reply: jest.fn().mockResolvedValue({}),
+      };
+
+      for (let i = 0; i < 5; i++) {
+        await handleAdminConsoleModal(modalInteraction, testDb);
+        expect(modalInteraction.reply).toHaveBeenLastCalledWith(
+          expect.objectContaining({
+            content: expect.stringContaining('Mã bản quyền không hợp lệ'),
+          }),
+        );
+      }
+
+      // Lần thứ 6 phải bị chặn bởi rate limiter
+      await handleAdminConsoleModal(modalInteraction, testDb);
+      expect(modalInteraction.reply).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('quá 5 lần'),
+        }),
+      );
+      testDb.close();
     });
   });
 });

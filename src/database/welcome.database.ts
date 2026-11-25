@@ -34,6 +34,8 @@ export function initializeDatabase(): Database.Database {
 
   const database = new Database(botConfig.databasePath);
   database.pragma('journal_mode = WAL');
+  database.pragma('busy_timeout = 5000');
+  database.pragma('foreign_keys = ON');
 
   database.exec(`
     CREATE TABLE IF NOT EXISTS welcome_configuration (
