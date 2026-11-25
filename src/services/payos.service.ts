@@ -189,6 +189,18 @@ export async function createPayosPaymentLink(
   }
 }
 
+/**
+ * Chuẩn hóa chuỗi thời gian giao dịch từ PayOS (mặc định múi giờ GMT+7 nếu thiếu offset).
+ */
+export function parsePayosDateTime(dateTimeStr?: string): number {
+  if (!dateTimeStr) return Date.now();
+  const trimmed = dateTimeStr.trim();
+  const hasTimezone = /(Z|[+-]\d{2}:?\d{2})$/i.test(trimmed);
+  const normalized = hasTimezone ? trimmed : `${trimmed.replace(' ', 'T')}+07:00`;
+  const parsed = new Date(normalized).getTime();
+  return Number.isNaN(parsed) ? Date.now() : parsed;
+}
+
 export interface PayosPaymentInfo {
   id: string;
   orderCode: number;
