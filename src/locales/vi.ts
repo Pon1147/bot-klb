@@ -321,4 +321,60 @@ export const VI_LOCALE = {
       example: '/df autopost run type:map',
     },
   },
+
+  // ─── Bản quyền & Thanh toán VietQR ───
+  sub: {
+    btn_buy: 'Gia hạn gói',
+    btn_trial: 'Dùng thử 3 ngày',
+    btn_trial_used: 'Đã dùng thử',
+    btn_key: 'Nhập mã kích hoạt',
+    packages_title: '## Chọn gói bản quyền',
+    packages_body:
+      '• **1 tháng (30 ngày):** 149.000 đ\n' +
+      '• **3 tháng (90 ngày):** 399.000 đ (tiết kiệm 10%)\n' +
+      '• **6 tháng (180 ngày):** 699.000 đ (tiết kiệm 22%)\n\n' +
+      'Quét mã VietQR chuyển khoản, bot tự cộng hạn ngay khi nhận được tiền.',
+    pkg_1m: '1 Tháng (149k)',
+    pkg_3m: '3 Tháng (399k)',
+    pkg_6m: '6 Tháng (699k)',
+    btn_back: 'Quay lại',
+    qr_title: '## Quét VietQR thanh toán',
+    qr_meta: '**{amount} đ** ({days} ngày) • Hết hạn <t:{expiry}:R>',
+    qr_waiting: 'Đang lắng nghe chuyển khoản từ ngân hàng... (#{orderCode})',
+    btn_recheck: 'Kiểm tra lại',
+    btn_open_checkout: 'Mở trang thanh toán',
+    key_modal_title: 'Nhập mã kích hoạt',
+    key_modal_label: 'Mã bản quyền (KLB-XXXX-XXXX-XXXX-XXXX)',
+    invalid_pkg: 'Gói dịch vụ không hợp lệ.',
+    payos_create_failed: 'Không tạo được mã thanh toán lúc này ({error}). Vui lòng thử lại sau.',
+    trial_activated:
+      'Đã kích hoạt 3 ngày dùng thử miễn phí.\nHạn sử dụng: <t:{expiry}:f> (<t:{expiry}:R>).',
+    trial_already_used: 'Máy chủ này đã dùng thử 3 ngày trước đây. Vui lòng chọn gia hạn gói.',
+    key_rate_limited: 'Bạn đã nhập sai mã quá 5 lần. Vui lòng đợi 15 phút rồi thử lại.',
+    key_redeemed:
+      'Kích hoạt thành công (+{days} ngày).\nHạn dùng mới: <t:{expiry}:f> (<t:{expiry}:R>).',
+    key_invalid: 'Mã bản quyền không hợp lệ. Vui lòng kiểm tra lại.',
+    key_used: 'Mã này đã được sử dụng trước đó.',
+    key_expired: 'Mã này đã hết hạn kích hoạt.',
+    recheck_invalid: 'Mã đơn hàng không hợp lệ.',
+    recheck_paid:
+      'Thanh toán thành công đơn #{orderCode} (+{days} ngày).\nHạn dùng mới: <t:{expiry}:f> (<t:{expiry}:R>).',
+    recheck_already: 'Đơn #{orderCode} đã được kích hoạt trước đó.',
+    recheck_pending:
+      'Đơn #{orderCode} đang chờ ngân hàng xác nhận. Nếu vừa chuyển khoản, hãy đợi khoảng 30 giây rồi bấm kiểm tra lại.',
+    recheck_cancelled:
+      'Đơn #{orderCode} đã hết hạn hoặc bị hủy. Vui lòng tạo đơn mới trong /setup.',
+    recheck_error:
+      'Chưa thể kiểm tra đơn lúc này ({error}). Hệ thống sẽ tự đối soát lại sau ít phút.',
+  },
+
+  // ─── Dịch vụ Kéo Lão Bản ───
+  keo: {
+    expired_title: '## Dịch Vụ Kéo Lão Bản Tạm Khóa',
+    expired_body:
+      'Hệ thống đặt đơn tự động trên máy chủ này đang tạm dừng do hết hạn bản quyền.\n' +
+      'Quản trị viên vui lòng dùng lệnh `/setup` để kích hoạt dùng thử hoặc gia hạn lại.',
+    entitlement_blocked:
+      'Dịch vụ đặt đơn trên máy chủ đã hết hạn. Quản trị viên vui lòng dùng `/setup` để gia hạn.',
+  },
 } as const;
