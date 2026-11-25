@@ -333,20 +333,32 @@ export function checkSubscriptionEntitlement(
   db: Database.Database,
   guildId: string,
 ): { isEntitled: boolean; expiresAt: number | null; statusText: string } {
-  const sub = db
-    .prepare('SELECT license_expires_at FROM guild_subscriptions WHERE guild_id = ?')
-    .get(guildId) as { license_expires_at: number | null } | undefined;
+  try {
+    const sub = db
+      .prepare('SELECT license_expires_at FROM guild_subscriptions WHERE guild_id = ?')
+      .get(guildId) as { license_expires_at: number | null } | undefined;
 
-  const expiresAt = sub?.license_expires_at ?? null;
-  const isEntitled = expiresAt !== null && expiresAt > Date.now();
+    const expiresAt = sub?.license_expires_at ?? null;
+    const isEntitled = expiresAt !== null && expiresAt > Date.now();
 
-  return {
-    isEntitled,
-    expiresAt,
-    statusText: isEntitled
-      ? `🟢 Còn hạn (Hết hạn lúc: <t:${Math.floor(expiresAt! / 1000)}:R>)`
-      : '🔴 Đã hết hạn / Chưa kích hoạt',
-  };
+    return {
+      isEntitled,
+      expiresAt,
+      statusText: isEntitled
+        ? `🟢 Còn hạn (Hết hạn lúc: <t:${Math.floor(expiresAt! / 1000)}:R>)`
+        : '🔴 Đã hết hạn / Chưa kích hoạt',
+    };
+  } catch (err: unknown) {
+    // Fallback an toàn nếu database chưa chạy migration tạo bảng guild_subscriptions
+    if (err instanceof Error && err.message.includes('no such table')) {
+      return {
+        isEntitled: true,
+        expiresAt: null,
+        statusText: '🟢 Không giới hạn (Legacy)',
+      };
+    }
+    throw err;
+  }
 }
 
 /**
@@ -449,4 +461,15 @@ export function generateSubscriptionKey(
   return db
     .prepare('SELECT * FROM subscription_keys WHERE key = ?')
     .get(formattedKey) as SubscriptionKeyRecord;
+}
+
+/**
+ * Đọc thông tin đơn hàng theo orderCode.
+ */
+export function getSubscriptionOrderByCode(
+  db: Database.Database,
+  orderCode: number,
+): SubscriptionOrderRecord | undefined {
+  return db.prepare('SELECT * FROM subscription_orders WHERE order_code = ?').get(orderCode) as
+    SubscriptionOrderRecord | undefined;
 }

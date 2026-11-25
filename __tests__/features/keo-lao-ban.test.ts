@@ -29,6 +29,7 @@ import {
 } from '../../src/features/keo-lao-ban/keo.handler.js';
 import { execute as handleChannelCreate, welcomedChannels } from '../../src/events/channelCreate.event.js';
 import { initializePaymentTables } from '../../src/database/payment.db.js';
+import { initializeSubscriptionTables } from '../../src/database/subscription.db.js';
 import { SettingsService, setSettingsService } from '../../src/services/settings.service.js';
 import { defaultGuildSettings } from '../../src/config/default.settings.js';
 
@@ -41,6 +42,17 @@ describe('Feature: Kéo Lão Bản (Delta Force Carry Service)', () => {
     db = new Database(':memory:');
     initializeKeoTable(db);
     initializePaymentTables(db);
+    initializeSubscriptionTables(db);
+
+    // Kích hoạt hạn bản quyền cho guild-1 và guild-no-qr để test happy path
+    const activeExpiry = Date.now() + 30 * 86_400_000;
+    const now = Date.now();
+    const insertSub = db.prepare(
+      `INSERT INTO guild_subscriptions (guild_id, license_expires_at, trial_used, created_at, updated_at)
+       VALUES (?, ?, 0, ?, ?)`,
+    );
+    insertSub.run('guild-1', activeExpiry, now, now);
+    insertSub.run('guild-no-qr', activeExpiry, now, now);
 
     mockSettingsService = {
       get: jest.fn().mockReturnValue({

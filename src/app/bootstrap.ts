@@ -13,6 +13,7 @@ import { initializeSettingsTable } from '../database/guild.settings.db.js';
 import { initializePaymentTables } from '../database/payment.db.js';
 import { initializeKeoTable } from '../database/keo.db.js';
 import { initializeSubscriptionTables } from '../database/subscription.db.js';
+import { startSubscriptionReconcileScheduler } from '../features/subscription/subscription-reconcile.service.js';
 import { initializeDfTokensTable } from '../database/df.token.db.js';
 import {
   initializeClaimSessionsTable,
@@ -242,6 +243,11 @@ export async function bootstrap(): Promise<Client> {
   logger.info('Starting global df-autopost scheduler...');
   startDfAutoPostScheduler(client, database);
   logger.info('Global df-autopost scheduler started');
+
+  // Khởi động scheduler đối soát bù subscription PayOS (chu kỳ 5 phút)
+  logger.info('Starting subscription reconciliation scheduler...');
+  startSubscriptionReconcileScheduler(database, client);
+  logger.info('Subscription reconciliation scheduler started');
 
   // Khởi động HTTP server cho Extension API & Railway health check
   try {

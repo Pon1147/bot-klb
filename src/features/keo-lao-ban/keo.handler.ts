@@ -27,6 +27,7 @@ import {
 } from './keo.builder.js';
 import { fetchVietQrImageBuffer } from '../../utils/vietqr.utils.js';
 import { createPayment, saveFeedback } from '../payment/payment.service.js';
+import { checkSubscriptionEntitlement } from '../subscription/subscription.service.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('KeoHandler');
@@ -210,6 +211,61 @@ export async function handleKeoButton(
   const settingsService = getSettingsService();
   const settings = settingsService.get(guild.id);
   const keoConfig = settings.keo;
+
+  // 0. Nút Đối soát / Kiểm tra lại thanh toán Subscription (keo:sub_recheck:<orderCode>)
+  if (action === 'sub_recheck') {
+    const orderCode = parseInt(targetId, 10);
+    if (isNaN(orderCode)) {
+      await interaction.reply({
+        content: '❌ Mã đơn hàng không hợp lệ.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
+
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    const { reconcileSubscriptionOrder } =
+      await import('../subscription/subscription-reconcile.service.js');
+    const res = await reconcileSubscriptionOrder(db, orderCode, interaction.client);
+
+    if (res.success && res.result?.success) {
+      const expiry = Math.floor(res.result.newExpiry / 1000);
+      await interaction.editReply({
+        content: `✅ **Thanh toán thành công!**\n> Mã đơn: \`#${orderCode}\`\n> Gói dịch vụ đã được kích hoạt/gia hạn thêm **${res.result.durationDays} ngày**.\n> Hạn dùng mới: <t:${expiry}:f> (<t:${expiry}:R>).`,
+      });
+    } else if (res.reason === 'already_fulfilled') {
+      await interaction.editReply({
+        content: `ℹ️ Đơn hàng \`#${orderCode}\` đã được kích hoạt thành công trước đó.`,
+      });
+    } else if (res.reason === 'still_pending') {
+      await interaction.editReply({
+        content: `⏳ Đơn hàng \`#${orderCode}\` vẫn đang chờ xác nhận từ cổng PayOS.\n> Nếu bạn vừa chuyển khoản, vui lòng đợi 30s - 1 phút để hệ thống ngân hàng xử lý rồi bấm kiểm tra lại.`,
+      });
+    } else if (res.reason === 'cancelled' || res.reason === 'expired') {
+      await interaction.editReply({
+        content: `❌ Đơn hàng \`#${orderCode}\` đã hết hạn hoặc bị hủy trên PayOS. Vui lòng tạo đơn mới qua lệnh \`/setup\`.`,
+      });
+    } else {
+      await interaction.editReply({
+        content: `⚠️ Chưa thể đối soát đơn hàng lúc này (${res.error || res.reason || 'lỗi kết nối'}). Hệ thống sẽ tự động quét lại trong nền.`,
+      });
+    }
+    return { handled: true };
+  }
+
+  // Guard: Kiểm tra bản quyền Subscription Kéo Lão Bản của Server (ngoại trừ nút đánh giá rate)
+  if (action !== 'rate') {
+    const entitlement = checkSubscriptionEntitlement(db, guild.id);
+    if (!entitlement.isEntitled) {
+      await interaction.reply({
+        content:
+          '🔒 **Dịch vụ Kéo Lão Bản trên máy chủ đã hết hạn bản quyền.**\n' +
+          '> Ban Quản Trị hoặc Chủ Server vui lòng dùng lệnh `/setup` để kích hoạt dùng thử 3 ngày hoặc gia hạn gói dịch vụ.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
+  }
 
   // 1. Mở Modal thiết lập đơn kéo
   if (action === 'open_modal') {
