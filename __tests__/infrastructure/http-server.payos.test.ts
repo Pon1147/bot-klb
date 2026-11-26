@@ -1,6 +1,9 @@
 import http from 'node:http';
 import Database from 'better-sqlite3';
-import { createRequestHandler } from '../../src/infrastructure/http/http-server.js';
+import {
+  createRequestHandler,
+  payosWebhookRateLimiter,
+} from '../../src/infrastructure/http/http-server.js';
 import { initializePaymentTables } from '../../src/database/payment.db.js';
 import {
   createDonation,
@@ -306,5 +309,24 @@ describe('HttpServer PayOS Webhook', () => {
     // Trạng thái DB vẫn là paid dù gửi DM thất bại
     const donation = getDonationByOrderCode(db, orderCode);
     expect(donation?.status).toBe('paid');
+  });
+
+  it('trả về 429 Too Many Requests khi vượt quá ngưỡng rate limit trên PayOS webhook', async () => {
+    payosWebhookRateLimiter.reset();
+    for (let i = 0; i < 60; i++) {
+      expect(payosWebhookRateLimiter.isRateLimited('203.0.113.10')).toBe(false);
+    }
+
+    const res = await fetch(`${baseUrl}/webhook/payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-for': '203.0.113.10',
+      },
+      body: JSON.stringify({ data: {}, signature: 'spam' }),
+    });
+
+    expect(res.status).toBe(429);
+    payosWebhookRateLimiter.reset();
   });
 });
