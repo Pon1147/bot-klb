@@ -843,39 +843,32 @@ export function buildKeoConfigView(
   const hasWorker = Boolean(keo?.workerRoleId);
   const hasCategory = Boolean(keo?.ticketCategoryId);
 
+  const readyCount = [hasVietQr, hasDispatch, hasWorker].filter(Boolean).length;
+  const isReady = readyCount === 3;
+  const progressText = isEn
+    ? `> 📊 **Status**: ${isReady ? '🟢 Ready for Service' : `🟠 Setup Incomplete (${readyCount}/3 Required Steps)`}\n`
+    : `> 📊 **Tiến Độ**: ${isReady ? '🟢 Sẵn Sàng Phục Vụ' : `🟠 Chưa Xong (${readyCount}/3 bước bắt buộc)`}\n`;
+
   const checklistText = isEn
     ? `### 📋 Setup Workflow Checklist\n` +
-      `> ${hasVietQr ? '🟢' : '🔴'} **Step 1: VietQR Banking**: ${hasVietQr ? 'Configured' : '*Missing (Needed for payments)*'}\n` +
-      `> ${hasDispatch ? '🟢' : '🔴'} **Step 2: Dispatch Channel**: ${dispatchTag}\n` +
-      `> ${hasWorker ? '🟢' : '🔴'} **Step 3: Worker Role**: ${workerRoleTag}\n` +
-      `> ${hasCategory ? '🟢' : '🟡'} **Step 4: Ticket Category**: ${categoryTag}\n` +
-      `> 💡 **Step 5: Ticket Naming**: Configure ticket bot naming as \`ticket-%username%\``
+      progressText +
+      `> ${hasVietQr ? '🟢' : '🔴'} **Step 1: VietQR Banking (Required)**: ${hasVietQr ? `${settings.vietqr?.bankId} • ${settings.vietqr?.accountNo}` : '*Missing (Needed for payments)*'}\n` +
+      `> ${hasDispatch ? '🟢' : '🔴'} **Step 2: Dispatch Channel (Required)**: ${dispatchTag}\n` +
+      `> ${hasWorker ? '🟢' : '🔴'} **Step 3: Worker Role (Required)**: ${workerRoleTag}\n` +
+      `> ${hasCategory ? '🟢' : '🟡'} **Step 4: Ticket Category (Filter)**: ${categoryTag}\n` +
+      `> 👑 **VIP Roles (Optional)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}\n` +
+      `> 💡 **Ticket Bot Naming**: Configure ticket bot naming as \`ticket-%username%\``
     : `### 📋 Quy Trình Thiết Lập (Workflow Checklist)\n` +
-      `> ${hasVietQr ? '🟢' : '🔴'} **Bước 1: Tài khoản VietQR**: ${hasVietQr ? 'Đã cài đặt' : '*Chưa cài (Cần để xuất mã QR thanh toán)*'}\n` +
-      `> ${hasDispatch ? '🟢' : '🔴'} **Bước 2: Kênh Bắn Kèo**: ${dispatchTag}\n` +
-      `> ${hasWorker ? '🟢' : '🔴'} **Bước 3: Vai Trò Thợ Kéo**: ${workerRoleTag}\n` +
-      `> ${hasCategory ? '🟢' : '🟡'} **Bước 4: Nhóm Category Ticket**: ${categoryTag}\n` +
-      `> 💡 **Bước 5: Định Dạng Kênh Ticket**: Cấu hình ticket bot định dạng \`ticket-%username%\``;
+      progressText +
+      `> ${hasVietQr ? '🟢' : '🔴'} **Bước 1: Tài khoản VietQR (Bắt buộc)**: ${hasVietQr ? `${settings.vietqr?.bankId} • ${settings.vietqr?.accountNo}` : '*Chưa cài (Cần để xuất mã QR thanh toán)*'}\n` +
+      `> ${hasDispatch ? '🟢' : '🔴'} **Bước 2: Kênh Bắn Kèo (Bắt buộc)**: ${dispatchTag}\n` +
+      `> ${hasWorker ? '🟢' : '🔴'} **Bước 3: Vai Trò Thợ Kéo (Bắt buộc)**: ${workerRoleTag}\n` +
+      `> ${hasCategory ? '🟢' : '🟡'} **Bước 4: Nhóm Category Ticket (Lọc)**: ${categoryTag}\n` +
+      `> 👑 **Role Lão Bản VIP (Tùy chọn)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}\n` +
+      `> 💡 **Định Dạng Kênh Ticket**: Cấu hình ticket bot định dạng \`ticket-%username%\``;
 
   const title = isEn ? '# 💎 Delta Force Carry Service Setup' : '# 💎 Cấu Hình Dịch Vụ Kéo Lão Bản';
-
-  const desc = isEn
-    ? `${subStatusText}${checklistText}\n\n` +
-      `> **🎯 Dispatch Channel (Required)**: ${dispatchTag}\n` +
-      `> *Channel where available carry orders are posted for workers to claim.*\n` +
-      `> **📁 Ticket Category (Filter)**: ${categoryTag}\n` +
-      `> *Only tickets created under this category trigger carry dispatch cards.*\n` +
-      `> **🛠️ Worker Role (Required)**: ${workerRoleTag}\n` +
-      `> *Members with this role are authorized to claim orders.*\n` +
-      `> **👑 VIP Roles (Optional)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}`
-    : `${subStatusText}${checklistText}\n\n` +
-      `> **🎯 Kênh Bắn Kèo (Bắt buộc)**: ${dispatchTag}\n` +
-      `> *Kênh bot hiển thị thẻ đơn kéo để thợ theo dõi và bấm nhận.*\n` +
-      `> **📁 Nhóm Kênh Ticket (Lọc)**: ${categoryTag}\n` +
-      `> *Chỉ ticket tạo trong nhóm này mới kích hoạt hiển thị đơn kéo.*\n` +
-      `> **🛠️ Vai Trò Thợ Kéo (Bắt buộc)**: ${workerRoleTag}\n` +
-      `> *Thành viên có vai trò này mới được quyền bấm nhận đơn.*\n` +
-      `> **👑 Role Lão Bản VIP (Tùy chọn)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}`;
+  const desc = `${subStatusText}${checklistText}`;
 
   const containerJson = {
     type: ComponentType.Container,
