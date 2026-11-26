@@ -79,6 +79,9 @@ export class SimpleRateLimiter {
 /** Rate limiter cho POST /api/v1/auth/claim: tối đa 10 requests / phút / IP */
 export const claimRateLimiter = new SimpleRateLimiter(60_000, 10);
 
+/** Rate limiter cho PayOS Webhook: tối đa 60 requests / phút / IP */
+export const payosWebhookRateLimiter = new SimpleRateLimiter(60_000, 60);
+
 /**
  * Trích xuất IP của client an toàn (hỗ trợ reverse proxy như Railway / Cloudflare).
  */
@@ -305,6 +308,13 @@ export function createRequestHandler(client: Client): http.RequestListener {
       req.method === 'POST' &&
       (pathname === '/webhook/payment' || pathname === '/webhook/payos')
     ) {
+      const clientIp = getClientIp(req);
+      if (payosWebhookRateLimiter.isRateLimited(clientIp)) {
+        logger.warn(`[PayOS] Rate limit exceeded cho webhook từ IP ${clientIp}`);
+        res.writeHead(429, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Too many requests' }));
+        return;
+      }
       try {
         const body = (await readJsonBody(req)) as Record<string, unknown>;
 

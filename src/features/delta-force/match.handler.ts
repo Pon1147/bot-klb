@@ -86,18 +86,18 @@ export function buildMatchContainerWithSelect(
       const botPart = m.kill_other ? ` (${m.kill_other} Bot)` : '';
       return `• **${name}** (${op.name})${tagSelf}  ·  ${EMOJI_MONEY} ${loot}  ·  ${EMOJI_KILL} ${m.kill_operator || 0} PvP${botPart}`;
     });
-    teamSection = ['### 👥 Thành Tích Tiểu Đội:', ...memberLines].join('\n');
+    teamSection = ['### Thành Tích Tiểu Đội', ...memberLines].join('\n');
   }
 
   const content = [
-    `# ${resultEmoji} Kết Quả Trận Đấu: ${resultText}`,
+    `## ${resultEmoji} Kết Quả Trận Đấu: ${resultText}`,
     '',
-    `> 🗺️ **Bản đồ:** \`${mapName}\`  ·  ⏱️ **Thời lượng:** \`${durationStr}\``,
-    `> 🕒 **Thời gian thi đấu:** \`${matchTime}\``,
-    `> 🎖️ **Đặc vụ sử dụng:** \`${operator.name}\``,
-    `> ${EMOJI_MONEY} **Chiến lợi phẩm mang ra:** \`${carryOutStr}\``,
-    `> 📈 **Thu nhập ròng:** \`${netIncomeStr}\``,
-    `> ${EMOJI_KILL} **Số mạng hạ gục:** \`${killStr}\``,
+    `• **Bản đồ:** \`${mapName}\`  ·  **Thời lượng:** \`${durationStr}\``,
+    `• **Thời gian thi đấu:** \`${matchTime}\``,
+    `• **Đặc vụ sử dụng:** \`${operator.name}\``,
+    `• **Chiến lợi phẩm mang ra:** \`${carryOutStr}\``,
+    `• **Thu nhập ròng:** \`${netIncomeStr}\``,
+    `• **Số mạng hạ gục:** \`${killStr}\``,
     ...(teamSection ? ['', teamSection] : []),
     '',
     `*Mã trận: \`${currentRoomId}\`*`,

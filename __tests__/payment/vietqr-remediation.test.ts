@@ -134,7 +134,7 @@ describe('VietQR Payment Remediation Tests', () => {
 
       const json = result.toJSON();
       const text = JSON.stringify(json);
-      expect(text).toContain('Hóa đơn thanh toán đã được xác nhận thành công!');
+      expect(text).toContain('Hóa đơn thanh toán đã được xác nhận.');
       expect(text).toContain('Thành viên chuyển khoản (Chưa định danh)');
       expect(text).not.toContain('<@UNASSIGNED>');
     });

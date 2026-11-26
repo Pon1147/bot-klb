@@ -141,22 +141,22 @@ export async function execute(
       : '⚪ **Thị trường:** `Global Quốc Tế (Chưa liên kết)`';
 
     const footerText = isPersonal
-      ? `-# ⓘ Dữ liệu chốt lúc: \`${lastUpdatedText}\` (Đồng bộ cụm Garena SEA từ Delta Force HQ).`
-      : `-# ⓘ Dữ liệu chốt lúc: \`${lastUpdatedText}\` (Cụm Global · Dùng \`/df link\` để xem giá cụm Garena).`;
+      ? `-# Dữ liệu chốt lúc: \`${lastUpdatedText}\` (Đồng bộ cụm Garena SEA từ Delta Force HQ).`
+      : `-# Dữ liệu chốt lúc: \`${lastUpdatedText}\` (Cụm Global · Dùng \`/df link\` để xem giá cụm Garena).`;
 
     const sectionContent = [
-      `# 🛠️ Bàn Chế Tác: **${itemName}**`,
+      `## Bàn Chế Tác: ${itemName}`,
       `-# ID: \`${detail.item_id}\`  ·  Thời gian sản xuất: \`${formatDuration(detail.total_duration)}\``,
       marketBadge,
       '',
-      `💰 **Tổng giá bán (cả mẻ):** \`${formatCoin(sellPrice, false)}\` Coin`,
-      `📊 **Biến động đơn giá 24h:** Đỉnh \`${formatCoin(maxPrice, false)}\`  ·  Đáy \`${formatCoin(minPrice, false)}\` Coin/món`,
-      `${profitIcon} **Lợi nhuận ròng:** \`${profitSign}${formatCoin(income, false)}\` Coin *(Thu nhập: \`~${formatCoin(hourly, false)}/giờ\`)*`,
+      `• **Tổng giá bán (cả mẻ):** \`${formatCoin(sellPrice, false)}\` Coin`,
+      `• **Biến động đơn giá 24h:** Đỉnh \`${formatCoin(maxPrice, false)}\`  ·  Đáy \`${formatCoin(minPrice, false)}\` Coin/món`,
+      `• ${profitIcon} **Lợi nhuận ròng:** \`${profitSign}${formatCoin(income, false)}\` Coin *(Thu nhập: \`~${formatCoin(hourly, false)}/giờ\`)*`,
       '',
-      `### 🧱 Vật Liệu Sản Xuất Cần Dùng:`,
+      `### Vật Liệu Sản Xuất`,
       materialsText,
       '',
-      `> ⚙️ **Chi phí sản xuất:** \`${formatCoin(cost, false)}\` Coin  ·  **Phí & Tiền cọc:** \`${formatCoin(fee + deposit, false)}\` Coin`,
+      `**Chi phí sản xuất:** \`${formatCoin(cost, false)}\` Coin  ·  **Phí & Tiền cọc:** \`${formatCoin(fee + deposit, false)}\` Coin`,
       '',
       footerText,
     ].join('\n');

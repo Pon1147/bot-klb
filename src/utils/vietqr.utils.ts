@@ -250,31 +250,31 @@ export function buildVietQrContainer(options: VietQrContainerOptions): BuildCont
   const memoLine = memo ? `\n• **Dịch vụ / Ghi chú**: \`${memo}\`` : '';
 
   const invoiceTitle = txId
-    ? `### 💳 Hóa Đơn Thanh Toán VietQR [${txId}]`
-    : `### 💳 Hóa Đơn Thanh Toán / Chuyển Khoản VietQR`;
+    ? `## Hóa Đơn Thanh Toán VietQR [${txId}]`
+    : `## Hóa Đơn Thanh Toán / Chuyển Khoản VietQR`;
 
   const noticeBlock = notice ? `${notice}\n\n` : '';
 
   const targetNotification =
     customerId && customerId !== 'UNASSIGNED'
-      ? `> 🔔 **Yêu cầu thanh toán** gửi tới <@${customerId}> từ <@${creatorId}>\n\n`
+      ? `**Yêu cầu thanh toán** gửi tới <@${customerId}> từ <@${creatorId}>\n\n`
       : '';
 
   const content = [
     `${noticeBlock}${targetNotification}${invoiceTitle}`,
     '',
-    `• **Máy chủ**: **${serverName}**`,
+    `• **Máy chủ**: ${serverName}`,
     `• **Người tạo đơn**: <@${creatorId}>`,
     customerLine,
-    `• **Ngân hàng**: **${bankDisplayName}** (\`${bankId.toUpperCase()}\`)`,
+    `• **Ngân hàng**: ${bankDisplayName} (\`${bankId.toUpperCase()}\`)`,
     `• **Số tài khoản**: \`${accountNo}\``,
-    `• **Chủ tài khoản**: **${accountName.toUpperCase()}**`,
-    `• **Số tiền cần thanh toán**: 💵 **${formattedAmount}**`,
+    `• **Chủ tài khoản**: ${accountName.toUpperCase()}`,
+    `• **Số tiền**: **${formattedAmount}**`,
     `• **Nội dung chuyển khoản**: \`${transferCode}\`${memoLine}`,
     '',
-    `> ⚠️ **HƯỚNG DẪN THANH TOÁN**:`,
-    `> 1. Mở ứng dụng Ngân hàng (MB, Vietcombank, Techcombank, MoMo...) và **Quét mã QR** bên dưới.`,
-    `> 2. Giữ **chính xác nội dung chuyển khoản** \`${transferCode}\` để nhân viên đối soát và xác nhận đơn hàng.`,
+    `**Hướng dẫn thanh toán**`,
+    `1. Mở ứng dụng ngân hàng và quét mã QR bên dưới.`,
+    `2. Nhập đúng nội dung chuyển khoản \`${transferCode}\` để đối soát.`,
   ].join('\n');
 
   return makeResult(
@@ -331,17 +331,17 @@ export function buildPaymentResultContainer(
   const { isConfirm, txId, amount, buyerId, description, operatorId, reason } = options;
 
   const statusTitle = isConfirm
-    ? '### ✅ Hóa Đơn Thanh Toán Đã Xác Nhận'
-    : '### ❌ Hóa Đơn Thanh Toán Đã Bị Hủy';
+    ? '## Hóa Đơn Thanh Toán Đã Xác Nhận'
+    : '## Hóa Đơn Thanh Toán Đã Bị Hủy';
 
   const isUnassigned = !buyerId || buyerId === 'UNASSIGNED';
   const tagNotification = isConfirm
     ? isUnassigned
-      ? '🎉 Hóa đơn thanh toán đã được xác nhận thành công!'
-      : `🎉 <@${buyerId}> Hóa đơn thanh toán của bạn đã được xác nhận!`
+      ? 'Hóa đơn thanh toán đã được xác nhận.'
+      : `<@${buyerId}> Hóa đơn thanh toán của bạn đã được xác nhận.`
     : isUnassigned
-      ? '⚠️ Hóa đơn thanh toán đã bị hủy.'
-      : `⚠️ <@${buyerId}> Hóa đơn thanh toán đã bị hủy.`;
+      ? 'Hóa đơn thanh toán đã bị hủy.'
+      : `<@${buyerId}> Hóa đơn thanh toán đã bị hủy.`;
 
   const formattedAmount = `${amount.toLocaleString('vi-VN')} đ`;
   const noteLine = reason ? `\n• **Ghi chú**: \`${reason}\`` : '';
@@ -352,7 +352,7 @@ export function buildPaymentResultContainer(
   const textLines = [
     statusTitle,
     '',
-    `> ${tagNotification}`,
+    tagNotification,
     '',
     `• **Mã đơn (TX)**: \`${txId}\``,
     `• **Số tiền**: **${formattedAmount}**`,
@@ -403,14 +403,14 @@ export function buildCustomerFeedbackContainer(
   const clampedRating = Math.max(1, Math.min(5, Math.floor(rating || 5)));
   const starString = '🌟'.repeat(clampedRating);
 
-  const topSection = [`👤 **@${buyerName}**`, `### 🏆 ${starString}`].join('\n');
+  const topSection = [`**@${buyerName}**`, `### ${starString}`].join('\n');
 
   const commentText =
-    comment && comment.trim() ? `> *“${comment.trim()}”*` : `> *Khách hàng không để lại lời nhắn.*`;
+    comment && comment.trim() ? `> *“${comment.trim()}”*` : `*Khách hàng không để lại lời nhắn.*`;
 
-  const reviewSection = [`**📝 Đánh giá — ${serviceName}**`, commentText].join('\n');
+  const reviewSection = [`**Đánh giá — ${serviceName}**`, commentText].join('\n\n');
 
-  const footerSection = `🧾 \`${txId}\` · <t:${tsSec}:f> · <t:${tsSec}:R>`;
+  const footerSection = `\`${txId}\` · <t:${tsSec}:f> · <t:${tsSec}:R>`;
 
   return makeResult(
     [

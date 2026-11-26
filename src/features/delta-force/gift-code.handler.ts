@@ -32,28 +32,28 @@ export async function execute(
 
   const textContent = isEn
     ? [
-        `## 🎁 ${count} Starter Delta Force Giftcodes`,
+        `## ${count} Starter Delta Force Giftcodes`,
         '',
-        `Welcome to the server! Here is the complete pack of **${count} Garena giftcodes** (weapons, skins, EXP & resources).`,
+        `Complete pack of **${count} Garena giftcodes** (weapons, skins, EXP & resources).`,
         '',
-        `### ⚡ 2 Quick Steps (Auto Redeem All ${count} Codes):`,
-        '1️⃣ Install the **DF Toolbox** extension (button below). All codes are preloaded.',
-        `2️⃣ Click **"1. Open Redeem Page"** ➔ The extension will automatically input and redeem all ${count} codes with a single click!`,
+        `### 2 Quick Steps (Auto Redeem All ${count} Codes)`,
+        '1. Install the **DF Toolbox** extension (button below). All codes are preloaded.',
+        `2. Click **"1. Open Redeem Page"** so the extension inputs and redeems all ${count} codes automatically.`,
         '',
-        `📄 *To view or copy the raw codes manually, download the attached \`DF-Giftcodes-${count}.txt\` below.*`,
-        '> 💡 *Tip: If you previously installed the extension and have an older custom list, open popup ➔ **Editor** ➔ paste from the attached file ➔ **Save Codes**.*',
+        `*To view or copy the raw codes manually, download \`DF-Giftcodes-${count}.txt\` below.*`,
+        `*If you have an older list in the extension, open popup → Editor → paste from the attached file → Save Codes.*`,
       ].join('\n')
     : [
-        `## 🎁 Danh Sách ${count} Mã Giftcode Tân Thủ Delta Force`,
+        `## Danh Sách ${count} Mã Giftcode Tân Thủ Delta Force`,
         '',
-        `Chào mừng bạn đến với server! Dưới đây là gói tổng hợp **${count} mã quà tặng Garena** (vũ khí, skin, EXP & nguyên liệu).`,
+        `Gói tổng hợp **${count} mã quà tặng Garena** (vũ khí, skin, EXP & nguyên liệu).`,
         '',
-        '### ⚡ 2 Bước Nhận Quà Tự Động (Không cần nhập thủ công):',
-        `1️⃣ Cài tiện ích **DF Toolbox** (bấm nút bên dưới). Tiện ích đã nạp sẵn toàn bộ ${count} mã này.`,
-        `2️⃣ Bấm **"1. Mở Trang Nhập Code Garena"** ➔ Tiện ích sẽ tự động điền và nhận toàn bộ ${count} mã chỉ với 1 click!`,
+        '### 2 Bước Nhận Quà Tự Động',
+        `1. Cài tiện ích **DF Toolbox** (nút bên dưới), đã nạp sẵn toàn bộ ${count} mã.`,
+        `2. Bấm **"1. Mở Trang Nhập Code Garena"** để tiện ích tự động điền và nhận toàn bộ mã.`,
         '',
-        `📄 *Nếu bạn muốn tự nhập hoặc dùng tool riêng, toàn bộ danh sách ${count} mã đã được đính kèm trong tệp \`DF-Giftcodes-${count}.txt\` bên dưới.*`,
-        '> 💡 *Mẹo: Nếu bạn đã cài tiện ích từ trước mà danh sách cũ chưa cập nhật, mở popup ➔ mục **Soạn thảo** ➔ dán các mã từ tệp đính kèm ➔ bấm **Save Codes**.*',
+        `*Nếu muốn tự nhập, tải tệp \`DF-Giftcodes-${count}.txt\` đính kèm bên dưới.*`,
+        `*Nếu đã cài tiện ích từ trước mà danh sách cũ chưa cập nhật, mở popup → Soạn thảo → dán từ tệp đính kèm → Save Codes.*`,
       ].join('\n');
 
   const container = buildInfoContainer(textContent);

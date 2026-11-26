@@ -87,15 +87,15 @@ export async function execute(
         : 'Chưa có vật phẩm đỏ nào trong bộ sưu tập.';
 
     const headerLines = [
-      '# 🔴 Sảnh Triển Lãm Đồ Đỏ',
+      '## Sảnh Triển Lãm Đồ Đỏ',
       '-# Red Vault  ·  🟢 Đang diễn ra',
       '',
-      `> 🏆 **Loại đồ đỏ:** \`${totalTypes}\`  ·  📦 **Tích lũy:** \`${totalCount.toLocaleString('vi-VN')}\` món  ·  ⭐ **Tổng giá trị:** \`${totalValueStr}\``,
+      `**Loại đồ đỏ:** \`${totalTypes}\`  ·  **Tích lũy:** \`${totalCount.toLocaleString('vi-VN')}\` món  ·  **Tổng giá trị:** \`${totalValueStr}\``,
       '',
-      '### 💎 TOP Vật Phẩm Đắt Giá Nhất',
+      '### Vật Phẩm Đắt Giá Nhất',
       topItemsText,
       ...(sortedItems.length > 5
-        ? [`\n> 💡 *...và ${sortedItems.length - 5} loại vật phẩm đỏ khác trong kho.*`]
+        ? [`\n*...và ${sortedItems.length - 5} loại vật phẩm đỏ khác trong kho.*`]
         : []),
     ];
 
@@ -118,10 +118,10 @@ export async function execute(
         'Bảo vật đỏ quý giá nhất bạn từng thu thập và rút quân thành công.';
 
       const spotlightLines = [
-        '-# ⭐ VẬT PHẨM GIÁ TRỊ NHẤT',
-        `### **${top1Item.name}**`,
-        `> *${top1Desc}*`,
-        `💎 **Đơn giá:** \`~${formatCoinShort(top1Item.unitValue)} Coin\` · **Đang có:** \`×${top1Item.count}\` món (Tổng: \`~${formatCoinShort(top1Item.totalValue)} Coin\`)`,
+        '-# VẬT PHẨM GIÁ TRỊ NHẤT',
+        `### ${top1Item.name}`,
+        `*${top1Desc}*`,
+        `**Đơn giá:** \`~${formatCoinShort(top1Item.unitValue)} Coin\` · **Đang có:** \`×${top1Item.count}\` món (Tổng: \`~${formatCoinShort(top1Item.totalValue)} Coin\`)`,
       ];
 
       const spotlightSection: Record<string, unknown> = {
@@ -152,7 +152,7 @@ export async function execute(
     // Mẹo ở chân trang (Footer hint)
     innerComponents.push({
       type: ComponentType.TextDisplay,
-      content: '-# ⓘ Mẹo: Đồ đỏ (Grade 6) mang lại giá trị coin khổng lồ khi rút quân thành công.',
+      content: '-# Đồ đỏ (Grade 6) mang lại giá trị coin cao khi rút quân thành công.',
     });
 
     // ActionRow gồm 3 nút pill thống kê nằm ngang + 1 nút link mở web (giống mockup)

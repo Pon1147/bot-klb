@@ -611,8 +611,8 @@ describe('payment.flow', () => {
       // Dùng buyerName kèm @, không dùng snowflake ID thô
       expect(componentsJson).toContain('@GMC trunggg2');
       expect(componentsJson).not.toContain('<@112233445566778899>');
-      expect(componentsJson).toContain('🏆 🌟🌟🌟🌟🌟');
-      expect(componentsJson).toContain('📝 Đánh giá — Val GhostX');
+      expect(componentsJson).toContain('🌟🌟🌟🌟🌟');
+      expect(componentsJson).toContain('Đánh giá — Val GhostX');
       expect(componentsJson).toContain('Tuyệt vời! Chất lượng cao cấp');
       expect(componentsJson).toContain('TX12345');
     });
@@ -697,7 +697,7 @@ describe('payment.flow', () => {
 
       const sentComponentsJson = JSON.stringify(sendArgs.components);
       expect(sentComponentsJson).toContain('@GMC trunggg2');
-      expect(sentComponentsJson).toContain('🏆 🌟🌟🌟🌟🌟');
+      expect(sentComponentsJson).toContain('🌟🌟🌟🌟🌟');
       expect(sentComponentsJson).toContain('Val GhostX Pack');
     });
   });

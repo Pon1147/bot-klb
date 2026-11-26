@@ -27,18 +27,17 @@ export const BUILD_IMAGE_FILENAME = 'weapon_builds_preview.png';
  */
 export function buildWeaponContainer(): BuildContainerResult {
   const content = [
-    '## 🔫 Thư Viện Build Súng & Mã Gunsmith Meta (Bản Tiếng Việt)',
-    '> 🇻🇳 **ĐÃ CÓ BẢN TIẾNG VIỆT:** Hợp tác chính thức cùng **DeltaForceTools** mang trọn bộ build súng chuẩn meta đến game thủ Garena!',
+    '## Thư Viện Build Súng & Mã Gunsmith Meta',
+    'Hợp tác chính thức cùng **DeltaForceTools** mang trọn bộ build súng chuẩn meta (bản tiếng Việt) cho người chơi Garena.',
     '',
-    '### ⚡ Lợi Thế Vượt Trội Cho Bạn:',
-    '- 🏆 **Chuẩn Meta Server Garena:** Tuyển tập CAR-15, M4A1, AKM, K416, AUG... với phụ kiện tối ưu độ giật, sấy siêu đầm tay hoặc càn quét cự ly gần cực gắt.',
-    '- 📋 **Copy 1-Click Cực Tiện:** Chọn súng ➔ Bấm **"Copies"** (Sao chép mã) trên web là có ngay mã Gunsmith.',
-    '- 🎯 **Áp Dụng Trong 1 Giây:** Vào game ➔ Dán mã ➔ Tự động lên đầy đủ phụ kiện tuyển thủ mà không tốn công mò mẫm.',
+    '### Điểm nổi bật',
+    '• **Chuẩn Meta Garena:** Tuyển tập CAR-15, M4A1, AKM, K416, AUG tối ưu độ giật và tầm bắn.',
+    '• **Copy 1-Click:** Chọn súng trên web và bấm "Copies" để lấy mã Gunsmith.',
+    '• **Dán vào game:** Tự động lắp đầy đủ phụ kiện chuẩn theo mã.',
     '',
-    '### 🚀 Nâng Cấp Hỏa Lực Ngay:',
-    'Bấm nút **"🔫 Khám Phá Build Súng Chuẩn Meta"** bên dưới để sao chép mã và leo rank ngay hôm nay! 👇',
+    'Bấm nút bên dưới để mở thư viện build súng.',
     '',
-    '-# 💡 Mẹo: Danh sách được cập nhật liên tục theo các bản vá cân bằng súng mới nhất.',
+    '-# Danh sách được cập nhật liên tục theo các bản vá cân bằng mới nhất.',
   ].join('\n');
 
   const files: AttachmentBuilder[] = [];
@@ -91,12 +90,12 @@ export function buildSpecificWeaponContainer(
 ): BuildContainerResult {
   if (loadouts.length === 0) {
     const content = [
-      `## 🔍 Không Tìm Thấy Build Súng: "${weaponQuery}"`,
-      '> ⚠️ Chưa có dữ liệu mã Gunsmith cho súng này trong bộ nhớ đệm máy chủ.',
+      `## Không Tìm Thấy Build Súng: "${weaponQuery}"`,
+      'Chưa có dữ liệu mã Gunsmith cho súng này trong bộ nhớ đệm.',
       '',
-      '### 💡 Gợi Ý Dành Cho Bạn:',
-      '- Thử lại với tên súng chuẩn: `CAR-15`, `M4A1`, `AKM`, `K416`, `AUG`...',
-      '- Bấm nút bên dưới để truy cập thư viện đầy đủ và sao chép mã trực tiếp từ web!',
+      '### Gợi ý',
+      '• Thử lại với tên súng chuẩn: `CAR-15`, `M4A1`, `AKM`, `K416`, `AUG`...',
+      '• Mở thư viện đầy đủ bên dưới để sao chép mã trực tiếp từ web.',
     ].join('\n');
 
     const containerInner: unknown[] = [
@@ -127,23 +126,20 @@ export function buildSpecificWeaponContainer(
   const primary = loadouts[0];
   const typeText = primary.weapon_type ? ` (${primary.weapon_type})` : '';
   const content = [
-    `## 🔫 Build Súng: ${primary.weapon_name}${typeText}`,
-    `> 🏷️ **Tags:** \`${primary.tags || 'Meta'}\` • 🎮 **Chế độ:** \`${primary.game_mode || 'Tất cả'}\``,
+    `## Build Súng: ${primary.weapon_name}${typeText}`,
+    `**Tags:** \`${primary.tags || 'Meta'}\` • **Chế độ:** \`${primary.game_mode || 'Tất cả'}\``,
     '',
-    '### 📋 Mã Gunsmith (Sao chép và dán vào game):',
+    '### Mã Gunsmith (Sao chép và dán vào game)',
     '```',
     primary.loadout_code,
     '```',
     '',
-    '### 💡 Mô Tả & Khuyên Dùng:',
+    '### Mô Tả',
     primary.description
       ? primary.description
       : 'Build chuẩn meta tối ưu độ đầm tay, sấy ổn định cự ly trung bình và gần.',
     '',
-    '-# 👤 Nguồn: ' +
-      (primary.author || 'deltaforcetools.gg') +
-      ' | Server: ' +
-      primary.server_region,
+    '-# Nguồn: ' + (primary.author || 'deltaforcetools.gg') + ' | Server: ' + primary.server_region,
   ].join('\n');
 
   const containerInner: unknown[] = [
