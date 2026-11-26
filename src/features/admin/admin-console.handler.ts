@@ -971,12 +971,28 @@ export async function handleAdminConsoleModal(
       },
     });
 
-    await interaction.reply({
-      content: isEn
-        ? `✅ VietQR Banking updated: **${bankId} • ${accountNo}**${accountName ? ` (${accountName})` : ''}!\nClick **[ Refresh ]** on the Server Control Center to see updates.`
-        : `✅ Đã lưu cấu hình nhận tiền VietQR: **${bankId} • ${accountNo}**${accountName ? ` (${accountName})` : ''}!\nBấm **[ Làm Mới ]** trên Bảng Điều Khiển để xem cập nhật.`,
-      flags: MessageFlags.Ephemeral,
-    });
+    const freshSettings = settingsService.get(guild.id);
+    const container = buildAdminConsoleContainer(guild, freshSettings, callerUserId, locale);
+    const footerRow = buildAdminConsoleFooterRow(callerUserId, locale);
+    const toastMessage = isEn
+      ? `✅ VietQR Banking updated: **${bankId} • ${accountNo}**${accountName ? ` (${accountName})` : ''}!`
+      : `✅ Đã lưu cấu hình nhận tiền VietQR: **${bankId} • ${accountNo}**${accountName ? ` (${accountName})` : ''}!`;
+
+    // Cập nhật giao diện realtime ngay tại chỗ trên Server Control Center
+    if (interaction.isFromMessage()) {
+      await interaction.update({
+        components: [...container.toJSON(), footerRow.toJSON()],
+      });
+      await interaction.followUp({
+        content: toastMessage,
+        flags: MessageFlags.Ephemeral,
+      });
+    } else {
+      await interaction.reply({
+        content: toastMessage,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
     return { handled: true };
   }
 

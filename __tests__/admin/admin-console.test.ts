@@ -673,12 +673,16 @@ describe('Admin Console V2 (Dashboard)', () => {
             return '';
           }),
         },
+        isFromMessage: jest.fn().mockReturnValue(true),
+        update: jest.fn().mockResolvedValue({}),
+        followUp: jest.fn().mockResolvedValue({}),
         reply: jest.fn().mockResolvedValue({}),
       };
 
       const res = await handleAdminConsoleModal(interaction);
       expect(res.handled).toBe(true);
-      expect(interaction.reply).toHaveBeenCalledWith(
+      expect(interaction.update).toHaveBeenCalled();
+      expect(interaction.followUp).toHaveBeenCalledWith(
         expect.objectContaining({
           content: expect.stringContaining('MB • 0123456789'),
           flags: MessageFlags.Ephemeral,
