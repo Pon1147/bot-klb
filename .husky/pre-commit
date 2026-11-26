@@ -1,1 +1,2 @@
+node scripts/gate.js pre
 npx lint-staged
