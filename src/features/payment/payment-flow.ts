@@ -2,7 +2,7 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  EmbedBuilder,
+  ComponentType,
   MessageFlags,
   ModalBuilder,
   PermissionFlagsBits,
@@ -454,21 +454,23 @@ export async function handlePaymentModal(
 
             const isAssignedBuyer = tx.buyer_id && tx.buyer_id !== 'UNASSIGNED';
             if (enableRating && isAssignedBuyer) {
-              const ratingEmbed = new EmbedBuilder()
-                .setTitle('⭐ Đánh giá trải nghiệm dịch vụ')
-                .setDescription(
-                  'Sự hài lòng của bạn là động lực lớn nhất của chúng tôi. Vui lòng chọn số sao để gửi đánh giá nhé!',
-                )
-                .setColor(0xf1c40f)
-                .addFields(
-                  { name: 'Mã đơn', value: `\`${tx.id}\``, inline: true },
-                  { name: 'Dịch vụ', value: tx.description, inline: true },
-                );
+              // Container V2: thẻ mời đánh giá kèm 5 nút sao
+              const ratingContainer = {
+                type: ComponentType.Container,
+                components: [
+                  {
+                    type: ComponentType.TextDisplay,
+                    content: `${finalThanks}\n\n<@${tx.buyer_id}> Dành 5 giây đánh giá chất lượng phục vụ nhé!\n\n**Mã đơn:** \`${tx.id}\` · **Dịch vụ:** ${tx.description}`,
+                  },
+                ],
+              };
 
               await sendableChannel.send({
-                content: `${finalThanks}\n\n<@${tx.buyer_id}> Vui lòng dành 5 giây đánh giá chất lượng phục vụ:`,
-                embeds: [ratingEmbed],
-                components: [buildRatingButtons(tx.id, tx.buyer_id).toJSON() as any],
+                components: [
+                  ratingContainer,
+                  buildRatingButtons(tx.id, tx.buyer_id).toJSON() as any,
+                ],
+                flags: MessageFlags.IsComponentsV2,
               });
             } else {
               const mentionPart = isAssignedBuyer ? ` <@${tx.buyer_id}>` : '';
