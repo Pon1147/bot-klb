@@ -1,6 +1,5 @@
 import {
   ActionRowBuilder,
-  ButtonBuilder,
   ButtonStyle,
   ComponentType,
   MessageFlags,
@@ -12,6 +11,7 @@ import { KeoOrderRecord, KeoOrderStatus } from '../../database/keo.db.js';
 import { COLORS } from '../../config/container.variables.js';
 import { BOT_BRANDING } from '../../config/branding.config.js';
 import { t } from '../../infrastructure/i18n/i18n.service.js';
+import { buildRatingButtons } from '../payment/payment-flow.js';
 
 export function formatVnd(amount: number): string {
   return `${amount.toLocaleString('vi-VN')} đ`;
@@ -379,28 +379,7 @@ export function buildRatingCard(order: KeoOrderRecord): { components: any[]; fla
     ],
   };
 
-  const ratingRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`keo:rate:${order.id}:1`)
-      .setLabel('1 ⭐')
-      .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-      .setCustomId(`keo:rate:${order.id}:2`)
-      .setLabel('2 ⭐')
-      .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-      .setCustomId(`keo:rate:${order.id}:3`)
-      .setLabel('3 ⭐')
-      .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-      .setCustomId(`keo:rate:${order.id}:4`)
-      .setLabel('4 ⭐')
-      .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-      .setCustomId(`keo:rate:${order.id}:5`)
-      .setLabel('5 ⭐')
-      .setStyle(ButtonStyle.Success),
-  );
+  const ratingRow = buildRatingButtons(`KEO_${order.id}`, order.customer_id);
 
   return {
     components: [containerJson, ratingRow.toJSON()],

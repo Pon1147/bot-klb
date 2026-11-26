@@ -16,8 +16,12 @@ src/
 │   ├── welcome/          # Hệ thống chào mừng thành viên mới
 │   ├── booster/          # Hệ thống cảm ơn server booster
 │   ├── container/        # Trình soạn thảo Discord Components V2
-│   ├── delta-force/      # Nghiệp vụ game Delta Force (Stats, Daily, Code, Team-find, Link)
-│   └── admin/            # Quản trị & RBAC
+│   ├── delta-force/      # Nghiệp vụ game Delta Force (Stats, Daily, Code, Link)
+│   ├── keo-lao-ban/      # Dịch vụ Kéo Lão Bản (Ticket, Nhận đơn, Nghiệm thu)
+│   ├── payment/          # Thanh toán POS VietQR, Donate & Đánh giá
+│   ├── subscription/     # Quản trị bản quyền Guild & đối soát PayOS
+│   ├── team-find/        # Tìm đồng đội theo Map/Mode/Rank
+│   └── admin/            # Quản trị, Setup Console & RBAC
 ├── database/             # SQLite connection & legacy tables
 ├── services/             # Shared background services
 ├── utils/                # Pure utilities & logging
@@ -152,23 +156,6 @@ AI Agent khi nhận nhiệm vụ cần nhận diện và áp dụng đúng playb
   2. Thiết kế cấu trúc thư mục tự chứa trong `src/features/<new-slice>/`.
   3. Xác định rõ RBAC permissions, database schema, và error boundaries.
   4. Nếu cần phân rã thành các bước triển khai độc lập, lập kế hoạch chi tiết trước khi code.
-
-### 7. Mandatory Refactoring Contract
-
-Before performing ANY refactoring operation, read and comply with:
-
-- `docs/engineering/REFACTORING-CONTRACT.md`
-
-This contract is mandatory for all AI agents,
-automated coding workflows and refactoring tasks.
-
-No refactoring task may be declared complete without
-satisfying its applicable acceptance criteria.
-
-If any requirement cannot be verified, explicitly report
-it as NOT VERIFIED.
-
-The Project Owner retains final acceptance authority.
 
 ---
 
