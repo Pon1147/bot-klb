@@ -538,15 +538,35 @@ describe('Admin Console V2 (Dashboard)', () => {
       );
     });
 
-    it('Xử lý nút vietqr: chặn nếu chưa kích hoạt bản quyền và mở Modal khi đã có bản quyền', async () => {
+    it('Xử lý nút vietqr: chỉ cho phép Server Owner, kiểm tra bản quyền và mở Modal', async () => {
       const spy = jest.spyOn(subscriptionService, 'checkSubscriptionEntitlement');
 
-      // 1. Chưa có bản quyền -> từ chối
-      spy.mockReturnValueOnce({ isEntitled: false, expiresAt: null, statusText: '🔴 Chưa kích hoạt' });
-      const blockedInteraction: any = {
+      // 0. Không phải Server Owner -> từ chối
+      const nonOwnerInteraction: any = {
         customId: 'admin_console:vietqr:user-caller',
         guild: mockGuild,
         user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(true) },
+        reply: jest.fn().mockResolvedValue({}),
+        showModal: jest.fn().mockResolvedValue({}),
+      };
+      const nonOwnerRes = await handleAdminConsoleButton(nonOwnerInteraction);
+      expect(nonOwnerRes.handled).toBe(true);
+      expect(nonOwnerInteraction.showModal).not.toHaveBeenCalled();
+      expect(nonOwnerInteraction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('Server Owner'),
+          flags: MessageFlags.Ephemeral,
+        }),
+      );
+
+      // 1. Server Owner nhưng chưa có bản quyền -> từ chối
+      spy.mockReturnValueOnce({ isEntitled: false, expiresAt: null, statusText: '🔴 Chưa kích hoạt' });
+      const blockedInteraction: any = {
+        customId: 'admin_console:vietqr:owner-456',
+        guild: mockGuild,
+        user: { id: 'owner-456' },
         locale: 'vi',
         memberPermissions: { has: jest.fn().mockReturnValue(false) },
         reply: jest.fn().mockResolvedValue({}),
@@ -562,12 +582,12 @@ describe('Admin Console V2 (Dashboard)', () => {
         }),
       );
 
-      // 2. Đã có bản quyền -> mở Modal
+      // 2. Server Owner + đã có bản quyền -> mở Modal
       spy.mockReturnValueOnce({ isEntitled: true, expiresAt: Date.now() + 86400_000, statusText: '🟢 Còn hạn' });
       const interaction: any = {
-        customId: 'admin_console:vietqr:user-caller',
+        customId: 'admin_console:vietqr:owner-456',
         guild: mockGuild,
-        user: { id: 'user-caller' },
+        user: { id: 'owner-456' },
         locale: 'vi',
         memberPermissions: { has: jest.fn().mockReturnValue(false) },
         showModal: jest.fn().mockResolvedValue({}),
@@ -578,7 +598,7 @@ describe('Admin Console V2 (Dashboard)', () => {
       expect(interaction.showModal).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            custom_id: 'admin_console_modal:vietqr:guild-123:user-caller',
+            custom_id: 'admin_console_modal:vietqr:guild-123:owner-456',
           }),
         }),
       );
@@ -685,24 +705,65 @@ describe('Admin Console V2 (Dashboard)', () => {
       expect(res.handled).toBe(false);
     });
 
-    it('Lưu cấu hình VietQR thành công từ Modal submit', async () => {
+    it('Lưu cấu hình VietQR thành công từ Modal submit (Server Owner + validate bank/STK)', async () => {
       const spy = jest.spyOn(subscriptionService, 'checkSubscriptionEntitlement').mockReturnValue({
         isEntitled: true,
         expiresAt: Date.now() + 86400_000,
         statusText: '🟢 Còn hạn',
       });
 
-      const interaction: any = {
+      // 1. Không phải Server Owner -> chặn
+      const nonOwnerModal: any = {
         customId: 'admin_console_modal:vietqr:user-caller',
         guild: mockGuild,
         user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(true) },
+        reply: jest.fn().mockResolvedValue({}),
+      };
+      await handleAdminConsoleModal(nonOwnerModal);
+      expect(nonOwnerModal.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('Server Owner'),
+          flags: MessageFlags.Ephemeral,
+        }),
+      );
+
+      // 2. Mã ngân hàng không hợp lệ -> chặn
+      const invalidBankModal: any = {
+        customId: 'admin_console_modal:vietqr:owner-456',
+        guild: mockGuild,
+        user: { id: 'owner-456' },
+        locale: 'vi',
+        fields: {
+          getTextInputValue: jest.fn((fieldId: string) => {
+            if (fieldId === 'bank_id') return 'INVALID_BANK';
+            if (fieldId === 'account_no') return '0123456789';
+            return '';
+          }),
+        },
+        reply: jest.fn().mockResolvedValue({}),
+      };
+      await handleAdminConsoleModal(invalidBankModal);
+      expect(invalidBankModal.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('không hợp lệ'),
+          flags: MessageFlags.Ephemeral,
+        }),
+      );
+
+      // 3. Server Owner + thông tin hợp lệ -> lưu thành công
+      const interaction: any = {
+        customId: 'admin_console_modal:vietqr:owner-456',
+        guild: mockGuild,
+        user: { id: 'owner-456' },
         locale: 'vi',
         memberPermissions: { has: jest.fn().mockReturnValue(false) },
         fields: {
           getTextInputValue: jest.fn((fieldId: string) => {
             if (fieldId === 'bank_id') return 'MB';
             if (fieldId === 'account_no') return '0123456789';
-            if (fieldId === 'account_name') return 'NGUYEN VAN A';
+            if (fieldId === 'account_name') return 'Nguyễn Văn A';
             return '';
           }),
         },
@@ -717,7 +778,7 @@ describe('Admin Console V2 (Dashboard)', () => {
       expect(interaction.update).toHaveBeenCalled();
       expect(interaction.followUp).toHaveBeenCalledWith(
         expect.objectContaining({
-          content: expect.stringContaining('MB • 0123456789'),
+          content: expect.stringContaining('**MB • 0123456789** (NGUYEN VAN A)'),
           flags: MessageFlags.Ephemeral,
         }),
       );

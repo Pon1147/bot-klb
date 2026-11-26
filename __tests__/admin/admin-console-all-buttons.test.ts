@@ -106,8 +106,14 @@ describe('Admin Console — Toàn bộ Buttons & Workflows Audit Test', () => {
       expect(interaction.update).toHaveBeenCalled();
     });
 
-    it('admin_console:vietqr — chặn nếu chưa có bản quyền, mở modal khi đã kích hoạt', async () => {
-      const blocked = createButtonInteraction('admin_console:vietqr:caller-123');
+    it('admin_console:vietqr — chỉ Server Owner mới được mở, chặn nếu chưa có bản quyền', async () => {
+      const nonOwner = createButtonInteraction('admin_console:vietqr:caller-123', 'caller-123');
+      const nonOwnerRes = await handleAdminConsoleButton(nonOwner, db);
+      expect(nonOwnerRes.handled).toBe(true);
+      expect(nonOwner.showModal).not.toHaveBeenCalled();
+      expect(nonOwner.reply).toHaveBeenCalled();
+
+      const blocked = createButtonInteraction('admin_console:vietqr:owner-123', 'owner-123');
       const blockedRes = await handleAdminConsoleButton(blocked, db);
       expect(blockedRes.handled).toBe(true);
       expect(blocked.showModal).not.toHaveBeenCalled();
@@ -117,7 +123,7 @@ describe('Admin Console — Toàn bộ Buttons & Workflows Audit Test', () => {
         'INSERT OR REPLACE INTO guild_subscriptions (guild_id, license_expires_at, trial_used, created_at, updated_at) VALUES (?, ?, 1, ?, ?)',
       ).run(mockGuild.id, Date.now() + 86400_000, Date.now(), Date.now());
 
-      const interaction = createButtonInteraction('admin_console:vietqr:caller-123');
+      const interaction = createButtonInteraction('admin_console:vietqr:owner-123', 'owner-123');
       const res = await handleAdminConsoleButton(interaction, db);
       expect(res.handled).toBe(true);
       expect(interaction.showModal).toHaveBeenCalled();

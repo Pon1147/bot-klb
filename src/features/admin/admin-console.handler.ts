@@ -52,6 +52,7 @@ import { cloneContainerSettings } from '../container/container-session.js';
 import { resolveUserLocale } from '../../infrastructure/i18n/locale-resolver.js';
 import { t } from '../../infrastructure/i18n/i18n.service.js';
 import { buildContainer } from '../../utils/container.utils.js';
+import { normalizeBankCode } from '../../utils/vietqr.utils.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('AdminConsoleHandler');
@@ -678,6 +679,16 @@ export async function handleAdminConsoleButton(
   }
 
   if (action === 'vietqr') {
+    // Chỉ duy nhất Server Owner mới được đổi tài khoản ngân hàng nhận tiền (đồng bộ với /config vietqr set)
+    if (guild.ownerId !== interaction.user.id) {
+      await interaction.reply({
+        content: isEn
+          ? '🔒 Only the Server Owner can configure the VietQR receiving bank account.'
+          : '🔒 Chỉ duy nhất Chủ sở hữu máy chủ (Server Owner) mới có quyền cài đặt tài khoản ngân hàng nhận tiền.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
     const resolvedDb =
       database ?? (interaction.client as { database?: Database.Database })?.database;
     const entitlement = checkSubscriptionEntitlement(resolvedDb, guild.id);
@@ -968,6 +979,16 @@ export async function handleAdminConsoleModal(
 
   // 1. Modal cấu hình tài khoản VietQR
   if (action === 'vietqr') {
+    // Chỉ duy nhất Server Owner mới được đổi tài khoản ngân hàng nhận tiền (đồng bộ với /config vietqr set)
+    if (guild.ownerId !== interaction.user.id) {
+      await interaction.reply({
+        content: isEn
+          ? '🔒 Only the Server Owner can configure the VietQR receiving bank account.'
+          : '🔒 Chỉ duy nhất Chủ sở hữu máy chủ (Server Owner) mới có quyền cài đặt tài khoản ngân hàng nhận tiền.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
     const resolvedDb =
       database ?? (interaction.client as { database?: Database.Database })?.database;
     const entitlement = checkSubscriptionEntitlement(resolvedDb, guild.id);
@@ -980,20 +1001,52 @@ export async function handleAdminConsoleModal(
       });
       return { handled: true };
     }
-    const bankId = interaction.fields.getTextInputValue('bank_id').trim().toUpperCase();
-    const accountNo = interaction.fields.getTextInputValue('account_no').trim();
+    const rawBank = interaction.fields.getTextInputValue('bank_id').trim().toUpperCase();
+    const rawAccountNo = interaction.fields.getTextInputValue('account_no').trim();
     const accountNameRaw = interaction.fields.getTextInputValue('account_name')?.trim();
-    const accountName = accountNameRaw ? accountNameRaw.toUpperCase() : null;
 
-    if (!bankId || !accountNo) {
+    const normalizedBank = normalizeBankCode(rawBank);
+    if (!normalizedBank) {
       await interaction.reply({
         content: isEn
-          ? '❌ Bank code and account number cannot be empty.'
-          : '❌ Mã ngân hàng và số tài khoản không được để trống.',
+          ? `❌ Invalid or unsupported bank code: \`${rawBank}\`.`
+          : `❌ Mã ngân hàng \`${rawBank}\` không hợp lệ hoặc chưa được hỗ trợ.`,
         flags: MessageFlags.Ephemeral,
       });
       return { handled: true };
     }
+    if (!/^[A-Za-z0-9]{6,25}$/.test(rawAccountNo)) {
+      await interaction.reply({
+        content: isEn
+          ? '❌ Account number must be 6–25 alphanumeric characters without spaces.'
+          : '❌ Số tài khoản phải gồm 6–25 ký tự chữ/số (không khoảng trắng hoặc ký tự đặc biệt).',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
+
+    let accountName: string | null = null;
+    if (accountNameRaw) {
+      const cleanName = accountNameRaw
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .toUpperCase();
+      if (!/^[A-Z0-9 ]{2,50}$/.test(cleanName)) {
+        await interaction.reply({
+          content: isEn
+            ? '❌ Account holder name must be 2–50 alphanumeric characters.'
+            : '❌ Tên chủ tài khoản không hợp lệ (chỉ gồm 2–50 ký tự chữ/số).',
+          flags: MessageFlags.Ephemeral,
+        });
+        return { handled: true };
+      }
+      accountName = cleanName;
+    }
+
+    const bankId = normalizedBank.bankCode;
+    const accountNo = rawAccountNo;
 
     const existingVietQr = settingsService.get(guild.id).vietqr;
     settingsService.update(guild.id, {
