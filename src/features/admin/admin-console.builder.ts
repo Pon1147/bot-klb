@@ -111,12 +111,12 @@ export function buildAdminConsoleContainer(
         ? '*Not configured*'
         : '*Chưa thiết lập*';
 
-  // Khối tóm tắt trạng thái hệ thống: Thu gọn 2 dòng, không lặp lại chi tiết các mục bên dưới
+  // Khối tóm tắt trạng thái hệ thống: Thoáng đãng, không dùng blockquote dày đặc
   const statusSummary = isEn
-    ? `> 👑 **Server Owner:** <@${guild.ownerId}> • **Bot Version:** \`v${BOT_VERSION}\`\n` +
-      `> ⚙️ **Quick Status:** Admin: ${adminRole} • Welcome: ${welcomeText} • VietQR: ${vietqrInfo}`
-    : `> 👑 **Chủ Server:** <@${guild.ownerId}> • **Phiên Bản:** \`v${BOT_VERSION}\`\n` +
-      `> ⚙️ **Tổng Quan:** Admin: ${adminRole} • Chào mừng: ${welcomeText} • VietQR: ${vietqrInfo}`;
+    ? `**Server Owner**: <@${guild.ownerId}> • **Version**: \`v${BOT_VERSION}\`\n\n` +
+      `Admin: ${adminRole} • Welcome: ${welcomeText} • VietQR: ${vietqrInfo}`
+    : `**Chủ Server**: <@${guild.ownerId}> • **Phiên Bản**: \`v${BOT_VERSION}\`\n\n` +
+      `Admin: ${adminRole} • Chào mừng: ${welcomeText} • VietQR: ${vietqrInfo}`;
 
   const containerInner: unknown[] = [
     // 1. Header Section với nút Làm Mới góc trên bên phải
@@ -125,7 +125,7 @@ export function buildAdminConsoleContainer(
       components: [
         {
           type: ComponentType.TextDisplay,
-          content: isEn ? '## ⚙️ Server Control Center' : '## ⚙️ Bảng Điều Khiển Máy Chủ',
+          content: isEn ? '## Server Control Center' : '## Bảng Điều Khiển Máy Chủ',
         },
       ],
       accessory: {
@@ -160,8 +160,8 @@ export function buildAdminConsoleContainer(
         {
           type: ComponentType.TextDisplay,
           content: isEn
-            ? `🛡️ **Staff & Permissions**\nAdmin: ${adminRole} • Mod: ${modRole}`
-            : `🛡️ **Phân Quyền Quản Trị**\nAdmin: ${adminRole} • Mod: ${modRole}`,
+            ? `**Staff & Permissions**\nAdmin: ${adminRole} • Mod: ${modRole}`
+            : `**Phân Quyền Quản Trị**\nAdmin: ${adminRole} • Mod: ${modRole}`,
         },
       ],
       accessory: {
@@ -179,8 +179,8 @@ export function buildAdminConsoleContainer(
         {
           type: ComponentType.TextDisplay,
           content: isEn
-            ? `🎁 **Daily Vault Codes**\n${codeStatus}`
-            : `🎁 **Mật Mã Két Sắt DF**\n${codeStatus}`,
+            ? `**Daily Vault Codes**\n${codeStatus}`
+            : `**Mật Mã Két Sắt DF**\n${codeStatus}`,
         },
       ],
       accessory: {
@@ -198,8 +198,8 @@ export function buildAdminConsoleContainer(
         {
           type: ComponentType.TextDisplay,
           content: isEn
-            ? `🔔 **Automated Notices**\n• Welcome: ${welcomeText}\n• Leave: ${leaveText}\n• Booster: ${boosterText}`
-            : `🔔 **Thông Báo Tự Động**\n• Chào mừng: ${welcomeText}\n• Tạm biệt: ${leaveText}\n• Booster: ${boosterText}`,
+            ? `**Automated Notices**\nWelcome: ${welcomeText} • Leave: ${leaveText} • Booster: ${boosterText}`
+            : `**Thông Báo Tự Động**\nChào mừng: ${welcomeText} • Tạm biệt: ${leaveText} • Booster: ${boosterText}`,
         },
       ],
       accessory: {
@@ -217,8 +217,8 @@ export function buildAdminConsoleContainer(
         {
           type: ComponentType.TextDisplay,
           content: isEn
-            ? `💳 **VietQR Transfer**\n${vietqrInfo}`
-            : `💳 **Tài Khoản VietQR**\n${vietqrInfo}`,
+            ? `**VietQR Transfer**\n${vietqrInfo}`
+            : `**Tài Khoản VietQR**\n${vietqrInfo}`,
         },
       ],
       accessory: {
@@ -236,8 +236,8 @@ export function buildAdminConsoleContainer(
         {
           type: ComponentType.TextDisplay,
           content: isEn
-            ? `💎 **Carry Service (Lão Bản)**\n${keoStatus}`
-            : `💎 **Dịch Vụ Kéo Lão Bản**\n${keoStatus}`,
+            ? `**Carry Service (Lão Bản)**\n${keoStatus}`
+            : `**Dịch Vụ Kéo Lão Bản**\n${keoStatus}`,
         },
       ],
       accessory: {
@@ -318,23 +318,21 @@ export function buildNoticesHubView(
   const roleTag = currentTab !== 'leave' ? resolveRoleTag(guild, roleId, isEn) : null;
 
   const currentStatusDesc = isEn
-    ? `> **Active Tab**: ${tabLabel}\n` +
-      `> **Announcement Channel**: ${channelTag ?? '*Not configured*'}\n` +
-      `> **Auto Status**: ${isEnabled ? '🟢 Enabled' : '🔴 Disabled'}\n` +
-      (roleTag ? `> **Auto-Assigned Role**: ${roleTag}\n` : '') +
-      `> **Card Template**: Discord Components V2 (Live Preview Editor available below)`
-    : `> **Tab đang chọn**: ${tabLabel}\n` +
-      `> **Kênh gửi thông báo**: ${channelTag ?? '*Chưa đặt kênh*'}\n` +
-      `> **Trạng thái tự động**: ${isEnabled ? '🟢 Đang Bật' : '🔴 Đang Tắt'}\n` +
-      (roleTag ? `> **Vai trò tự động gán**: ${roleTag}\n` : '') +
-      `> **Giao diện thiệp**: Discord Components V2 (Có thể tùy biến trực quan bên dưới)`;
+    ? `**Tab**: ${tabLabel} • **Status**: ${isEnabled ? '🟢 Enabled' : '🔴 Disabled'}\n\n` +
+      `• **Channel**: ${channelTag ?? '*Not configured*'}\n` +
+      (roleTag ? `• **Auto-Role**: ${roleTag}\n` : '') +
+      `• **Template**: Components V2 (Preview & Edit below)`
+    : `**Mục**: ${tabLabel} • **Trạng thái**: ${isEnabled ? '🟢 Đang Bật' : '🔴 Đang Tắt'}\n\n` +
+      `• **Kênh gửi**: ${channelTag ?? '*Chưa đặt kênh*'}\n` +
+      (roleTag ? `• **Vai trò gán tự động**: ${roleTag}\n` : '') +
+      `• **Giao diện thiệp**: Components V2 (Xem trước & tùy chỉnh bên dưới)`;
 
   const containerJson = {
     type: ComponentType.Container,
     components: [
       {
         type: ComponentType.TextDisplay,
-        content: isEn ? '# 🔔 Automated Lifecycle Notices Hub' : '# 🔔 Trung Tâm Thông Báo Tự Động',
+        content: isEn ? '## Automated Notices Hub' : '## Trung Tâm Thông Báo Tự Động',
       },
       {
         type: ComponentType.Separator,
@@ -637,19 +635,19 @@ export function buildChannelConfigView(
 
   const title = isCode
     ? isEn
-      ? '# 🎁 Daily Safe Vault Codes Channel'
-      : '# 🎁 Kênh Mật Mã Két Sắt Delta Force'
+      ? '## Daily Safe Vault Codes Channel'
+      : '## Kênh Mật Mã Két Sắt Delta Force'
     : isEn
-      ? '# 📢 Member Welcome Notice Channel'
-      : '# 📢 Kênh Thông Báo Chào Mừng Thành Viên';
+      ? '## Member Welcome Notice Channel'
+      : '## Kênh Thông Báo Chào Mừng Thành Viên';
 
   const desc = isCode
     ? isEn
-      ? `> **Current Channel**: ${currentStatus}\n> Auto-posts daily safe codes for 6 maps at 08:00 AM.`
-      : `> **Kênh hiện tại**: ${currentStatus}\n> Tự động gửi mật mã 6 bản đồ vào kênh mỗi sáng lúc 08:00.`
+      ? `**Channel**: ${currentStatus}\n\nAuto-posts daily safe codes for 6 maps at 08:00 AM.`
+      : `**Kênh hiện tại**: ${currentStatus}\n\nTự động gửi mật mã 6 bản đồ vào kênh mỗi sáng lúc 08:00.`
     : isEn
-      ? `> **Current Channel**: ${currentStatus}\n> Sends a welcome card with member avatar when joining.`
-      : `> **Kênh hiện tại**: ${currentStatus}\n> Gửi thiệp chào mừng kèm avatar thành viên mới khi vào server.`;
+      ? `**Channel**: ${currentStatus}\n\nSends a welcome card with member avatar when joining.`
+      : `**Kênh hiện tại**: ${currentStatus}\n\nGửi thiệp chào mừng kèm avatar thành viên mới khi vào server.`;
 
   const containerJson = {
     type: ComponentType.Container,
@@ -714,18 +712,16 @@ export function buildRolesConfigView(
   const adminRoleTag = resolveRoleTag(guild, settings.rbac?.botAdminRoleId, isEn);
   const modRoleTag = resolveRoleTag(guild, settings.rbac?.moderatorRoleId, isEn);
 
-  const title = isEn
-    ? '# 🛡️ Bot Management Permissions (RBAC)'
-    : '# 🛡️ Phân Quyền Quản Trị Bot (RBAC)';
+  const title = isEn ? '## Bot Management Permissions (RBAC)' : '## Phân Quyền Quản Trị Bot (RBAC)';
   const desc = isEn
-    ? `> **👑 Bot Admin Role**: ${adminRoleTag}\n` +
-      `> *Members with this role have full authority to configure and manage the bot.*\n` +
-      `> **🛡️ Moderator Role**: ${modRoleTag}\n` +
-      `> *Members with this role can manage vault codes and verify VietQR payments.*`
-    : `> **👑 Vai Trò Quản Trị Bot**: ${adminRoleTag}\n` +
-      `> *Thành viên có vai trò này có toàn quyền cài đặt & cấu hình bot.*\n` +
-      `> **🛡️ Vai Trò Điều Hành (Mod)**: ${modRoleTag}\n` +
-      `> *Thành viên có vai trò này được quản lý mã két sắt & duyệt thanh toán VietQR.*`;
+    ? `**Bot Admin**: ${adminRoleTag}\n` +
+      `*Full authority to configure and manage the bot.*\n\n` +
+      `**Moderator**: ${modRoleTag}\n` +
+      `*Manage vault codes and verify VietQR payments.*`
+    : `**Vai Trò Quản Trị**: ${adminRoleTag}\n` +
+      `*Toàn quyền cài đặt và quản trị bot.*\n\n` +
+      `**Vai Trò Điều Hành (Mod)**: ${modRoleTag}\n` +
+      `*Quản lý mã két sắt và duyệt thanh toán VietQR.*`;
 
   const containerJson = {
     type: ComponentType.Container,
@@ -810,8 +806,8 @@ export function buildKeoConfigView(
   if (db) {
     const entitlement = checkSubscriptionEntitlement(db, guild.id);
     subStatusText = isEn
-      ? `> 💎 **Subscription Status**: ${entitlement.statusText}\n`
-      : `> 💎 **Bản Quyền Dịch Vụ**: ${entitlement.statusText}\n`;
+      ? `**Subscription**: ${entitlement.statusText}\n\n`
+      : `**Bản Quyền Dịch Vụ**: ${entitlement.statusText}\n\n`;
     try {
       const subRecord = db
         .prepare('SELECT trial_used FROM guild_subscriptions WHERE guild_id = ?')
@@ -846,28 +842,28 @@ export function buildKeoConfigView(
   const readyCount = [hasVietQr, hasDispatch, hasWorker].filter(Boolean).length;
   const isReady = readyCount === 3;
   const progressText = isEn
-    ? `> 📊 **Status**: ${isReady ? '🟢 Ready for Service' : `🟠 Setup Incomplete (${readyCount}/3 Required Steps)`}\n`
-    : `> 📊 **Tiến Độ**: ${isReady ? '🟢 Sẵn Sàng Phục Vụ' : `🟠 Chưa Xong (${readyCount}/3 bước bắt buộc)`}\n`;
+    ? `**Status**: ${isReady ? '🟢 Ready for Service' : `🟠 Setup Incomplete (${readyCount}/3 Required Steps)`}\n\n`
+    : `**Tiến Độ**: ${isReady ? '🟢 Sẵn Sàng Phục Vụ' : `🟠 Chưa Xong (${readyCount}/3 bước bắt buộc)`}\n\n`;
 
   const checklistText = isEn
-    ? `### 📋 Setup Workflow Checklist\n` +
+    ? `### Setup Checklist\n\n` +
       progressText +
-      `> ${hasVietQr ? '🟢' : '🔴'} **Step 1: VietQR Banking (Required)**: ${hasVietQr ? `${settings.vietqr?.bankId} • ${settings.vietqr?.accountNo}` : '*Missing (Needed for payments)*'}\n` +
-      `> ${hasDispatch ? '🟢' : '🔴'} **Step 2: Dispatch Channel (Required)**: ${dispatchTag}\n` +
-      `> ${hasWorker ? '🟢' : '🔴'} **Step 3: Worker Role (Required)**: ${workerRoleTag}\n` +
-      `> ${hasCategory ? '🟢' : '🟡'} **Step 4: Ticket Category (Filter)**: ${categoryTag}\n` +
-      `> 👑 **VIP Roles (Optional)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}\n` +
-      `> 💡 **Ticket Bot Naming**: Configure ticket bot naming as \`ticket-%username%\``
-    : `### 📋 Quy Trình Thiết Lập (Workflow Checklist)\n` +
+      `${hasVietQr ? '🟢' : '🔴'} **Step 1: VietQR Banking (Required)**: ${hasVietQr ? `${settings.vietqr?.bankId} • ${settings.vietqr?.accountNo}` : '*Missing (Needed for payments)*'}\n` +
+      `${hasDispatch ? '🟢' : '🔴'} **Step 2: Dispatch Channel (Required)**: ${dispatchTag}\n` +
+      `${hasWorker ? '🟢' : '🔴'} **Step 3: Worker Role (Required)**: ${workerRoleTag}\n` +
+      `${hasCategory ? '🟢' : '🟡'} **Step 4: Ticket Category (Filter)**: ${categoryTag}\n\n` +
+      `• **VIP Roles (Optional)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}\n` +
+      `• **Ticket Naming**: Set ticket bot format to \`ticket-%username%\``
+    : `### Quy Trình Thiết Lập\n\n` +
       progressText +
-      `> ${hasVietQr ? '🟢' : '🔴'} **Bước 1: Tài khoản VietQR (Bắt buộc)**: ${hasVietQr ? `${settings.vietqr?.bankId} • ${settings.vietqr?.accountNo}` : '*Chưa cài (Cần để xuất mã QR thanh toán)*'}\n` +
-      `> ${hasDispatch ? '🟢' : '🔴'} **Bước 2: Kênh Bắn Kèo (Bắt buộc)**: ${dispatchTag}\n` +
-      `> ${hasWorker ? '🟢' : '🔴'} **Bước 3: Vai Trò Thợ Kéo (Bắt buộc)**: ${workerRoleTag}\n` +
-      `> ${hasCategory ? '🟢' : '🟡'} **Bước 4: Nhóm Category Ticket (Lọc)**: ${categoryTag}\n` +
-      `> 👑 **Role Lão Bản VIP (Tùy chọn)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}\n` +
-      `> 💡 **Định Dạng Kênh Ticket**: Cấu hình ticket bot định dạng \`ticket-%username%\``;
+      `${hasVietQr ? '🟢' : '🔴'} **Bước 1: Tài khoản VietQR (Bắt buộc)**: ${hasVietQr ? `${settings.vietqr?.bankId} • ${settings.vietqr?.accountNo}` : '*Chưa cài (Cần để xuất mã QR thanh toán)*'}\n` +
+      `${hasDispatch ? '🟢' : '🔴'} **Bước 2: Kênh Bắn Kèo (Bắt buộc)**: ${dispatchTag}\n` +
+      `${hasWorker ? '🟢' : '🔴'} **Bước 3: Vai Trò Thợ Kéo (Bắt buộc)**: ${workerRoleTag}\n` +
+      `${hasCategory ? '🟢' : '🟡'} **Bước 4: Nhóm Category Ticket (Lọc)**: ${categoryTag}\n\n` +
+      `• **Role Lão Bản VIP (Tùy chọn)**: Lv1: ${t1Tag} • Lv2: ${t2Tag} • Lv3: ${t3Tag}\n` +
+      `• **Định Dạng Kênh Ticket**: Cấu hình ticket bot định dạng \`ticket-%username%\``;
 
-  const title = isEn ? '# 💎 Delta Force Carry Service Setup' : '# 💎 Cấu Hình Dịch Vụ Kéo Lão Bản';
+  const title = isEn ? '## Delta Force Carry Service Setup' : '## Cấu Hình Dịch Vụ Kéo Lão Bản';
   const desc = `${subStatusText}${checklistText}`;
 
   const containerJson = {
@@ -992,18 +988,18 @@ export function buildKeoVipRolesView(
   const t3Tag = resolveRoleTag(guild, keo?.tier3RoleId, isEn);
 
   const title = isEn
-    ? '# 👑 VIP Customer Roles (Lão Bản Tiers)'
-    : '# 👑 Phân Hạng Role Lão Bản (VIP Tùy Chọn)';
+    ? '## VIP Customer Roles (Lão Bản Tiers)'
+    : '## Phân Hạng Role Lão Bản (VIP Tùy Chọn)';
 
   const desc = isEn
-    ? `> **🥉 Tier 1 (Lv1 >= 500k)**: ${t1Tag}\n` +
-      `> **🥈 Tier 2 (Lv2 >= 3,000k)**: ${t2Tag}\n` +
-      `> **🥇 Tier 3 (Lv3 >= 10,000k)**: ${t3Tag}\n` +
-      `> 💡 *Automatic tier upgrade when spending thresholds are met. Optional: if not set, spending is still tracked with 0 errors.*`
-    : `> **🥉 Hạng 1 (Lão Bản Lv1 >= 500k)**: ${t1Tag}\n` +
-      `> **🥈 Hạng 2 (Lão Bản Lv2 >= 3.000k)**: ${t2Tag}\n` +
-      `> **🥇 Hạng 3 (Lão Bản Lv3 >= 10.000k)**: ${t3Tag}\n` +
-      `> 💡 *Hệ thống tự động thăng hạng vai trò khi khách tích lũy đủ chi tiêu. Tùy chọn: nếu không gán role, bot vẫn cộng dồn chi tiêu bình thường.*`;
+    ? `• **Tier 1 (>= 500k)**: ${t1Tag}\n` +
+      `• **Tier 2 (>= 3,000k)**: ${t2Tag}\n` +
+      `• **Tier 3 (>= 10,000k)**: ${t3Tag}\n\n` +
+      `*Automatic tier upgrade when spending thresholds are met.*`
+    : `• **Hạng 1 (>= 500k)**: ${t1Tag}\n` +
+      `• **Hạng 2 (>= 3.000k)**: ${t2Tag}\n` +
+      `• **Hạng 3 (>= 10.000k)**: ${t3Tag}\n\n` +
+      `*Tự động thăng hạng vai trò khi khách tích lũy đủ mốc chi tiêu.*`;
 
   const containerJson = {
     type: ComponentType.Container,
@@ -1109,22 +1105,22 @@ export function buildVietQrWorkflowView(
         : '🔴 Đang Tắt';
 
   const title = isEn
-    ? '# ⚙️ VietQR Workflow & Feedback Setup'
-    : '# ⚙️ Quy Trình Thanh Toán & Đánh Giá VietQR';
+    ? '## VietQR Workflow & Feedback Setup'
+    : '## Quy Trình Thanh Toán & Đánh Giá VietQR';
 
   const desc = isEn
-    ? `> **⭐ Feedback Channel**: ${feedbackChanTag}\n` +
-      `> *Channel where 1–5 star customer reviews and thank-you notes are posted publicly.*\n` +
-      `> **🛡️ Staff Role (Approver)**: ${staffRoleTag}\n` +
-      `> *Authorized staff role to confirm/cancel payments in addition to Server Owner.*\n` +
-      `> **⭐ Star Ratings**: ${ratingStatus}\n` +
-      `> *Show 1–5 star rating buttons after order completion.*`
-    : `> **⭐ Kênh Nhận Đánh Giá 5 Sao**: ${feedbackChanTag}\n` +
-      `> *Kênh bot tự động gửi thông báo cảm ơn và vinh danh đánh giá sao từ khách.*\n` +
-      `> **🛡️ Vai Trò Nhân Viên Duyệt Đơn**: ${staffRoleTag}\n` +
-      `> *Vai trò nhân viên/thợ được quyền duyệt tiền và hủy đơn ngoài Chủ Server.*\n` +
-      `> **⭐ Đánh Giá 1–5 Sao**: ${ratingStatus}\n` +
-      `> *Hiển thị 5 nút đánh giá sao cho khách sau khi hoàn tất đơn.*`;
+    ? `**Feedback Channel**: ${feedbackChanTag}\n` +
+      `*Where customer reviews and ratings are posted publicly.*\n\n` +
+      `**Staff Approver**: ${staffRoleTag}\n` +
+      `*Authorized staff to confirm or cancel payments.*\n\n` +
+      `**Star Ratings**: ${ratingStatus}\n` +
+      `*Allow customers to submit 1–5 star reviews after order completion.*`
+    : `**Kênh Đánh Giá**: ${feedbackChanTag}\n` +
+      `*Kênh hiển thị đánh giá và lời cảm ơn từ khách hàng.*\n\n` +
+      `**Nhân Viên Duyệt Đơn**: ${staffRoleTag}\n` +
+      `*Vai trò được quyền xác nhận hoặc hủy thanh toán.*\n\n` +
+      `**Đánh Giá 1–5 Sao**: ${ratingStatus}\n` +
+      `*Cho phép khách gửi đánh giá sao sau khi hoàn tất đơn.*`;
 
   const containerJson = {
     type: ComponentType.Container,

@@ -46,7 +46,7 @@ export function buildTicketWelcomeCard(ticketChannelId: string): {
     components: [
       {
         type: ComponentType.TextDisplay,
-        content: '## 🎮 Dịch Vụ Kéo Delta Force • Lão Bản VIP',
+        content: '## Dịch Vụ Kéo Delta Force • Lão Bản VIP',
       },
       {
         type: ComponentType.Separator,
@@ -58,14 +58,14 @@ export function buildTicketWelcomeCard(ticketChannelId: string): {
           {
             type: ComponentType.TextDisplay,
             content:
-              '> 👑 **Chào mừng quý khách đến với dịch vụ Kéo Lão Bản!**\n' +
-              '> ⚙️ Quản Lý hoặc Thợ Kéo vui lòng bấm nút bên cạnh để mở đơn và thiết lập giá dịch vụ.',
+              'Chào mừng quý khách đến với dịch vụ Kéo Lão Bản.\n' +
+              'Thợ kéo hoặc quản lý vui lòng bấm nút bên cạnh để mở đơn.',
           },
         ],
         accessory: {
           type: ComponentType.Button,
           custom_id: `keo:open_modal:${ticketChannelId}`,
-          label: '📋 Mở Đơn Kéo',
+          label: 'Mở Đơn Kéo',
           style: ButtonStyle.Primary,
         },
       },
@@ -185,7 +185,7 @@ export function buildDispatchCard(
         components: [
           {
             type: ComponentType.TextDisplay,
-            content: `## 🎯 ĐƠN KÉO MỚI #${order.id.slice(-6)}`,
+            content: `## ĐƠN KÉO MỚI #${order.id.slice(-6)}`,
           },
         ],
         ...(accessoryButton ? { accessory: accessoryButton } : {}),
@@ -197,13 +197,13 @@ export function buildDispatchCard(
       {
         type: ComponentType.TextDisplay,
         content:
-          (workerRoleId ? `> 📢 **Dành cho**: <@&${workerRoleId}>\n` : '') +
-          `> 📦 **Gói dịch vụ**: **${order.package_name}**\n` +
-          `> 💰 **Thù lao**: **${formatVnd(order.amount)}**\n` +
-          `> 👤 **Khách hàng**: <@${order.customer_id}>\n` +
-          `> 🎫 **Kênh Ticket**: <#${order.ticket_channel_id}>\n` +
-          (order.note ? `> 📝 **Ghi chú**: ${order.note}\n` : '') +
-          `> 🛠️ **Trạng thái**: ${formatKeoStatusBadge(order.status, order.worker_id)}`,
+          (workerRoleId ? `• **Dành cho**: <@&${workerRoleId}>\n` : '') +
+          `• **Gói dịch vụ**: ${order.package_name}\n` +
+          `• **Thù lao**: **${formatVnd(order.amount)}**\n` +
+          `• **Khách hàng**: <@${order.customer_id}>\n` +
+          `• **Kênh Ticket**: <#${order.ticket_channel_id}>\n` +
+          (order.note ? `• **Ghi chú**: ${order.note}\n` : '') +
+          `• **Trạng thái**: ${formatKeoStatusBadge(order.status, order.worker_id)}`,
       },
     ],
   };
@@ -231,7 +231,7 @@ export function buildTicketOrderCard(
   const containerComponents: any[] = [
     {
       type: ComponentType.TextDisplay,
-      content: `## 💎 Đơn Kéo #${order.id.slice(-6)}: ${order.package_name}`,
+      content: `## Đơn Kéo #${order.id.slice(-6)}: ${order.package_name}`,
     },
     {
       type: ComponentType.Separator,
@@ -240,11 +240,11 @@ export function buildTicketOrderCard(
     {
       type: ComponentType.TextDisplay,
       content:
-        `> 💰 **Số tiền thanh toán**: **${formatVnd(order.amount)}**\n` +
-        `> 👤 **Khách hàng**: <@${order.customer_id}>\n` +
-        (order.worker_id ? `> 🛠️ **Thợ Kéo**: <@${order.worker_id}>\n` : '') +
-        (order.note ? `> 📝 **Ghi chú**: ${order.note}\n` : '') +
-        `> 📊 **Trạng thái**: ${formatKeoStatusBadge(order.status, order.worker_id)}`,
+        `• **Số tiền thanh toán**: **${formatVnd(order.amount)}**\n` +
+        `• **Khách hàng**: <@${order.customer_id}>\n` +
+        (order.worker_id ? `• **Thợ Kéo**: <@${order.worker_id}>\n` : '') +
+        (order.note ? `• **Ghi chú**: ${order.note}\n` : '') +
+        `• **Trạng thái**: ${formatKeoStatusBadge(order.status, order.worker_id)}`,
     },
   ];
 
@@ -259,13 +259,13 @@ export function buildTicketOrderCard(
       containerComponents.push({
         type: ComponentType.TextDisplay,
         content:
-          `### 💳 Thông Tin Chuyển Khoản Ngân Hàng\n` +
-          `> 🏦 **Ngân hàng**: **${bankInfo.bankId.toUpperCase()}**\n` +
-          `> 💳 **Số tài khoản**: \`${bankInfo.accountNo}\` *(Chạm để chép STK)*\n` +
-          (bankInfo.accountName ? `> 👤 **Chủ tài khoản**: **${bankInfo.accountName}**\n` : '') +
-          `> 💰 **Số tiền**: **${formatVnd(order.amount)}**\n` +
-          `> 📝 **Nội dung chuyển khoản**: \`${memoCode}\` *(Chạm để chép)*\n` +
-          `> ⚠️ *Quý khách vui lòng chuyển khoản đúng số tiền và nội dung trên.*`,
+          `### Thông Tin Chuyển Khoản Ngân Hàng\n\n` +
+          `• **Ngân hàng**: **${bankInfo.bankId.toUpperCase()}**\n` +
+          `• **Số tài khoản**: \`${bankInfo.accountNo}\` *(Chạm để sao chép)*\n` +
+          (bankInfo.accountName ? `• **Chủ tài khoản**: **${bankInfo.accountName}**\n` : '') +
+          `• **Số tiền**: **${formatVnd(order.amount)}**\n` +
+          `• **Nội dung chuyển khoản**: \`${memoCode}\` *(Chạm để sao chép)*\n\n` +
+          `*Quý khách vui lòng chuyển khoản đúng số tiền và nội dung trên.*`,
       });
     }
 
@@ -288,8 +288,7 @@ export function buildTicketOrderCard(
       components: [
         {
           type: ComponentType.TextDisplay,
-          content:
-            '💳 **Xác Nhận Tiền**\n> Chủ Server bấm nút bên cạnh sau khi kiểm tra tài khoản.',
+          content: '**Xác Nhận Tiền**\nChủ Server bấm nút bên cạnh sau khi kiểm tra tài khoản.',
         },
       ],
       accessory: {
@@ -305,7 +304,7 @@ export function buildTicketOrderCard(
       components: [
         {
           type: ComponentType.TextDisplay,
-          content: '❌ **Hủy Kèo**\n> Hủy bỏ đơn kéo này.',
+          content: '**Hủy Kèo**\nHủy bỏ đơn kéo này.',
         },
       ],
       accessory: {
@@ -322,7 +321,7 @@ export function buildTicketOrderCard(
         {
           type: ComponentType.TextDisplay,
           content:
-            '🏁 **Nghiệm Thu**\n> Quản lý/Chủ Server bấm nút bên cạnh sau khi xác nhận với khách.',
+            '**Nghiệm Thu**\nQuản lý/Chủ Server bấm nút bên cạnh sau khi xác nhận với khách.',
         },
       ],
       accessory: {
@@ -364,7 +363,7 @@ export function buildRatingCard(order: KeoOrderRecord): { components: any[]; fla
     components: [
       {
         type: ComponentType.TextDisplay,
-        content: '## ⭐ Đánh Giá Dịch Vụ Kéo Lão Bản',
+        content: '## Đánh Giá Dịch Vụ Kéo Lão Bản',
       },
       {
         type: ComponentType.Separator,

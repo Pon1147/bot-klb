@@ -1,4 +1,4 @@
-let extVersion = '1.15.0';
+let extVersion = '1.16.0';
 try {
   const manifest =
     typeof chrome !== 'undefined' && chrome?.runtime?.getManifest
