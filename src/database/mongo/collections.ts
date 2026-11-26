@@ -12,6 +12,7 @@ export const MONGO_COLLECTIONS = {
   DF_TOKENS: 'df_tokens',
   AUTOPOST_CONFIG: 'df_autopost_config',
   AUTOPOST_MESSAGES: 'df_autopost_messages',
+  GUILD_SUBSCRIPTIONS: 'guild_subscriptions',
 } as const;
 
 /**
@@ -109,4 +110,16 @@ export interface AutoPostMessageDocument {
   channel_id: string;
   message_id: string;
   updated_at: Date;
+}
+
+/**
+ * Schema document cho bản quyền và trạng thái dùng thử của Guild.
+ */
+export interface GuildSubscriptionDocument {
+  _id: string; // guild_id
+  guild_id: string;
+  license_expires_at: number | null;
+  trial_used: number; // 0 hoặc 1
+  created_at: number;
+  updated_at: number;
 }

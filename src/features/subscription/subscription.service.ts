@@ -9,7 +9,9 @@ import {
   PackageType,
   SubscriptionOrderRecord,
   SubscriptionKeyRecord,
+  GuildSubscriptionRecord,
 } from '../../database/subscription.db.js';
+import { saveGuildSubscriptionToMongo } from '../../database/mongo/index.js';
 
 export const KEO_PACKAGES: Record<
   PackageType,
@@ -48,6 +50,22 @@ export type FulfillmentResult =
       actualAmount?: number;
       expectedAmount?: number;
     };
+
+/**
+ * Đồng bộ bất đồng bộ thông tin bản quyền của Guild lên MongoDB (chống mất dữ liệu khi redeploy).
+ */
+function asyncSyncSubscriptionToMongo(db: Database.Database, guildId: string): void {
+  try {
+    const subRecord = db
+      .prepare('SELECT * FROM guild_subscriptions WHERE guild_id = ?')
+      .get(guildId) as GuildSubscriptionRecord | undefined;
+    if (subRecord) {
+      void saveGuildSubscriptionToMongo(subRecord);
+    }
+  } catch {
+    // Không làm gián đoạn transaction chính nếu sync nền gặp sự cố
+  }
+}
 
 /**
  * Xử lý hoàn tất đơn hàng thanh toán qua VietQR/PayOS trong 1 SQLite Transaction duy nhất.
@@ -179,7 +197,11 @@ export function fulfillPayment(
       isLate,
     };
   });
-  return runner();
+  const res = runner();
+  if (res.success) {
+    asyncSyncSubscriptionToMongo(db, res.guildId);
+  }
+  return res;
 }
 
 /**
@@ -229,7 +251,11 @@ export function activateTrial(
       return { success: false, reason: 'already_used' };
     },
   );
-  return runner();
+  const res = runner();
+  if (res.success) {
+    asyncSyncSubscriptionToMongo(db, guildId);
+  }
+  return res;
 }
 
 /**
@@ -323,7 +349,11 @@ export function consumeLicenseKey(
       };
     },
   );
-  return runner();
+  const res = runner();
+  if (res.success) {
+    asyncSyncSubscriptionToMongo(db, guildId);
+  }
+  return res;
 }
 
 /**

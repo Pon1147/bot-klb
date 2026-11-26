@@ -26,3 +26,10 @@ export {
   deleteAutoPostMessageFromMongo,
   syncAutoPostFromMongoToSqlite,
 } from './autopost.repo.js';
+
+export {
+  saveGuildSubscriptionToMongo,
+  getGuildSubscriptionFromMongo,
+  loadAllGuildSubscriptionsFromMongo,
+  syncSubscriptionsFromMongoToSqlite,
+} from './guild-subscription.repo.js';

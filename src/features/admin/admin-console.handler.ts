@@ -365,13 +365,14 @@ export async function handleAdminConsoleButton(
     const res = activateTrial(db, guild.id);
     if (res.success) {
       const expiry = Math.floor(res.expiresAt! / 1000);
-      await interaction.reply({
+      const freshSettings = settingsService.get(guild.id);
+      const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale, db);
+      // Cập nhật giao diện realtime ngay tại chỗ trên thẻ Console V2
+      await interaction.update(view);
+      await interaction.followUp({
         content: t('sub.trial_activated', { expiry }, locale),
         flags: MessageFlags.Ephemeral,
       });
-      const freshSettings = settingsService.get(guild.id);
-      const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale, db);
-      await interaction.message.edit(view);
     } else {
       await interaction.reply({
         content: t('sub.trial_already_used', undefined, locale),
@@ -1001,15 +1002,22 @@ export async function handleAdminConsoleModal(
     if (res.success) {
       keyFailuresByGuild.delete(guild.id);
       const expiry = Math.floor(res.newExpiry! / 1000);
-      await interaction.reply({
-        content: t('sub.key_redeemed', { days: res.durationDays!, expiry }, locale),
-        flags: MessageFlags.Ephemeral,
-      });
-      try {
-        const freshSettings = settingsService.get(guild.id);
-        const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale, db);
-        await interaction.message?.edit(view);
-      } catch {}
+      const freshSettings = settingsService.get(guild.id);
+      const view = buildKeoConfigView(guild, freshSettings, callerUserId, locale, db);
+
+      // Cập nhật giao diện realtime nếu modal được mở từ message component
+      if (interaction.isFromMessage()) {
+        await interaction.update(view);
+        await interaction.followUp({
+          content: t('sub.key_redeemed', { days: res.durationDays!, expiry }, locale),
+          flags: MessageFlags.Ephemeral,
+        });
+      } else {
+        await interaction.reply({
+          content: t('sub.key_redeemed', { days: res.durationDays!, expiry }, locale),
+          flags: MessageFlags.Ephemeral,
+        });
+      }
     } else {
       recentFailures.push(now);
       keyFailuresByGuild.set(guild.id, recentFailures);

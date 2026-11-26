@@ -31,6 +31,7 @@ import {
   connectMongo,
   initMongoIndexes,
   syncAutoPostFromMongoToSqlite,
+  syncSubscriptionsFromMongoToSqlite,
   purgeRevokedCredentialsInMongo,
 } from '../database/mongo/index.js';
 import { SettingsService, setSettingsService } from '../services/settings.service.js';
@@ -129,6 +130,10 @@ export async function bootstrap(): Promise<Client> {
         logger.info(
           `Synced ${syncedAutoPost.configs} autopost config(s), ${syncedAutoPost.messages} autopost message(s) from MongoDB to local SQLite`,
         );
+
+        // Đồng bộ subscriptions và trạng thái dùng thử 3 ngày từ MongoDB sang SQLite
+        const syncedSubs = await syncSubscriptionsFromMongoToSqlite(database);
+        logger.info(`Synced ${syncedSubs} guild subscription(s) from MongoDB to local SQLite`);
       } else {
         logger.warn('⚠ MongoDB connection returned null — skipping indexes and sync');
       }

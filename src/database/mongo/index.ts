@@ -5,6 +5,7 @@ export {
   type ClaimSessionDocument,
   type CaptureEventDocument,
   type DfTokenDocument,
+  type GuildSubscriptionDocument,
 } from './collections.js';
 
 export {
@@ -37,4 +38,8 @@ export {
   saveAutoPostMessageToMongo,
   deleteAutoPostMessageFromMongo,
   syncAutoPostFromMongoToSqlite,
+  saveGuildSubscriptionToMongo,
+  getGuildSubscriptionFromMongo,
+  loadAllGuildSubscriptionsFromMongo,
+  syncSubscriptionsFromMongoToSqlite,
 } from './repositories/index.js';

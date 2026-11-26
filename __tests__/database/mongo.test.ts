@@ -110,6 +110,29 @@ describe('MongoDB Module & Fallbacks', () => {
       expect(consumeResult.reason).toBe('mongo_not_connected');
     });
 
+    it('guild-subscription repo phai fallback an toan khi offline', async () => {
+      const sub = await MongoIndex.getGuildSubscriptionFromMongo('guild-offline');
+      expect(sub).toBeNull();
+
+      const all = await MongoIndex.loadAllGuildSubscriptionsFromMongo();
+      expect(all).toEqual([]);
+
+      await expect(
+        MongoIndex.saveGuildSubscriptionToMongo({
+          guild_id: 'guild-offline',
+          license_expires_at: Date.now() + 86400000,
+          trial_used: 1,
+          created_at: Date.now(),
+          updated_at: Date.now(),
+        }),
+      ).resolves.not.toThrow();
+
+      const testDb = new Database(':memory:');
+      const synced = await MongoIndex.syncSubscriptionsFromMongoToSqlite(testDb);
+      expect(synced).toBe(0);
+      testDb.close();
+    });
+
     it('syncBindingsFromMongoToSqlite phai tra ve 0 khi offline', async () => {
       const sqlite = new Database(':memory:');
       initializeAccountBindingsTable(sqlite);
@@ -565,9 +588,12 @@ describe('MongoDB Module & Fallbacks', () => {
       expect(typeof MongoIndex.getMongoDb).toBe('function');
       expect(typeof MongoIndex.initMongoIndexes).toBe('function');
       expect(typeof MongoIndex.getGuildSettingsFromMongo).toBe('function');
+      expect(typeof MongoIndex.saveGuildSubscriptionToMongo).toBe('function');
+      expect(typeof MongoIndex.syncSubscriptionsFromMongoToSqlite).toBe('function');
       expect(typeof MongoIndex.createClaimSessionInMongo).toBe('function');
       expect(typeof MongoRepoIndex.consumeClaimSessionAtomicInMongo).toBe('function');
       expect(typeof MongoRepoIndex.getAccountBindingFromMongo).toBe('function');
+      expect(typeof MongoRepoIndex.loadAllGuildSubscriptionsFromMongo).toBe('function');
     });
   });
 });

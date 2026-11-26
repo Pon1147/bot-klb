@@ -990,5 +990,54 @@ describe('Admin Console V2 (Dashboard)', () => {
       );
       testDb.close();
     });
+
+    it('Handler Button sub_trial: Cập nhật giao diện realtime qua update() và gửi followUp()', async () => {
+      const testDb = new Database(':memory:');
+      initializeSubscriptionTables(testDb);
+
+      const trialInteraction: any = {
+        customId: 'admin_console:sub_trial:user-caller',
+        guild: { ...mockGuild, id: 'guild-trial-realtime-test' },
+        user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(true) },
+        update: jest.fn().mockResolvedValue({}),
+        followUp: jest.fn().mockResolvedValue({}),
+        reply: jest.fn().mockResolvedValue({}),
+      };
+
+      const res = await handleAdminConsoleButton(trialInteraction, testDb);
+      expect(res.handled).toBe(true);
+      expect(trialInteraction.update).toHaveBeenCalled();
+      expect(trialInteraction.followUp).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('Đã kích hoạt 3 ngày dùng thử miễn phí'),
+          flags: MessageFlags.Ephemeral,
+        }),
+      );
+
+      // Thử bấm lần 2 -> báo đã dùng thử
+      const trialInteraction2: any = {
+        customId: 'admin_console:sub_trial:user-caller',
+        guild: { ...mockGuild, id: 'guild-trial-realtime-test' },
+        user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(true) },
+        update: jest.fn().mockResolvedValue({}),
+        followUp: jest.fn().mockResolvedValue({}),
+        reply: jest.fn().mockResolvedValue({}),
+      };
+
+      const res2 = await handleAdminConsoleButton(trialInteraction2, testDb);
+      expect(res2.handled).toBe(true);
+      expect(trialInteraction2.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('đã dùng thử 3 ngày trước đây'),
+          flags: MessageFlags.Ephemeral,
+        }),
+      );
+
+      testDb.close();
+    });
   });
 });
