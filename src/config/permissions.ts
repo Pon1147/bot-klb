@@ -196,8 +196,6 @@ export const COMMAND_PATH_POLICIES: Record<string, Policy> = {
   'config.bot.guilds': Policy.BOT_OWNER,
   'config.bot.announce': Policy.BOT_OWNER,
   'config.bot.setannouncechannel': Policy.MANAGE_RBAC,
-  'config.qr-server.toggle': Policy.BOT_OWNER,
-  'config.qr-server.status': Policy.BOT_OWNER,
   'config.vietqr.set': Policy.GUILD_OWNER,
   'config.vietqr.reset': Policy.GUILD_OWNER,
   'config.vietqr.workflow': Policy.MANAGE_RBAC,

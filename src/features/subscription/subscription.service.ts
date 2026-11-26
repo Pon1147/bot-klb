@@ -360,9 +360,16 @@ export function consumeLicenseKey(
  * Kiểm tra trạng thái bản quyền của Guild (Centralized Entitlement Checker).
  */
 export function checkSubscriptionEntitlement(
-  db: Database.Database,
+  db: Database.Database | null | undefined,
   guildId: string,
 ): { isEntitled: boolean; expiresAt: number | null; statusText: string } {
+  if (!db) {
+    return {
+      isEntitled: false,
+      expiresAt: null,
+      statusText: '🔴 Đã hết hạn / Chưa kích hoạt',
+    };
+  }
   try {
     const sub = db
       .prepare('SELECT license_expires_at FROM guild_subscriptions WHERE guild_id = ?')

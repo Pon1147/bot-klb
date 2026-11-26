@@ -13,7 +13,8 @@ import {
   SlashCommandSubcommandGroupBuilder,
 } from 'discord.js';
 import Database from 'better-sqlite3';
-import { getSettingsService, isQrServerEnabled } from '../../../services/settings.service.js';
+import { getSettingsService } from '../../../services/settings.service.js';
+import { checkSubscriptionEntitlement } from '../../subscription/subscription.service.js';
 import {
   SUPPORTED_BANKS,
   normalizeBankCode,
@@ -202,7 +203,8 @@ export async function handleVietQrWorkflow(
     return;
   }
 
-  if (!isQrServerEnabled(guildId)) {
+  const resolvedDb = _db ?? (interaction.client as { database?: Database.Database })?.database;
+  if (!checkSubscriptionEntitlement(resolvedDb, guildId).isEntitled) {
     await sendReply(interaction, buildQrPremiumLockedResponse());
     return;
   }
@@ -290,7 +292,8 @@ export async function handleVietQrSet(
     return;
   }
 
-  if (!isQrServerEnabled(guildId)) {
+  const resolvedDb = _db ?? (interaction.client as { database?: Database.Database })?.database;
+  if (!checkSubscriptionEntitlement(resolvedDb, guildId).isEntitled) {
     await sendReply(interaction, buildQrPremiumLockedResponse());
     return;
   }
@@ -434,7 +437,8 @@ export async function handleVietQrStatus(
     return;
   }
 
-  if (!isQrServerEnabled(guildId)) {
+  const resolvedDb = _db ?? (interaction.client as { database?: Database.Database })?.database;
+  if (!checkSubscriptionEntitlement(resolvedDb, guildId).isEntitled) {
     await sendReply(interaction, buildQrPremiumLockedResponse());
     return;
   }
@@ -498,7 +502,8 @@ export async function handleVietQrPreview(
     return;
   }
 
-  if (!isQrServerEnabled(guildId)) {
+  const resolvedDb = _db ?? (interaction.client as { database?: Database.Database })?.database;
+  if (!checkSubscriptionEntitlement(resolvedDb, guildId).isEntitled) {
     await sendReply(interaction, buildQrPremiumLockedResponse());
     return;
   }

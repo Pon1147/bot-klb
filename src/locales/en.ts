@@ -262,15 +262,6 @@ export const EN_LOCALE = {
       example: '/config bot announce preview:true',
     },
 
-    'config.qr-server.toggle': {
-      desc: 'Enable or disable premium VietQR payment licensing for a server.',
-      example: '/config qr-server toggle enabled:true',
-    },
-    'config.qr-server.status': {
-      desc: 'Check premium VietQR payment licensing status for a server.',
-      example: '/config qr-server status',
-    },
-
     'config.vietqr.set': {
       desc: 'Configure the receiving bank account for automated VietQR payments.',
       example: '/config vietqr set bank:MB account_no:0987654321 account_name:JohnDoe',

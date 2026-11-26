@@ -435,11 +435,10 @@ export function buildCustomerFeedbackContainer(
  * tích hợp sẵn Button liên hệ trực tiếp Bot Owner trên Discord và Button dẫn vào máy chủ hỗ trợ.
  */
 export function buildQrPremiumLockedResponse(customMessage?: string): InteractionReplyOptions {
-  const ownerMention = botConfig.botOwnerId ? `<@${botConfig.botOwnerId}>` : '(Bot Owner)';
   const msg =
     customMessage ??
-    `🔒 Tính năng QR Thanh toán tự động chưa được mở cho máy chủ này.\n` +
-      `Vui lòng liên hệ Chủ sở hữu Bot ${ownerMention} để đăng ký kích hoạt gói QR Premium.`;
+    `🔒 Tính năng QR Thanh toán tự động yêu cầu kích hoạt bản quyền máy chủ.\n` +
+      `Quản trị viên vui lòng mở \`/admin\` → **Dịch Vụ Kéo Lão Bản** để **Dùng thử 3 ngày**, **Nhập Key** hoặc **Gia hạn gói**.`;
 
   const container = buildErrorContainer(msg);
   const buttons: ButtonBuilder[] = [];

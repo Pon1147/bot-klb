@@ -91,7 +91,7 @@ describe('vietqr.utils', () => {
       expect(response.components.length).toBe(2);
 
       const jsonStr = JSON.stringify(response);
-      expect(jsonStr).toContain('Tính năng QR Thanh toán tự động chưa được mở');
+      expect(jsonStr).toContain('Tính năng QR Thanh toán tự động yêu cầu kích hoạt bản quyền');
       expect(jsonStr).toContain('Máy Chủ Hỗ Trợ');
       expect(jsonStr).toContain('https://discord.gg/vz6w6c3Xe3');
 

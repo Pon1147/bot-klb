@@ -4,6 +4,7 @@ import Database from 'better-sqlite3';
 import { data, execute } from '../../src/features/payment/pay.command.js';
 import { initializePaymentTables } from '../../src/database/payment.db.js';
 import * as settingsModule from '../../src/services/settings.service.js';
+import * as subscriptionModule from '../../src/features/subscription/subscription.service.js';
 
 describe('pay.command', () => {
   const expectedFlags = MessageFlags.Ephemeral | MessageFlags.IsComponentsV2;
@@ -35,8 +36,12 @@ describe('pay.command', () => {
     );
   });
 
-  it('từ chối khi máy chủ chưa được Bot Owner kích hoạt QR Premium', async () => {
-    jest.spyOn(settingsModule, 'isQrServerEnabled').mockReturnValue(false);
+  it('từ chối khi máy chủ chưa kích hoạt bản quyền (Subscription/Trial/Key)', async () => {
+    jest.spyOn(subscriptionModule, 'checkSubscriptionEntitlement').mockReturnValue({
+      isEntitled: false,
+      expiresAt: null,
+      statusText: '🔴 Đã hết hạn',
+    });
 
     const mockReply = jest.fn();
     const interaction: any = {
@@ -55,7 +60,11 @@ describe('pay.command', () => {
   });
 
   it('báo lỗi khi máy chủ đã mở QR nhưng chưa cấu hình tài khoản ngân hàng', async () => {
-    jest.spyOn(settingsModule, 'isQrServerEnabled').mockReturnValue(true);
+    jest.spyOn(subscriptionModule, 'checkSubscriptionEntitlement').mockReturnValue({
+      isEntitled: true,
+      expiresAt: Date.now() + 86400_000,
+      statusText: '🟢 Còn hạn',
+    });
     jest.spyOn(settingsModule, 'getSettingsService').mockReturnValue({
       get: jest.fn().mockReturnValue({
         vietqr: { enabled: true, bankId: null, accountNo: null },
@@ -79,7 +88,11 @@ describe('pay.command', () => {
   });
 
   it('báo lỗi khi không thể kết nối cơ sở dữ liệu để tạo hóa đơn', async () => {
-    jest.spyOn(settingsModule, 'isQrServerEnabled').mockReturnValue(true);
+    jest.spyOn(subscriptionModule, 'checkSubscriptionEntitlement').mockReturnValue({
+      isEntitled: true,
+      expiresAt: Date.now() + 86400_000,
+      statusText: '🟢 Còn hạn',
+    });
     jest.spyOn(settingsModule, 'getSettingsService').mockReturnValue({
       get: jest.fn().mockReturnValue({
         vietqr: {
@@ -118,7 +131,11 @@ describe('pay.command', () => {
     const db = new Database(':memory:');
     initializePaymentTables(db);
 
-    jest.spyOn(settingsModule, 'isQrServerEnabled').mockReturnValue(true);
+    jest.spyOn(subscriptionModule, 'checkSubscriptionEntitlement').mockReturnValue({
+      isEntitled: true,
+      expiresAt: Date.now() + 86400_000,
+      statusText: '🟢 Còn hạn',
+    });
     jest.spyOn(settingsModule, 'getSettingsService').mockReturnValue({
       get: jest.fn().mockReturnValue({
         vietqr: {

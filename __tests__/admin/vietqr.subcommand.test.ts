@@ -6,6 +6,7 @@ import {
   handleVietQrReset,
 } from '../../src/features/admin/subcommands/vietqr.subcommand.js';
 import * as settingsModule from '../../src/services/settings.service.js';
+import * as subscriptionModule from '../../src/features/subscription/subscription.service.js';
 
 describe('vietqr.subcommand: handleVietQrWorkflow', () => {
   const guildId = 'guild-test-123';
@@ -25,7 +26,11 @@ describe('vietqr.subcommand: handleVietQrWorkflow', () => {
       },
     });
 
-    jest.spyOn(settingsModule, 'isQrServerEnabled').mockReturnValue(true);
+    jest.spyOn(subscriptionModule, 'checkSubscriptionEntitlement').mockReturnValue({
+      isEntitled: true,
+      expiresAt: Date.now() + 86400_000,
+      statusText: '🟢 Còn hạn',
+    });
     jest.spyOn(settingsModule, 'getSettingsService').mockReturnValue({
       get: mockSettingsGet,
       update: mockSettingsUpdate,
@@ -347,8 +352,12 @@ describe('vietqr.subcommand: handleVietQrWorkflow', () => {
   });
 
   describe('handleVietQrReset Permissions & Premium Bypass', () => {
-    it('cho phép Server Owner gỡ bỏ thông tin ngân hàng ngay cả khi server bị khóa QR Premium', async () => {
-      jest.spyOn(settingsModule, 'isQrServerEnabled').mockReturnValue(false); // Bị khóa Premium
+    it('cho phép Server Owner gỡ bỏ thông tin ngân hàng ngay cả khi server bị khóa bản quyền', async () => {
+      jest.spyOn(subscriptionModule, 'checkSubscriptionEntitlement').mockReturnValue({
+        isEntitled: false,
+        expiresAt: null,
+        statusText: '🔴 Đã hết hạn',
+      });
 
       const mockReply = jest.fn();
       const interaction: any = {

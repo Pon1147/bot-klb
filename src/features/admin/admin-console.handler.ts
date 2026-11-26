@@ -38,6 +38,7 @@ import {
   createSubscriptionOrder,
   activateTrial,
   consumeLicenseKey,
+  checkSubscriptionEntitlement,
 } from '../subscription/subscription.service.js';
 import { createPayosPaymentLink } from '../../services/payos.service.js';
 import {
@@ -390,6 +391,18 @@ export async function handleAdminConsoleButton(
 
   // 1.6. Nhóm Cấu Hình VietQR Workflow & Feedback 5 sao
   if (action === 'vietqr_workflow') {
+    const resolvedDb =
+      database ?? (interaction.client as { database?: Database.Database })?.database;
+    const entitlement = checkSubscriptionEntitlement(resolvedDb, guild.id);
+    if (!entitlement.isEntitled) {
+      await interaction.reply({
+        content: isEn
+          ? '🔒 VietQR features require an active subscription (3-day Trial, License Key, or PayOS plan). Open **Carry Service (Lão Bản)** to activate.'
+          : '🔒 Tính năng VietQR yêu cầu bản quyền dịch vụ (Dùng thử 3 ngày, Nhập Key hoặc Gia hạn). Vui lòng vào mục **Dịch Vụ Kéo Lão Bản** để kích hoạt!',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
     const currentSettings = settingsService.get(guild.id);
     const view = buildVietQrWorkflowView(guild, currentSettings, callerUserId, locale);
     await interaction.update(view);
@@ -665,6 +678,18 @@ export async function handleAdminConsoleButton(
   }
 
   if (action === 'vietqr') {
+    const resolvedDb =
+      database ?? (interaction.client as { database?: Database.Database })?.database;
+    const entitlement = checkSubscriptionEntitlement(resolvedDb, guild.id);
+    if (!entitlement.isEntitled) {
+      await interaction.reply({
+        content: isEn
+          ? '🔒 VietQR features require an active subscription (3-day Trial, License Key, or PayOS plan). Open **Carry Service (Lão Bản)** to activate.'
+          : '🔒 Tính năng VietQR yêu cầu bản quyền dịch vụ (Dùng thử 3 ngày, Nhập Key hoặc Gia hạn). Vui lòng vào mục **Dịch Vụ Kéo Lão Bản** để kích hoạt!',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
     const currentSettings = settingsService.get(guild.id);
     const modal = new ModalBuilder()
       .setCustomId(`admin_console_modal:vietqr:${guild.id}:${callerUserId}`)
@@ -943,6 +968,18 @@ export async function handleAdminConsoleModal(
 
   // 1. Modal cấu hình tài khoản VietQR
   if (action === 'vietqr') {
+    const resolvedDb =
+      database ?? (interaction.client as { database?: Database.Database })?.database;
+    const entitlement = checkSubscriptionEntitlement(resolvedDb, guild.id);
+    if (!entitlement.isEntitled) {
+      await interaction.reply({
+        content: isEn
+          ? '🔒 VietQR features require an active subscription (3-day Trial, License Key, or PayOS plan).'
+          : '🔒 Tính năng VietQR yêu cầu bản quyền dịch vụ (Dùng thử 3 ngày, Nhập Key hoặc Gia hạn).',
+        flags: MessageFlags.Ephemeral,
+      });
+      return { handled: true };
+    }
     const bankId = interaction.fields.getTextInputValue('bank_id').trim().toUpperCase();
     const accountNo = interaction.fields.getTextInputValue('account_no').trim();
     const accountNameRaw = interaction.fields.getTextInputValue('account_name')?.trim();

@@ -13,8 +13,8 @@ describe('Command Parser & Runtime Path Extraction', () => {
   const policyPaths = Object.keys(COMMAND_PATH_POLICIES).sort();
 
   it('trích xuất đúng số lượng và đường dẫn từ 5 builders so với COMMAND_PATH_POLICIES', () => {
-    // runtime builder gồm 55 subcommands chính thức
-    expect(parsedPaths.length).toBe(55);
+    // runtime builder gồm 53 subcommands chính thức
+    expect(parsedPaths.length).toBe(53);
     // Mọi runtime path đều phải có policy hợp lệ
     for (const p of parsedPaths) {
       expect(policyPaths).toContain(p);

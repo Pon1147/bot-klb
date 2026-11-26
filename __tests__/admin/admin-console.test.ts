@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import { initializeSubscriptionTables } from '../../src/database/subscription.db.js';
+import * as subscriptionService from '../../src/features/subscription/subscription.service.js';
 import {
   ButtonStyle,
   ComponentType,
@@ -537,7 +538,32 @@ describe('Admin Console V2 (Dashboard)', () => {
       );
     });
 
-    it('Xử lý nút vietqr: hiển thị Modal nhập thông tin ngân hàng', async () => {
+    it('Xử lý nút vietqr: chặn nếu chưa kích hoạt bản quyền và mở Modal khi đã có bản quyền', async () => {
+      const spy = jest.spyOn(subscriptionService, 'checkSubscriptionEntitlement');
+
+      // 1. Chưa có bản quyền -> từ chối
+      spy.mockReturnValueOnce({ isEntitled: false, expiresAt: null, statusText: '🔴 Chưa kích hoạt' });
+      const blockedInteraction: any = {
+        customId: 'admin_console:vietqr:user-caller',
+        guild: mockGuild,
+        user: { id: 'user-caller' },
+        locale: 'vi',
+        memberPermissions: { has: jest.fn().mockReturnValue(false) },
+        reply: jest.fn().mockResolvedValue({}),
+        showModal: jest.fn().mockResolvedValue({}),
+      };
+      const blockedRes = await handleAdminConsoleButton(blockedInteraction);
+      expect(blockedRes.handled).toBe(true);
+      expect(blockedInteraction.showModal).not.toHaveBeenCalled();
+      expect(blockedInteraction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.stringContaining('yêu cầu bản quyền'),
+          flags: MessageFlags.Ephemeral,
+        }),
+      );
+
+      // 2. Đã có bản quyền -> mở Modal
+      spy.mockReturnValueOnce({ isEntitled: true, expiresAt: Date.now() + 86400_000, statusText: '🟢 Còn hạn' });
       const interaction: any = {
         customId: 'admin_console:vietqr:user-caller',
         guild: mockGuild,
@@ -556,6 +582,7 @@ describe('Admin Console V2 (Dashboard)', () => {
           }),
         }),
       );
+      spy.mockRestore();
     });
   });
 
@@ -659,6 +686,12 @@ describe('Admin Console V2 (Dashboard)', () => {
     });
 
     it('Lưu cấu hình VietQR thành công từ Modal submit', async () => {
+      const spy = jest.spyOn(subscriptionService, 'checkSubscriptionEntitlement').mockReturnValue({
+        isEntitled: true,
+        expiresAt: Date.now() + 86400_000,
+        statusText: '🟢 Còn hạn',
+      });
+
       const interaction: any = {
         customId: 'admin_console_modal:vietqr:user-caller',
         guild: mockGuild,
@@ -688,6 +721,7 @@ describe('Admin Console V2 (Dashboard)', () => {
           flags: MessageFlags.Ephemeral,
         }),
       );
+      spy.mockRestore();
     });
 
     it('Cập nhật thuộc tính lines từ Modal editor_lines và update live preview', async () => {

@@ -261,15 +261,6 @@ export const VI_LOCALE = {
       example: '/config bot announce preview:true',
     },
 
-    'config.qr-server.toggle': {
-      desc: 'Bật hoặc tắt tính năng QR thanh toán trả phí cho máy chủ (Bot Owner).',
-      example: '/config qr-server toggle enabled:true',
-    },
-    'config.qr-server.status': {
-      desc: 'Kiểm tra trạng thái cấp phép tính năng QR của máy chủ (Bot Owner).',
-      example: '/config qr-server status',
-    },
-
     'config.vietqr.set': {
       desc: 'Cấu hình thông tin tài khoản ngân hàng nhận tiền chuyển khoản VietQR.',
       example: '/config vietqr set bank:MB account_no:0987654321 account_name:JohnDoe',

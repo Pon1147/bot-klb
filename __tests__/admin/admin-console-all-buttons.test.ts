@@ -106,7 +106,17 @@ describe('Admin Console — Toàn bộ Buttons & Workflows Audit Test', () => {
       expect(interaction.update).toHaveBeenCalled();
     });
 
-    it('admin_console:vietqr — gọi showModal() mở form nhập thông tin ngân hàng', async () => {
+    it('admin_console:vietqr — chặn nếu chưa có bản quyền, mở modal khi đã kích hoạt', async () => {
+      const blocked = createButtonInteraction('admin_console:vietqr:caller-123');
+      const blockedRes = await handleAdminConsoleButton(blocked, db);
+      expect(blockedRes.handled).toBe(true);
+      expect(blocked.showModal).not.toHaveBeenCalled();
+      expect(blocked.reply).toHaveBeenCalled();
+
+      db.prepare(
+        'INSERT OR REPLACE INTO guild_subscriptions (guild_id, license_expires_at, trial_used, created_at, updated_at) VALUES (?, ?, 1, ?, ?)',
+      ).run(mockGuild.id, Date.now() + 86400_000, Date.now(), Date.now());
+
       const interaction = createButtonInteraction('admin_console:vietqr:caller-123');
       const res = await handleAdminConsoleButton(interaction, db);
       expect(res.handled).toBe(true);
@@ -290,7 +300,10 @@ describe('Admin Console — Toàn bộ Buttons & Workflows Audit Test', () => {
       expect(interaction.update).toHaveBeenCalled();
     });
 
-    it('vietqr_workflow — mở màn hình cấu hình VietQR & Feedback', async () => {
+    it('vietqr_workflow — mở màn hình cấu hình VietQR & Feedback khi đã kích hoạt bản quyền', async () => {
+      db.prepare(
+        'INSERT OR REPLACE INTO guild_subscriptions (guild_id, license_expires_at, trial_used, created_at, updated_at) VALUES (?, ?, 1, ?, ?)',
+      ).run(mockGuild.id, Date.now() + 86400_000, Date.now(), Date.now());
       const interaction = createButtonInteraction('admin_console:vietqr_workflow:caller-123');
       const res = await handleAdminConsoleButton(interaction, db);
       expect(res.handled).toBe(true);

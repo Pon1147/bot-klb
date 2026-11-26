@@ -85,15 +85,6 @@ export interface BotAnnounceSettings {
 }
 
 /**
- * Cấu hình cấp quyền tính năng QR trả phí theo từng máy chủ (chỉ Bot Owner quản lý).
- */
-export interface QrServerSettings {
-  enabled: boolean;
-  updatedAt?: number | null;
-  updatedBy?: string | null;
-}
-
-/**
  * Cấu hình thanh toán VietQR cho từng máy chủ.
  */
 export interface VietQrSettings {
@@ -134,7 +125,6 @@ export interface GuildSettings {
   dfCodes: DfCodesSettings;
   rbac: RbacRoleSettings;
   botAnnounce: BotAnnounceSettings;
-  qrServer?: QrServerSettings;
   vietqr?: VietQrSettings;
   keo?: KeoSettings;
 }

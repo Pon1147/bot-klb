@@ -7,7 +7,8 @@ import {
   SlashCommandSubcommandBuilder,
 } from 'discord.js';
 import Database from 'better-sqlite3';
-import { getSettingsService, isQrServerEnabled } from '../../services/settings.service.js';
+import { getSettingsService } from '../../services/settings.service.js';
+import { checkSubscriptionEntitlement } from '../subscription/subscription.service.js';
 import { buildErrorContainer } from '../../utils/container.utils.js';
 import {
   buildVietQrContainer,
@@ -363,8 +364,9 @@ export async function execute(
     return;
   }
 
-  // Guard bảo mật cấp máy chủ: Máy chủ phải được Bot Owner mở tính năng QR trước đó
-  if (!isQrServerEnabled(guildId)) {
+  // Guard bảo mật cấp máy chủ: Yêu cầu máy chủ có bản quyền (Trial / Key / PayOS)
+  const resolvedDb = db ?? (interaction.client as { database?: Database.Database })?.database;
+  if (!checkSubscriptionEntitlement(resolvedDb, guildId).isEntitled) {
     await sendReply(interaction, buildQrPremiumLockedResponse());
     return;
   }

@@ -3,7 +3,7 @@
  *
  * Composite Slash Command Orchestrator:
  * Phân phối thực thi tới các Subcommand Modules thuộc từng Feature Slice:
- * - BM-01 (Core Admin & RBAC): roles, bot, qr-server, vietqr
+ * - BM-01 (Core Admin & RBAC): roles, bot, vietqr
  * - BM-02 (Server Experience & Engagement): welcome, leave, booster, container
  */
 
@@ -19,7 +19,6 @@ import {
   executeBotGroup,
   buildAnnouncementContainer,
 } from './subcommands/bot.subcommand.js';
-import { buildQrServerGroup, executeQrServerGroup } from './subcommands/qr-server.subcommand.js';
 import { buildVietQrGroup, executeVietQrGroup } from './subcommands/vietqr.subcommand.js';
 
 // BM-02: Server Experience Subcommands
@@ -46,7 +45,6 @@ export const data = new SlashCommandBuilder()
   .addSubcommandGroup(buildBoosterGroup)
   .addSubcommandGroup(buildContainerGroup)
   .addSubcommandGroup(buildBotGroup)
-  .addSubcommandGroup(buildQrServerGroup)
   .addSubcommandGroup(buildVietQrGroup);
 
 export async function execute(
@@ -74,8 +72,6 @@ export async function execute(
       return executeContainerGroup(interaction);
     case 'bot':
       return executeBotGroup(interaction, db);
-    case 'qr-server':
-      return executeQrServerGroup(interaction, db);
     case 'vietqr':
       return executeVietQrGroup(interaction, db);
     default:

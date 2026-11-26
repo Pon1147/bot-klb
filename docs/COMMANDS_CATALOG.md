@@ -1,11 +1,11 @@
 # Danh Mục Lệnh Chuẩn — Bot Delta (Ground Truth Command Catalog)
 
-> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v1.21.0**
+> **Tài liệu tự động sinh (Auto-generated)** — Phiên bản Bot: **v1.22.0**
 > *Mọi AI Assistant và lập trình viên bắt buộc tuân theo tài liệu này. Không tự suy diễn cú pháp hay tham số.*
 
 ## 1. Thống Kê Tổng Quan
 
-- **Tổng số lệnh thực thi**: `56` subcommands.
+- **Tổng số lệnh thực thi**: `54` subcommands.
 - **Nhóm lệnh**: `/admin`, `/df`, `/team`, `/pay`, `/donate`, `/config`.
 
 ## 2. Bảng Tra Cứu Lệnh Chi Tiết
@@ -33,8 +33,6 @@
 | `/config bot guilds` | Xem danh sách các máy chủ mà bot đang tham gia (Bot Owner). | View list of all Discord servers the bot has joined (Bot Owner). | `BOT_OWNER` | *Không có* |
 | `/config bot setannouncechannel` | Thiết lập kênh nhận thông báo cập nhật tính năng mới từ bot. | Set the designated channel to receive bot update announcements. | `MANAGE_RBAC` | `channel*` |
 | `/config bot announce` | Phát sóng thông báo cập nhật tới toàn bộ máy chủ (Bot Owner). | Broadcast feature update announcements to all servers (Bot Owner). | `BOT_OWNER` | `title`, `message`, `preview` |
-| `/config qr-server toggle` | Bật hoặc tắt tính năng QR thanh toán trả phí cho máy chủ (Bot Owner). | Enable or disable premium VietQR payment licensing for a server. | `BOT_OWNER` | `enabled*`, `server_id` |
-| `/config qr-server status` | Kiểm tra trạng thái cấp phép tính năng QR của máy chủ (Bot Owner). | Check premium VietQR payment licensing status for a server. | `BOT_OWNER` | `server_id` |
 | `/config vietqr set` | Cấu hình thông tin tài khoản ngân hàng nhận tiền chuyển khoản VietQR. | Configure the receiving bank account for automated VietQR payments. | `GUILD_OWNER` | `bank*`, `account_no*`, `account_name*`, `prefix` |
 | `/config vietqr workflow` | Cấu hình quy trình duyệt đơn, role nhân viên và đánh giá feedback. | Configure payment approval workflow, staff role & feedback ratings. | `MANAGE_RBAC` | `staff_role`, `feedback_channel`, `enable_rating`, `thanks_message` |
 | `/config vietqr status` | Xem thông tin tài khoản nhận tiền VietQR hiện tại của máy chủ. | View current receiving bank account details and payment status. | `MANAGE_CONFIG` | *Không có* |
